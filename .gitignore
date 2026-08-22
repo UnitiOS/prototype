@@ -18,3 +18,4 @@ desktop.ini
 
 # Local Claude Code settings
 .claude/settings.local.json
+build/
