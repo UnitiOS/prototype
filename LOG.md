@@ -111,3 +111,49 @@ Surprising, two things:
 - The fixture needs no database reset between runs. Every run mints fresh
   subject and predicate uuids, so the appended rows from earlier runs are
   invisible to the query. Append-only turns out to make test isolation free.
+
+## 2026-08-22 · NEXT item 4 — retraction, retro-dated row, replay
+
+Relaxed `value_exactly_one` in `001_schema.sql` to
+`num_nonnulls(...) = 1 OR (revokes IS NOT NULL AND num_nonnulls(...) = 0)`
+and re-ran the schema: exit 0.
+
+Rewrote `tests/test_bitemporal.py` around a `_seed(conn, rows)` helper and two
+fixtures over the same three-row base. `fact` adds the retro-dated row
+(valid_from 1 Dec 2025, recorded 10 Mar 2026, 4000000); `retracted` adds a
+pure retraction of the 5 Feb correction instead.
+
+`.venv/Scripts/python.exe -m pytest tests -q`: **8 passed, 1 xfailed.**
+
+The retro-dated row bites. `test_record_ordered_variant_gets_it_wrong` runs the
+same candidate set ordered by `recorded_at DESC` and asserts it answers
+4000000 where the correct answer is 5500000. Checked before moving on.
+
+`make` did not exist on this machine. Installed GNU Make 4.4.1 via
+`scoop install make`. It picks up Git's `sh.exe` from PATH, so the Makefile
+works unchanged from both Git Bash and PowerShell.
+
+`make replay` = `seed_200.py` (reset + 200 assertions) then `project.py` twice
+then a byte comparison. Result: **5335 bytes both times, identical.** Also
+identical between two separate `make replay` invocations, because the seed is
+deterministic and the projection carries labels rather than uuids. The seed is
+200 assertions over 12 students, 3 cohorts and 4 predicates; 40 rows revoke an
+earlier row, 61 point at an entity.
+
+Surprising, three things:
+- **The pure retraction does not resolve, and `resolve_single()` cannot fix it
+  without a rule change.** The retraction is itself a candidate: same subject,
+  same predicate, `valid_from` 1 Jan, highest `seq`, not revoked by anything.
+  It wins, and answers with no value. Dating it 10 Mar instead makes the two
+  required cases pass but moves the hole: every read at `valid_at >= 10 Mar`
+  then answers nothing. Probed both variants side by side before concluding.
+  The 2026-08-22 resolve line was written when every row carried a value and
+  never says a candidate must carry one. Left as
+  `xfail(strict=True)`; `resolve_single()` untouched.
+- The `has_label` predicate is the only entity that labels itself
+  (`subject_id = predicate_id`), which is enough for the projection to find it
+  from the log alone. No lookup table outside the kernel, and no uuids in the
+  output.
+- Deterministic output required removing wall-clock time from the projection
+  header, not just seeding the RNG. The first instinct — a "generated at" line
+  — would have broken byte-identity on its own.
