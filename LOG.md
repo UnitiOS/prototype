@@ -44,3 +44,32 @@ Surprising, three things:
 - The spec puts guards in `002_guards.sql`, but the done condition requires
   one file, so guards live in `001_schema.sql`. `002_guard_test.sql` is the
   test, not the guards.
+
+## 2026-08-22 · NEXT item 2 — minimal `perform()`
+
+Created `.venv` and installed `psycopg[binary]` 3.3.4 (Python 3.12.10). Wrote
+`kernel/perform.py`, 124 lines: one call writes one `intent`, mints N `entity`
+rows and inserts N `assertion` rows inside a single `conn.transaction()`.
+`mint` takes a list of labels and returns label -> uuid, so an assertion can
+name its subject, predicate or `ref` by label instead of a uuid. No validation
+beyond the check constraints — slot names are item 5.
+
+`ontology_version` is the constant `"v0"` with a `# TODO` pointing at the open
+T3. `subject_key_id` is inserted as NULL.
+
+Ran `.venv/Scripts/python.exe scripts/write_three.py`: exit 0. One intent, five
+entities, three assertions — seq 1..3, one `value_ref` row, two `value_literal`
+rows, all `ontology_version='v0'`, all `subject_key_id=NULL`. `recorded_at` came
+from the column default; identical to the microsecond across the three rows.
+
+Also checked the gate is atomic: a second assertion with `source='not_a_source'`
+raised `CheckViolation` on `source_known` and the intent count was unchanged, so
+the whole call rolled back.
+
+Surprising, two things:
+- Predicates are entities, so nothing can be asserted before something mints
+  the predicate. The demo mints five entities to write three assertions. That
+  is the schema working as designed, but it means `perform()` cannot be called
+  usefully without a minting step until the ontology exists.
+- `psycopg` returns `timestamptz` as `zoneinfo.ZoneInfo('Etc/UTC')`, not
+  `datetime.timezone.utc`. Equality still holds; identity comparisons will not.
