@@ -52,8 +52,12 @@ CREATE TABLE assertion (
     ontology_version text        NOT NULL,
     subject_key_id   uuid,
 
+    -- A pure retraction carries no value: "we were wrong" can be said
+    -- without inventing a replacement. Everything else states exactly one.
     CONSTRAINT value_exactly_one
-        CHECK (num_nonnulls(value_literal, value_ref) = 1),
+        CHECK (num_nonnulls(value_literal, value_ref) = 1
+               OR (revokes IS NOT NULL
+                   AND num_nonnulls(value_literal, value_ref) = 0)),
     CONSTRAINT confidence_levels
         CHECK (confidence IS NULL OR confidence IN ('high','medium','low')),
     CONSTRAINT source_known
