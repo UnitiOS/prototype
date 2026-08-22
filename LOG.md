@@ -73,3 +73,41 @@ Surprising, two things:
   usefully without a minting step until the ontology exists.
 - `psycopg` returns `timestamptz` as `zoneinfo.ZoneInfo('Etc/UTC')`, not
   `datetime.timezone.utc`. Equality still holds; identity comparisons will not.
+
+## 2026-08-22 · NEXT item 3 — `resolve_single()`
+
+Installed `pytest` 9.1.1 into `.venv`. Wrote `kernel/resolve.py` (48 lines,
+one SQL statement) and `tests/test_bitemporal.py`.
+
+`resolve_single(conn, subject_id, predicate_id, valid_at, as_of)` returns the
+winning assertion as a dict, or `None`. Reads only, writes nothing. The
+statement is the 2026-08-22 decision line verbatim: `valid_from <= :valid_at
+AND recorded_at <= :as_of`, `NOT EXISTS` a revoking row with `recorded_at <=
+:as_of`, `ORDER BY valid_from DESC, seq DESC LIMIT 1`.
+
+The fixture mints its subject and predicate through `perform()`, then inserts
+its three assertions with direct SQL because `recorded_at` is a column default
+that `perform()` does not accept. No retraction row was written — that is item 4.
+
+Ran `.venv/Scripts/python.exe -m pytest tests/test_bitemporal.py -q`:
+**5 passed**. The four-row table:
+
+| valid_at | as_of | answer |
+|---|---|---|
+| 15 Jan | 20 Mar | 5500000 |
+| 15 Jan | 20 Jan | 5000000 |
+| 15 Jan | 10 Feb | 5500000 |
+| 15 Mar | 20 Mar | 6000000 |
+
+Plus a fifth: as_of 5 Jan, before anything was recorded, returns `None`.
+
+Checked the first row actually bites — a naive as-of-only query
+(`recorded_at <= '2026-03-20' ORDER BY recorded_at DESC LIMIT 1`) answers
+6000000 where the correct answer is 5500000.
+
+Surprising, two things:
+- Nothing about the rule needed adjusting. The decision line was directly
+  executable as SQL; the whole of item 3 is one `SELECT` and a `NOT EXISTS`.
+- The fixture needs no database reset between runs. Every run mints fresh
+  subject and predicate uuids, so the appended rows from earlier runs are
+  invisible to the query. Append-only turns out to make test isolation free.
