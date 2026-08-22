@@ -1,0 +1,12 @@
+services:
+  db:
+    image: postgres:17
+    container_name: uniti-db
+    environment:
+      POSTGRES_USER: uniti
+      POSTGRES_PASSWORD: uniti
+      POSTGRES_DB: uniti
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./kernel:/kernel:ro
