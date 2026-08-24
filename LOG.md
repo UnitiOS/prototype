@@ -310,3 +310,32 @@ Surprising, three things:
 - Cross-slot revocation is not an edge case that needs a strange log to reach.
   Two ordinary rows written through `perform()` in one intent are enough, and
   the victim's read goes to `None` with nothing in its own slot having changed.
+
+## 2026-08-24 · One README
+
+Wrote `README.md` at the repo root, 120 lines. No other file created, no code
+touched.
+
+Verified the instructions it gives, in the order it gives them, against the
+running stack: `docker compose ps` (uniti-db up, port 5433), then
+`MSYS_NO_PATHCONV=1 docker compose exec -T db psql -U uniti -d uniti
+-v ON_ERROR_STOP=1 -f /kernel/001_schema.sql` — exit 0 with data present, so
+re-runnable holds. `.venv/Scripts/python.exe -m pytest tests -q`: **20 passed**.
+`make replay`: 5334 bytes, identical twice in a row.
+
+The README states no rule of its own. Every rule is a pointer: `DECISIONS.md`
+for what is closed, `resolve.py`'s docstring for the read rule, `perform.py`'s
+for the write gate, `001_schema.sql` for the columns and guards, `tests/` for
+the spec, `OPEN.md` for what is known-broken and left alone.
+
+Surprising, three things:
+- **The NEXT.md item does not exist.** The unchecked items are the adversarial
+  pass (done in commit ad78a21, still unticked) and the hand-written ontology.
+  "One README" was given directly in the session prompt, with its own done
+  condition. Built it as specified; NEXT.md not touched.
+- **`make replay` resets the database**, and nothing in the repo said so out
+  loud. A newcomer following the run section top to bottom would seed, then
+  read, and never notice — but one who ran it against a database holding
+  anything else would. It is now a bold line in the README.
+- **The `Makefile` hard-codes `.venv/Scripts/python.exe`.** The repo is
+  Windows-only by accident, not by decision. One line in the README, not a fix.
