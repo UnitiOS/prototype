@@ -14,6 +14,10 @@ log's latest-recorded row is also its earliest-valid row.
 `retracted` adds a pure retraction instead: recorded 10 Mar, revoking the 5 Feb
 correction and stating no value at all.
 
+`backfilled` adds an import instead: the same valid_from as the 5 Feb
+correction, but recorded 20 Jan — knowledge older than the correction's,
+inserted later, so its seq is higher.
+
 Run: .venv/Scripts/python.exe -m pytest tests/test_bitemporal.py
 """
 
@@ -47,6 +51,9 @@ _BASE = [
 
 _RETRO = ("2025-12-01T00:00:00Z", "2026-03-10T00:00:00Z", "4000000", None)
 _RETRACTION = ("2026-01-01T00:00:00Z", "2026-03-10T00:00:00Z", None, 1)
+# A backfilled import: last in, so highest seq, but it knew less than the
+# 5 Feb correction did. It ties on valid_from and must lose on recorded_at.
+_BACKFILL = ("2026-01-01T00:00:00Z", "2026-01-20T00:00:00Z", "5100000", None)
 
 
 def _seed(conn, rows):
@@ -92,6 +99,12 @@ def fact(conn):
 def retracted(conn):
     """The three rows plus a pure retraction of the 5 Feb correction."""
     return (conn,) + _seed(conn, _BASE + [_RETRACTION])
+
+
+@pytest.fixture(scope="module")
+def backfilled(conn):
+    """The three rows plus a late-inserted, early-recorded import."""
+    return (conn,) + _seed(conn, _BASE + [_BACKFILL])
 
 
 # The last row is the one a naive implementation gets wrong: read today,
@@ -179,17 +192,10 @@ def test_record_ordered_variant_gets_it_wrong(fact):
 
 # --- the pure retraction ------------------------------------------------
 
-# BLOCKED, not a fixture problem. The 2026-08-22 resolve rule picks the winner
-# from all unrevoked candidates, and a pure retraction is itself a candidate:
-# valid_from 1 Jan, highest seq, so it wins and answers with no value at all.
-# Dating it 10 Mar instead only moves the hole — every read at valid_at >= 10 Mar
-# then answers nothing. The rule predates the relaxed constraint and never says
-# a candidate must carry a value. resolve_single() is not being changed here.
-@pytest.mark.xfail(
-    strict=True,
-    reason="pure retraction wins as a candidate; resolve rule has no "
-           "value-carrying filter (open decision, not code)",
-)
+# The pure retraction is a candidate on every axis except the one that counts:
+# it states nothing about the world. num_nonnulls(value_literal, value_ref) = 1
+# takes it out of the running, so it removes the 5 Feb correction without
+# putting itself in its place.
 def test_retraction_resurfaces_the_earlier_row(retracted):
     """Read after the retraction: the correction is gone, seq 1 stands again."""
     conn, subject_id, predicate_id = retracted
@@ -216,3 +222,52 @@ def test_retraction_had_not_happened_yet(retracted):
     )
     assert row is not None
     assert row["value_literal"] == "5500000"
+
+
+# --- the backfilled import ----------------------------------------------
+
+def test_backfill_does_not_win_the_tie_on_seq(backfilled):
+    """Two rows tie on valid_from. The one that knew more wins.
+
+    seq is insertion order, not knowledge order. The import went in last, so
+    it holds the highest seq, but it was recorded 20 Jan and the correction it
+    ties with was recorded 5 Feb. An implementation that broke the tie on seq
+    would answer 5100000.
+    """
+    conn, subject_id, predicate_id = backfilled
+    row = resolve_single(
+        conn,
+        subject_id=subject_id,
+        predicate_id=predicate_id,
+        valid_at="2026-01-15T00:00:00Z",
+        as_of="2026-03-20T00:00:00Z",
+    )
+    assert row["value_literal"] == "5500000"
+
+
+# The variant this fixture exists to kill: same candidate set, same first
+# ordering key, tie broken on seq instead of recorded_at.
+_BY_SEQ_SQL = """
+SELECT a.value_literal
+FROM assertion a
+WHERE a.subject_id   = %(subject_id)s
+  AND a.predicate_id = %(predicate_id)s
+  AND a.valid_from  <= %(valid_at)s
+  AND a.recorded_at <= %(as_of)s
+  AND num_nonnulls(a.value_literal, a.value_ref) = 1
+ORDER BY a.valid_from DESC, a.seq DESC
+LIMIT 1
+"""
+
+
+def test_seq_ordered_variant_gets_it_wrong(backfilled):
+    conn, subject_id, predicate_id = backfilled
+    with conn.cursor() as cur:
+        cur.execute(
+            _BY_SEQ_SQL,
+            {"subject_id": subject_id, "predicate_id": predicate_id,
+             "valid_at": "2026-01-15T00:00:00Z",
+             "as_of": "2026-03-20T00:00:00Z"},
+        )
+        (wrong,) = cur.fetchone()
+    assert wrong == "5100000"

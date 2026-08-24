@@ -68,7 +68,7 @@ CREATE TABLE assertion (
 
 
 CREATE INDEX idx_assertion_resolve
-    ON assertion (subject_id, predicate_id, valid_from DESC, seq DESC);
+    ON assertion (subject_id, predicate_id, valid_from DESC, recorded_at DESC, seq DESC);
 
 CREATE INDEX idx_assertion_revokes
     ON assertion (revokes) WHERE revokes IS NOT NULL;

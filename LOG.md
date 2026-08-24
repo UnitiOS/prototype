@@ -157,3 +157,66 @@ Surprising, three things:
 - Deterministic output required removing wall-clock time from the projection
   header, not just seeding the RNG. The first instinct — a "generated at" line
   — would have broken byte-identity on its own.
+
+## 2026-08-24 · NEXT item 5 — pure retractions must not win
+
+Three changes, one commit.
+
+**resolve.py, candidate clause.** Added `num_nonnulls(a.value_literal,
+a.value_ref) = 1` to the WHERE. Not `revokes IS NULL`: a row that revokes an
+earlier row *and* carries a replacement stays a candidate, and the seed has 40
+of those. Dropped the `xfail(strict=True)` on
+`test_retraction_resurfaces_the_earlier_row`; it passes.
+
+**resolve.py, tie-break.** `ORDER BY valid_from DESC, recorded_at DESC,
+seq DESC`. Moved `idx_assertion_resolve` in `001_schema.sql` to the same five
+columns and re-ran the schema; `\d idx_assertion_resolve` confirms the new
+column order.
+
+New fixture `backfilled`: the three base rows plus an import at valid_from
+1 Jan, recorded 20 Jan, 5100000 — inserted last, so highest seq, but it knew
+less than the 5 Feb correction it ties with. Two tests, the same shape as the
+retro-dated pair: `test_backfill_does_not_win_the_tie_on_seq` and
+`test_seq_ordered_variant_gets_it_wrong`.
+
+Probed both clauses by removing them one at a time before moving on:
+- seq-first ordering: `test_backfill_does_not_win_the_tie_on_seq` fails,
+  answering 5100000 where 5500000 is correct. 1 failed, 10 passed.
+- no value clause: `test_retraction_resurfaces_the_earlier_row` fails,
+  answering `None`. 1 failed, 10 passed.
+
+Each clause kills exactly one test and nothing else.
+
+**seed_200.py, pure retractions.** Fourth event kind, `retract`: names an
+unrevoked earlier row and states no value. `emit(pure=True)` skips
+`value_for()` and does not add the row to the pair's index list, so a pure
+retraction never becomes the target of a later revocation — it is a leaf.
+Seed now reports 200 assertions, **56 revoking, 31 of them pure**, 51 pointing
+at an entity (was 40 revoking, none pure, 61 refs).
+
+`pytest tests -q`: **11 passed**, no xfail, no xpass.
+`make replay`: identical twice in a row, and identical across two separate
+`make replay` invocations.
+
+Projection: **5335 bytes before, 5334 after.** Still 55 rows over 55 distinct
+(subject, predicate) pairs — nothing dropped out and nothing crashed on a
+value-less row.
+
+Surprising, three things:
+- **Parts 1 and 2 did not move the projection at all** — still exactly 5335
+  bytes. The old seed had no pure retraction to exclude and no tie where
+  recorded_at and seq disagree, so both rule changes were invisible to replay.
+  Only the seed change made them observable. A byte-identity check does not
+  detect a rule change the fixture never exercises.
+- The one-byte difference is not the retractions trimming a byte. Adding a
+  fourth branch to `rng.choice` shifts the whole RNG stream, so it is a
+  different log of the same shape: 36 of the 55 projection rows changed value,
+  date or source. The byte count landing one apart is a coincidence.
+- Of the 55 projected pairs, **4 resolve differently because of a pure
+  retraction** — checked with a query comparing the winner against the winner
+  computed while ignoring value-less revocations. The other 27 retractions hit
+  rows that were not the standing winner at the projection's clocks.
+
+Also: Docker Desktop was not running at the start of the session and had to be
+started by hand. The container came back recreated rather than restarted, so
+the database was empty; `seed_200.py` resets anyway, so nothing was lost.

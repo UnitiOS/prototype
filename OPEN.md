@@ -31,5 +31,7 @@ The `blocks:` field decides whether it may hold up this week's work.
 ## T1 — just try it
 
 - value_literal: jsonb or text · blocks: -
+- subject_key_id: came in from the archived spec, used nowhere, meaning
+  unknown · blocks: -
 - carry intent.channel or not · blocks: -
 - final `source` vocabulary · blocks: -

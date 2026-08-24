@@ -4,9 +4,11 @@ Deterministic: one RNG seed, so the same log comes out every time. The seed is
 a small tutoring business — students, cohorts, fees, phone numbers — stated,
 corrected, changed and revoked over 2026.
 
-No pure retractions here: every revoking row carries a replacement value. A
-value-less retraction is not resolvable yet (see the xfail in
-tests/test_bitemporal.py).
+Four kinds of event, one of which is a pure retraction: a row that names an
+earlier row and states no value at all — "we were wrong", said without
+inventing a replacement. resolve_single() drops it from the candidate set
+(num_nonnulls(value_literal, value_ref) = 1), so it removes its target and
+lets whatever stood before that stand again.
 
 Run: .venv/Scripts/python.exe scripts/seed_200.py
 """
@@ -84,9 +86,14 @@ def build_rows(rng, names):
             return f"08{rng.randrange(10**9, 10**10)}", None
         return None, rng.choice(COHORTS)
 
-    def emit(pair, valid_from, recorded_at, revokes=None):
+    def emit(pair, valid_from, recorded_at, revokes=None, pure=False):
+        """Append one row. `pure` writes a retraction: no value, no ref.
+
+        A pure retraction is not added to the pair's index list, so it never
+        becomes the target of a later revocation. It is a leaf.
+        """
         subject, predicate = pair
-        value, ref = value_for(predicate)
+        value, ref = (None, None) if pure else value_for(predicate)
         rows.append({
             "subject": subject, "predicate": predicate, "value": value,
             "ref": ref, "valid_from": valid_from, "recorded_at": recorded_at,
@@ -94,8 +101,9 @@ def build_rows(rng, names):
             "confidence": rng.choice(["high", "medium", "low", None]),
         })
         st = state[pair]
-        st["indices"].append(len(rows) - 1)
-        st["max_valid"] = max(st["max_valid"], valid_from)
+        if not pure:
+            st["indices"].append(len(rows) - 1)
+            st["max_valid"] = max(st["max_valid"], valid_from)
         st["max_recorded"] = max(st["max_recorded"], recorded_at)
 
     for pair in pairs:
@@ -105,7 +113,7 @@ def build_rows(rng, names):
     while len(rows) < TOTAL:
         pair = pairs[len(rows) % len(pairs)]
         st = state[pair]
-        kind = rng.choice(["correction", "change", "revoke_replace"])
+        kind = rng.choice(["correction", "change", "revoke_replace", "retract"])
 
         if kind == "change":
             # The world moved: a later valid_from, written about when it moved.
@@ -119,7 +127,12 @@ def build_rows(rng, names):
         if kind == "correction":
             # We were wrong: same valid_from, a later record time.
             emit(pair, valid_from, st["max_recorded"] + rng.randrange(1, 16))
-        elif target not in st["revoked"]:
+        elif kind == "retract" and target not in st["revoked"]:
+            # We were wrong, and we have nothing to put in its place.
+            st["revoked"].add(target)
+            emit(pair, valid_from, st["max_recorded"] + rng.randrange(1, 21),
+                 revokes=target, pure=True)
+        elif kind != "retract" and target not in st["revoked"]:
             # Same, said explicitly: the old row is named and replaced.
             st["revoked"].add(target)
             emit(pair, valid_from, st["max_recorded"] + rng.randrange(1, 21),
@@ -171,12 +184,15 @@ def main():
         conn.commit()
 
         with conn.cursor() as cur:
-            cur.execute("SELECT count(*), count(revokes), count(value_ref) "
-                        "FROM assertion")
-            total, revoking, refs = cur.fetchone()
+            cur.execute(
+                "SELECT count(*), count(revokes), count(value_ref), "
+                "count(*) FILTER (WHERE num_nonnulls(value_literal, "
+                "value_ref) = 0) FROM assertion")
+            total, revoking, refs, pure = cur.fetchone()
 
     print(f"seeded {total} assertions "
-          f"({revoking} revoking, {refs} pointing at an entity), "
+          f"({revoking} revoking, {pure} of them pure retractions; "
+          f"{refs} pointing at an entity), "
           f"{len(labels)} entities, 1 intent")
 
 
