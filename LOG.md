@@ -220,3 +220,93 @@ Surprising, three things:
 Also: Docker Desktop was not running at the start of the session and had to be
 started by hand. The container came back recreated rather than restarted, so
 the database was empty; `seed_200.py` resets anyway, so nothing was lost.
+
+## 2026-08-24 · NEXT item 6 — adversarial pass over the kernel rules
+
+`resolve_single()` was not touched. This run wrote tests and three OPEN.md
+lines.
+
+**Clause coverage.** A throwaway script patched `kernel/resolve.py` one clause
+at a time and ran `pytest tests` against each mutant, restoring the file
+afterwards. Ten mutants: six WHERE conditions (counting the `NOT EXISTS` and
+its inner `recorded_at <= :as_of` separately) and three ORDER BY keys.
+
+Before — 11 tests. Three clauses could be deleted with the suite still green:
+
+| clause removed | before (11 tests) | after (20 tests) |
+|---|---|---|
+| `subject_id =` | **green — unguarded** | `test_another_subject_under_the_same_predicate_is_invisible` |
+| `predicate_id =` | **green — unguarded** | `test_another_predicate_about_the_same_subject_is_invisible` |
+| `valid_from <= :valid_at` | 5 fail | 9 fail |
+| `recorded_at <= :as_of` | `test_four_reads`, `test_nothing_stood_before_the_first_record` | same two |
+| `num_nonnulls(...) = 1` | `test_retraction_resurfaces_the_earlier_row` | same |
+| `NOT EXISTS` revoker | `test_retraction_resurfaces_the_earlier_row` | same |
+| revoker's `recorded_at <= :as_of` | `test_retraction_had_not_happened_yet` | same |
+| `ORDER BY valid_from DESC` | `test_four_reads`, `test_retro_dated_row_does_not_win_on_record_order` | same |
+| `ORDER BY recorded_at DESC` | `test_backfill_does_not_win_the_tie_on_seq` | same |
+| `ORDER BY seq DESC` | **green — unguarded** | `test_insertion_order_breaks_a_tie_on_both_clocks` |
+
+Two new fixtures for the identity clauses, `crowded_subject` and
+`crowded_predicate`: the base three rows plus one neighbour that ties the 5 Feb
+correction on `valid_from` and beats it on `recorded_at`, so it takes the read
+the moment its filter goes. Separate fixtures because one fixture holding both
+neighbours makes a single test die for either removal and the table stops
+attributing.
+
+One new fixture for `seq`, `simultaneous`: a row with the same `valid_from`
+**and** the same `recorded_at` as the 5 Feb correction, written after it. No
+clock separates them, so insertion order decides and the answer is 5600000.
+
+**Revoke-and-replace.** New fixture `replaced`: the base plus a row at
+valid_from 1 Jan, recorded 10 Mar, 5700000, revoking the 5 Feb correction.
+Read at valid 15 Jan / as_of 20 Mar answers **5700000**, as the 2026-08-22
+decision line requires. Plus `test_revokes_is_null_variant_gets_it_wrong`, the
+same shape as the other two variant tests: a candidate clause written as
+`revokes IS NULL` throws the replacement away and falls back two steps to
+5000000.
+
+**Append-only under pytest.** New `tests/test_append_only.py`: one assertion
+through `perform()`, then UPDATE, DELETE and TRUNCATE on `assertion`,
+parametrised, each expecting `psycopg.errors.RaiseException` with
+`kernel is append-only` in the message, each inside `conn.transaction()` so the
+savepoint keeps the module connection usable. A fourth test re-reads the row
+and gets `before`. `002_guard_test.sql` unchanged.
+
+`_seed()` in `tests/test_bitemporal.py` now takes a `mint` tuple, accepts a
+6-tuple row that names its own subject and predicate, and returns the whole
+`names` dict. The three existing fixtures changed one line each.
+
+`pytest tests -q`: **20 passed.** `make replay`: 5334 bytes, identical twice in
+a row, unchanged from the last run — as expected, since nothing in the read
+rule moved.
+
+**Written to OPEN.md, not fixed.** Both revocation lines were probed before
+being written down:
+- Revoking a retraction does not resurface its target. Log: 5000000 (10 Jan),
+  5500000 (5 Feb), a pure retraction of the 5 Feb row (10 Mar), then a row
+  revoking that retraction (15 Mar). Reads at valid 15 Jan answer 5500000 /
+  5000000 / 5000000 at as_of 5 Mar / 12 Mar / 20 Mar. The 5500000 never comes
+  back. `seed_200.py` keeps pure retractions as leaves, so replay never sees
+  this.
+- Nothing ties `revokes` to the same (subject, predicate). A row asserting
+  Bob's fee and revoking Alice's makes `resolve_single` answer `None` for
+  Alice. Confirmed against the live database.
+- `perform()` has no `recorded_at` parameter. Every backdated row in this
+  repo — the fixtures and all 200 seed rows — goes in by direct SQL, around
+  the write gate.
+
+Surprising, three things:
+- **`ORDER BY seq DESC` is only probabilistically guarded.** Ran the mutant six
+  times: five failed, one passed. With the key gone the query has no total
+  order, and `idx_assertion_resolve` already ends in `seq DESC` — so whenever
+  the planner takes the index it hands back the right row anyway and the mutant
+  survives. The clause is correct and the test asserts the right answer; it is
+  the *detection* that is a coin flip, and no fixture shape fixes that while
+  the index carries the missing key.
+- **Both identity clauses were unguarded for the same reason**: every fixture
+  mints a fresh subject *and* a fresh predicate, so either filter alone was
+  enough to isolate it. The property that made test isolation free — append-only,
+  new uuids per run — is exactly what hid the two clauses.
+- Cross-slot revocation is not an edge case that needs a strange log to reach.
+  Two ordinary rows written through `perform()` in one intent are enough, and
+  the victim's read goes to `None` with nothing in its own slot having changed.

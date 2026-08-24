@@ -19,6 +19,10 @@ The `blocks:` field decides whether it may hold up this week's work.
   inserts into the past · blocks: audit mode
 - ontology_version: content hash of a file, or "as of seq"? There is a gap
   between the assertion and the materialisation · blocks: audit replay
+- Does revocation cascade? Revoking a retraction does not resurface its target
+  — NOT EXISTS never asks whether the revoker is itself revoked · blocks: -
+- Nothing ties `revokes` to the same (subject, predicate); a row about Bob can
+  silently remove a standing fact about Alice · blocks: -
 
 ## T2 — wait for a user
 
@@ -35,3 +39,5 @@ The `blocks:` field decides whether it may hold up this week's work.
   unknown · blocks: -
 - carry intent.channel or not · blocks: -
 - final `source` vocabulary · blocks: -
+- perform() cannot set recorded_at, so a backdated import cannot go through the
+  write gate; tests and seed_200.py bypass it with direct SQL · blocks: -
