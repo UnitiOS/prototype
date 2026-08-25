@@ -13,12 +13,19 @@ The `blocks:` field decides whether it may hold up this week's work.
 
 ## T3 — discuss to a conclusion
 
+- How a rule or an aggregate is recorded in the log without the log storing a
+  judgement · blocks: stage 2
+- Which stated rules become ontology structure, which become derived rules,
+  and which need code · blocks: stage 2
+- Inventory valuation in scope, or quantity movement only · blocks: stage 1
+- Does stage 3 need competency questions written by someone other than the
+  ontology's author, plus one deliberately wrong concept · blocks: stage 3
+- Operational definition of "the kernel recorded it correctly" — every screen
+  state reproducible from the log alone at some (valid_at, as_of)? · blocks: stage 6
 - Isolation of two concurrent writers at the write gate; stock can go negative
-  under READ COMMITTED · blocks: aggregate constraints
+  under READ COMMITTED · blocks: stage 6
 - Commit order vs seq/recorded_at; audit mode leaks when a slow transaction
-  inserts into the past · blocks: audit mode
-- ontology_version: content hash of a file, or "as of seq"? There is a gap
-  between the assertion and the materialisation · blocks: audit replay
+  inserts into the past · blocks: stage 7
 - Does revocation cascade? Revoking a retraction does not resurface its target
   — NOT EXISTS never asks whether the revoker is itself revoked · blocks: -
 - Nothing ties `revokes` to the same (subject, predicate); a row about Bob can
@@ -31,6 +38,7 @@ The `blocks:` field decides whether it may hold up this week's work.
 - Are LLMs good interviewers and bad authors? The old corpus concluded this from
   a simulation, never from a real session with a real person · blocks: -
 - Do two people describing the same business produce similar ontologies · blocks: -
+- Interview subject: the Uniti team, or a real ice cream shop owner · blocks: -
 
 ## T1 — just try it
 
@@ -39,5 +47,9 @@ The `blocks:` field decides whether it may hold up this week's work.
   unknown · blocks: -
 - carry intent.channel or not · blocks: -
 - final `source` vocabulary · blocks: -
-- perform() cannot set recorded_at, so a backdated import cannot go through the
-  write gate; tests and seed_200.py bypass it with direct SQL · blocks: -
+- Ontology storage stack: a graph database, or a versioned file plus a
+  renderer · blocks: -
+- Ontology serialisation: LinkML, OWL, or plain YAML. LinkML can emit both OWL
+  and SHACL · blocks: -
+- Webapp framework for the generated forms · blocks: -
+- Chatbot split into authoring and query, or merged behind one MCP · blocks: -

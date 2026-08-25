@@ -1,7 +1,9 @@
 # Decisions
 
-Append-only. One line each. Never edited, never amended.
-If a decision does not fit on one line, it is not yet a decision.
+Append-only. Each entry carries the decision **and the reason for it**.
+If the reason cannot be stated, it is not yet a decision.
+A path considered and rejected is a decision too — without it, the same
+proposal comes back next session.
 
 Reopening a line here requires a reason from **code or a user**, never from a
 better argument.
@@ -33,3 +35,73 @@ reasoning lives in `../archived/`. They are closed, which means not re-discussed
 2026-08-22 · A candidate must state something about the world: resolve_single
              filters on num_nonnulls(value_literal, value_ref) = 1, not on
              revokes IS NULL. A valued row that also revokes stays a candidate.
+
+2026-08-24 · Uniti replaces an ERP, not Airtable or Notion, because an ERP is
+             what a customer would actually retire — and the comparison decides
+             what the PoC has to prove.
+2026-08-24 · The PoC is eight stages: interview, ontology mapping, graph review,
+             kernel recording, generated UI and projections, live use,
+             definition change and replay, agentic access. The kernel is a base
+             layer no user can feel on its own; only the stages above it can be
+             judged from outside the team.
+2026-08-24 · Stage 7 is the one that can kill the premise. Stages 1-6 and 8 show
+             that Uniti can be used; only a definition changed after data exists
+             shows that it is better.
+2026-08-24 · The ontology lives outside the log and follows an existing
+             standard, so the kernel stays the only home for facts and the
+             result can still be exported to something else.
+2026-08-24 · The graph is visualised with tools that already exist, never
+             generated — a graph viewer is a commodity and generating one
+             proves nothing.
+2026-08-24 · ontology_version names a version of the ontology artefact, not a
+             point in the log, because the ontology no longer lives in the log
+             and there is no seq to point at.
+2026-08-24 · The PoC domain is inventory for an ice cream business: stock on
+             hand is a projection rather than a fact, so the kernel's claim is
+             felt directly — and inventory's boundaries are not clean, which is
+             the harder test.
+2026-08-24 · Three interfaces — chatbot, generated forms, graph viewer — and the
+             operators are the Uniti team, so none needs polish. The PoC has to
+             show that generation works, not that a product is pleasant.
+2026-08-24 · Everything stated in an interview, rules and aggregates included,
+             is recorded in the log and the kernel must be ready for it:
+             whatever is not in the log cannot be projected later.
+2026-08-24 · Rule statements are assertions like any other; what a rule computes
+             is a projection, never an assertion. What the user said is a raw
+             fact — only its output is a judgement.
+2026-08-24 · The ten entries above were rewritten once, on the day they were
+             written, to carry their reasons — with Fareza's permission. Nothing
+             dated before 2026-08-24 was touched.
+
+2026-08-24 · PoC definition of done: the same shrinkage report, computed as it
+             was computed then and with today's definition, plus why the numbers
+             differ. Anything short of that shows Uniti can be used, not that it
+             is better.
+2026-08-24 · The generated webapp exists to show that a form can be generated,
+             filled, and written back to the kernel. It is not meant to be a
+             usable product.
+2026-08-24 · No separate roadmap document. The eight stages are the roadmap; a
+             document above them would only add dates that slip and detail
+             decided before we are able to decide it.
+2026-08-24 · No skills, subagents, or hooks for Claude Code's own workflow until
+             a pattern has repeated three times. Machinery for a problem we do
+             not have yet. This says nothing about the product's chatbot, which
+             is stage 1.
+2026-08-24 · CLAUDE.md is rigid about process and loose about content: it says
+             how to decide, not what to build. Content rules go stale the moment
+             a decision changes; process rules do not.
+2026-08-24 · The "not built" list becomes a stop-list: nothing on it is built
+             unless an item in NEXT.md names it. Components enter through
+             NEXT.md, not by editing CLAUDE.md.
+2026-08-24 · The eight stages appear in CLAUDE.md as the goal, names only, with
+             a marker of the current stage. Without it, structure and design get
+             built for one component instead of eight.
+2026-08-24 · Claude Code's authority is bounded by a test, not a list of allowed
+             actions: a list always misses the case that matters. The test lives
+             in CLAUDE.md.
+2026-08-24 · Claude Code may append to OPEN.md and LOG.md and never writes
+             DECISIONS.md. When it thinks something should be decided, it
+             proposes the wording in LOG.md.
+2026-08-24 · The archived corpus stays a non-reference, but it may be quoted to
+             answer a named question, with file and section cited. What killed
+             the last cycle was browsing and editing it, not quoting it.
