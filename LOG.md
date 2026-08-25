@@ -450,3 +450,42 @@ Desktop's to prune.
 `kernel/002_guard_test.sql` still contains a direct `INSERT INTO assertion`.
 That is deliberate and outside the grep: it is the psql-level proof that the
 guards fire, and it must not depend on Python.
+
+## 2026-08-25 · NEXT item — README names the eight stages
+
+`README.md` only. No code touched; `make check` run to confirm the file's own
+instructions still hold.
+
+New `## The eight stages` section between the intro and `## Run it`: the eight
+names, stage 1 marked as the active one, stage 4 marked as what this repo
+holds. Names only — the section says outright that `CLAUDE.md` holds the list
+that counts and wins any disagreement, and that the reasons live in
+`DECISIONS.md`. The sentence about which stage decides the premise is a pointer
+to `DECISIONS.md`, not a copy of it, on the same rule the file is built on: a
+restated rule drifts from the one it restates.
+
+Three things in the README had gone stale against the current `CLAUDE.md` and
+would have contradicted the new section:
+
+- **The definition of done.** The README claimed the PoC's definition of done
+  was the four reads. `CLAUDE.md` now says it is the shrinkage report. Reworded
+  to "what the kernel must do", with the PoC-level bar pointed at rather than
+  restated. `test_four_reads` is still named as the specification.
+- **The "not built" list.** It listed DDL compiler, UI generator and MCP
+  alongside the stop-list. Those three are stages 5 and 8, not stop-listed, so
+  the section now separates "later stage" from "stop-list" and points at
+  `CLAUDE.md` for the list itself instead of copying it.
+- **`make check` was missing** from `## Run it`. The previous item's log left
+  it to this one. It is now the first block, with the by-hand steps kept below
+  it for running one step alone.
+
+Done condition: every one of the eight names is in `README.md`, the numbered
+list is 1-8, and the active stage is named twice — in the list and in the
+paragraph under it. `make check` exits 0 from this tree: 20 passed, 5334 bytes
+twice.
+
+Surprising: the stale lines, not the missing ones. The README was written on
+24 Aug and `CLAUDE.md` changed the same day; a file whose whole discipline is
+"point, never restate" still had three restatements in it, and all three were
+already wrong. The two that mattered were both *definitions of done* — the
+file's and the PoC's — which is the one thing a newcomer reads first.
