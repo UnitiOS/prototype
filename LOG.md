@@ -339,3 +339,55 @@ Surprising, three things:
   anything else would. It is now a bold line in the README.
 - **The `Makefile` hard-codes `.venv/Scripts/python.exe`.** The repo is
   Windows-only by accident, not by decision. One line in the README, not a fix.
+
+## 2026-08-25 · NEXT item — `make check`
+
+`Makefile` only. No Python, no SQL, no test touched.
+
+`check: venv schema test replay`, plus `@echo "check: ok"`. Two new targets:
+
+- `venv` — a file target on `.venv/Scripts/python.exe`. Missing, it runs
+  `python -m venv .venv` and installs `psycopg[binary]` and `pytest`. Present,
+  make skips it. `test` and `replay` now depend on it.
+- `schema` — `docker compose up -d`, a bounded `pg_isready` wait (60 × 1s, then
+  it gives up with a message), then `001_schema.sql` through
+  `docker compose exec`, `MSYS_NO_PATHCONV=1` and `ON_ERROR_STOP=1`.
+
+**Clean clone.** `docker compose down` in `PoC/` (the container name is fixed,
+so two compose projects cannot both hold `uniti-db`), `git clone` into the
+scratchpad, `make check` there:
+
+| run | wall clock | result |
+|---|---|---|
+| cold — no `.venv`, no image container, empty database | **33.7 s** | exit 0 |
+| second run in the same clone | **2.5 s** | exit 0 |
+
+Cold run did the whole path: venv created, two packages installed, container
+created, postgres initialised, `DROP TABLE ... does not exist, skipping` three
+times, 20 passed, 200 assertions seeded, 5334 bytes twice, identical. Same
+5334 bytes as `PoC/` — the projection does not depend on the checkout.
+
+**Both failure modes probed, both reverted.**
+
+| probe | where it stopped | exit |
+|---|---|---|
+| `tests/test_zz_probe.py` with `assert False` | `test` target, before `replay` ran | 2 |
+| `random.random()` in `project.py`'s `render()` | the `--compare` line, 5353 vs 5354 bytes | 2 |
+
+Surprising, three things:
+- **A clean clone checks the `Makefile` out with CRLF** — `core.autocrlf` is
+  `true` globally, confirmed with `od -c` on the clone. GNU Make 4.4.1 for
+  Windows runs it anyway, backslash continuations and the multi-line `until`
+  loop included. No `.gitattributes` needed; this was the one thing expected to
+  break the clean-clone run and it did not.
+- **The readiness wait is not defensive padding.** Measured directly:
+  `docker compose down`, `up -d`, then `psql` immediately — `connection to
+  server on socket ... failed: No such file or directory`. The loop then
+  reported **2 iterations**. On an already-created container it passes on the
+  first try, which is why nothing before today noticed.
+- The `until` loop had to end its body with `sleep 1`. A body ending in a false
+  `[ $n -ge 60 ] && { ...; }` makes the whole loop exit 1 when the test is
+  false, so make would have failed the target on the *successful* path.
+
+Also: `README.md` still documents the manual four-step run and does not mention
+`make check`. Left alone — the README is a separate NEXT item.
