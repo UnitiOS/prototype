@@ -391,3 +391,62 @@ Surprising, three things:
 
 Also: `README.md` still documents the manual four-step run and does not mention
 `make check`. Left alone — the README is a separate NEXT item.
+
+## 2026-08-25 · NEXT item — `perform()` takes `recorded_at`
+
+`kernel/perform.py`, `tests/test_bitemporal.py`, `scripts/seed_200.py`. No
+schema change, no new column, `resolve.py` untouched.
+
+`perform()` gains one keyword, `recorded_at`, next to `occurred_at`. The
+assertion insert writes `COALESCE(%s, now())`, so the default is unchanged and
+every real write still gets the database's clock. **It is per call, not per
+assertion.** One transaction lands at one instant; letting a caller give two
+rows in the same transaction two different record times would manufacture a
+record-time ordering that never happened.
+
+That choice cost both callers their batching, because a row's `revokes` names
+another row's id and ids are only known after the call that wrote them:
+
+- `_seed()` in the fixtures: one `perform()` per row, plus one call up front
+  that mints the entities. 4–5 intents per fixture instead of 1.
+- `seed_200.py`: one `perform()` per row. **201 intents for 200 assertions**,
+  where there was 1. Each row already knew what act produced it — the seed
+  generates corrections, changes, revoke-replaces and retractions — so the kind
+  is now carried on the row and becomes that intent's `action_name`
+  (`state`, `correct`, `change`, `revoke_replace`, `retract`).
+
+Done condition: `grep -rn "INSERT INTO assertion" tests scripts` returns
+nothing, `pytest tests` **20 passed**, `make replay` identical twice
+(5334 bytes). `make check` exits 0.
+
+Surprising, three things:
+- **The projection is byte-for-byte the one from before the change** — same
+  5334 bytes, diffed against the pre-change `projection_a.txt`. 200 single-row
+  transactions produce the same `seq` values as 200 inserts in one, because the
+  identity sequence counts inserts and nothing rolled back. The counts held too
+  (56 revoking, 31 pure, 51 refs): no `rng` call was added or moved.
+- **200 separate transactions cost nothing measurable.** `seed_200.py` runs in
+  **0.84 s** wall clock against the containerised Postgres, commit per row
+  included. The batching that was given up was not buying speed.
+- **The fixtures now guard `recorded_at` end to end.** Probe: replace the
+  parameter with `None` in the insert, so every row falls back to `now()`.
+  **15 of 20 tests fail** — not just the backfill and retraction cases, but the
+  four-reads table itself, because with every row recorded now, an `as_of` of
+  20 Jan sees either all of them or none. Probe reverted.
+
+Proposed `DECISIONS.md` line, for Desktop to accept or reword:
+
+> 2026-08-25 · `recorded_at` is a property of the intent, not of the
+> assertion. `perform()` takes it once per call and it defaults to `now()`.
+> One act of recording lands at one instant, so two rows that claim different
+> record times are two intents. Synthetic history is written by replaying the
+> acts, not by handing the gate a column value per row.
+
+Also: the `[T1]` line in `OPEN.md` — "perform() cannot set recorded_at, so a
+backdated import cannot go through the write gate; tests and seed_200.py bypass
+it with direct SQL" — is answered by this change. Left in place; `OPEN.md` is
+Desktop's to prune.
+
+`kernel/002_guard_test.sql` still contains a direct `INSERT INTO assertion`.
+That is deliberate and outside the grep: it is the psql-level proof that the
+guards fire, and it must not depend on Python.
