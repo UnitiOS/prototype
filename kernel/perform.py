@@ -33,9 +33,9 @@ _ENTITY_SQL = "INSERT INTO entity (id, intent_id) VALUES (%s, %s)"
 _ASSERTION_SQL = """
 INSERT INTO assertion (
     id, subject_id, predicate_id, value_literal, value_ref,
-    valid_from, revokes, intent_id, source, confidence, authority,
+    valid_from, recorded_at, revokes, intent_id, source, confidence, authority,
     ontology_version, subject_key_id)
-VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NULL)
+VALUES (%s, %s, %s, %s, %s, %s, COALESCE(%s, now()), %s, %s, %s, %s, %s, %s, NULL)
 """
 # subject_key_id stays NULL: its meaning is unresolved (OPEN.md, T1).
 
@@ -66,6 +66,7 @@ def perform(
     reason_code=None,
     note=None,
     occurred_at=None,
+    recorded_at=None,
 ):
     """Write one intent, its minted entities and its assertions.
 
@@ -81,6 +82,12 @@ def perform(
         source                        required — see the source_known constraint
         confidence, authority         optional
         revokes                       assertion uuid this one supersedes
+
+    `recorded_at` is when the log learned all of this. It defaults to now(),
+    which is the truth for every real write; passing it is how history that
+    happened before this database existed is written. It belongs to the intent,
+    not to the assertion: one act of recording lands at one instant, so rows
+    recorded at different times are different intents.
 
     Returns (intent_id, names, assertion_ids).
     """
@@ -111,6 +118,7 @@ def perform(
                         a.get("value"),
                         _ref(a.get("ref"), names),
                         a.get("valid_from") or intent_occurred_at,
+                        recorded_at,
                         a.get("revokes"),
                         intent_id,
                         a["source"],

@@ -10,12 +10,15 @@ inventing a replacement. resolve_single() drops it from the candidate set
 (num_nonnulls(value_literal, value_ref) = 1), so it removes its target and
 lets whatever stood before that stand again.
 
+Every row goes through perform(), the same write gate the application uses.
+A row is one act of recording, so it is one intent with its own recorded_at:
+201 intents for 200 assertions and the entities they talk about.
+
 Run: .venv/Scripts/python.exe scripts/seed_200.py
 """
 
 import random
 import sys
-import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -31,13 +34,6 @@ EPOCH = datetime(2026, 1, 1, tzinfo=timezone.utc)
 STUDENTS = [f"student_{i:02d}" for i in range(1, 13)]
 COHORTS = ["cohort_a", "cohort_b", "cohort_c"]
 PREDICATES = ["has_label", "monthly_fee", "member_of", "guardian_phone"]
-
-_INSERT_SQL = """
-INSERT INTO assertion (
-    id, subject_id, predicate_id, value_literal, value_ref, valid_from,
-    recorded_at, revokes, intent_id, source, confidence, ontology_version)
-VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'v0')
-"""
 
 SOURCES = ["human_stated", "human_confirmed", "document_extracted", "imported"]
 
@@ -70,6 +66,7 @@ def build_rows(rng, names):
             "subject": label, "predicate": "has_label", "value": label,
             "ref": None, "valid_from": 0, "recorded_at": 0,
             "revokes": None, "source": "human_stated", "confidence": "high",
+            "action": "state",
         })
 
     pairs = [(s, p) for s in STUDENTS
@@ -86,11 +83,15 @@ def build_rows(rng, names):
             return f"08{rng.randrange(10**9, 10**10)}", None
         return None, rng.choice(COHORTS)
 
-    def emit(pair, valid_from, recorded_at, revokes=None, pure=False):
+    def emit(pair, valid_from, recorded_at, revokes=None, pure=False,
+             action="state"):
         """Append one row. `pure` writes a retraction: no value, no ref.
 
         A pure retraction is not added to the pair's index list, so it never
         becomes the target of a later revocation. It is a leaf.
+
+        `action` names the act that produced the row. Each row is written by
+        its own perform() call, so it becomes that intent's action_name.
         """
         subject, predicate = pair
         value, ref = (None, None) if pure else value_for(predicate)
@@ -99,6 +100,7 @@ def build_rows(rng, names):
             "ref": ref, "valid_from": valid_from, "recorded_at": recorded_at,
             "revokes": revokes, "source": rng.choice(SOURCES),
             "confidence": rng.choice(["high", "medium", "low", None]),
+            "action": action,
         })
         st = state[pair]
         if not pure:
@@ -118,7 +120,8 @@ def build_rows(rng, names):
         if kind == "change":
             # The world moved: a later valid_from, written about when it moved.
             valid_from = st["max_valid"] + rng.randrange(10, 61)
-            emit(pair, valid_from, valid_from + rng.randrange(0, 8))
+            emit(pair, valid_from, valid_from + rng.randrange(0, 8),
+                 action="change")
             continue
 
         target = rng.choice(st["indices"])
@@ -126,19 +129,21 @@ def build_rows(rng, names):
 
         if kind == "correction":
             # We were wrong: same valid_from, a later record time.
-            emit(pair, valid_from, st["max_recorded"] + rng.randrange(1, 16))
+            emit(pair, valid_from, st["max_recorded"] + rng.randrange(1, 16),
+                 action="correct")
         elif kind == "retract" and target not in st["revoked"]:
             # We were wrong, and we have nothing to put in its place.
             st["revoked"].add(target)
             emit(pair, valid_from, st["max_recorded"] + rng.randrange(1, 21),
-                 revokes=target, pure=True)
+                 revokes=target, pure=True, action="retract")
         elif kind != "retract" and target not in st["revoked"]:
             # Same, said explicitly: the old row is named and replaced.
             st["revoked"].add(target)
             emit(pair, valid_from, st["max_recorded"] + rng.randrange(1, 21),
-                 revokes=target)
+                 revokes=target, action="revoke_replace")
         else:
-            emit(pair, valid_from, st["max_recorded"] + rng.randrange(1, 16))
+            emit(pair, valid_from, st["max_recorded"] + rng.randrange(1, 16),
+                 action="correct")
 
     return rows
 
@@ -150,38 +155,43 @@ def main():
     with connect() as conn:
         reset(conn)
 
-        intent_id, names, _ = perform(
+        _, names, _ = perform(
             conn,
             actor_id="seed",
-            action_name="seed_200",
+            action_name="mint_seed_entities",
             note="synthetic tutoring business, 200 assertions",
             occurred_at=EPOCH,
+            recorded_at=EPOCH,
             mint=labels,
         )
 
         rows = build_rows(rng, names)
         assert len(rows) == TOTAL, f"expected {TOTAL} rows, built {len(rows)}"
 
+        # One row is one act of recording, so one row is one perform() call
+        # with its own recorded_at. Nothing here writes SQL against assertion.
         ids = []
-        with conn.cursor() as cur:
-            for row in rows:
-                assertion_id = uuid.uuid4()
-                cur.execute(
-                    _INSERT_SQL,
-                    (assertion_id,
-                     names[row["subject"]],
-                     names[row["predicate"]],
-                     row["value"],
-                     names[row["ref"]] if row["ref"] else None,
-                     _days(row["valid_from"]),
-                     _days(row["recorded_at"]),
-                     None if row["revokes"] is None else ids[row["revokes"]],
-                     intent_id,
-                     row["source"],
-                     row["confidence"]),
-                )
-                ids.append(assertion_id)
-        conn.commit()
+        for row in rows:
+            recorded_at = _days(row["recorded_at"])
+            _, _, assertion_ids = perform(
+                conn,
+                actor_id="seed",
+                action_name=row["action"],
+                occurred_at=recorded_at,
+                recorded_at=recorded_at,
+                assertions=[{
+                    "subject": names[row["subject"]],
+                    "predicate": names[row["predicate"]],
+                    "value": row["value"],
+                    "ref": names[row["ref"]] if row["ref"] else None,
+                    "valid_from": _days(row["valid_from"]),
+                    "revokes": (None if row["revokes"] is None
+                                else ids[row["revokes"]]),
+                    "source": row["source"],
+                    "confidence": row["confidence"],
+                }],
+            )
+            ids.append(assertion_ids[0])
 
         with conn.cursor() as cur:
             cur.execute(
@@ -189,11 +199,13 @@ def main():
                 "count(*) FILTER (WHERE num_nonnulls(value_literal, "
                 "value_ref) = 0) FROM assertion")
             total, revoking, refs, pure = cur.fetchone()
+            cur.execute("SELECT count(*) FROM intent")
+            (intents,) = cur.fetchone()
 
     print(f"seeded {total} assertions "
           f"({revoking} revoking, {pure} of them pure retractions; "
           f"{refs} pointing at an entity), "
-          f"{len(labels)} entities, 1 intent")
+          f"{len(labels)} entities, {intents} intents")
 
 
 if __name__ == "__main__":

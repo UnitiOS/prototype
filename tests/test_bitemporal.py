@@ -22,7 +22,6 @@ Run: .venv/Scripts/python.exe -m pytest tests/test_bitemporal.py
 """
 
 import sys
-import uuid
 from pathlib import Path
 
 import pytest
@@ -31,15 +30,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "kernel"))
 
 from perform import connect, perform  # noqa: E402
 from resolve import resolve_single  # noqa: E402
-
-# recorded_at is a column default and perform() does not take it, so the
-# fixtures insert their rows with direct SQL.
-_INSERT_SQL = """
-INSERT INTO assertion (
-    id, subject_id, predicate_id, value_literal, valid_from, recorded_at,
-    revokes, intent_id, source, ontology_version)
-VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'human_stated', 'v0')
-"""
 
 # (valid_from, recorded_at, value, revokes) — `revokes` is the index of an
 # earlier row in the same list, or None.
@@ -58,7 +48,8 @@ _BACKFILL = ("2026-01-01T00:00:00Z", "2026-01-20T00:00:00Z", "5100000", None)
 # out and states 5700000 in its place. `revokes IS NULL` would throw it away.
 _REPLACEMENT = ("2026-01-01T00:00:00Z", "2026-03-10T00:00:00Z", "5700000", 1)
 # Two rows that agree on both clocks — same valid_from, same recorded_at,
-# written in the same batch. Only insertion order separates them.
+# recorded in two acts that claim the same instant. Only insertion order
+# separates them.
 _SIMULTANEOUS = ("2026-01-01T00:00:00Z", "2026-02-05T00:00:00Z", "5600000", None)
 # Neighbours in the log. Each ties the 5 Feb correction on valid_from and beats
 # it on recorded_at, so it wins a read of student/monthly_fee the moment its
@@ -76,32 +67,42 @@ def _seed(conn, rows, mint=("student", "monthly_fee")):
     `mint[0]`/`mint[1]`, or `(subject, predicate, valid_from, recorded_at,
     value, revokes)` to name a different pair out of `mint`.
 
+    One row is one act of recording, so one row is one `perform()` call with
+    its own `recorded_at`. Nothing here writes SQL: the fixtures go through the
+    same write gate as the application does.
+
     Every run mints new uuids, so rows appended by earlier runs are invisible
     to the queries below. Append-only makes test isolation free.
     """
-    intent_id, names, _ = perform(
+    _, names, _ = perform(
         conn,
         actor_id="test",
-        action_name="seed_bitemporal_fixture",
+        action_name="mint_bitemporal_fixture",
         mint=list(mint),
     )
     ids = []
-    with conn.cursor() as cur:
-        for row in rows:
-            if len(row) == 4:
-                subject, predicate = mint[0], mint[1]
-                valid_from, recorded_at, value, revokes = row
-            else:
-                subject, predicate, valid_from, recorded_at, value, revokes = row
-            assertion_id = uuid.uuid4()
-            cur.execute(
-                _INSERT_SQL,
-                (assertion_id, names[subject], names[predicate], value,
-                 valid_from, recorded_at,
-                 None if revokes is None else ids[revokes], intent_id),
-            )
-            ids.append(assertion_id)
-    conn.commit()
+    for row in rows:
+        if len(row) == 4:
+            subject, predicate = mint[0], mint[1]
+            valid_from, recorded_at, value, revokes = row
+        else:
+            subject, predicate, valid_from, recorded_at, value, revokes = row
+        _, _, assertion_ids = perform(
+            conn,
+            actor_id="test",
+            action_name="seed_bitemporal_fixture",
+            occurred_at=recorded_at,
+            recorded_at=recorded_at,
+            assertions=[{
+                "subject": names[subject],
+                "predicate": names[predicate],
+                "value": value,
+                "valid_from": valid_from,
+                "revokes": None if revokes is None else ids[revokes],
+                "source": "human_stated",
+            }],
+        )
+        ids.append(assertion_ids[0])
     return names
 
 
@@ -389,10 +390,10 @@ def test_revokes_is_null_variant_gets_it_wrong(replaced):
 def test_insertion_order_breaks_a_tie_on_both_clocks(simultaneous):
     """Same valid_from, same recorded_at: seq is the only thing left.
 
-    Two rows written in one batch carry the same recorded_at default. Neither
-    clock separates them, so the last one written stands. Without `seq DESC`
-    the query has no total order and the answer is whichever row the plan
-    happens to reach first.
+    Two rows can be recorded at the same instant. Neither clock separates
+    them, so the last one written stands. Without `seq DESC` the query has no
+    total order and the answer is whichever row the plan happens to reach
+    first.
     """
     conn, subject_id, predicate_id = simultaneous
     row = resolve_single(
