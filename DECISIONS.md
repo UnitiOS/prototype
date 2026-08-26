@@ -105,3 +105,85 @@ reasoning lives in `../archived/`. They are closed, which means not re-discussed
 2026-08-24 · The archived corpus stays a non-reference, but it may be quoted to
              answer a named question, with file and section cited. What killed
              the last cycle was browsing and editing it, not quoting it.
+
+2026-08-26 · The stages are a **flow**, not a build list — one lap the system
+             runs for one business, not eight things the team builds in order.
+             Read as a build list they produced a repo holding the kernel while
+             the plan said "currently stage 1". That contradiction was the
+             symptom, not a bookkeeping slip.
+2026-08-26 · Stages are named, never numbered. Interview and mapping merged and
+             every number after them moved, which would have quietly falsified
+             four lines in this file, a paragraph in CLAUDE.md and a section in
+             README.md at once. A name survives the next merge; a number does
+             not, and a number in one file drifts from the same number in
+             another.
+2026-08-26 · Interview and ontology mapping are one stage. Deciding whether a
+             statement becomes ontology structure, a derived rule or code needs
+             a follow-up question, and only the interviewer can ask one — a
+             mapper reading a transcript cannot. Recording depends on the same
+             act: perform() needs a minted predicate and an ontology_version,
+             so nothing can be recorded before the mapping exists.
+2026-08-26 · Stages and components are many-to-many. A component per stage
+             would have built the chatbot twice — once for mapping, once for a
+             definition change — and given graph review and live use components
+             of their own when neither needs code.
+2026-08-26 · The chatbot holds the session in a draft and writes nothing until
+             the user asks to commit. The kernel records what the business is,
+             not how the interview went: someone correcting their own sentence
+             is looking for a word, not producing evidence about the world. The
+             cost is accepted — a self-correction mid-interview never reaches
+             the log, and a whole interview lands at one recorded_at, so the
+             spread the replay demo needs can only come from live use.
+2026-08-26 · The session draft is internal to the chatbot and is not a store.
+             It holds no facts and may be lost; losing it means the interview is
+             repeated. Making it durable would add a third store to hold
+             something that is not evidence.
+2026-08-26 · Only the chatbot writes the ontology. One writer means linear
+             versions, no reconciliation between writers, and a graph viewer
+             that stays strictly read-only. A human who wants a change says it
+             to the chatbot.
+2026-08-26 · A commit writes the ontology version first, then mints predicates,
+             then calls perform(). There is no transaction across a file and
+             Postgres, so a failed commit must leave an orphan ontology version
+             — harmless — rather than assertions naming a version that was never
+             written. The ontology store tolerates orphan versions.
+2026-08-26 · The marker in CLAUDE.md names the component that is built, not the
+             stage that is current. Under a flow reading nobody is "at" a stage,
+             so a current-stage marker names something that does not exist. This
+             supersedes the 2026-08-24 line that put a stage marker there.
+2026-08-26 · The first interviews are Fareza and the Uniti team. What the first
+             interview tests is the chatbot, not the subject, and a team member
+             is available now. A shop owner is a different question and is not
+             being answered yet; no date is set for an interview outside the
+             team.
+2026-08-26 · The map holds the logic; the log holds the history. What is stated
+             about the world goes to the kernel; what is stated about how to
+             read the world goes to the ontology. A rule is not a fact about the
+             world — it is the frame for reading one — so putting it in the log
+             is the mistake finding 2 forbids, in a subtler form. This changes
+             how the 2026-08-24 line "rules and aggregates included, is recorded
+             in the log" is read; that line stays as written and is superseded
+             here. The cost is accepted: "what did shrinkage mean in March" moves
+             out of the log, so the ontology needs a valid-time model of its own.
+2026-08-26 · The directory tree names the components in CLAUDE.md. Components
+             live under `components/`, tests mirror them under `tests/`. Someone
+             reading the component table can find each one in the tree without
+             being told the mapping, and six more arrive with a home already cut.
+2026-08-26 · LinkML is the ontology serialisation. It carries both of what the
+             map's readers need natively — range, cardinality and required for
+             the generator; description and aliases for the agent — and every
+             element gets a global URI for free.
+2026-08-26 · A predicate's identity in the kernel is the `slot_uri` of its
+             LinkML slot. The kernel has needed a rule for minting predicates
+             since perform() was written; LinkML gives every slot a stable URI,
+             so the join between map and log is not something we invent.
+2026-08-26 · Derived rules do not live in LinkML itself. Its expression language
+             has no control flow and so cannot aggregate; equals_expression is
+             row-level and marked experimental; `rules` are validation, not
+             computation. LinkML declines to be a rule language on purpose. The
+             computation attaches to the slot through `annotations` and is
+             compiled by the generator.
+2026-08-26 · The shape of that computation is not decided yet, and deliberately
+             so. Choosing it now means inventing a language before one real
+             stated rule has been heard. The rules an interview produces will
+             decide the shape better than a guess made today.

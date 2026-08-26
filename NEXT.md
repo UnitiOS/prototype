@@ -57,7 +57,37 @@ Adding a sixth item means removing one.
       done when: README.md names all eight stages and which is active, still
       without restating a rule that lives in another file
 
+- [x] Rewrite README for named stages and the component list
+      done when: `grep -rniE "stage [0-9]|eight stages" README.md` returns
+      nothing, all seven stage names and all seven component names from
+      CLAUDE.md appear in README.md, `kernel` is the only component the file
+      calls built, and `make check` exits 0 on a clean clone following only
+      README.md
+
+- [ ] Directory tree named after the components in CLAUDE.md
+      move only: `kernel/` -> `components/kernel/`, `tests/*.py` ->
+      `tests/kernel/`. `scripts/`, `build/` and the root files stay where they
+      are. Fix the paths that break — Makefile, docker-compose mount, sys.path
+      inserts, README — and nothing else.
+      done when: no `.py` or `.sql` file sits at the repo root or directly
+      under `tests/`, every directory under `components/` is a name that
+      appears in CLAUDE.md's component table, `make check` exits 0 on a clean
+      clone, `build/projection_a.txt` is still **5334 bytes**, and
+      `git show --stat -M HEAD` lists the moved files as renames rather than
+      delete-plus-add
+
+- [ ] LinkML probe: does the map's escape hatch survive the generators
+      done when: a throwaway schema — two classes, one slot with an explicit
+      `slot_uri`, one slot `required: true`, one slot carrying `annotations`
+      — runs clean through `gen-sqltables`, `gen-shacl`, `gen-erdiagram` and
+      `gen-owl`; the SHACL output carries a `minCount` for the required slot;
+      the `slot_uri` appears verbatim in the OWL output; and the annotation is
+      still readable through `SchemaView` after a YAML round-trip. Findings go
+      to LOG.md, the schema is deleted, and `linkml` is **not** added to the
+      Makefile's venv target — it is a probe, not a dependency yet.
+
 ---
 
-Stage 2 is blocked on two T3 lines in OPEN.md. Nothing else is added to this
-file until they are closed.
+The interview chatbot is blocked on one T3 line in OPEN.md; the ontology store
+is blocked on one. Nothing that touches either is added to this file until they
+are closed.

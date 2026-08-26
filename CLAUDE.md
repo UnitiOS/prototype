@@ -4,28 +4,56 @@
 
 An evidence substrate: an append-only claim log with per-field provenance and
 two time axes. Not schema generation — that is a commodity (ERPNext has shipped
-it for a decade). Generation still happens, at stage 5; it is a means, never the
-thing being proven.
+it for a decade). Generation still happens, and has a stage of its own; it is a
+means, never the thing being proven.
 
 Definition of done for the PoC: **the same shrinkage report, computed as it was
 computed then and with today's definition, side by side with why the numbers
 differ.**
 
-## The eight stages
+## The stages
 
-1. Interview — the business is described to a chatbot
-2. Ontology mapping — the interview becomes an ontology, to an existing standard
-3. Graph review — the ontology is visualised and judged
-4. Kernel recording — everything stated is in the log
-5. Generation — UI and projection tables come from the ontology and the kernel
-6. Live use — the forms are used, the kernel is checked
-7. Definition change — a definition moves, history is replayed
-8. Agentic access — the data is navigated and acted on
+A **flow**, not a build list: one lap the system runs for one business, from
+someone describing it to an agent acting on it. Nobody is "at" a stage. What
+gets built is the next section.
 
-**Currently: stage 1.** Stage 7 is the one that can kill the premise; the rest
-show the system can be used, not that it is better.
+Named, never numbered. Interview and mapping were two stages until they became
+one, and every number after them moved. A name survives the next merge.
+
+- **Interview and mapping** — the business is described to a chatbot, and the
+  description becomes an ontology to an existing standard
+- **Graph review** — the ontology is visualised and judged
+- **Kernel recording** — everything stated is in the log
+- **Generation** — UI and projection tables come from the ontology and the kernel
+- **Live use** — the forms are used, the kernel is checked
+- **Definition change** — a definition moves, history is replayed
+- **Agentic access** — the data is navigated and acted on
+
+**Definition change** is the stage that can kill the premise; the rest show the
+system can be used, not that it is better.
 
 Domain: inventory for an ice cream business.
+
+## The components
+
+Stages and components are many-to-many: one component serves several stages,
+one stage needs several components.
+
+| Component | Kind | Serves |
+|---|---|---|
+| `kernel` | store | recording, live use, every reader |
+| `ontology store` | store | mapping, review, generation, definition change |
+| `interview chatbot` | agent | interview and mapping, definition change |
+| `graph exporter` | adapter | review |
+| `generator` | generator | generation, live use, definition change |
+| `report + diff` | harness | definition change |
+| `agent MCP` | agent | agentic access |
+
+**Built: `kernel`. Nothing else exists.**
+
+The draft a chatbot holds mid-interview is deliberately absent from this list.
+It is internal to the chatbot, holds no facts, and may be lost — losing it
+means the interview is repeated.
 
 ## Six findings that are closed
 
