@@ -572,3 +572,66 @@ Surprising: the byte-identical check caught nothing, because the one real break
 stopped the run before a projection was written. The 5334 bytes proved the move
 was complete, not that it was correct — `seed_200.py` failing loudly was worth
 more than the byte count.
+
+---
+
+## 2026-08-26 · LinkML probe — does the escape hatch survive the generators
+
+Ran: `pip install linkml` into `.venv` by hand (1.11.1, with linkml-runtime
+1.11.1). A throwaway schema — `Batch` and `Freezer`; `batch_code` an identifier,
+`quantity_on_hand` `required: true`, `shrinkage_rate` carrying an explicit
+`slot_uri: uniti:shrinkage_rate_v1` and two `annotations`, `stored_in` a range
+of `Freezer`. Schema, outputs and two probe scripts written outside the repo and
+deleted. `linkml` is **not** in the Makefile.
+
+All four generators exit 0. `gen-sqltables` gives `NOT NULL` on the required
+slot and a real foreign key from `stored_in` to `Freezer(freezer_code)`.
+`gen-erdiagram` gives mermaid with the relation. `gen-owl` prints a deprecation
+warning about `consolidate_cardinality_axioms` to stderr and still exits 0.
+
+The three checks:
+
+- **`minCount` for the required slot** — yes. `sh:minCount 1` on
+  `quantity_on_hand`, and only on it.
+- **`slot_uri` verbatim in OWL** — **only with a flag.** By default `gen-owl`
+  emits `probe:shrinkage_rate`; the `uniti:` URI is nowhere in the output. With
+  `--no-use-native-uris` the subject becomes `uniti:shrinkage_rate_v1` and the
+  prefix is declared. The default is `--use-native-uris`.
+- **Annotation through `SchemaView` after a YAML round-trip** — yes. Dumped the
+  schema with `yaml_dumper`, re-read it, and both the annotation value and
+  `slot_uri` compare equal to the first pass.
+
+Three things found that were not asked for:
+
+- **`gen-shacl` honours `slot_uri` by default**, without a flag: `sh:path` on
+  the shrinkage shape is `uniti:shrinkage_rate_v1` while its neighbours are
+  `probe:`. So the two RDF generators disagree on the default, and the one that
+  matters for the join is the one that needs the flag.
+- **Annotations reach OWL as ordinary triples** — `probe:derived_rule "..."`
+  hangs off the property. Not asked for, and useful: the escape hatch is not
+  lost at the RDF boundary.
+- **`identifier: true` is `required` in the model but has no `minCount` in
+  SHACL.** `induced_slot("batch_code", "Batch").required` is `True`, yet its
+  SHACL shape carries `sh:maxCount 1` and no `sh:minCount`. A validator reading
+  only the SHACL will accept a `Batch` with no `batch_code`.
+
+Mechanics for whoever writes the generator: read slots through
+`SchemaView.induced_slot(slot, class)` — it carries `slot_uri`, `required` and
+the annotations together. Its `.annotations` is a `JsonObj`, not the mapping
+`get_slot()` returns: `.items()` and `.get()` raise `AttributeError` (they are
+`_items()` and `_get()`), while `annots.derived_rule.value` and
+`annots["derived_rule"].value` both work.
+
+Conclusion: the escape hatch survives, and the decision that a predicate's
+identity is its `slot_uri` holds — but "LinkML gives every slot a stable URI"
+is only true of the output if the OWL generator is called with
+`--no-use-native-uris`. That flag is now part of what the ontology store has to
+remember, not a detail of one command.
+
+`make check` still exits 0 with linkml sharing the virtualenv: 20 passed, 5334
+bytes twice. linkml was left installed in `.venv` — gitignored, and removing it
+proves nothing.
+
+Surprising: the probe was aimed at whether `annotations` survive, and they did,
+everywhere, unasked. What nearly failed was the part assumed safe — the
+`slot_uri`, which a decision made today already depends on.
