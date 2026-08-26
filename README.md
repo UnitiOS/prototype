@@ -26,29 +26,24 @@ parametrised table is the specification — if you read one thing after this
 file, read that.
 
 That is the kernel's bar, not the PoC's. What the PoC as a whole has to show is
-a stage 7 result, and it is stated in `CLAUDE.md`.
+a **definition change** result, and it is stated in `CLAUDE.md`.
 
-## The eight stages
+## The stages, and what is built
 
-The PoC runs in eight stages. Names only here; `CLAUDE.md` holds the list that
-counts, and `DECISIONS.md` says why each is shaped the way it is.
+The PoC is one lap the system runs for one business: **interview and mapping**,
+**graph review**, **kernel recording**, **generation**, **live use**,
+**definition change**, **agentic access**. Names only here — `CLAUDE.md` says
+what each one means and which of them can kill the premise, and `DECISIONS.md`
+says why they are named and never numbered.
 
-1. **Interview** — the active stage
-2. Ontology mapping
-3. Graph review
-4. Kernel recording — what this repo holds
-5. Generation
-6. Live use
-7. Definition change
-8. Agentic access
+Nobody is "at" a stage, so this file does not claim one. What can be checked is
+which components exist. There are seven — `kernel`, `ontology store`,
+`interview chatbot`, `graph exporter`, `generator`, `report + diff` and
+`agent MCP` — and **only `kernel` is built**. It is what this repo holds.
+Which component serves which stage is a table in `CLAUDE.md` and is not
+repeated here.
 
-**The active stage is stage 1.** A kernel exists before its own stage is
-reached because nothing said in stages 1-3 can be recorded until it does — so
-this repo runs ahead of the stage marker, and the marker, not the repo, says
-where the PoC is. Which stage decides whether any of it is worth doing is a
-line in `DECISIONS.md`; it is not this one.
-
-If this list and `CLAUDE.md` ever disagree, `CLAUDE.md` is right.
+If this file and `CLAUDE.md` ever disagree, `CLAUDE.md` is right.
 
 ## Run it
 
@@ -138,7 +133,7 @@ them — a restated rule drifts from the one it restates.
 | Where does the demo data come from? | `scripts/seed_200.py` (one RNG seed, deterministic) |
 | What does the smallest possible write look like? | `scripts/write_three.py` |
 | How is this repo worked on? What may not be built? | `CLAUDE.md` |
-| What are the eight stages, and which one is active? | `CLAUDE.md`, then `DECISIONS.md` |
+| What are the stages, and which components serve them? | `CLAUDE.md`, then `DECISIONS.md` |
 | What is being worked on right now? | `NEXT.md` |
 | What was run, and what was surprising? | `LOG.md` |
 
@@ -148,11 +143,12 @@ the same slot — written down rather than patched.
 
 ## Not built
 
-Two different reasons, and they are not interchangeable. A DDL compiler, a UI
-generator and an MCP endpoint are simply later stages — 5 and 8 — and arrive
-when those stages do. Everything on the stop-list in `CLAUDE.md` is reasonable
-and still not built, because nothing there is needed to find out whether this
-works, and four previous projects died of building it first.
+Two different reasons, and they are not interchangeable. The `generator` and
+the `agent MCP` are components this lap needs and does not have yet; they
+arrive with the stages that need them. Everything on the stop-list in
+`CLAUDE.md` is reasonable and still not built, because nothing there is needed
+to find out whether this works, and four previous projects died of building it
+first.
 
 Either way the route in is the same: an item in `NEXT.md` names it. Nothing
 enters by argument.

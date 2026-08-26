@@ -489,3 +489,50 @@ Surprising: the stale lines, not the missing ones. The README was written on
 "point, never restate" still had three restatements in it, and all three were
 already wrong. The two that mattered were both *definitions of done* — the
 file's and the PoC's — which is the one thing a newcomer reads first.
+
+
+## 2026-08-26 · README rewritten for named stages and the component list
+
+`CLAUDE.md` was rewritten today: the stages are named instead of numbered,
+interview and mapping merged into one stage, and a `## The components` section
+appeared. The README still carried the eight numbered stages and an active-stage
+marker, so it contradicted the constitution in three places at once.
+
+What changed in `README.md`:
+
+- **`## The eight stages` became `## The stages, and what is built`.** The
+  numbered list is gone. The seven names run in one sentence and nothing else
+  about them is copied — what each one means, and which one can kill the
+  premise, are pointed at in `CLAUDE.md`, and why they are named rather than
+  numbered is pointed at in `DECISIONS.md`.
+- **The active-stage marker is gone.** Under a flow reading nobody is "at" a
+  stage, so the paragraph explaining why the repo "runs ahead of the stage
+  marker" was explaining a thing that no longer exists. What replaces it is
+  checkable: the seven component names, and only `kernel` called built.
+- **The many-to-many table is not repeated.** Which component serves which
+  stage lives in `CLAUDE.md`; the README says so and stops.
+- **Two stage numbers elsewhere.** "a stage 7 result" became "a **definition
+  change** result"; "later stages — 5 and 8" in `## Not built` became the
+  `generator` and the `agent MCP` named as components. The question table row
+  "What are the eight stages, and which one is active?" became "What are the
+  stages, and which components serve them?".
+
+Deliberately not touched: the stage numbers in entries dated before 26 Aug in
+this file and in `DECISIONS.md`. Both files are append-only and those entries
+are history, not a contradiction.
+
+Done condition: `grep -rniE "stage [0-9]|eight stages" README.md` returns
+nothing (exit 1); all seven stage names and all seven component names appear;
+`built` appears against `kernel` only. `make check` exits 0: 20 passed, 5334
+bytes twice.
+
+Surprising: Docker Desktop was not running, so the first `make check` failed at
+`docker compose up -d` before any of the README work could be verified — the
+one command the README promises works from a clean clone has a prerequisite the
+README states in prose ("Needs Docker") and the Makefile does not check.
+
+Also surprising: the whole edit was four replacements and the file got shorter.
+The previous rewrite had to add explanation for why a kernel exists before its
+own stage is reached. Naming the components instead of the stage the project is
+"at" deleted the need for that explanation entirely — the awkward paragraph was
+a symptom of the numbering, not of the repo.
