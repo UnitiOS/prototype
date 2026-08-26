@@ -536,3 +536,39 @@ The previous rewrite had to add explanation for why a kernel exists before its
 own stage is reached. Naming the components instead of the stage the project is
 "at" deleted the need for that explanation entirely — the awkward paragraph was
 a symptom of the numbering, not of the repo.
+
+---
+
+## 2026-08-26 · Directory tree named after the components
+
+Ran: `git mv kernel components/kernel`, `git mv tests/*.py tests/kernel/`, then
+`make check`.
+
+Six paths broke, one more than the item named. In order of discovery:
+
+- five `sys.path.insert` lines — `scripts/project.py`, `scripts/seed_200.py`,
+  `scripts/write_three.py`, and both test files. The two tests needed
+  `parent.parent.parent`, not `parent.parent`: they sit one level deeper now.
+- the compose mount, `./kernel` -> `./components/kernel`. The container path
+  stays `/kernel`, so the Makefile's `-f /kernel/001_schema.sql` and the same
+  line in README.md needed no change.
+- `scripts/seed_200.py:47` reads `001_schema.sql` off disk to reset the
+  database. This is not a `sys.path` insert and was not in the item's list; the
+  first `make check` found it — tests were already green when replay died.
+
+The Makefile itself changed by nothing. `pytest tests` still collects, and the
+schema is applied through the container path.
+
+Also fixed, both stale paths broken by the move rather than tidying: the `Run:`
+comment in `001_schema.sql`, and the `002_guard_test.sql` reference in
+`test_append_only.py`'s docstring. Nine README references followed the files.
+
+Done condition: no `.py` or `.sql` at the root or directly under `tests/`;
+`components/` holds only `kernel`, which is in CLAUDE.md's table; `make check`
+exits 0 with 20 passed; `build/projection_a.txt` is 5334 bytes, unchanged;
+`git diff --cached --stat -M` renders all six moves as renames.
+
+Surprising: the byte-identical check caught nothing, because the one real break
+stopped the run before a projection was written. The 5334 bytes proved the move
+was complete, not that it was correct — `seed_200.py` failing loudly was worth
+more than the byte count.

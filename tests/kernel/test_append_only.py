@@ -1,6 +1,6 @@
 """The log is append-only, and the database is what enforces it.
 
-`kernel/002_guard_test.sql` proves this from psql. This file proves it from the
+`components/kernel/002_guard_test.sql` proves this from psql. This file proves it from the
 same client the rest of the code uses, so `pytest tests` covers it.
 
 Run: .venv/Scripts/python.exe -m pytest tests/test_append_only.py
@@ -12,7 +12,7 @@ from pathlib import Path
 import psycopg
 import pytest
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "kernel"))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "components" / "kernel"))
 
 from perform import connect, perform  # noqa: E402
 

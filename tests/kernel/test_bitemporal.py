@@ -26,7 +26,7 @@ from pathlib import Path
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "kernel"))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "components" / "kernel"))
 
 from perform import connect, perform  # noqa: E402
 from resolve import resolve_single  # noqa: E402

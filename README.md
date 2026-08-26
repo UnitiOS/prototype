@@ -21,7 +21,7 @@ means not re-discussed; it does not mean proven.
 
 **What the kernel must do:** one fact, corrected late, read at four
 combinations of valid time and record time, gives four correct and distinct
-answers. That is `test_four_reads` in `tests/test_bitemporal.py`. The
+answers. That is `test_four_reads` in `tests/kernel/test_bitemporal.py`. The
 parametrised table is the specification — if you read one thing after this
 file, read that.
 
@@ -62,7 +62,7 @@ is the same thing by hand, for when one step needs to be run alone.
 docker compose up -d                    # postgres:17 on host port 5433
 ```
 
-Apply the schema. `./kernel` is mounted read-only inside the container:
+Apply the schema. `./components/kernel` is mounted read-only inside the container:
 
 ```
 docker compose exec -T db psql -U uniti -d uniti -v ON_ERROR_STOP=1 \
@@ -79,7 +79,7 @@ python -m venv .venv
 ```
 
 Connection string comes from `UNITI_DSN`, defaulting to
-`postgresql://uniti:uniti@localhost:5433/uniti` (`kernel/perform.py`).
+`postgresql://uniti:uniti@localhost:5433/uniti` (`components/kernel/perform.py`).
 
 ```
 make replay
@@ -92,7 +92,7 @@ about. On a non-Windows machine change `PY` at the top of the `Makefile`.
 
 ## The three tables
 
-Column list in `kernel/001_schema.sql`. It is closed: a new column on
+Column list in `components/kernel/001_schema.sql`. It is closed: a new column on
 `assertion` for a business reason is a question for Fareza, not a commit.
 
 **`intent`** — one row per user action, not per field written. Who acted, when,
@@ -104,7 +104,7 @@ reference), the two timestamps, provenance, and `revokes`, which names an
 earlier row this one withdraws. A retraction is itself an assertion, so a row
 may carry no value at all — see the `value_exactly_one` constraint. Append-only
 is enforced by the database, not by convention: `kernel_deny()` triggers plus a
-`REVOKE` on UPDATE/DELETE/TRUNCATE. `tests/test_append_only.py` proves it.
+`REVOKE` on UPDATE/DELETE/TRUNCATE. `tests/kernel/test_append_only.py` proves it.
 
 **`entity`** — a registry of identity and nothing else: an id, when it was
 minted, and the intent that minted it. There is **no class column**, because
@@ -122,12 +122,12 @@ them — a restated rule drifts from the one it restates.
 | Question | Where the answer lives |
 |---|---|
 | Why does `as_of` exist? What is settled? | `DECISIONS.md` |
-| How is a read resolved — which row wins, and why that one? | docstring of `kernel/resolve.py` |
-| What may be written, and what is deliberately not validated? | docstring of `kernel/perform.py` |
-| What are the columns, constraints and append-only guards? | `kernel/001_schema.sql` |
+| How is a read resolved — which row wins, and why that one? | docstring of `components/kernel/resolve.py` |
+| What may be written, and what is deliberately not validated? | docstring of `components/kernel/perform.py` |
+| What are the columns, constraints and append-only guards? | `components/kernel/001_schema.sql` |
 | What must be true, exactly? | `tests/` — the tests are the spec |
-| What does a correction look like, versus a change? | `tests/test_bitemporal.py` fixtures |
-| Can I really not UPDATE a row? | `tests/test_append_only.py`, `kernel/002_guard_test.sql` |
+| What does a correction look like, versus a change? | `tests/kernel/test_bitemporal.py` fixtures |
+| Can I really not UPDATE a row? | `tests/kernel/test_append_only.py`, `components/kernel/002_guard_test.sql` |
 | What is undecided, or known-broken and left alone? | `OPEN.md` (typed `[T1]`/`[T2]`/`[T3]`) |
 | What does a projection look like, and why is it never stored? | `scripts/project.py` |
 | Where does the demo data come from? | `scripts/seed_200.py` (one RNG seed, deterministic) |

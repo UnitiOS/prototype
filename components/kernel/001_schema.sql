@@ -1,5 +1,5 @@
 -- Uniti kernel — three tables, closed column list.
--- Run: psql -f kernel/001_schema.sql
+-- Run: psql -f components/kernel/001_schema.sql
 -- Re-runnable: drops and recreates. PoC data is synthetic.
 
 BEGIN;

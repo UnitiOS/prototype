@@ -9,4 +9,4 @@ services:
     ports:
       - "5433:5432"
     volumes:
-      - ./kernel:/kernel:ro
+      - ./components/kernel:/kernel:ro

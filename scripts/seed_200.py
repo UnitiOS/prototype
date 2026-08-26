@@ -23,7 +23,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "kernel"))
+sys.path.insert(0, str(ROOT / "components" / "kernel"))
 
 from perform import connect, perform  # noqa: E402
 
@@ -44,7 +44,7 @@ def _days(n):
 
 def reset(conn):
     """Drop and recreate. PoC data is synthetic; this costs 30 seconds."""
-    schema = (ROOT / "kernel" / "001_schema.sql").read_text(encoding="utf-8")
+    schema = (ROOT / "components" / "kernel" / "001_schema.sql").read_text(encoding="utf-8")
     conn.autocommit = True
     with conn.cursor() as cur:
         cur.execute(schema)
