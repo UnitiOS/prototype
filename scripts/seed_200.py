@@ -159,6 +159,7 @@ def main():
             conn,
             actor_id="seed",
             action_name="mint_seed_entities",
+            ontology_version="v0",
             note="synthetic tutoring business, 200 assertions",
             occurred_at=EPOCH,
             recorded_at=EPOCH,
@@ -177,6 +178,7 @@ def main():
                 conn,
                 actor_id="seed",
                 action_name=row["action"],
+                ontology_version="v0",
                 occurred_at=recorded_at,
                 recorded_at=recorded_at,
                 assertions=[{

@@ -17,10 +17,6 @@ DSN = os.environ.get(
     "UNITI_DSN", "postgresql://uniti:uniti@localhost:5433/uniti"
 )
 
-# TODO: content hash of an ontology file, or "as of seq"? Open in OPEN.md (T3).
-# The column is NOT NULL, so it carries a constant until that is decided.
-ONTOLOGY_VERSION = "v0"
-
 _INTENT_SQL = """
 INSERT INTO intent (id, occurred_at, actor_id, agent_id,
                     action_name, reason_code, note)
@@ -60,6 +56,7 @@ def perform(
     *,
     actor_id,
     action_name,
+    ontology_version,
     mint=(),
     assertions=(),
     agent_id=None,
@@ -69,6 +66,10 @@ def perform(
     recorded_at=None,
 ):
     """Write one intent, its minted entities and its assertions.
+
+    `ontology_version` names the map version these facts were stated under.
+    It is required and has no default: the column is NOT NULL, and a default is
+    how a constant survived here from the first write until the map existed.
 
     `mint` is a sequence of labels; each mints one entity under this intent.
     Inside `assertions`, `subject`, `predicate` and `ref` may name one of those
@@ -124,7 +125,7 @@ def perform(
                         a["source"],
                         a.get("confidence"),
                         a.get("authority"),
-                        ONTOLOGY_VERSION,
+                        ontology_version,
                     ),
                 )
                 assertion_ids.append(assertion_id)

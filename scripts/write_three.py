@@ -17,6 +17,7 @@ def main():
             conn,
             actor_id="fareza",
             action_name="enrol_student",
+            ontology_version="v0",
             note="first write through perform()",
             mint=["alice", "cohort_a", "has_name", "member_of", "enrolled_on"],
             assertions=[

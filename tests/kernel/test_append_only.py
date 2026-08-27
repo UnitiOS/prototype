@@ -30,6 +30,7 @@ def written(conn):
         conn,
         actor_id="test",
         action_name="append_only_fixture",
+        ontology_version="v0",
         mint=["student", "monthly_fee"],
         assertions=[
             {

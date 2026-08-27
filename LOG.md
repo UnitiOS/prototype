@@ -693,3 +693,31 @@ for humans and the resolver never trusts it.*
 Left unguarded and written down here rather than fixed: two versions sharing a
 `sealed_at` fall back to filename order, because the sort is stable. Seals are
 sequential acts, so the collision needs two seals inside the same instant.
+
+## 2026-08-27 — `perform()` takes `ontology_version`, and the constant is gone
+
+Ran: `make check`.
+
+`ONTOLOGY_VERSION = "v0"` and its `# TODO` are deleted from
+`components/kernel/perform.py`. `ontology_version` is a keyword-only parameter
+with no default — omitting it raises `TypeError` at the call, not a NOT NULL
+violation in Postgres. Six call sites now pass `"v0"` explicitly: two in
+`scripts/seed_200.py`, one in `scripts/write_three.py`, one in
+`tests/kernel/test_append_only.py`, two in `tests/kernel/test_bitemporal.py`.
+The column in `001_schema.sql` is untouched; only the Python constant moved.
+
+`make check` exits 0. `build/projection_a.txt` is still **5334 bytes** and
+still identical twice in a row — the seed writes the same `"v0"` the constant
+wrote, so nothing about the recorded facts changed.
+
+Surprising, mildly: the done condition asks for **20 passed** and the run is
+**27 passed**. Nothing was skipped and no test was added here — the seven tests
+in `tests/ontology/` landed with the previous item, which was written after that
+number. The count is stale, not the condition. Note also that the ontology
+item's checkbox in `NEXT.md` is still `[ ]` although its code is committed at
+`b70075d`; Claude Code does not write that file.
+
+Not touched, in scope only by adjacency: the module docstring of `perform.py`
+still says slot-name validation "arrives with the ontology (NEXT item 5)" — a
+numbered stage reference that the named-stages decision killed. It is one line
+and belongs to whoever writes `seal`.

@@ -78,6 +78,7 @@ def _seed(conn, rows, mint=("student", "monthly_fee")):
         conn,
         actor_id="test",
         action_name="mint_bitemporal_fixture",
+        ontology_version="v0",
         mint=list(mint),
     )
     ids = []
@@ -91,6 +92,7 @@ def _seed(conn, rows, mint=("student", "monthly_fee")):
             conn,
             actor_id="test",
             action_name="seed_bitemporal_fixture",
+            ontology_version="v0",
             occurred_at=recorded_at,
             recorded_at=recorded_at,
             assertions=[{
