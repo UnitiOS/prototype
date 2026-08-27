@@ -960,3 +960,49 @@ the guard at all. The shape that does reach it is the one LinkML endorses,
 `value` plus a nested `annotations` block, which is exactly the shape an author
 following LinkML's own documentation would write. The guard is not defending
 against a typo; it is defending against correct LinkML.
+
+## 28 Aug — both stores emptied, and the test that depended on one
+
+`make check` · 41 passed · replay identical twice · `build/projection_a.txt`
+still 5334 bytes.
+
+**The test first, because it is why this is not a delete.**
+`test_business_holds_the_two_sealed_versions` called `resolve_version` against
+the real `business/` directory. What it was worth testing is that `resolve` can
+read what `seal` wrote — a seal-to-resolve integration, and the production map
+store was doing a fixture's job to prove it. The module already seals both
+fixture drafts into a `tmp_path_factory` directory, and those two differ on
+both axes: v1 valid from 1 Jan, sealed 1 Mar; v2 valid from 1 Feb, sealed
+1 Apr. So each axis can hide v2 on its own, and the replacement
+`test_resolve_reads_back_what_seal_wrote` walks four points through them —
+before the first seal (None), an `as_of` between the seals (v1), a `valid_at`
+before v2 takes effect (v1), and past both (v2, naming v1 as superseded). More
+coverage than the old test, no dependency on what `business/` happens to hold.
+Test count unchanged at 41: one out, one in.
+
+**`business/`.** `git rm business/v1.yaml business/v2.yaml`. Git deleted the
+directory with them — it tracks no empty directory — so a `.gitkeep` holds it
+open: `seal`'s default `--into` and the interview skill both write there by
+path, and a clean clone has to have somewhere to write. README said the store
+holds `v1.yaml` and `v2.yaml` today; it now says the store is empty and the
+first interview seals `v1.yaml` into it.
+
+**The working log.** 203 intents, 26 entities, 213 assertions at the default
+DSN — the 200 synthetic tutoring rows from before `make` owned its own
+database, plus the seals made while validating the last item. Emptied by
+re-applying `001_schema.sql` to it, which is the only way: the deny triggers
+refuse TRUNCATE as well as UPDATE and DELETE, so `DROP TABLE` is the sole
+route in. Zero rows in all three tables, and `make check` leaves them at zero —
+it runs entirely against `uniti_check`.
+
+Surprising, and only visible because the wipe was the moment to look: the two
+databases have not diverged at all. Before the drop, `uniti`'s indexes, check
+constraints, foreign keys and deny triggers matched `uniti_check` line for
+line — including `idx_assertion_resolve` with `recorded_at DESC` ahead of
+`seq DESC`, the index that moved when the tie-break moved. So re-applying the
+schema migrated nothing; it only wiped. The `make schema` line in `OPEN.md`
+warns that the working log is never migrated and the two will diverge silently.
+That is still true, and today's run is not evidence against it — it is a
+one-off, by hand, prompted by a task that happened to need the same command.
+The next schema change with real evidence in that database has no safe path:
+migration and destruction are the same `psql -f`.
