@@ -1,0 +1,8 @@
+id: https://uniti.example/business
+name: business
+version: v1
+annotations:
+  valid_from: 2026-01-01T00:00:00Z
+  sealed_at: 2026-01-01T09:00:00Z
+  supersedes: null
+  transcript: v1.txt

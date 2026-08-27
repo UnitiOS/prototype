@@ -1,0 +1,5 @@
+id: https://uniti.example/business
+name: business
+version: draft
+annotations:
+  valid_from: 2026-03-01T00:00:00Z

@@ -635,3 +635,61 @@ proves nothing.
 Surprising: the probe was aimed at whether `annotations` survive, and they did,
 everywhere, unasked. What nearly failed was the part assumed safe — the
 `slot_uri`, which a decision made today already depends on.
+
+---
+
+## 2026-08-27 · `ontology`: which version applies at (valid_at, as_of)
+
+Ran: `make check` — 27 passed (20 kernel, 7 new), replay identical twice at
+5334 bytes. The Makefile changed by nothing: `pytest tests` already collects
+`tests/ontology/`, and the new code imports `re`, `datetime` and `pathlib` and
+nothing else, so a clean clone's virtualenv — psycopg and pytest — still runs
+it. PyYAML is in `.venv` only because the LinkML probe dragged it in; reading
+four metadata keys with it would have made `make check` fail on a clean clone.
+
+`components/ontology/resolve.py`. A directory of `vN.yaml` in, one dict out, or
+`None`. The reader is a 20-line scan for top-level scalars and the immediate
+children of `annotations` — it skips anything nested deeper, which the
+`classes:` block in one fixture exercises.
+
+Two things the item did not name, both forced by what was already there:
+
+- **The two `resolve.py` files collide.** `components/kernel/resolve.py` is
+  imported as top-level `resolve` by the kernel tests. A matching
+  `sys.path.insert` for the ontology would return whichever pytest imported
+  first. The ontology test inserts `components/` instead and imports
+  `ontology.resolve` — a namespace package, no `__init__.py` added.
+- **`draft.yaml` sits in the same directory as the sealed versions** (the
+  2026-08-26 line on `business/`). The glob is `v*.yaml`, so a draft is never a
+  candidate. The `chain` fixture carries a draft with a `valid_from` and no
+  `sealed_at`: under a `*.yaml` glob it does not lose the resolution quietly,
+  it raises.
+
+Surprising: the rule is **not** the kernel's rule, though the decision says the
+map is read the way the log is. The kernel orders on max `valid_from` first and
+only then on record time; the map orders on `sealed_at` alone. With two
+fixtures the difference was invisible — ordering on `valid_from` passed all six
+tests, because in both of them the last-sealed version is also the
+latest-starting one. A third fixture (`reseal/`: v2 starts 1 Feb, v3 starts
+1 Jan and is sealed a month after v2) separates them, and only then does the
+clause carry its weight. A mutation pass over the finished file — drop either
+filter, order on `valid_from`, take the first candidate instead of the last,
+glob `*.yaml`, drop the empty-set `None` — fails at least one test in every
+case.
+
+The divergence is right, not a slip in the decision: a fact is one claim among
+many that vary across valid time, so the latest-starting one wins; a map
+version applies whole, so the later seal supersedes whatever period it claims.
+That is what makes a retroactive definition beat the one it supersedes.
+
+For whoever writes `seal`: this reads the version's own name from a **top-level
+`version:` key** inside the file, not from the filename — the 2026-08-26 line
+says ontology_version is written inside the file. `version` is LinkML's own
+schema slot, so it costs no annotation. A file carrying none is malformed and
+raises by name. Proposed wording, if it deserves a decision: *the version
+identifier is the schema's top-level `version`; the filename is a convenience
+for humans and the resolver never trusts it.*
+
+Left unguarded and written down here rather than fixed: two versions sharing a
+`sealed_at` fall back to filename order, because the sort is stable. Seals are
+sequential acts, so the collision needs two seals inside the same instant.
