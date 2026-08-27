@@ -816,3 +816,40 @@ exist. It is not this item's scope and belongs in `NEXT.md`.
 
 Taken from the previous entry's hand-off: `perform.py`'s docstring no longer
 points at "NEXT item 5" for slot-name validation; it points at `seal`.
+
+---
+
+## 2026-08-27 · T1 — does `required: true` beside `identifier: true` give a `minCount`
+
+**No.** Adding an explicit `required: true` next to `identifier: true` changes
+the `gen-shacl` output by nothing. Three throwaway one-class schemas written
+outside the repo and deleted, run through the `linkml` 1.11.1 already sitting in
+`.venv` from the 26 Aug probe; `linkml` is still not in the Makefile.
+
+- **A** — `batch_code: identifier: true`, plus a plain `quantity_on_hand:
+  required: true` as a control.
+- **B** — the same, with `required: true` added beside `identifier: true`.
+- **C** — B with `identifier: true` swapped for `key: true`.
+
+A and B are byte-identical modulo the schema id: `batch_code` gets
+`sh:maxCount 1` and no `sh:minCount`, while the control slot next to it gets
+both. C differs: `key: true` **does** emit `sh:minCount 1` on `batch_code`.
+
+`SchemaView.induced_slot("batch_code", "Batch").required` is `True` in all
+three, so the model is not the thing that differs — `gen-shacl` reads
+`identifier` and suppresses the `minCount` on purpose, and `required: true` is
+not an override. There is no flag involved; C proves the generator can emit the
+constraint and chooses not to for an identifier.
+
+`gen-sqltables` on B gives `batch_code TEXT NOT NULL` and `PRIMARY KEY
+(batch_code)`, unchanged from the 26 Aug run without the explicit `required`.
+
+So the gap named on 26 Aug stands and cannot be closed inside the map by saying
+`required: true`: a validator reading only the SHACL accepts an instance with no
+identifier. What does enforce it is the generated DDL — or `key: true`, at the
+cost of the slot no longer forming the instance URI, which is what the
+`uniti:uri` decision rests on. One line appended to `OPEN.md`, nothing fixed.
+
+Surprising: `key` and `identifier` are both `required` in the model, differ in
+one documented way — whether the value forms the URI — and disagree in the SHACL
+output about a constraint that has nothing to do with URIs.
