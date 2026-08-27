@@ -40,8 +40,9 @@ Nobody is "at" a stage, so this file does not claim one. What can be checked is
 which components exist. `CLAUDE.md` lists eight and says which stage each one
 serves; that table is not repeated here. **Three are built** — `kernel`,
 `ontology` and `seal`, one directory each under `components/`. Beside them sits
-`business/`, which is not code: it is one flat file per sealed map version,
-`v1.yaml` and `v2.yaml` today, written by `seal` and read by `ontology`.
+`business/`, which is not code: it is one flat file per sealed map version and
+its transcript beside it, written by `seal` and read by `ontology`. It is empty
+today — the first interview seals `v1.yaml` into it.
 
 If this file and `CLAUDE.md` ever disagree, `CLAUDE.md` is right.
 

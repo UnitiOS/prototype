@@ -6,8 +6,10 @@ Two fixture drafts describe the same ice cream shop twice. `draft_two` renames
 one of them under a new name, and brings one of its own.
 
 The seals land in a temporary directory rather than in `business/`: a test that
-wrote there would leave a v3 behind every time `make check` ran. What
-`business/` itself holds is checked separately, by reading it.
+wrote there would leave a v3 behind every time `make check` ran, and a test that
+merely read there would make the production map store a fixture. Nothing here
+touches `business/` — what the two seals prove is that `resolve` can read what
+`seal` wrote, and two files in a temp directory prove that better.
 
 Run: .venv/Scripts/python.exe -m pytest tests/seal -q
 """
@@ -28,8 +30,9 @@ from seal import URI_PREDICATE, DraftError, main, seal  # noqa: E402
 from seal import connect  # noqa: E402
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
-BUSINESS = ROOT / "business"
 
+# The two seals differ on both axes: v1 is valid from 1 Jan and sealed 1 Mar,
+# v2 valid from 1 Feb and sealed 1 Apr. So each axis can hide v2 on its own.
 SEALED_ONE = datetime(2026, 3, 1, 9, 0, tzinfo=timezone.utc)
 SEALED_TWO = datetime(2026, 4, 1, 9, 0, tzinfo=timezone.utc)
 BACKDATED = "2026-01-15T09:00:00Z"
@@ -87,10 +90,27 @@ def test_sealing_a_draft_twice_leaves_v1_and_v2(sealed):
     assert sorted(p.name for p in into.glob("*.yaml")) == ["v1.yaml", "v2.yaml"]
     assert (first["version"], second["version"]) == ("v1", "v2")
     assert second["supersedes"] == "v1"
-    # And the ontology component reads back what seal wrote.
-    winner = resolve_version(into, valid_at="2026-06-01T00:00:00Z",
-                             as_of="2026-06-01T00:00:00Z")
-    assert winner["version"] == "v2"
+
+
+def test_resolve_reads_back_what_seal_wrote(sealed):
+    """The seal-to-resolve join, across both axes and no store but this one."""
+    into, first, second = sealed
+    late = "2026-06-01T00:00:00Z"
+
+    def winner(valid_at, as_of):
+        return resolve_version(into, valid_at=valid_at, as_of=as_of)
+
+    # Before the first seal there is no map at all, which is not an error.
+    assert winner(late, "2026-02-01T00:00:00Z") is None
+    # Record time hides v2: it was sealed a month after this as_of.
+    assert winner(late, "2026-03-15T00:00:00Z")["version"] == first["version"]
+    # Valid time hides v2: it does not take effect until 1 Feb.
+    assert winner("2026-01-15T00:00:00Z", late)["version"] == first["version"]
+    # Past both seals on both axes: the later one wins, and names what it
+    # replaced — read out of the file, not out of what seal() returned.
+    latest = winner(late, late)
+    assert latest["version"] == second["version"]
+    assert latest["supersedes"] == first["version"]
 
 
 def test_every_assertion_from_one_seal_shares_the_sealed_at(conn, sealed):
@@ -221,16 +241,6 @@ def test_the_cli_seals_at_the_instant_it_is_given(conn, tmp_path):
     assert len([row for row in rows if row[1] == "human_stated"]) == 3
     assert len({row[2] for row in rows}) == 1
     assert {row[0] for row in rows} == {instant}
-
-
-def test_business_holds_the_two_sealed_versions():
-    """The repo's own map store, read the way every reader will read it."""
-    assert resolve_version(BUSINESS, valid_at="2026-06-01T00:00:00Z",
-                           as_of="2026-01-15T00:00:00Z") is None
-    winner = resolve_version(BUSINESS, valid_at="2026-06-01T00:00:00Z",
-                             as_of="2026-12-31T00:00:00Z")
-    assert winner["version"] == "v2"
-    assert winner["supersedes"] == "v1"
 
 
 def _counts(conn):
