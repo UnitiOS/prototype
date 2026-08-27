@@ -54,9 +54,12 @@ make check
 ```
 
 One command from a clean clone: virtualenv, schema, tests, and a replay that
-must come out byte-identical twice. It exits non-zero if either half fails, and
-**it resets the database** — see `make replay` below. The rest of this section
-is the same thing by hand, for when one step needs to be run alone.
+must come out byte-identical twice. It exits non-zero if either half fails.
+Every target in the `Makefile` runs against a **throwaway database**,
+`uniti_check`, created on the first run and wiped on every one — `make` resets
+what it owns and never touches the working log. The rest of this section is the
+same thing by hand, against the working database, for when one step needs to be
+run alone.
 
 ```
 docker compose up -d                    # postgres:17 on host port 5433
@@ -75,20 +78,22 @@ rewritten into a Windows one. The script drops and recreates: it is re-runnable.
 ```
 python -m venv .venv
 .venv/Scripts/python.exe -m pip install "psycopg[binary]" pytest linkml
-.venv/Scripts/python.exe -m pytest tests -q          # expect 36 passed
+.venv/Scripts/python.exe -m pytest tests -q          # expect 41 passed
 ```
 
 Connection string comes from `UNITI_DSN`, defaulting to
 `postgresql://uniti:uniti@localhost:5433/uniti` (`components/kernel/perform.py`).
+That default is the working log. The `Makefile` overrides it with `uniti_check`
+for everything it runs, so a sealed version survives any number of checks.
 
 ```
 make replay
 ```
 
 Seeds 200 synthetic assertions, builds the same projection twice from the log
-and checks the two files are byte-identical. **It resets the database first** —
-harmless, the data is synthetic, but do not run it against anything you care
-about. On a non-Windows machine change `PY` at the top of the `Makefile`.
+and checks the two files are byte-identical. **It resets `uniti_check` first**;
+run `scripts/seed_200.py` directly and it resets whatever `UNITI_DSN` names
+instead. On a non-Windows machine change `PY` at the top of the `Makefile`.
 
 ## The three tables
 

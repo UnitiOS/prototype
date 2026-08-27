@@ -6,6 +6,14 @@ PY  := .venv/Scripts/python.exe
 OUT := build
 DC  := docker compose
 
+# `make check` must not destroy evidence. `schema` drops and recreates the three
+# tables and `replay` reseeds on top, so anything this file runs is run against a
+# throwaway database — created if absent, wiped on every run. The working log is
+# the default database in components/kernel/perform.py and is reached by running
+# the scripts directly, never through make.
+CHECK_DB := uniti_check
+export UNITI_DSN := postgresql://uniti:uniti@localhost:5433/$(CHECK_DB)
+
 .PHONY: check venv schema test replay
 
 # The one command: environment, schema, tests, and a replay that must come out
@@ -20,16 +28,20 @@ $(PY):
 	$(PY) -m pip install --quiet --upgrade pip
 	$(PY) -m pip install --quiet "psycopg[binary]" pytest linkml
 
-# Bring the database up if it is not, wait for it to accept connections, then
-# apply the schema. 001_schema.sql drops and recreates: it is re-runnable.
+# Bring the server up if it is not, wait for it to accept connections, create the
+# throwaway database if this is the first run, then apply the schema to it.
+# 001_schema.sql drops and recreates: it is re-runnable.
 schema:
 	$(DC) up -d
-	@n=0; until $(DC) exec -T db pg_isready -U uniti -d uniti >/dev/null 2>&1; do \
+	@n=0; until $(DC) exec -T db pg_isready -U uniti -d postgres >/dev/null 2>&1; do \
 	    n=$$((n+1)); \
 	    if [ $$n -ge 60 ]; then echo "database not ready after 60s"; exit 1; fi; \
 	    sleep 1; \
 	done
-	MSYS_NO_PATHCONV=1 $(DC) exec -T db psql -U uniti -d uniti \
+	@$(DC) exec -T db psql -U uniti -d postgres -tAc \
+	    "SELECT 1 FROM pg_database WHERE datname = '$(CHECK_DB)'" | grep -q 1 \
+	    || $(DC) exec -T db createdb -U uniti $(CHECK_DB)
+	MSYS_NO_PATHCONV=1 $(DC) exec -T db psql -U uniti -d $(CHECK_DB) \
 	    -v ON_ERROR_STOP=1 -f /kernel/001_schema.sql
 
 test: venv
