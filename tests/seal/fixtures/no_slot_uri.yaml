@@ -1,0 +1,10 @@
+id: https://uniti.example/business
+name: business
+title: Valid LinkML, but one slot has no identity
+slots:
+  freezer_label:
+    slot_uri: uniti:freezer_label
+  freezer_location:
+    description: No slot_uri, so nothing in the log can point at it.
+annotations:
+  valid_from: '2026-01-01T00:00:00Z'

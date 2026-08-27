@@ -18,7 +18,7 @@ venv: $(PY)
 $(PY):
 	python -m venv .venv
 	$(PY) -m pip install --quiet --upgrade pip
-	$(PY) -m pip install --quiet "psycopg[binary]" pytest
+	$(PY) -m pip install --quiet "psycopg[binary]" pytest linkml
 
 # Bring the database up if it is not, wait for it to accept connections, then
 # apply the schema. 001_schema.sql drops and recreates: it is re-runnable.

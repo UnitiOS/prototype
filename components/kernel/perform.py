@@ -5,7 +5,8 @@ and N `assertion` rows, in one transaction. Nothing here judges the facts:
 the log stores what was said, not what it means.
 
 Validation is deliberately absent. The check constraints in 001_schema.sql are
-the only gate; slot-name validation arrives with the ontology (NEXT item 5).
+the only gate; a fact's predicate is checked against the map by `seal`, before
+it ever reaches here.
 """
 
 import os

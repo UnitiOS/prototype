@@ -1,0 +1,46 @@
+id: https://uniti.example/business
+name: business
+title: Ice cream inventory
+description: What the shop holds, where it holds it, and what it made.
+prefixes:
+  linkml: https://w3id.org/linkml/
+  uniti: https://uniti.example/business/
+default_prefix: uniti
+imports:
+  - linkml:types
+default_range: string
+classes:
+  Freezer:
+    description: A cabinet stock is held in.
+    slots:
+      - freezer_label
+      - freezer_location
+  Batch:
+    description: One production run of one flavour.
+    slots:
+      - batch_code
+      - batch_flavour
+slots:
+  freezer_label:
+    slot_uri: uniti:freezer_label
+    description: What the staff call this freezer.
+  freezer_location:
+    slot_uri: uniti:freezer_location
+    description: Where in the shop it stands.
+  batch_code:
+    slot_uri: uniti:batch_code
+    identifier: true
+  batch_flavour:
+    slot_uri: uniti:batch_flavour
+annotations:
+  valid_from: '2026-01-01T00:00:00Z'
+  facts:
+    - subject: uniti:freezer_a
+      predicate: uniti:freezer_label
+      value: Freezer A
+    - subject: uniti:freezer_a
+      predicate: uniti:freezer_location
+      value: Front of shop
+    - subject: uniti:freezer_b
+      predicate: uniti:freezer_label
+      value: Freezer B

@@ -1,0 +1,43 @@
+id: https://uniti.example/business
+name: business
+version: v2
+title: Ice cream inventory
+description: A second pass. One slot is renamed and one is new.
+prefixes:
+  linkml: https://w3id.org/linkml/
+  uniti: https://uniti.example/business/
+default_prefix: uniti
+imports:
+- linkml:types
+default_range: string
+classes:
+  Freezer:
+    description: A cabinet stock is held in.
+    slots:
+    - freezer_label
+    - freezer_place
+  Batch:
+    description: One production run of one flavour.
+    slots:
+    - batch_code
+    - batch_flavour
+    - batch_litres
+slots:
+  freezer_label:
+    slot_uri: uniti:freezer_label
+    description: What the staff call this freezer.
+  freezer_place:
+    slot_uri: uniti:freezer_location
+    description: Renamed from freezer_location. The slot_uri does not move.
+  batch_code:
+    slot_uri: uniti:batch_code
+    identifier: true
+  batch_flavour:
+    slot_uri: uniti:batch_flavour
+  batch_litres:
+    slot_uri: uniti:batch_litres
+    description: How much came out of the run.
+annotations:
+  valid_from: '2026-02-01T00:00:00+00:00'
+  sealed_at: '2026-08-27T10:35:47.348973+00:00'
+  supersedes: v1

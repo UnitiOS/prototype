@@ -13,14 +13,13 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
 
 ## T3 — discuss to a conclusion
 
-- Valid-time model for the ontology: how "what shrinkage meant in March" is
-  answered now that rules live in the map, not the log · blocks: ontology store
+- Valid-time model for the ontology — closed 26 Aug. Left as a line only so the
+  seal tool is written against the decisions, not re-derived · blocks: -
+- Does the diff attribute a difference to the individual rule that moved, or is
+  data-vs-definition decomposition enough for the PoC · blocks: report + diff
 - The shape of a derived rule inside `annotations` — SQL, a narrow declarative
   aggregate, or both with a sentence. Decided from real stated rules, not before
   · blocks: generator
-- Does graph review read the chatbot's draft or the committed ontology? Reading
-  the draft gives it a second consumer and it stops being internal · blocks:
-  interview chatbot
 - Does graph review need competency questions written by someone other than the
   ontology's author, plus one deliberately wrong concept — now that "every
   predicate in the log exists in the ontology" is a query · blocks: graph review
@@ -68,5 +67,19 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
 - Which stated rules become ontology structure and which become derived rules —
   a modelling choice the LLM makes and we measure, not one we settle first
   · blocks: -
+- Does an explicit `required: true` next to `identifier: true` make `gen-shacl`
+  emit a `minCount`? Today an identifier is required in the model and carries
+  none, so a SHACL-only validator accepts a batch with no code · blocks:
+  generator
+- Where the class/individual line falls in real speech — "12 flavours" splits
+  cleanly into a class in the map and individuals in the log, but "Freezer A"
+  and "wholesale customer" do not. Observed in the first interview, not settled
+  before it · blocks: -
+- Who authors an individual's URI — the chatbot inventing `uniti:freezer_a`, or
+  the value of the class's identifier slot. `seal` takes whatever the draft
+  says and registers it; nothing yet says where it should come from · blocks: -
+- `business/` holds sealed versions naming entities the kernel no longer holds:
+  `make replay` resets the log on every check, so the map store and the log
+  fall out of step by design · blocks: -
 - Webapp framework for the generated forms · blocks: -
 - Chatbot split into authoring and query, or merged behind one MCP · blocks: -

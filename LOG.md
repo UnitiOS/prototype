@@ -721,3 +721,98 @@ Not touched, in scope only by adjacency: the module docstring of `perform.py`
 still says slot-name validation "arrives with the ontology (NEXT item 5)" — a
 numbered stage reference that the named-stages decision killed. It is one line
 and belongs to whoever writes `seal`.
+
+---
+
+## 2026-08-27 · `seal`: a draft becomes a version
+
+Ran: `make check` — **35 passed** (27 before, 8 new in `tests/seal/`), replay
+identical twice at **5334 bytes**. Confirmed the two items this one depends on
+were green before starting: `make check` at 27 passed, and `ontology_version` a
+keyword-only parameter of `perform()` with no default.
+
+`linkml` is now in the Makefile's venv target, as the item said. Verified by
+building a throwaway virtualenv from that line alone —
+`pip install "psycopg[binary]" pytest linkml` — and importing `psycopg`,
+`pytest`, `yaml` and `linkml_runtime.SchemaView` from it. `linkml` pulls
+`linkml-runtime` and PyYAML in with it, so `seal` needs no second line.
+
+`components/seal/seal.py`, one file, plus four fixture drafts and one test
+file. The CLI writes `business/vN.yaml` and exits 2 on a draft it will not
+seal. Sealed the two fixture drafts into `business/` for real: `business/v1.yaml`
+and `business/v2.yaml` are committed.
+
+**Validation** is `SchemaView(text)` and nothing more, which is what the item
+asked for. Probed what that catches: malformed YAML, a missing `id`, a missing
+`name`, and any key the metamodel does not know (`TypeError` out of
+`SchemaDefinition.__init__`). It does **not** catch a class naming a slot that
+is not defined, or a range that is not a type — those load clean. That is the
+line between parsing and resolving, and the generator will meet the second half.
+
+Four things the item did not name, decided to keep going rather than to sit:
+
+- **Where a fact is stated.** LinkML has no place for instance data in a
+  schema, and it refuses unknown top-level keys, so the only hatch is
+  `annotations`. Facts sit in `annotations.facts` as a list of three-key
+  mappings — `subject`, `predicate`, `value`. Probed first that a nested list
+  of mappings survives `SchemaView`: it does, and comes back as plain `list`
+  and `dict`, not `JsonObj`.
+- **Facts are stripped from the sealed version.** The map holds the logic, the
+  log holds the history — a fact left in `vN.yaml` is a fact living outside the
+  log. `v1.yaml` therefore contains no `facts` block, and the test asserts it.
+- **Identity is a URI, registered by an assertion.** `entity` has no name
+  column, so "the entity for `uniti:freezer_label`" has to be a fact like
+  everything else. One well-known predicate, `uniti:uri`, registers every URI —
+  and registers itself, one row whose subject, predicate and value all name
+  `uniti:uri`. One query then finds every entity the map has ever named:
+  `WHERE predicate_id = (SELECT subject_id FROM assertion WHERE subject_id =
+  predicate_id AND value_literal = 'uniti:uri')`. On an empty log the subquery
+  is NULL, the outer filter matches nothing, and the bootstrap row is minted by
+  that same seal — no special case in the code.
+- **An explicit `slot_uri` is mandatory.** A slot without one has no identity a
+  fact can point at, and a derived URI would move on every rename. `seal`
+  refuses the draft by slot name.
+
+Sources: minted registry rows carry `system_derived` (the tool's act), stated
+facts carry `human_stated` (the interviewee's).
+
+Proposed wordings, if these deserve `DECISIONS.md` lines:
+
+- *Facts stated in an interview live in the draft's `annotations.facts`, and are
+  stripped from the sealed version. LinkML has no home for instance data and no
+  other extension point; keeping them in the sealed file would put facts outside
+  the log.*
+- *An entity's identity in the kernel is a URI, recorded as an assertion under
+  the well-known predicate `uniti:uri`, which registers itself. A predicate's
+  URI is its LinkML `slot_uri`. `entity` has no name column, so a registry that
+  is not an assertion would be a fourth store.*
+- *`seal` refuses a draft in which any top-level slot declares no `slot_uri`.
+  A skill can ask for one; only `seal` can guarantee it.*
+
+Done condition, item by item: sealing a fixture draft twice leaves `v1.yaml` and
+`v2.yaml` with `supersedes: v1` on the second; every assertion from one seal
+shares one `recorded_at`, equal to that version's stamped `sealed_at`;
+`uniti:freezer_label` and `uniti:freezer_location` each resolve to exactly one
+entity across both seals — the second draft renames `freezer_location` to
+`freezer_place` and keeps its `slot_uri`, and the entity does not move; facts
+carry 2026-01-01 and 2026-02-01, not the seal instant; an invalid draft leaves
+the three table counts and the target directory untouched; `make check` exits 0.
+
+Surprising: the second real seal into `business/` minted **zero** entities. The
+registry had been filled by an earlier run of the same command, so idempotency
+by URI worked across two processes and a deleted pair of files without anything
+being written to hold it — which is the point, but it is unsettling to watch a
+seal record five facts and mint nothing.
+
+Also surprising, and closed rather than left open: the ontology resolver's
+annotation reader is shallow but not depth-limited — it takes any `key: value`
+line under `annotations:` at any indent. A fact key called `valid_from` would
+have been read as version metadata. `seal` rejecting any fact key outside
+`subject/predicate/value` closes it; a future nested annotation block reopens it.
+
+Not touched: `README.md` still calls `kernel` the only component built, which
+two items ago was a done condition and is now false — `ontology` and `seal` both
+exist. It is not this item's scope and belongs in `NEXT.md`.
+
+Taken from the previous entry's hand-off: `perform.py`'s docstring no longer
+points at "NEXT item 5" for slot-name validation; it points at `seal`.
