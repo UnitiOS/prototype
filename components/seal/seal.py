@@ -33,11 +33,21 @@ registers itself — one row whose subject, predicate and value all name the sam
 thing — so a single query finds every entity the map has ever named, and a
 second seal reuses them instead of minting twins.
 
+The draft also names its transcript, relative to its own directory:
+
+    annotations:
+      transcript: draft.txt
+
+That file is evidence and is required. It lands beside the version as `vN.txt`
+and the sealed annotation is rewritten to match, so a sealed version and the
+conversation that produced it are found together.
+
 Run: .venv/Scripts/python.exe components/seal/seal.py business/draft.yaml --actor fareza
 """
 
 import argparse
 import re
+import shutil
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -59,6 +69,10 @@ URI_PREDICATE = "uniti:uri"
 # unknown key here would also be read as version metadata by the ontology
 # resolver, which scans the annotations block shallowly.
 FACT_KEYS = ("subject", "predicate", "value")
+
+# The four keys seal stamps itself. Whatever a draft says under them is
+# replaced, so `_sealed_document` carries neither them nor `facts` across.
+STAMPED = ("valid_from", "sealed_at", "supersedes", "transcript")
 
 # Minting is the tool's act; the facts are the interviewee's.
 MINT_SOURCE = "system_derived"
@@ -171,6 +185,55 @@ def _valid_from(annotations, name):
     return _utc(stated)
 
 
+def _flat(annotations, name):
+    """Every annotation that travels into the sealed file is a scalar.
+
+    `components/ontology/resolve.py` reads the annotations block with a scanner
+    that tracks no depth: it enters the block at an indent-zero `annotations:`
+    and leaves it at the next indent-zero key, so every `key: value` line
+    between them is read as version metadata whatever it is nested under. A
+    mapping under `annotations` therefore leaks its own keys upward, and a
+    nested `valid_from`, `sealed_at`, `supersedes` or `transcript` silently
+    replaces the real one — the wrong version resolves and nothing complains.
+
+    The guard sits here rather than in the scanner because this is where the
+    sealed file is decided, and a sealed version is never edited afterwards.
+    `facts` is exempt by construction: it is stripped before the file is
+    written, so its nested keys never reach a reader. Slot-level annotations
+    are untouched — the scanner never enters them.
+    """
+    for key, value in annotations.items():
+        if key == "facts":
+            continue
+        if isinstance(value, (dict, list)):
+            raise DraftError(
+                f"{name}: annotations.{key} is a {type(value).__name__}, and every "
+                f"annotation carried into a sealed version must be a scalar — a "
+                f"nested block leaks its keys into the version metadata"
+            )
+
+
+def _transcript(annotations, draft_path, name):
+    """The transcript file this draft was produced by. Evidence, and required.
+
+    Named relative to the draft's own directory. A conversation that was not
+    saved cannot be recovered later, so a missing one is refused rather than
+    warned about: under the map/log split the conversation lands nowhere else,
+    and "why does the map say this" would be answerable only from a chat window
+    nobody can search.
+    """
+    stated = annotations.get("transcript")
+    if not stated:
+        raise DraftError(
+            f"{name}: annotations declare no transcript, so nothing records the "
+            f"conversation this map came from"
+        )
+    path = draft_path.parent / str(stated)
+    if not path.is_file():
+        raise DraftError(f"{name}: names transcript {stated!r}, which is not a file")
+    return path
+
+
 def _next_version(into):
     """The next version number, and the version it supersedes.
 
@@ -199,7 +262,7 @@ def _sealed_document(draft, version, valid_from, sealed_at, supersedes):
     carried = {
         key: value
         for key, value in annotations.items()
-        if key not in ("facts", "valid_from", "sealed_at", "supersedes")
+        if key not in ("facts",) + STAMPED
     }
     # `version` sits next to `name`, where a reader looks for it, rather than
     # wherever appending a key happens to put it.
@@ -213,6 +276,9 @@ def _sealed_document(draft, version, valid_from, sealed_at, supersedes):
         "valid_from": valid_from.isoformat(),
         "sealed_at": sealed_at.isoformat(),
         "supersedes": supersedes,
+        # Rewritten, not carried: the transcript is about to sit beside this
+        # file under the version's own name.
+        "transcript": f"{version}.txt",
         **carried,
     }
     return document
@@ -239,6 +305,8 @@ def seal(conn, draft_path, *, actor_id, into=None, sealed_at=None):
     facts = _facts(annotations, slot_uris, draft_path.name)
 
     valid_from = _valid_from(annotations, draft_path.name)
+    _flat(annotations, draft_path.name)
+    transcript = _transcript(annotations, draft_path, draft_path.name)
 
     number, supersedes = _next_version(into)
     version = f"v{number}"
@@ -249,13 +317,20 @@ def seal(conn, draft_path, *, actor_id, into=None, sealed_at=None):
     _validate(sealed_text, f"{version}.yaml")
 
     path = into / f"{version}.yaml"
-    if path.exists():
-        raise DraftError(f"{path} already exists — a sealed version is never rewritten")
+    transcript_path = into / f"{version}.txt"
+    for existing in (path, transcript_path):
+        if existing.exists():
+            raise DraftError(
+                f"{existing} already exists — a sealed version is never rewritten"
+            )
 
     # The version file first: a write that fails after this leaves an orphan
     # version, which is harmless, rather than assertions naming a version that
-    # was never written.
+    # was never written. The transcript goes ahead of it, so no version file
+    # ever names evidence that is not beside it. It is copied, not moved: the
+    # draft it belongs to is left exactly as it was found.
     into.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(transcript, transcript_path)
     path.write_text(sealed_text, encoding="utf-8", newline="\n")
 
     with conn.cursor() as cur:
@@ -307,6 +382,7 @@ def seal(conn, draft_path, *, actor_id, into=None, sealed_at=None):
     return {
         "version": version,
         "path": path,
+        "transcript": transcript_path,
         "valid_from": valid_from,
         "sealed_at": sealed_at,
         "supersedes": supersedes,
@@ -322,16 +398,38 @@ def main(argv=None):
     parser.add_argument("draft", help="path to the draft, e.g. business/draft.yaml")
     parser.add_argument("--actor", required=True, help="who is sealing")
     parser.add_argument("--into", default=None, help="version directory, default business/")
+    # A dated episode is sealed at the instant it belongs to, not at the
+    # instant it is replayed: seal() has taken sealed_at since it was written,
+    # and without this the only caller that can pass one is a test.
+    parser.add_argument(
+        "--sealed-at",
+        default=None,
+        metavar="INSTANT",
+        help="ISO 8601 instant this seal is recorded at, default now",
+    )
     args = parser.parse_args(argv)
 
     try:
+        sealed_at = _utc(args.sealed_at) if args.sealed_at else None
+    except ValueError as exc:
+        print(f"not sealed: --sealed-at is not an instant — {exc}", file=sys.stderr)
+        return 2
+
+    try:
         with connect() as conn:
-            result = seal(conn, args.draft, actor_id=args.actor, into=args.into)
+            result = seal(
+                conn,
+                args.draft,
+                actor_id=args.actor,
+                into=args.into,
+                sealed_at=sealed_at,
+            )
     except DraftError as exc:
         print(f"not sealed: {exc}", file=sys.stderr)
         return 2
 
     print(f"sealed  {result['path']}  ({result['version']})")
+    print(f"transcript {result['transcript']}")
     print(f"valid from {result['valid_from'].isoformat()}")
     print(f"sealed at  {result['sealed_at'].isoformat()}")
     print(

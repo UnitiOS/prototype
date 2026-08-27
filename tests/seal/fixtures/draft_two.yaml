@@ -37,6 +37,7 @@ slots:
     slot_uri: uniti:batch_litres
     description: How much came out of the run.
 annotations:
+  transcript: draft_two.txt
   valid_from: '2026-02-01T00:00:00Z'
   facts:
     - subject: uniti:freezer_a

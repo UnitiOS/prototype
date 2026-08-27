@@ -33,6 +33,7 @@ slots:
   batch_flavour:
     slot_uri: uniti:batch_flavour
 annotations:
+  transcript: draft_one.txt
   valid_from: '2026-01-01T00:00:00Z'
   facts:
     - subject: uniti:freezer_a

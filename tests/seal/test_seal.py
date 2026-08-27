@@ -23,8 +23,8 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT / "components" / "seal"))
 sys.path.insert(0, str(ROOT / "components"))
 
-from ontology.resolve import resolve_version  # noqa: E402
-from seal import URI_PREDICATE, DraftError, seal  # noqa: E402
+from ontology.resolve import load_versions, resolve_version  # noqa: E402
+from seal import URI_PREDICATE, DraftError, main, seal  # noqa: E402
 from seal import connect  # noqa: E402
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
@@ -32,6 +32,7 @@ BUSINESS = ROOT / "business"
 
 SEALED_ONE = datetime(2026, 3, 1, 9, 0, tzinfo=timezone.utc)
 SEALED_TWO = datetime(2026, 4, 1, 9, 0, tzinfo=timezone.utc)
+BACKDATED = "2026-01-15T09:00:00Z"
 
 
 @pytest.fixture(scope="module")
@@ -158,6 +159,70 @@ def test_a_draft_without_a_valid_from_is_refused(conn, tmp_path):
     assert _counts(conn) == before
 
 
+def test_the_transcript_lands_beside_its_version(sealed):
+    into, first, second = sealed
+    for result, draft in ((first, "draft_one.txt"), (second, "draft_two.txt")):
+        landed = into / f"{result['version']}.txt"
+        assert result["transcript"] == landed
+        assert landed.read_text(encoding="utf-8") == (
+            FIXTURES / draft).read_text(encoding="utf-8")
+        # The sealed annotation names the copy, not the draft it came from.
+        assert _annotations(result["path"])["transcript"] == landed.name
+        # And the draft's own transcript is still where the interview left it.
+        assert (FIXTURES / draft).is_file()
+
+
+def test_a_draft_with_no_transcript_is_refused(conn, tmp_path):
+    before = _counts(conn)
+    with pytest.raises(DraftError, match="transcript"):
+        seal(conn, FIXTURES / "no_transcript.yaml", actor_id="test", into=tmp_path)
+    assert list(tmp_path.iterdir()) == []
+    assert _counts(conn) == before
+
+
+def test_a_transcript_that_is_not_there_is_refused(conn, tmp_path):
+    before = _counts(conn)
+    with pytest.raises(DraftError, match="never_written.txt"):
+        seal(conn, FIXTURES / "missing_transcript.yaml", actor_id="test", into=tmp_path)
+    assert list(tmp_path.iterdir()) == []
+    assert _counts(conn) == before
+
+
+def test_a_mapping_nested_under_annotations_is_refused(conn, tmp_path):
+    """The leak this guards: the version resolver's scanner tracks no depth."""
+    before = _counts(conn)
+    with pytest.raises(DraftError, match="session"):
+        seal(conn, FIXTURES / "nested_annotation.yaml", actor_id="test", into=tmp_path)
+    assert list(tmp_path.iterdir()) == []
+    assert _counts(conn) == before
+
+
+def test_the_cli_seals_at_the_instant_it_is_given(conn, tmp_path):
+    """A dated episode: `--sealed-at` reaches both stores or neither."""
+    before = _max_seq(conn)
+    code = main([str(FIXTURES / "draft_one.yaml"), "--actor", "test",
+                 "--into", str(tmp_path), "--sealed-at", BACKDATED])
+    assert code == 0
+
+    instant = datetime.fromisoformat(BACKDATED)
+    version = load_versions(tmp_path)[0]
+    assert version["sealed_at"] == instant
+    assert version["valid_from"] < instant
+
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT recorded_at, source, intent_id FROM assertion "
+            "WHERE seq > %s ORDER BY seq",
+            (before,),
+        )
+        rows = cur.fetchall()
+    # How many URIs this seal had to mint depends on what the log already
+    # holds, but the three stated facts are its own, and one seal is one intent.
+    assert len([row for row in rows if row[1] == "human_stated"]) == 3
+    assert len({row[2] for row in rows}) == 1
+    assert {row[0] for row in rows} == {instant}
+
+
 def test_business_holds_the_two_sealed_versions():
     """The repo's own map store, read the way every reader will read it."""
     assert resolve_version(BUSINESS, valid_at="2026-06-01T00:00:00Z",
@@ -177,8 +242,17 @@ def _counts(conn):
         return cur.fetchone()
 
 
+def _max_seq(conn):
+    with conn.cursor() as cur:
+        cur.execute("SELECT coalesce(max(seq), 0) FROM assertion")
+        return cur.fetchone()[0]
+
+
+def _annotations(path):
+    """The sealed file's own annotations block."""
+    return yaml.safe_load(path.read_text(encoding="utf-8"))["annotations"]
+
+
 def _stamped(path, key):
     """One metadata scalar, read out of the sealed file itself."""
-    return datetime.fromisoformat(
-        yaml.safe_load(path.read_text(encoding="utf-8"))["annotations"][key]
-    )
+    return datetime.fromisoformat(_annotations(path)[key])

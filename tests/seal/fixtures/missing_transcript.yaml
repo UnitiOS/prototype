@@ -1,0 +1,9 @@
+id: https://uniti.example/business
+name: business
+title: Names a transcript that is not there
+slots:
+  freezer_label:
+    slot_uri: uniti:freezer_label
+annotations:
+  transcript: never_written.txt
+  valid_from: '2026-01-01T00:00:00Z'

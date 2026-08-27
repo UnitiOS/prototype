@@ -1,0 +1,15 @@
+id: https://uniti.example/business
+name: business
+title: Valid LinkML whose nested annotation leaks into the version metadata
+slots:
+  freezer_label:
+    slot_uri: uniti:freezer_label
+    annotations:
+      stated_rule: slot-level annotations are none of the scanner's business
+annotations:
+  transcript: draft_one.txt
+  valid_from: '2026-01-01T00:00:00Z'
+  session:
+    value: the second interview
+    annotations:
+      valid_from: '2020-01-01T00:00:00Z'
