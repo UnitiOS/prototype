@@ -878,3 +878,25 @@ a draft nobody had written.
 
 Surprising: nothing. The refusal cost four lines of code and the branch it
 replaced was dead in every test that existed.
+
+## 2026-08-27 · README describes what is built now
+
+`make check` — 36 passed, replay identical twice, 5334 bytes.
+
+README still named seven components under their old descriptive names
+(`ontology store`, `interview chatbot`, `graph exporter`, `report + diff`,
+`agent MCP`) and called `kernel` the only one built. It now says three are
+built — `kernel`, `ontology`, `seal`, one directory each under `components/` —
+and that `business/` beside them holds one file per sealed version. The
+component table itself stays in `CLAUDE.md`; README says how many rows it has
+and which of them exist, not what they do.
+
+Two rows added to the "which file answers which question" table, pointing at
+`components/ontology/resolve.py` and `components/seal/seal.py` docstrings. Two
+stale facts in "Run it" corrected: the by-hand pytest line said 20 passed, and
+the by-hand pip line did not install `linkml`, which `seal` imports — so the
+Makefile path worked and the path README described did not.
+
+Surprising: nothing in the wording drifted, only the counts. The file had no
+copy of a rule that lives elsewhere to go stale — the stale things were all
+inventories: how many components, how many tests, which packages.

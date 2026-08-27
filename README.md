@@ -37,11 +37,11 @@ what each one means and which of them can kill the premise, and `DECISIONS.md`
 says why they are named and never numbered.
 
 Nobody is "at" a stage, so this file does not claim one. What can be checked is
-which components exist. There are seven — `kernel`, `ontology store`,
-`interview chatbot`, `graph exporter`, `generator`, `report + diff` and
-`agent MCP` — and **only `kernel` is built**. It is what this repo holds.
-Which component serves which stage is a table in `CLAUDE.md` and is not
-repeated here.
+which components exist. `CLAUDE.md` lists eight and says which stage each one
+serves; that table is not repeated here. **Three are built** — `kernel`,
+`ontology` and `seal`, one directory each under `components/`. Beside them sits
+`business/`, which is not code: it is one flat file per sealed map version,
+`v1.yaml` and `v2.yaml` today, written by `seal` and read by `ontology`.
 
 If this file and `CLAUDE.md` ever disagree, `CLAUDE.md` is right.
 
@@ -74,8 +74,8 @@ rewritten into a Windows one. The script drops and recreates: it is re-runnable.
 
 ```
 python -m venv .venv
-.venv/Scripts/python.exe -m pip install "psycopg[binary]" pytest
-.venv/Scripts/python.exe -m pytest tests -q          # expect 20 passed
+.venv/Scripts/python.exe -m pip install "psycopg[binary]" pytest linkml
+.venv/Scripts/python.exe -m pytest tests -q          # expect 36 passed
 ```
 
 Connection string comes from `UNITI_DSN`, defaulting to
@@ -123,6 +123,8 @@ them — a restated rule drifts from the one it restates.
 |---|---|
 | Why does `as_of` exist? What is settled? | `DECISIONS.md` |
 | How is a read resolved — which row wins, and why that one? | docstring of `components/kernel/resolve.py` |
+| Which map version applies at a `(valid_at, as_of)`? | docstring of `components/ontology/resolve.py` |
+| What turns a draft into a sealed version, and what is refused? | docstring of `components/seal/seal.py` |
 | What may be written, and what is deliberately not validated? | docstring of `components/kernel/perform.py` |
 | What are the columns, constraints and append-only guards? | `components/kernel/001_schema.sql` |
 | What must be true, exactly? | `tests/` — the tests are the spec |
@@ -143,12 +145,12 @@ the same slot — written down rather than patched.
 
 ## Not built
 
-Two different reasons, and they are not interchangeable. The `generator` and
-the `agent MCP` are components this lap needs and does not have yet; they
-arrive with the stages that need them. Everything on the stop-list in
-`CLAUDE.md` is reasonable and still not built, because nothing there is needed
-to find out whether this works, and four previous projects died of building it
-first.
+Two different reasons, and they are not interchangeable. The `interview` skill,
+the `generator`, the `report` harness and the `agent` MCP are components this
+lap needs and does not have yet; they arrive with the stages that need them.
+Everything on the stop-list in `CLAUDE.md` is reasonable and still not built,
+because nothing there is needed to find out whether this works, and four
+previous projects died of building it first.
 
 Either way the route in is the same: an item in `NEXT.md` names it. Nothing
 enters by argument.
