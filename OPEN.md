@@ -83,3 +83,7 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
   fall out of step by design · blocks: -
 - Webapp framework for the generated forms · blocks: -
 - Chatbot split into authoring and query, or merged behind one MCP · blocks: -
+- Probed 27 Aug: `required: true` beside `identifier: true` emits no
+  `sh:minCount` either, and `key: true` does — so what enforces an identifier's
+  presence is the generated DDL's `NOT NULL`/`PRIMARY KEY`, not the SHACL,
+  unless the map gives up the URI-forming slot · blocks: generator

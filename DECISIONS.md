@@ -187,3 +187,116 @@ reasoning lives in `../archived/`. They are closed, which means not re-discussed
              so. Choosing it now means inventing a language before one real
              stated rule has been heard. The rules an interview produces will
              decide the shape better than a guess made today.
+2026-08-26 · `slot_uri` is stable in the file but not automatically in the
+             output. `gen-owl` defaults to `--use-native-uris`, which replaces
+             an explicit URI with one built from the schema's own prefix, while
+             `gen-shacl` honours the explicit URI with no flag at all. The two
+             RDF generators disagree, and the one the map-to-log join depends on
+             is the one that needs telling. The line written earlier today — a
+             stable URI for free — is free in the file and costs one flag
+             downstream. The ontology store carries that flag, not one command.
+2026-08-26 · The interview runs in Claude Desktop with a skill and existing
+             filesystem MCP access. Almost nothing is built: the conversation,
+             the model and the interface are the product; the graph render is
+             LinkML's own gen-erdiagram. What is built is a skill — prose, not
+             code — and one seal tool.
+2026-08-26 · The session draft is a file, not something internal to the chatbot.
+             This supersedes the earlier line today that called it internal and
+             losable: Claude Desktop has no durable memory of its own, so a
+             draft can only live in the conversation or on disk, and a 90-minute
+             interview will exhaust the context window before it ends. The draft
+             is the working tree; sealing it is what makes a version.
+2026-08-26 · The draft is the source of truth during an interview, never the
+             conversation. Before adding to it the skill re-reads it, revises,
+             and writes it back whole. That is also what lets a statement at
+             minute 60 correct one from minute 10, and what lets an interview
+             resume in a fresh chat window.
+2026-08-26 · The act of turning a draft into a numbered version is called
+             sealing, not committing. Git already owns the word commit in this
+             repo and the two acts are unrelated.
+2026-08-26 · The map lives in the PoC repo under `business/`, named as data
+             rather than code, because the repo holds the system while the map
+             holds one business's description of itself — separate things that
+             production will have to keep apart. One file per version, flat,
+             beside its transcript: `business/v1.yaml`, `business/draft.yaml`.
+             ontology_version is written inside the file, never a git SHA — a
+             SHA would tie kernel rows to the existence of a repository, and git
+             has no valid-time axis anyway.
+2026-08-26 · A version is one file rather than one overwritten file with history
+             in git, because the definition-change stage needs two versions
+             readable at the same moment. Reaching the old one through git would
+             put a version-control system inside the report harness.
+2026-08-26 · The transcript is saved at seal time, one text file beside its
+             version. Under the map/log split the conversation lands nowhere,
+             so "why does the map say this" would only be answerable from a chat
+             window nobody can search. It is evidence, not a fact and not part
+             of the map. An unsaved conversation cannot be recovered later.
+2026-08-26 · Review is in business language, not a graph. Someone who has just
+             described their shop cannot judge boxes and arrows. The graph is
+             still rendered, but its audience is the team measuring blast
+             radius, not the person being interviewed.
+2026-08-26 · The seal tool validates the draft and fails loudly on invalid
+             LinkML. A skill is instruction, not enforcement — it can ask for
+             valid output but cannot guarantee it, so the guarantee sits in the
+             one piece that is code.
+2026-08-26 · The map carries two time axes of its own: `valid_from`, when a
+             definition took effect in the business, and `sealed_at`, when it
+             was written. The second is nearly free — a seal already happens at
+             one instant — and without it a retroactive correction to a
+             definition cannot be told from the definition it replaced.
+2026-08-26 · Time attaches to a whole version, not to individual rules. A rule
+             could carry its own period, but a structural change cannot: LinkML
+             has no way to say a class existed from January to April, so
+             structure needs whole versions regardless and two mechanisms are
+             worse than one. Whole versions also make a chain of definitions
+             coherent by construction — shrinkage over stock over movements can
+             never mix a new rule with an old one it depends on — and they make
+             blast radius visible as a diff of two files.
+2026-08-26 · A version is chosen the way the kernel chooses a fact: among
+             versions with `sealed_at <= as_of`, take those with
+             `valid_from <= valid_at`, then the one sealed last. Map and log read
+             time the same way rather than two ways.
+2026-08-26 · A report takes two pairs, not one: facts=(valid_at, as_of) and
+             definition=(valid_at, as_of), each resolved by the same rule, equal
+             by default. Collapsing them into one pair supports an ordinary
+             report and the definition-of-done demo as a special case; keeping
+             them separate supports the whole class. `ontology_version`
+             disappears as a parameter — it is derived from the definition pair.
+2026-08-26 · Moving one pair while holding the other is what decomposes a
+             difference: facts alone isolate data and corrections, definition
+             alone isolates the definition change, both give the total. "Why the
+             numbers differ" becomes three calls, not an interpretation.
+2026-08-26 · Facts with no home in the definition being applied are reported
+             beside the numbers, not raised as an error. A counterfactual report
+             is the point, so failing loudly defeats it; passing silently hides
+             a real cause. An orphaned predicate is one of the reasons a number
+             moved.
+2026-08-26 · `slot_uri` is stable across renames: a rename changes a label, not
+             an identity. This is why `gen-owl` must be called with
+             `--no-use-native-uris` — a URI derived from the schema's own naming
+             would change with every rename and orphan every fact recorded
+             before it. The flag is an invariant, not a detail of one command.
+2026-08-26 · A sealed version is never edited or deleted; correcting one means
+             sealing a version that supersedes it. One `as_of` reads both
+             stores, so a store that can be edited in place makes `as_of` lie.
+2026-08-26 · Version metadata lives in the schema's own `annotations`:
+             valid_from, sealed_at, supersedes, transcript. The probe showed
+             annotations survive every generator, so the map needs no sidecar
+             file to carry its own history.
+2026-08-26 · One seal is one intent, so perform() is called once with every fact
+             from the session rather than once per fact. The two stores have no
+             shared transaction, so a per-fact loop could leave half a session
+             permanently in an append-only log — worse than the orphan version
+             already accepted. One call makes a partial write impossible; the
+             remaining failure modes are an orphan version file and orphan
+             predicate entities, both harmless.
+2026-08-26 · Facts stated in an interview inherit their `valid_from` from the
+             map version being sealed, not from the moment of the interview.
+             perform() defaults valid_from to the intent's occurred_at, which
+             would date the whole business from the day it was described and
+             leave every earlier period empty. The map claims to describe the
+             business from a given date; its facts start at the same boundary.
+2026-08-26 · Access is through the filesystem MCP already in use — no API and no
+             new MCP server. The skill writes the draft as a file directly; seal
+             is a script invoked the same way. Anything more is infrastructure
+             built before a single interview has happened.

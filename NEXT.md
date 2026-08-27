@@ -64,7 +64,7 @@ Adding a sixth item means removing one.
       calls built, and `make check` exits 0 on a clean clone following only
       README.md
 
-- [ ] Directory tree named after the components in CLAUDE.md
+- [x] Directory tree named after the components in CLAUDE.md
       move only: `kernel/` -> `components/kernel/`, `tests/*.py` ->
       `tests/kernel/`. `scripts/`, `build/` and the root files stay where they
       are. Fix the paths that break — Makefile, docker-compose mount, sys.path
@@ -76,7 +76,7 @@ Adding a sixth item means removing one.
       `git show --stat -M HEAD` lists the moved files as renames rather than
       delete-plus-add
 
-- [ ] LinkML probe: does the map's escape hatch survive the generators
+- [x] LinkML probe: does the map's escape hatch survive the generators
       done when: a throwaway schema — two classes, one slot with an explicit
       `slot_uri`, one slot `required: true`, one slot carrying `annotations`
       — runs clean through `gen-sqltables`, `gen-shacl`, `gen-erdiagram` and
@@ -86,8 +86,43 @@ Adding a sixth item means removing one.
       to LOG.md, the schema is deleted, and `linkml` is **not** added to the
       Makefile's venv target — it is a probe, not a dependency yet.
 
+- [ ] `ontology`: which version applies at (valid_at, as_of)
+      `components/ontology/resolve.py`. Pure — a directory of sealed files in,
+      one version out. No database, no LinkML runtime; read the annotations as
+      plain YAML.
+      done when: `tests/ontology/` proves from fixture files alone that a
+      version sealed after `as_of` is invisible; that among versions valid at
+      `valid_at` the one sealed last wins; that a retroactive version beats the
+      one it supersedes at the same `valid_at`; that an `as_of` before the first
+      seal returns nothing rather than raising; and `make check` exits 0
+
+- [ ] `perform()` takes ontology_version instead of hardcoding it
+      the constant at `components/kernel/perform.py:22` is the last `# TODO`
+      standing between the kernel and a real map.
+      done when: `ONTOLOGY_VERSION` is gone, the parameter is required rather
+      than defaulted, every existing caller passes `"v0"` explicitly, the write
+      gate still rejects what it rejected before, `make check` exits 0 with 20
+      passed, and `build/projection_a.txt` is still 5334 bytes
+
+- [ ] `seal`: a draft becomes a version
+      `components/seal/seal.py`. Validate the draft as LinkML and exit non-zero
+      writing nothing if it is not. Assign the next version number, stamp
+      `valid_from` and `sealed_at` into the schema's annotations, mint one
+      predicate entity per `slot_uri`, then call `perform()` **once** with every
+      stated fact — one seal is one intent.
+      done when: sealing a fixture draft twice leaves `business/v1.yaml` and
+      `business/v2.yaml`; every assertion from one seal shares one `recorded_at`
+      and it equals that version's `sealed_at`; a `slot_uri` present in both
+      versions yields one predicate entity, not two; facts carry the version's
+      `valid_from`, not the seal instant; an invalid draft leaves the database
+      and `business/` untouched; and `make check` exits 0
+
+- [ ] T1: does `required: true` beside `identifier: true` give a `minCount`
+      done when: LOG.md records what `gen-shacl` does, and if the answer is no,
+      a line is appended to OPEN.md naming what enforces it instead
+
 ---
 
-The interview chatbot is blocked on one T3 line in OPEN.md; the ontology store
-is blocked on one. Nothing that touches either is added to this file until they
-are closed.
+Nothing is blocked. `report` is deliberately partial until the shape of a
+derived rule is decided from real stated rules, so only version resolution
+belongs here — not the computation.

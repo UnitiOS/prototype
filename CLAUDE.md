@@ -42,18 +42,21 @@ one stage needs several components.
 | Component | Kind | Serves |
 |---|---|---|
 | `kernel` | store | recording, live use, every reader |
-| `ontology store` | store | mapping, review, generation, definition change |
-| `interview chatbot` | agent | interview and mapping, definition change |
-| `graph exporter` | adapter | review |
-| `generator` | generator | generation, live use, definition change |
-| `report + diff` | harness | definition change |
-| `agent MCP` | agent | agentic access |
+| `business/` | store | map versions and transcripts — files, no code |
+| `interview` | skill | interview and mapping, definition change |
+| `seal` | tool | interview and mapping, recording |
+| `ontology` | library | version resolution, read by generation, report, agent |
+| `generator` | generator | generation, live use |
+| `report` | harness | definition change |
+| `agent` | MCP | agentic access |
 
 **Built: `kernel`. Nothing else exists.**
 
-The draft a chatbot holds mid-interview is deliberately absent from this list.
-It is internal to the chatbot, holds no facts, and may be lost — losing it
-means the interview is repeated.
+The interview runs in Claude Desktop with a skill and the filesystem MCP
+already in use. Most of that stage is not built: the conversation, the model and
+the interface are the product, and the graph render is LinkML's own
+`gen-erdiagram` — which is why no exporter appears above. What is built is prose
+and one tool. A skill can ask for a valid draft; only `seal` can guarantee one.
 
 ## Six findings that are closed
 
