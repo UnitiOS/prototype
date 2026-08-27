@@ -300,3 +300,14 @@ reasoning lives in `../archived/`. They are closed, which means not re-discussed
              new MCP server. The skill writes the draft as a file directly; seal
              is a script invoked the same way. Anything more is infrastructure
              built before a single interview has happened.
+2026-08-27 · `valid_from` is required on a draft. `seal` refuses a draft without
+             one, exits non-zero and writes nothing — the same rule, for the
+             same reason, as its refusal of a slot with no `slot_uri`.
+             Defaulting to the seal instant makes every business look born on
+             the day it was described and leaves every earlier period empty;
+             defaulting to an unbounded past claims more than anyone knows. The
+             guess belongs in a conversation with a person present, not in a
+             silent fallback in code. Recorded now because the earlier decision
+             that facts inherit the version's valid_from never said what happens
+             when the version itself has none — the gap was in the record, not
+             in the implementation.

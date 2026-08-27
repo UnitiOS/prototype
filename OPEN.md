@@ -67,10 +67,12 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
 - Which stated rules become ontology structure and which become derived rules —
   a modelling choice the LLM makes and we measure, not one we settle first
   · blocks: -
-- Does an explicit `required: true` next to `identifier: true` make `gen-shacl`
-  emit a `minCount`? Today an identifier is required in the model and carries
-  none, so a SHACL-only validator accepts a batch with no code · blocks:
-  generator
+- What enforces an identifier's presence — answered 27 Aug: not the SHACL.
+  `gen-shacl` suppresses `minCount` on an `identifier` slot on purpose, and
+  `required: true` is not an override; `key: true` emits it but no longer forms
+  the instance URI. The generated DDL's `NOT NULL`/`PRIMARY KEY` enforces it,
+  and the kernel's write gate enforces it for facts. A validator reading only
+  the SHACL is incomplete — a trap for anyone who assumes otherwise · blocks: -
 - Where the class/individual line falls in real speech — "12 flavours" splits
   cleanly into a class in the map and individuals in the log, but "Freezer A"
   and "wholesale customer" do not. Observed in the first interview, not settled

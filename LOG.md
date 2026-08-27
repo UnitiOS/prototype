@@ -853,3 +853,28 @@ cost of the slot no longer forming the instance URI, which is what the
 Surprising: `key` and `identifier` are both `required` in the model, differ in
 one documented way — whether the value forms the URI — and disagree in the SHACL
 output about a constraint that has nothing to do with URIs.
+
+## 2026-08-27 · `valid_from` is required, not defaulted
+
+`make check` — 36 passed, replay identical twice, `build/projection_a.txt`
+still 5334 bytes.
+
+`components/seal/seal.py` fell back to the seal instant when a draft carried no
+`valid_from`. The fallback is gone, replaced by `_valid_from()` — one refusal in
+the same shape as `_slot_uris()`: raise `DraftError`, before the version file is
+written and before `perform()` is reached, so nothing lands in `business/` or in
+the log. The CLI prints `not sealed: …` and exits 2, as it already did for a
+slot with no `slot_uri`.
+
+New fixture `tests/seal/fixtures/no_valid_from.yaml` — valid LinkML, one slot
+with a `slot_uri`, one stated fact, no `valid_from` — and
+`test_a_draft_without_a_valid_from_is_refused`, which asserts the temp directory
+is empty and the three table counts are unchanged. 35 tests became 36.
+
+No fixture had to be changed: `draft_one`, `draft_two`, `invalid` and
+`no_slot_uri` all already stated their own `valid_from`, and so does
+`tests/ontology/fixtures/chain/draft.yaml`. The fallback was reachable only from
+a draft nobody had written.
+
+Surprising: nothing. The refusal cost four lines of code and the branch it
+replaced was dead in every test that existed.

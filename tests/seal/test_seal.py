@@ -150,6 +150,14 @@ def test_a_slot_without_a_slot_uri_is_refused(conn, tmp_path):
     assert list(tmp_path.iterdir()) == []
 
 
+def test_a_draft_without_a_valid_from_is_refused(conn, tmp_path):
+    before = _counts(conn)
+    with pytest.raises(DraftError, match="valid_from"):
+        seal(conn, FIXTURES / "no_valid_from.yaml", actor_id="test", into=tmp_path)
+    assert list(tmp_path.iterdir()) == []
+    assert _counts(conn) == before
+
+
 def test_business_holds_the_two_sealed_versions():
     """The repo's own map store, read the way every reader will read it."""
     assert resolve_version(BUSINESS, valid_at="2026-06-01T00:00:00Z",

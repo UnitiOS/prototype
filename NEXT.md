@@ -86,7 +86,7 @@ Adding a sixth item means removing one.
       to LOG.md, the schema is deleted, and `linkml` is **not** added to the
       Makefile's venv target — it is a probe, not a dependency yet.
 
-- [ ] `ontology`: which version applies at (valid_at, as_of)
+- [x] `ontology`: which version applies at (valid_at, as_of)
       `components/ontology/resolve.py`. Pure — a directory of sealed files in,
       one version out. No database, no LinkML runtime; read the annotations as
       plain YAML.
@@ -96,7 +96,7 @@ Adding a sixth item means removing one.
       one it supersedes at the same `valid_at`; that an `as_of` before the first
       seal returns nothing rather than raising; and `make check` exits 0
 
-- [ ] `perform()` takes ontology_version instead of hardcoding it
+- [x] `perform()` takes ontology_version instead of hardcoding it
       the constant at `components/kernel/perform.py:22` is the last `# TODO`
       standing between the kernel and a real map.
       done when: `ONTOLOGY_VERSION` is gone, the parameter is required rather
@@ -104,7 +104,7 @@ Adding a sixth item means removing one.
       gate still rejects what it rejected before, `make check` exits 0 with 20
       passed, and `build/projection_a.txt` is still 5334 bytes
 
-- [ ] `seal`: a draft becomes a version
+- [x] `seal`: a draft becomes a version
       `components/seal/seal.py`. Validate the draft as LinkML and exit non-zero
       writing nothing if it is not. Assign the next version number, stamp
       `valid_from` and `sealed_at` into the schema's annotations, mint one
@@ -117,9 +117,27 @@ Adding a sixth item means removing one.
       `valid_from`, not the seal instant; an invalid draft leaves the database
       and `business/` untouched; and `make check` exits 0
 
-- [ ] T1: does `required: true` beside `identifier: true` give a `minCount`
+- [x] T1: does `required: true` beside `identifier: true` give a `minCount`
       done when: LOG.md records what `gen-shacl` does, and if the answer is no,
       a line is appended to OPEN.md naming what enforces it instead
+
+- [ ] `valid_from` is required, not defaulted
+      `components/seal/seal.py` falls back to the seal instant when a draft
+      carries no `valid_from`. Remove the fallback: refuse the draft, exit
+      non-zero, write nothing — the same shape as the `slot_uri` refusal a
+      hundred lines above it.
+      done when: a draft with no `valid_from` leaves `business/` and the
+      database untouched and exits non-zero; every fixture that leaned on the
+      fallback now states its own `valid_from`; no default is reintroduced
+      anywhere in the file; and `make check` exits 0
+
+- [ ] README describes what is built now
+      it still calls `kernel` the only component built. `ontology` and `seal`
+      exist, `business/` exists, and CLAUDE.md's component table has eight rows.
+      done when: README.md names `kernel`, `ontology` and `seal` as built and no
+      other component as built, every directory under `components/` is
+      mentioned, and `make check` exits 0 on a clean clone following only
+      README.md
 
 ---
 

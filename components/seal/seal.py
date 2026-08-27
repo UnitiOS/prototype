@@ -153,6 +153,24 @@ def _facts(annotations, slot_uris, name):
     return facts
 
 
+def _valid_from(annotations, name):
+    """When this definition took effect. Not optional, and never guessed.
+
+    A default makes the guess silently: the seal instant dates the business
+    from the day it was described and leaves every earlier period empty, and an
+    unbounded past claims more than anyone knows. Whoever is describing the
+    business is the one who can say, so the refusal sends the question back to
+    the conversation instead of answering it here.
+    """
+    stated = annotations.get("valid_from")
+    if not stated:
+        raise DraftError(
+            f"{name}: annotations declare no valid_from, so nothing says when "
+            f"this definition took effect"
+        )
+    return _utc(stated)
+
+
 def _next_version(into):
     """The next version number, and the version it supersedes.
 
@@ -220,11 +238,7 @@ def seal(conn, draft_path, *, actor_id, into=None, sealed_at=None):
     annotations = draft.get("annotations") or {}
     facts = _facts(annotations, slot_uris, draft_path.name)
 
-    # A definition that does not say when it took effect took effect when it
-    # was written.
-    valid_from = (
-        _utc(annotations["valid_from"]) if annotations.get("valid_from") else sealed_at
-    )
+    valid_from = _valid_from(annotations, draft_path.name)
 
     number, supersedes = _next_version(into)
     version = f"v{number}"

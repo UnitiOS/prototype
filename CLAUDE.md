@@ -50,7 +50,7 @@ one stage needs several components.
 | `report` | harness | definition change |
 | `agent` | MCP | agentic access |
 
-**Built: `kernel`. Nothing else exists.**
+**Built: `kernel`, `ontology`, `seal`. Nothing else exists.**
 
 The interview runs in Claude Desktop with a skill and the filesystem MCP
 already in use. Most of that stage is not built: the conversation, the model and

@@ -1,0 +1,11 @@
+id: https://uniti.example/business
+name: business
+title: Valid LinkML, but nothing says when it took effect
+slots:
+  freezer_label:
+    slot_uri: uniti:freezer_label
+annotations:
+  facts:
+    - subject: uniti:freezer_a
+      predicate: uniti:freezer_label
+      value: Freezer A
