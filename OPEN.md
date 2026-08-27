@@ -34,6 +34,15 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
 - Does `report` come before `generator`, now that the spread comes from episodes
   rather than live use — the generator shows the system can be used, the report
   shows it is better · blocks: report
+- `seal` never writes a `value_ref`. `perform()` takes one, but `_facts()`
+  str()s every value, so a stated relationship lands as a literal that merely
+  looks like a URI — confirmed 28 Aug: every assertion from a seal has
+  value_ref null, including ones whose value names an entity. The map declares
+  `range: Freezer`; the log cannot honour it, so the graph has nodes and no
+  edges. A draft could say which is which, or `seal` could read the slot's
+  `range` from the map — a class means a ref, a type means a literal — which
+  needs no new key and puts the logic where the logic lives
+  · blocks: graph review
 - Operational definition of "the kernel recorded it correctly" — every screen
   state reproducible from the log alone at some (valid_at, as_of)? · blocks:
   live use
@@ -98,15 +107,21 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
   fall out of step by design · blocks: interview
 - `business/v1.yaml` and `v2.yaml` are fixture drafts sealed for real, so the
   first role-played interview lands as v3 superseding a business nobody
-  described. Clear them before the first episode · blocks: interview
+  described. Deeper than it looked: `test_business_holds_the_two_sealed_versions`
+  reads `business/`, so the production map store is a test fixture. Queued in
+  NEXT.md 28 Aug · blocks: interview
 - Webapp framework for the generated forms · blocks: -
 - Chatbot split into authoring and query, or merged behind one MCP · blocks: -
 - Probed 27 Aug: `required: true` beside `identifier: true` emits no
   `sh:minCount` either, and `key: true` does — so what enforces an identifier's
   presence is the generated DDL's `NOT NULL`/`PRIMARY KEY`, not the SHACL,
   unless the map gives up the URI-forming slot · blocks: generator
+- `make schema` applies `001_schema.sql` to `uniti_check` only, so the working
+  log is never migrated and never tested. They match today by history alone;
+  the next change to the schema diverges them silently, and the database that
+  holds real interview evidence is the one that never sees it · blocks: -
 - `make` now owns a throwaway database, `uniti_check`, and every target points
-  at it — so nothing reseeds the working log except running `scripts/seed_200.py`
+  at it - so nothing reseeds the working log except running `scripts/seed_200.py`
   by hand, which still drops and recreates whatever `UNITI_DSN` names. A sealed
   episode is one careless run of that script from gone · blocks: -
 - The flat-annotations guard sits in `seal`, on what is carried into a sealed
@@ -125,3 +140,18 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
 - `business/v1.yaml` and `v2.yaml` name no transcript: they were sealed before
   the contract existed, so the map store holds two versions today's `seal` would
   refuse. The line above about clearing them covers it · blocks: -
+- Migrating the working log and destroying it are the same command. Emptying it
+  on 28 Aug was done by re-applying `001_schema.sql` to the default DSN, which
+  is still the only thing that has ever migrated that database — and it opens
+  with three `DROP TABLE`s. Once a real episode is sealed there, no schema
+  change can be applied without losing the evidence it was applied to
+  · blocks: kernel recording
+- The two databases have not actually diverged: before the 28 Aug wipe, the
+  working log's indexes, check constraints, foreign keys and deny triggers
+  matched `uniti_check` exactly. They match by history alone, so the wipe
+  proved nothing about the divergence the `make schema` line above warns of
+  · blocks: -
+- `business/` is now empty and held open by a `.gitkeep`: git does not track an
+  empty directory, and both `seal`'s default `--into` and the interview skill
+  write into it by path. First real seal makes the placeholder redundant
+  · blocks: -

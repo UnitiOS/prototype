@@ -311,3 +311,98 @@ reasoning lives in `../archived/`. They are closed, which means not re-discussed
              that facts inherit the version's valid_from never said what happens
              when the version itself has none — the gap was in the record, not
              in the implementation.
+2026-08-27 · The conversation adapts to the person, not the other way round.
+             Nobody being interviewed needs to know what an ontology is, and the
+             skill never asks them to learn one. It asks about the business in
+             the words the business uses; the mapping is the skill's problem.
+             Stated by Fareza as a requirement on the interview and recorded
+             here because it constrains the skill more than any mechanism does.
+2026-08-27 · A later interview asks one question a first interview cannot: when
+             a definition changes, "since when?" Without it `valid_from` has no
+             answer and seal refuses the draft. That single question is the only
+             behavioural difference between a first interview and every one
+             after it.
+2026-08-27 · Map quality is measured four ways, not judged: coverage — every
+             predicate used in the log has a home in the map, which is a query;
+             stability — the same person interviewed twice produces comparable
+             maps; answering power — business questions written before the
+             interview, answered after it; and change tolerance. Change
+             tolerance is the sharpest: if moving one definition touches one
+             derived rule the map is good, and if it touches a class hierarchy,
+             three rules and a projection the map wrote the same fact in several
+             places. One number, and the most honest test of LLM authoring we
+             have.
+2026-08-27 · Candidate definition changes are written after the interview and
+             before the generator is touched, several of them, drawn from the
+             business rather than from the map — and their costs are compared
+             rather than one being picked. Designing the change in advance would
+             steer the interview toward a change that is cheap, and what got
+             measured would be the interviewer's staging, not the map. Comparing
+             a spread removes the bias while leaving the interview plain.
+2026-08-27 · Readability is measured, not assumed. Editing a map surgically
+             requires a person to find the piece to change, so a 400-node map
+             with no hierarchy cannot be edited surgically however good the
+             viewer is. Visualisation does not rescue a bad map — it is a
+             capability a bad map destroys. Blast radius and findability are the
+             same property seen from two sides.
+2026-08-27 · Why the map plus the log is worth its cost, recorded because the
+             claim "an ontology makes an agent smarter" is usually empty and
+             this one has to survive being asked. An LLM with a database schema
+             already writes SQL; that is a commodity. What no ordinary system
+             answers: what we believed on a past date with the knowledge of that
+             date; the same report under an old definition and today's; whether
+             a number moved because of data, a correction, or a definition; what
+             is still unknown about a thing; and whether what was recorded is
+             consistent with the rules that were stated. Five classes, four of
+             which need both stores. The fourth needs the map to say what should
+             be there, not only what may be — a SHACL-shaped demand, not an
+             OWL-shaped one.
+2026-08-27 · The PoC is run entirely as simulation: only Fareza and the team,
+             role-playing a business as close to a real one as they can make it.
+             No interview outside the team, and no date for one. Of the four
+             quality measures, coverage, change tolerance and readability are
+             properties of the artefact and survive this untouched; stability
+             and answering power do not survive it unaided, because they assume
+             a subject independent of the tester. The accepted cost is named
+             rather than absorbed: whether an LLM can author a map from a real,
+             half-articulate person stays unproven, and the T2 line in OPEN.md
+             stays open by construction rather than being quietly closed by a
+             simulation — which is exactly what the archived corpus did.
+2026-08-27 · A one-page business brief is written before the first interview and
+             frozen when it starts, and whoever plays the business does not
+             write the interview skill. This is what returns stability and
+             answering power to being measurable: two interviews from one brief
+             can be diffed, and competency questions written against the brief
+             ask about facts the map was never handed. The brief also carries
+             the mess a cooperative role-player smooths away — a term used two
+             ways, a rule nobody wrote down, a number two people compute
+             differently. The 27 Aug line requiring candidate definition changes
+             to be drawn from the business rather than the map already assumed
+             something like this; under simulation the brief is the only place
+             "the business" can live. Guard: one page, one hour, never revised
+             after a session begins. A brief that grows between interviews has
+             become a design document, which is the shape that killed four
+             cycles.
+2026-08-27 · The record-time spread comes from dated role-play episodes, each
+             sealed at its own instant, not from live use. `perform()` already
+             takes `recorded_at` and `seal()` already takes `sealed_at`; the
+             25 Aug line calls replaying the acts the sanctioned way to write
+             synthetic history, and an episode is an act. This supersedes the
+             26 Aug line that said the spread could only come from live use —
+             that was true when the only other writer was a generated form.
+             It also dissolves the pressure to date facts individually:
+             different dates now come from different episodes rather than from
+             different facts inside one seal.
+2026-08-27 · The interview skill lives in the repo at `components/interview/`
+             and is uploaded to Claude Desktop by hand. It is a component like
+             any other and the component table already names it; a skill living
+             only in Desktop's own directory would be the one part of the system
+             that is unversioned and unreviewable. The cost is accepted: the
+             uploaded copy and the repo copy can drift, and nothing detects it.
+2026-08-27 · The interview is deliberately not scripted. What is being tested is
+             whether an ordinary conversation becomes a usable map, so a script
+             would test the script. The skill carries only what the model cannot
+             know: where the files go, what `seal` refuses, the traps that are
+             not enforced, and that a stated rule is recorded verbatim rather
+             than formalised. Everything about how to hold a conversation is
+             left to the model.

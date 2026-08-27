@@ -44,6 +44,11 @@ already covers before asking anything new.
 Keep `business/draft.txt` current as the session goes. A transcript
 reconstructed at the end is a summary, and a summary is not evidence.
 
+If a `draft.txt` is already there when the session opens, it belongs to an
+earlier conversation. Overwrite it before writing a line of your own. `seal`
+copies the transcript rather than moving it, so a leftover file will be sealed
+beside a version it has nothing to do with, and nothing will complain.
+
 ## What `seal` refuses
 
 A refused draft wastes the session. Every one of these is enforced in code:
@@ -64,15 +69,17 @@ A refused draft wastes the session. Every one of these is enforced in code:
   warned about. `seal` copies it beside the version it belongs to, as
   `vN.txt`, and rewrites the annotation to name the copy. The draft's own
   transcript is left where the session left it.
+- **The top-level `annotations` block is flat**, except for `facts`. Every other
+  annotation carried into a sealed version must be a scalar. The version
+  resolver reads that block with a shallow scanner: a mapping nested under it
+  leaks its keys upward, and a nested `valid_from`, `sealed_at`, `supersedes` or
+  `transcript` silently overwrites the real one — wrong version resolved, no
+  error. Note which shape this catches: `value` plus a nested `annotations` is
+  what LinkML's own documentation teaches, so the correct-looking thing is the
+  dangerous one. Slot-level annotations are untouched by any of this.
 - The draft must load as LinkML.
 
-## Two traps
-
-**Keep the top-level `annotations` block flat, except for `facts`.** The version
-resolver reads that block with a shallow scanner that does not track depth: a
-mapping nested under it leaks its keys upward, and a nested `valid_from`,
-`sealed_at`, `supersedes` or `transcript` silently overwrites the real one. Slot
-level annotations are unaffected — the scanner never enters them.
+## One trap that is not enforced
 
 **Facts are stripped when the draft is sealed.** After a seal they live in the
 log, not in the file. The sealed version is not a place to look them up.
@@ -114,6 +121,19 @@ Only when they ask for it.
 Exit 0 means a new `business/vN.yaml` exists and every stated fact is in the log
 under one intent. A non-zero exit means nothing was written anywhere — read the
 message, fix the draft, run it again.
+
+**If this session is a dated episode, say so.** A role-played business is
+described across several sittings standing for several months, and the report
+that comes later needs those sittings to have been recorded at different
+instants. Without `--sealed-at` the seal is stamped today, every episode lands
+at the same moment, and the spread the report depends on never exists — with
+nothing to warn you.
+
+    ... --actor <name> --sealed-at 2026-01-15T09:00:00Z
+
+Ask which instant this sitting stands for. It is the same question as
+`valid_from` and it has a different answer: `valid_from` is when the description
+takes effect in the business, `--sealed-at` is when the describing happened.
 
 ## A second interview about the same business
 

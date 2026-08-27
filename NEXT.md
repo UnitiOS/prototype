@@ -121,7 +121,7 @@ Adding a sixth item means removing one.
       done when: LOG.md records what `gen-shacl` does, and if the answer is no,
       a line is appended to OPEN.md naming what enforces it instead
 
-- [ ] `valid_from` is required, not defaulted
+- [x] `valid_from` is required, not defaulted
       `components/seal/seal.py` falls back to the seal instant when a draft
       carries no `valid_from`. Remove the fallback: refuse the draft, exit
       non-zero, write nothing — the same shape as the `slot_uri` refusal a
@@ -131,7 +131,7 @@ Adding a sixth item means removing one.
       fallback now states its own `valid_from`; no default is reintroduced
       anywhere in the file; and `make check` exits 0
 
-- [ ] README describes what is built now
+- [x] README describes what is built now
       it still calls `kernel` the only component built. `ontology` and `seal`
       exist, `business/` exists, and CLAUDE.md's component table has eight rows.
       done when: README.md names `kernel`, `ontology` and `seal` as built and no
@@ -139,8 +139,57 @@ Adding a sixth item means removing one.
       mentioned, and `make check` exits 0 on a clean clone following only
       README.md
 
+- [x] Two leaks that destroy evidence, and one instant the CLI cannot set
+      `make check` wipes the working database twice: `schema` runs
+      `001_schema.sql`, which drops and recreates, and `replay` reseeds on top.
+      A real seal's assertions do not survive one run. `seal` never writes the
+      transcript the 26 Aug decision requires. And `seal()` accepts `sealed_at`
+      while its CLI does not, so a dated episode cannot be run from the command
+      line.
+      done when: `make check` run twice against a database holding a sealed
+      version leaves that seal's assertion count unchanged both times; a draft
+      whose `annotations.transcript` is missing, or names a file that does not
+      exist, exits non-zero leaving the target directory and the three table
+      counts untouched; a draft whose top-level `annotations` nests any mapping
+      other than `facts` is refused the same way; the named transcript sits
+      beside its version after a successful seal;
+      `--sealed-at 2026-01-15T09:00:00Z` stamps that instant into both the
+      version's `sealed_at` and every assertion's `recorded_at`; and
+      `make check` exits 0
+
+- [ ] Empty the map store, and stop a test depending on what it holds
+      `business/v1.yaml` and `v2.yaml` are fixture drafts sealed for real. Left
+      there, the first role-played interview lands as v3 superseding a business
+      nobody described. They cannot simply be deleted:
+      `test_business_holds_the_two_sealed_versions` reads `business/` and
+      asserts v2 supersedes v1, so the production map store is doing a fixture's
+      job. What that test is really worth checking is that `resolve` can read
+      what `seal` wrote — which two seals into a temp directory check better,
+      and without the dependency.
+      The working log has to be emptied in the same breath: it still holds the
+      200 synthetic tutoring assertions and the seals made while validating, so
+      "every predicate in the log has a home in the map" would be measured
+      against a business nobody is describing. Both stores are cleared or
+      neither is.
+      done when: `business/` holds no `v*.yaml`; no test reads `business/`;
+      a test still covers `seal` writing two versions and `resolve` picking the
+      later one across both `valid_at` and `as_of`; the working database named
+      by the default DSN reports zero rows in all three tables; and `make check`
+      exits 0
+
+- [ ] `interview`: the skill, and one session run through it
+      `components/interview/SKILL.md` is written and uploaded to Claude Desktop
+      by hand. The business is played from a one-page brief written by whoever
+      plays it — not by whoever wrote the skill — and frozen before the session
+      starts.
+      done when: a role-played session leaves `business/draft.yaml` and
+      `business/draft.txt`; `seal` exits 0 on that draft; the resulting
+      `business/vN.yaml` carries no `facts` block and names its transcript;
+      every `predicate` stated in the session resolves to exactly one entity in
+      the log; and `make check` exits 0
+
 ---
 
-Nothing is blocked. `report` is deliberately partial until the shape of a
-derived rule is decided from real stated rules, so only version resolution
-belongs here — not the computation.
+Episodes two and three are not here yet: they need a write path for a fact
+correction, which is the T3 in `OPEN.md`. `seal` is the only writer into the
+kernel today, and a correction is not a map change.
