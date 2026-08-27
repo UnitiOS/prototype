@@ -900,3 +900,63 @@ Makefile path worked and the path README described did not.
 Surprising: nothing in the wording drifted, only the counts. The file had no
 copy of a rule that lives elsewhere to go stale — the stale things were all
 inventories: how many components, how many tests, which packages.
+
+## 2026-08-28 · Two evidence leaks, and the instant the CLI could not set
+
+`make check` — 41 passed, replay identical twice, 5334 bytes.
+
+**The wipe.** Both halves of `make check` reset the database: `schema` runs
+`001_schema.sql`, which drops and recreates, and `replay` runs `seed_200.py`,
+which does the same before seeding. A seal did not survive one check. The
+Makefile now declares `CHECK_DB := uniti_check` and exports `UNITI_DSN` at the
+top, so every target — schema, tests, replay — runs against a throwaway
+database created on first use. Nothing in Python changed: everything already
+routed through `connect()`. The `schema` target waits on `-d postgres` instead
+of `-d uniti` and creates `uniti_check` if `pg_database` does not list it.
+
+Verified by hand: sealed `draft_one.yaml` into the working database from the
+CLI with `--sealed-at 2026-01-15T09:00:00Z` (10 assertions, one intent),
+then ran `make check` twice. Both exited 0; that intent still had 10 assertions
+after each, and the working log stayed at 210 rows.
+
+**The transcript.** `annotations.transcript` is now required and is a path
+relative to the draft's own directory. `seal` refuses when the key is absent or
+the file is not there, before anything is written. On success the file is
+copied beside the version as `vN.txt` and the sealed annotation is rewritten to
+name the copy — copied, not moved, so a fixture transcript is not deleted by
+the test that seals it. `components/interview/SKILL.md` said "moves"; it now
+says what the code does.
+
+**The nested annotation.** `_flat()` refuses any annotation other than `facts`
+whose value is a mapping or a list. `facts` is exempt by construction: it is
+stripped at seal, so its keys never reach a reader. The scanner in
+`components/ontology/resolve.py` is untouched, and slot-level annotations are
+untouched with it.
+
+The leak is real and silent. `_read_header` on a draft carrying
+
+    annotations:
+      valid_from: '2026-01-01T00:00:00Z'
+      session:
+        value: the second interview
+        annotations:
+          valid_from: '2020-01-01T00:00:00Z'
+
+returns `valid_from = 2020-01-01` — six years wrong, no error, wrong version
+resolved for every reader.
+
+**`--sealed-at`.** One argparse argument, parsed through the same `_utc()` the
+draft's own instants go through, refused with exit 2 if it is not an instant.
+`seal()` needed no change; only its CLI did.
+
+Five fixtures and four tests: `draft_one.txt` and `draft_two.txt` beside the
+drafts that now name them, `no_transcript.yaml`, `missing_transcript.yaml`,
+`nested_annotation.yaml`. 36 tests became 41.
+
+Surprising, and it moved the fixture: LinkML's own metamodel refuses a nested
+mapping with arbitrary keys — `Annotation.__init__() got an unexpected keyword
+argument 'valid_from'` — so the first `nested_annotation.yaml` never reached
+the guard at all. The shape that does reach it is the one LinkML endorses,
+`value` plus a nested `annotations` block, which is exactly the shape an author
+following LinkML's own documentation would write. The guard is not defending
+against a typo; it is defending against correct LinkML.

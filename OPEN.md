@@ -24,7 +24,16 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
   ontology's author, plus one deliberately wrong concept — now that "every
   predicate in the log exists in the ontology" is a query · blocks: graph review
 - Where the record-time spread the replay demo needs comes from, given that one
-  interview commits at a single recorded_at · blocks: report + diff
+  interview commits at a single recorded_at — answered 27 Aug: dated role-play
+  episodes, each sealed at its own instant. Left as a line only until an episode
+  has actually been run that way · blocks: -
+- What writes a fact correction. `seal` is the only path into the kernel, and a
+  correction is not a map change — sealing one bumps the ontology version for
+  data that moved, which makes the definition-vs-data decomposition lie
+  · blocks: report + diff
+- Does `report` come before `generator`, now that the spread comes from episodes
+  rather than live use — the generator shows the system can be used, the report
+  shows it is better · blocks: report
 - Operational definition of "the kernel recorded it correctly" — every screen
   state reproducible from the log alone at some (valid_at, as_of)? · blocks:
   live use
@@ -42,7 +51,11 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
 - Are LLMs good interviewers and bad authors? The old corpus concluded this from
   a simulation, never from a real session with a real person. Now load-bearing:
   the chatbot is the only writer of the ontology and so the only path to a
-  definition change · blocks: definition change
+  definition change. Sharpened 27 Aug — this PoC is also simulation, so the
+  question stays open by construction. A role-player never rambles, never
+  contradicts themselves unnoticed, and never has tacit knowledge they cannot
+  articulate. Either the brief carries that mess or nothing does
+  · blocks: definition change
 - Can a person dictate a precise ontology change and have the chatbot execute it
   mechanically, keeping LLM authoring off the critical path · blocks: -
 - What must already work before the first ontology is written · blocks: -
@@ -82,10 +95,33 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
   says and registers it; nothing yet says where it should come from · blocks: -
 - `business/` holds sealed versions naming entities the kernel no longer holds:
   `make replay` resets the log on every check, so the map store and the log
-  fall out of step by design · blocks: -
+  fall out of step by design · blocks: interview
+- `business/v1.yaml` and `v2.yaml` are fixture drafts sealed for real, so the
+  first role-played interview lands as v3 superseding a business nobody
+  described. Clear them before the first episode · blocks: interview
 - Webapp framework for the generated forms · blocks: -
 - Chatbot split into authoring and query, or merged behind one MCP · blocks: -
 - Probed 27 Aug: `required: true` beside `identifier: true` emits no
   `sh:minCount` either, and `key: true` does — so what enforces an identifier's
   presence is the generated DDL's `NOT NULL`/`PRIMARY KEY`, not the SHACL,
   unless the map gives up the URI-forming slot · blocks: generator
+- `make` now owns a throwaway database, `uniti_check`, and every target points
+  at it — so nothing reseeds the working log except running `scripts/seed_200.py`
+  by hand, which still drops and recreates whatever `UNITI_DSN` names. A sealed
+  episode is one careless run of that script from gone · blocks: -
+- The flat-annotations guard sits in `seal`, on what is carried into a sealed
+  file, not in `components/ontology/resolve.py`. Any version file `seal` did not
+  write — hand-edited, or made by another tool — still leaks a nested
+  `valid_from` upward and resolves to the wrong version silently · blocks: -
+- A nested annotation is refused in two voices: LinkML's own metamodel raises
+  `TypeError: Annotation.__init__() got an unexpected keyword argument` for a
+  mapping with arbitrary keys, so only the shape LinkML accepts (`value` plus a
+  nested `annotations`) reaches the guard. Both exit non-zero having written
+  nothing, but the two messages tell a different story about why · blocks: -
+- The transcript is copied beside its version, not moved, so nothing stops one
+  stale `draft.txt` being sealed under two versions — evidence for the wrong
+  session, and no error. Moving it would refuse the second seal, at the cost of
+  a fixture that deletes itself when a test runs · blocks: interview
+- `business/v1.yaml` and `v2.yaml` name no transcript: they were sealed before
+  the contract existed, so the map store holds two versions today's `seal` would
+  refuse. The line above about clearing them covers it · blocks: -
