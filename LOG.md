@@ -1006,3 +1006,46 @@ That is still true, and today's run is not evidence against it — it is a
 one-off, by hand, prompted by a task that happened to need the same command.
 The next schema change with real evidence in that database has no safe path:
 migration and destruction are the same `psql -f`.
+
+## 2026-08-29 · The first session kept, then both stores emptied again
+
+`make check` · 41 passed · replay identical twice · `build/projection_a.txt`
+still 5334 bytes.
+
+**Committed first, because it is the only copy.** `business/draft.yaml`,
+`draft.txt`, `v1.yaml` and `v1.txt` were untracked — the draft composed during
+the 28 Aug interview with its transcript, and the version `seal` wrote from it
+with the transcript copied beside it as `v1.txt`. One commit touching nothing
+else (`git add` of the four paths, not `-a`; `CLAUDE.md`, `DECISIONS.md`,
+`NEXT.md` and `OPEN.md` were modified in the working tree and stayed there).
+Then `git rm` of the same four, `.gitkeep` left holding the directory open.
+
+What the version actually held, since it is now only in history: three classes —
+`Toko`, `Rasa`, `BahanBaku` — six slots, every one with a `slot_uri`, valid from
+1 Feb 2026, sealed 28 Aug 09:02 UTC, `supersedes: null`. Neither stock slot
+carries a unit; both say `Satuan belum ditanyakan`. That is the vocabulary the
+29 Aug decision refused to build the proper map on top of.
+
+**The working log.** 1 intent, 7 entities, 8 assertions at the default DSN —
+what `seal` wrote from that draft, and the whole of it. Emptied the same way as
+28 Aug: `psql -f /kernel/001_schema.sql` against `uniti`, because the deny
+triggers refuse TRUNCATE and `DROP TABLE` is the only route in. Zero rows in all
+three tables, and still zero after `make check`, which runs entirely against
+`uniti_check`.
+
+No code changed and no test changed. The 28 Aug item had already cut the last
+test that read `business/`, so emptying the store again broke nothing — the
+directory is now a store with one writer and no reader.
+
+Surprising, and it is the shape of the loss rather than a fact about the code:
+the transcript is worth more than the version. `v1.yaml` is six slots anyone
+could rewrite in ten minutes; `v1.txt` records four questions asked, the two
+that went unanswered, and a seal that failed because Docker was down — none of
+which survives anywhere else, and none of which any generator would have
+reproduced. The 29 Aug decision requiring a provenance note as the transcript of
+the hand-authored map is buying the same thing deliberately.
+
+Also surprising, and it cost an amend: Docker Desktop was down again at the
+start of this run — the same failure the 28 Aug transcript records mid-session —
+and came up in ten seconds once started, so the two-minute cost is starting it,
+not waiting for it.
