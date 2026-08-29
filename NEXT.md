@@ -177,60 +177,53 @@ Adding a sixth item means removing one.
       by the default DSN reports zero rows in all three tables; and `make check`
       exits 0
 
-- [ ] Keep the first session's evidence, then empty both stores again
-      `business/` holds an untracked `v1.yaml`, `v1.txt`, `draft.yaml` and
-      `draft.txt` from the 28 Aug interview, and the working log holds the
-      1 intent / 7 entities / 8 assertions that seal wrote. It is the only
-      record of the first real session, so it is committed before it is
-      removed — evidence, not a fixture.
-      done when: those four files are committed in a commit of their own that
-      touches nothing else; `business/` then holds no `v*.yaml` and no
-      `draft.*`; the working database named by the default DSN reports zero rows
-      in all three tables; and `make check` exits 0
+- [x] Keep the first session's evidence, then empty both stores again
+      done: eceada6 committed the four files, cc747f7 removed them, both stores
+      empty, `make check` exits 0 at 41 passed and 5334 bytes twice.
 
-- [ ] Competency questions, written and frozen before any data is curated
-      `episodes/questions.md`. Drawn from the five classes in the 27 Aug
-      decision, not from what the map or the data happens to make easy. This is
-      the frozen-brief guard moved to where authorship now sits; written after
-      the data, it measures nothing.
-      done when: the file names at least one question per class and says which
-      class each tests; `git log --diff-filter=A` shows it added before any
-      file under `episodes/` other than itself; and it is never modified after
+- [ ] The business profile, one page, frozen before the map is written
+      `business/profile.md`. How many flavours, the production rhythm, who
+      records and when, when stock is counted, when it is busy — and the mess a
+      cooperative author smooths away: a term used two ways, a rule nobody wrote
+      down, a number two people compute differently. It bounds what curation may
+      invent. One page, and never revised after the map is sealed.
+      done when: the file exists, fits on one page, and `git log --diff-filter=A`
+      shows it added in a commit before `business/draft.yaml`
 
-- [ ] The inventory map, hand-authored and sealed as v1
-      Blocked until the shape of a derived rule inside `annotations` is settled
-      — that is a T3 and it is the next discussion. Structure only: the draft
-      states no facts.
-      done when: `business/v1.yaml` carries classes and slots for stock and
-      movement with a unit on every quantity; every top-level slot declares a
-      `slot_uri`; `annotations.transcript` names a provenance note that sits
-      beside it after the seal; at least one derived rule is expressed in the
-      agreed shape; `seal` exits 0; the sealed file carries no `facts` block;
-      and `make check` exits 0
+- [ ] `seal` writes `value_ref` from the slot's `range`
+      A class range means a ref, a type range means a literal. The rule is read
+      from the map and needs no new key. Required before v1, because an
+      inventory module is mostly relationships and a map that declares them
+      while the log cannot honour them is untested from day one.
+      done when: a fact whose slot declares a class range lands with `value_ref`
+      set and `value_literal` null, naming the same entity a second fact about
+      the same URI names; a type range still lands as a literal; a class-ranged
+      value that names no registered URI registers one the way a subject does;
+      the existing seal tests still pass; and `make check` exits 0
 
-- [ ] `episodes`: the runner, and one act replayed
-      A new component. Curated acts in files, replayed through `perform()` —
-      never a direct INSERT. One act is one call at one `recorded_at`. Facts
-      carry a local key so a later act can revoke an earlier one.
-      done when: one episode file replayed twice into a freshly dropped database
-      produces byte-identical projections; every assertion's `ontology_version`
-      equals what `components/ontology/resolve.py` returns for that act's
-      clocks, with no version written in the file; a fact whose slot declares a
-      class as its `range` lands as `value_ref` and a type range as a literal;
-      a later act revokes an earlier act's fact by its key; and `make check`
-      exits 0
+- [ ] The inventory map v1, with opening balances, sealed
+      Structure and facts in one draft — opening balances genuinely share one
+      `valid_from` and one `recorded_at`, so `seal` is the right writer. No
+      derived rules: stock on hand at onboarding is the opening balance.
+      Coverage is at least what an ERP inventory module holds for this business:
+      items, units of measure, locations, opening balances.
+      done when: `business/v1.yaml` carries classes and slots for items, units,
+      locations and stock; every quantity slot names its unit; every top-level
+      slot declares a `slot_uri`; at least one slot declares a class as its
+      range and its fact lands as a `value_ref`; `annotations.transcript` names
+      a provenance note sitting beside the version after the seal; the sealed
+      file carries no `facts` block; every predicate in the log resolves to
+      exactly one entity; and `make check` exits 0
 
-- [ ] The three data sets, as one log that grows
-      Onboarding, three months, one year — one history, not three. Curated to
-      carry what the frozen questions ask of it: late recording, one real
-      correction, one gap never filled, one stated rule the facts violate.
-      done when: replaying all three in order produces a log whose `recorded_at`
-      values span the whole period; a read at three different `as_of` values
-      over one subject returns three different answers; every predicate in the
-      log resolves to exactly one entity; and `make check` exits 0
+- [ ] `generator`: one projection table and one form from v1 alone
+      The first look at whether the map is worth anything. Reads the sealed v1
+      and the log; generates, does not hand-write.
+      done when: a projection table is generated from `business/v1.yaml` alone
+      and its rows equal a direct read of the log at the same (valid_at, as_of);
+      a form is generated for one class from the same file; a value entered
+      through that form reaches the log via `perform()` and is returned by
+      `resolve_single`; and `make check` exits 0
 
 ---
 
 The interview is deferred, not abandoned — see `DECISIONS.md`, 29 Aug.
-`components/interview/SKILL.md` stays in the repo unused; the stage is run after
-the consuming components have been through a lap.

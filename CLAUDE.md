@@ -45,7 +45,6 @@ one stage needs several components.
 | `business/` | store | map versions and transcripts — files, no code |
 | `interview` | skill | interview and mapping |
 | `seal` | tool | interview and mapping, recording |
-| `episodes` | runner | recording, definition change — curated acts through the gate |
 | `ontology` | library | version resolution, read by generation, report, agent |
 | `generator` | generator | generation, live use |
 | `report` | harness | definition change |
@@ -55,8 +54,8 @@ one stage needs several components.
 
 **The interview is deferred for this PoC** (29 Aug). For the PoC the map is an
 input to what is being proven, not part of it: the map is authored by hand and
-sealed through the same gate, and every fact enters through a curated episode.
-The stage is completed after the consuming components have been through a lap.
+sealed through the same gate that an interview would use. The stage is completed
+after the consuming components have been through a lap.
 What follows describes that stage as it will be built, not as it is being run.
 
 The interview runs in Claude Desktop with a skill and the filesystem MCP

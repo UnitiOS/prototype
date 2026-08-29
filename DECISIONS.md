@@ -553,3 +553,42 @@ reasoning lives in `../archived/`. They are closed, which means not re-discussed
              repo and knows what the PoC must prove — so what holds it is the
              questions being frozen first with git order as evidence, Fareza
              reading a sample, and the data being cheap to redo.
+2026-08-29 · No runner for onboarding: `seal` is enough, and the draft carries
+             its facts after all. The reason the earlier line today gave —
+             a seal's facts all land at one `recorded_at` with one `valid_from`,
+             which is a flat history — does not reach opening balances, which
+             genuinely all take effect on one date and were genuinely all
+             recorded in one moment. Flat is correct here. That line stands for
+             a month of movements and is superseded for onboarding.
+2026-08-29 · Whether a runner is needed at all is deferred until onboarding has
+             been through the generator. It only becomes a question at the
+             three-month stage, where one month holds many acts at different
+             `valid_from` and `seal` would bump the map version for each. Deciding
+             it now means deciding without the one thing that would inform it.
+2026-08-29 · `episodes` leaves the component table. It was added this morning at
+             Fareza's request and is removed the same day, before any code was
+             written — nothing has needed it yet. If it returns it enters through
+             `NEXT.md` like any other component.
+2026-08-29 · Onboarding is not minimal. It must cover at least what an ERP
+             inventory module holds for this business: items, units of measure,
+             locations, opening balances. A thin onboarding would test the
+             generator against an input no real business produces, and the
+             earlier recommendation today to keep it minimal reasoned from what
+             a four-turn interview happened to yield rather than from what the
+             module has to hold.
+2026-08-29 · Derived rules are not in v1. Stock on hand at onboarding **is** the
+             opening balance; there is nothing to aggregate until movements
+             exist. The shape of a derived rule inside `annotations` therefore
+             stops blocking the map and moves to v2, where it will have real
+             rules to be judged against. The scope decision earlier today was
+             right; its timing was not.
+2026-08-29 · `value_ref` is required before v1 is sealed, not after. An inventory
+             module is mostly relationships — a flavour stored in a location, a
+             material carrying a unit — so a map that declares them while the log
+             cannot honour them is a map whose central claim is untested from the
+             first day.
+2026-08-29 · A one-page business profile is written and frozen before the map is:
+             how many flavours, the production rhythm, who records and when,
+             when stock is counted, when it is busy. It is the 27 Aug frozen
+             brief moved to where authorship now sits — then it bounded what an
+             interview could hear, now it bounds what curation may invent.
