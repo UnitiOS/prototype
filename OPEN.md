@@ -190,3 +190,8 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
   the other — the read rule breaks the tie on record time and returns one. Is
   that right for a disputed number, or does the reader need to see both
   · blocks: report + diff
+- Two slots sharing one `slot_uri` but declaring different ranges — one class,
+  one type. `seal` lets the first declaration decide and writes every fact under
+  that predicate the same way; found 29 Aug writing `value_ref`, not guarded,
+  because a rename keeping its `slot_uri` is the case that made sharing legal
+  and no draft has yet disagreed about the range · blocks: -

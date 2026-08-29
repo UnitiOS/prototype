@@ -33,6 +33,13 @@ registers itself — one row whose subject, predicate and value all name the sam
 thing — so a single query finds every entity the map has ever named, and a
 second seal reuses them instead of minting twins.
 
+Which column a `value` lands in is read from the map, not stated in the fact:
+if the predicate's slot declares a **class** as its range the value names
+another entity and is written as `value_ref`, and a URI first seen there is
+registered exactly as a subject is. A type range, an enum, or no range at all
+stays a `value_literal`. An inventory is mostly relationships, so this is what
+puts edges in the graph rather than strings that only look like URIs.
+
 The draft also names its transcript, relative to its own directory:
 
     annotations:
@@ -116,27 +123,49 @@ def _validate(text, name):
         ) from exc
 
 
-def _slot_uris(view, name):
-    """Every `slot_uri` the draft declares, in the order it declares them.
+def _slot_ranges(view, name):
+    """Every `slot_uri` the draft declares, and whether its range is a class.
+
+    In declaration order, and `True` where the value is another entity.
 
     An explicit `slot_uri` is not optional. A slot without one has no identity
     a fact can point at, and a URI derived from the schema's own naming would
     change with every rename and orphan every fact recorded before it.
+
+    The range decides which column a fact lands in: a class range means the
+    value names an entity, so it is a `value_ref`; a type range, an enum, or no
+    range at all is a `value_literal`. Nothing new is written into the draft to
+    say so — the map already declares it, and a second key would be a second
+    place for the two writers to disagree.
+
+    Slots are read through `induced_slot`, which applies `default_range` and
+    inheritance: a schema whose `default_range` is a class would otherwise have
+    every unranged slot read as a literal.
+
+    Two slots sharing one `slot_uri` is how a rename keeps its identity, and
+    the first of them decides the range. Two that shared a URI and disagreed
+    about it would be one predicate meaning two things — unguarded, and a line
+    in OPEN.md rather than a refusal invented here.
     """
-    uris = []
-    for slot_name, slot in view.schema.slots.items():
+    classes = set(view.all_classes())
+    ranges = {}
+    for slot_name in view.schema.slots:
+        slot = view.induced_slot(slot_name)
         if not slot.slot_uri:
             raise DraftError(
                 f"{name}: slot '{slot_name}' declares no slot_uri, so it has no "
                 f"identity in the kernel"
             )
-        if slot.slot_uri not in uris:
-            uris.append(slot.slot_uri)
-    return uris
+        ranges.setdefault(slot.slot_uri, slot.range in classes)
+    return ranges
 
 
-def _facts(annotations, slot_uris, name):
-    """The stated facts, checked against the vocabulary the draft declares."""
+def _facts(annotations, ranges, name):
+    """The stated facts, checked against the vocabulary the draft declares.
+
+    Each carries `ref`, taken from its predicate's range: `True` where the
+    value names an entity rather than saying something about one.
+    """
     stated = annotations.get("facts") or []
     if not isinstance(stated, list):
         raise DraftError(f"{name}: annotations.facts must be a list")
@@ -150,7 +179,7 @@ def _facts(annotations, slot_uris, name):
                 f"{name}: fact {i} has keys {sorted(fact)}, expected "
                 f"{sorted(FACT_KEYS)}"
             )
-        if fact["predicate"] not in slot_uris:
+        if fact["predicate"] not in ranges:
             raise DraftError(
                 f"{name}: fact {i} names predicate {fact['predicate']!r}, which "
                 f"no slot in this draft declares"
@@ -162,6 +191,7 @@ def _facts(annotations, slot_uris, name):
                 "subject": str(fact["subject"]),
                 "predicate": str(fact["predicate"]),
                 "value": str(fact["value"]),
+                "ref": ranges[fact["predicate"]],
             }
         )
     return facts
@@ -300,9 +330,9 @@ def seal(conn, draft_path, *, actor_id, into=None, sealed_at=None):
     view = _validate(text, draft_path.name)
     draft = yaml.safe_load(text) or {}
 
-    slot_uris = _slot_uris(view, draft_path.name)
+    ranges = _slot_ranges(view, draft_path.name)
     annotations = draft.get("annotations") or {}
-    facts = _facts(annotations, slot_uris, draft_path.name)
+    facts = _facts(annotations, ranges, draft_path.name)
 
     valid_from = _valid_from(annotations, draft_path.name)
     _flat(annotations, draft_path.name)
@@ -337,8 +367,16 @@ def seal(conn, draft_path, *, actor_id, into=None, sealed_at=None):
         cur.execute(_REGISTRY_SQL, (URI_PREDICATE,))
         known = {uri: entity_id for uri, entity_id in cur.fetchall()}
 
+    # A class-ranged value names an entity, and an entity has to exist before a
+    # row can point at it — so a URI first seen on the value side is registered
+    # exactly as a subject is. Deduping against `known` and against this list is
+    # what makes two facts about `uniti:freezer_a` one entity rather than two,
+    # whether they name it as a subject, as a value, or one of each.
+    named = [fact["subject"] for fact in facts]
+    named += [fact["value"] for fact in facts if fact["ref"]]
+
     minting = []
-    for uri in [URI_PREDICATE] + slot_uris + [fact["subject"] for fact in facts]:
+    for uri in [URI_PREDICATE] + list(ranges) + named:
         if uri not in known and uri not in minting:
             minting.append(uri)
 
@@ -359,7 +397,13 @@ def seal(conn, draft_path, *, actor_id, into=None, sealed_at=None):
         {
             "subject": ref(fact["subject"]),
             "predicate": ref(fact["predicate"]),
-            "value": fact["value"],
+            # One or the other, never both: the kernel's value_exactly_one
+            # constraint counts the two columns together.
+            **(
+                {"ref": ref(fact["value"])}
+                if fact["ref"]
+                else {"value": fact["value"]}
+            ),
             "valid_from": valid_from,
             "source": FACT_SOURCE,
         }

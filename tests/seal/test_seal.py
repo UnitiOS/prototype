@@ -5,6 +5,10 @@ Two fixture drafts describe the same ice cream shop twice. `draft_two` renames
 `batch_litres` — so the second seal shares four predicates with the first,
 one of them under a new name, and brings one of its own.
 
+A third, `draft_ranges`, is about one rule and nothing else: which column a
+value lands in. It declares a class-ranged slot beside a type-ranged one and an
+unranged one, and names one freezer only on the value side.
+
 The seals land in a temporary directory rather than in `business/`: a test that
 wrote there would leave a v3 behind every time `make check` ran, and a test that
 merely read there would make the production map store a fixture. Nothing here
@@ -35,6 +39,7 @@ FIXTURES = Path(__file__).resolve().parent / "fixtures"
 # v2 valid from 1 Feb and sealed 1 Apr. So each axis can hide v2 on its own.
 SEALED_ONE = datetime(2026, 3, 1, 9, 0, tzinfo=timezone.utc)
 SEALED_TWO = datetime(2026, 4, 1, 9, 0, tzinfo=timezone.utc)
+SEALED_RANGES = datetime(2026, 6, 1, 9, 0, tzinfo=timezone.utc)
 BACKDATED = "2026-01-15T09:00:00Z"
 
 
@@ -53,6 +58,14 @@ def sealed(conn, tmp_path_factory):
     second = seal(conn, FIXTURES / "draft_two.yaml", actor_id="test",
                   into=into, sealed_at=SEALED_TWO)
     return into, first, second
+
+
+@pytest.fixture(scope="module")
+def ranged(conn, tmp_path_factory):
+    """The class-range draft, sealed into a directory of its own."""
+    into = tmp_path_factory.mktemp("ranges")
+    return seal(conn, FIXTURES / "draft_ranges.yaml", actor_id="test",
+                into=into, sealed_at=SEALED_RANGES)
 
 
 def _rows(conn, intent_id):
@@ -241,6 +254,66 @@ def test_the_cli_seals_at_the_instant_it_is_given(conn, tmp_path):
     assert len([row for row in rows if row[1] == "human_stated"]) == 3
     assert len({row[2] for row in rows}) == 1
     assert {row[0] for row in rows} == {instant}
+
+
+def _stated(conn, intent_id):
+    """The facts of one seal, as (predicate_uri, literal, ref), in order."""
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT p.value_literal, a.value_literal, a.value_ref
+            FROM assertion a
+            JOIN assertion p ON p.subject_id = a.predicate_id
+                            AND p.subject_id <> p.predicate_id
+                            AND p.value_literal IS NOT NULL
+            WHERE a.intent_id = %s AND a.source = %s
+            ORDER BY a.seq
+            """,
+            (intent_id, "human_stated"),
+        )
+        return cur.fetchall()
+
+
+def test_a_class_ranged_fact_lands_as_a_ref_and_a_type_range_as_a_literal(conn, ranged):
+    """The one rule: the map's range decides the column, not the value's shape.
+
+    `uniti:stored_in` names a class, so its values are entity ids even though
+    they were written in the draft as the same kind of string as any other.
+    """
+    stated = _stated(conn, ranged["intent_id"])
+    literals = {p: lit for p, lit, ref in stated if ref is None}
+    refs = [(p, ref) for p, lit, ref in stated if ref is not None]
+
+    # A type range and no range at all: both literal, and no ref beside them.
+    assert literals == {
+        "uniti:freezer_label": "Freezer D",
+        "uniti:batch_flavour": "Stracciatella",
+        "uniti:batch_litres": "18.5",
+    }
+    # The class range: three refs, and every one of them with a null literal.
+    assert [p for p, ref in refs] == ["uniti:stored_in"] * 3
+    assert all(lit is None for p, lit, ref in stated if ref is not None)
+
+
+def test_two_facts_naming_one_uri_reach_one_entity(conn, ranged):
+    """One entity, whether the URI arrives as a subject or as a value."""
+    freezer_d = ranged["entities"]["uniti:freezer_d"]
+    refs = [ref for _, lit, ref in _stated(conn, ranged["intent_id"]) if ref]
+
+    # Two batches stored in the same freezer point at the same row, and it is
+    # the same entity the freezer's own label was asserted about.
+    assert refs.count(freezer_d) == 2
+    assert len(_entities_named(conn, "uniti:freezer_d")) == 1
+
+
+def test_a_class_ranged_value_registers_a_uri_nothing_else_names(conn, ranged):
+    """`uniti:freezer_e` appears only on the value side, and still gets an id."""
+    freezer_e = ranged["entities"]["uniti:freezer_e"]
+    assert freezer_e in ranged["minted"].values()
+    assert len(_entities_named(conn, "uniti:freezer_e")) == 1
+
+    refs = [ref for _, lit, ref in _stated(conn, ranged["intent_id"]) if ref]
+    assert refs.count(freezer_e) == 1
 
 
 def _counts(conn):

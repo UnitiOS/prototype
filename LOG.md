@@ -1049,3 +1049,62 @@ Also surprising, and it cost an amend: Docker Desktop was down again at the
 start of this run — the same failure the 28 Aug transcript records mid-session —
 and came up in ten seconds once started, so the two-minute cost is starting it,
 not waiting for it.
+
+---
+
+## 2026-08-29 · `seal` writes `value_ref` from the slot's `range`
+
+Ran: `make check` — 44 passed (41 before, three new in `tests/seal/`), replay
+identical twice at 5334 bytes, exit 0. The working `uniti` database still reads
+0/0/0 in all three tables; everything here ran against `uniti_check`.
+
+`_slot_uris` became `_slot_ranges` and returns `{slot_uri: is_class_range}`
+instead of a list. Every caller changed with it: `_facts` looks the flag up and
+carries it on each fact as `ref`, minting takes `list(ranges)` where it took the
+list, and the assertion dict passes `ref=` instead of `value=` when the flag is
+set. `perform()` was not touched — it has taken a `ref` key since it was
+written, and the assertion column list is unchanged.
+
+The class test is `slot.range in view.all_classes()`. Everything else — a type,
+an enum, `default_range`, or no range at all — is a literal, which is what the
+old code did to every value, so no existing fixture moved.
+
+Three things the probe settled before any code was written:
+
+- **`induced_slot(name)` works without a class.** It applies `default_range`
+  and inheritance, and returns the class name verbatim for a class range. The
+  26 Aug note gives it as `induced_slot(slot, class)`; the class argument is
+  optional and a top-level slot needs none.
+- **An absent `slot_uri` is not synthesised by `induced_slot`.** It returns
+  `None`, so the refusal that `_slot_uris` carried survives the move unchanged
+  and `no_slot_uri.yaml` still fails on the same slot name.
+- **No `default_range` means `range` is `None`, not `string`.** So the rule has
+  to be "is it a class", never "is it not a type" — the latter would have made
+  every unranged slot in a schema without a `default_range` a ref.
+
+A class-ranged value naming a URI nothing else names registers it exactly as a
+subject does: the value URIs are appended to the same list the subjects are
+deduped through, so two facts naming `uniti:freezer_d` — one as a subject, one
+as a value — reach one entity. The database was already enforcing half of this:
+`value_ref` has a foreign key to `entity(id)`, so a ref to an unregistered URI
+could not have been written at all, it would have raised.
+
+New fixture `tests/seal/fixtures/draft_ranges.yaml` and its provenance note.
+`stored_in` ranges on `Freezer`, `batch_litres` on `decimal`, `batch_flavour` on
+nothing; six facts, three of them refs, and `uniti:freezer_e` named only on the
+value side. `draft_one` and `draft_two` were left alone — both have tests
+counting their facts exactly, and a third draft reads better than a fourth
+assertion bolted onto the first.
+
+Not guarded, and now a line in OPEN.md: two slots sharing one `slot_uri` while
+declaring different ranges. `setdefault` lets the first win. Sharing a
+`slot_uri` is legal because that is how a rename keeps its identity —
+`draft_two` does exactly that — and no draft has yet disagreed about the range,
+so the refusal has no case to be written against.
+
+Surprising: the kernel needed nothing. `perform()` has accepted `ref` and
+resolved a minted label through it since the first hundred lines, and
+`value_exactly_one` and the foreign key were both already sitting there waiting.
+The gap the item names — a map declaring relationships the log cannot honour —
+was never in the log. It was seven lines of `seal` calling `str()` on everything
+it saw.

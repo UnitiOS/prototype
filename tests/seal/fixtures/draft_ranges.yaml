@@ -1,0 +1,61 @@
+id: https://uniti.example/business
+name: business
+title: Ice cream inventory, with one relationship
+description: A batch is stored in a freezer. That slot's range is a class.
+prefixes:
+  linkml: https://w3id.org/linkml/
+  uniti: https://uniti.example/business/
+default_prefix: uniti
+imports:
+  - linkml:types
+default_range: string
+classes:
+  Freezer:
+    description: A cabinet stock is held in.
+    slots:
+      - freezer_label
+  Batch:
+    description: One production run of one flavour.
+    slots:
+      - batch_flavour
+      - batch_litres
+      - stored_in
+slots:
+  freezer_label:
+    slot_uri: uniti:freezer_label
+    description: What the staff call this freezer.
+  batch_flavour:
+    slot_uri: uniti:batch_flavour
+    description: No range, so default_range applies. A literal.
+  batch_litres:
+    slot_uri: uniti:batch_litres
+    range: decimal
+    description: A type range. Still a literal.
+  stored_in:
+    slot_uri: uniti:stored_in
+    range: Freezer
+    description: A class range. The value names an entity, not a string.
+annotations:
+  transcript: draft_ranges.txt
+  valid_from: '2026-05-01T00:00:00Z'
+  facts:
+    - subject: uniti:freezer_d
+      predicate: uniti:freezer_label
+      value: Freezer D
+    - subject: uniti:batch_71
+      predicate: uniti:batch_flavour
+      value: Stracciatella
+    - subject: uniti:batch_71
+      predicate: uniti:batch_litres
+      value: 18.5
+    # Two batches into the same freezer, and one of them into a freezer this
+    # draft never names as a subject.
+    - subject: uniti:batch_71
+      predicate: uniti:stored_in
+      value: uniti:freezer_d
+    - subject: uniti:batch_72
+      predicate: uniti:stored_in
+      value: uniti:freezer_d
+    - subject: uniti:batch_72
+      predicate: uniti:stored_in
+      value: uniti:freezer_e

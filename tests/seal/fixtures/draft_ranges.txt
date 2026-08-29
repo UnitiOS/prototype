@@ -1,0 +1,9 @@
+Provenance note for draft_ranges.yaml.
+
+Hand-authored fixture, not a conversation. It exists to exercise the one rule
+this draft is about: `stored_in` declares a class as its range, so its values
+name entities; `batch_litres` declares a type and `batch_flavour` declares
+nothing, so both stay literals.
+
+uniti:freezer_e is named only as a value, never as a subject — that is the
+case where a class-ranged value has to register a URI the way a subject does.
