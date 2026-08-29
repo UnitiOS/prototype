@@ -1,0 +1,37 @@
+Wawancara Uniti — usaha eskrim
+Sesi: 2026-08-28
+
+[Pemilik] mari kita mulai. jadi saya memiliki usaha eskrim
+
+[Pewawancara] Belum ada draft sebelumnya di folder, jadi kita mulai dari nol.
+Ditanyakan: bentuk usahanya seperti apa — ada toko yang didatangi orang,
+atau eskrimnya dititip/dikirim ke tempat lain, atau dua-duanya. Dan siapa
+yang membuat eskrimnya.
+
+[Pemilik] ada toko dan produksi juga di toko. saya ingin fokus untuk inventorynya
+
+[Pewawancara] Ditanyakan: kalau menyebut "stok", yang dimaksud itu bahan-bahan
+untuk membuat, atau eskrim yang sudah jadi, atau dua-duanya tapi dihitung
+sendiri-sendiri.
+
+[Pemilik] jadi stok itu ada stok untuk setiap rasa, dan juga ada stok untuk
+bahan baku
+
+[Pewawancara] Ditanyakan: eskrim yang sudah jadi disimpan di mana saja — cuma di
+etalase depan atau ada simpanan lain di belakang. Dan kalau ada dua tempat,
+apakah "stok vanilla" itu satu angka gabungan atau dipisah per tempat.
+
+[Pemilik] toko mulai beroperasi dari bulan Februari tahun ini
+
+[Pewawancara] Dicatat sebagai valid_from 2026-02-01. Hari persisnya tidak
+disebutkan, jadi diambil awal bulan — bulan dan tahun yang dinyatakan pemilik.
+
+Belum terjawab sampai seal ini:
+  - satuan stok rasa dan stok bahan baku (liter / wadah / porsi?)
+  - apakah eskrim jadi disimpan di dua tempat (etalase depan vs simpanan
+    belakang), dan apakah stok per rasa itu satu angka gabungan atau dipisah
+
+[Catatan sesi] Seal dicoba 2026-08-28 dan tidak jadi: Docker belum jalan,
+jadi kernel (uniti-db, Postgres) tidak bisa dihubungi. Proses menggantung di
+koneksi dan dihentikan. Tidak ada file versi yang tertulis — business/ masih
+hanya berisi draft. Draft siap, tinggal diulang setelah database hidup.
