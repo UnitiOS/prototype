@@ -195,3 +195,9 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
   that predicate the same way; found 29 Aug writing `value_ref`, not guarded,
   because a rename keeping its `slot_uri` is the case that made sharing legal
   and no draft has yet disagreed about the range · blocks: -
+- A slot whose ranges are all classes but stated as `any_of` reads as a literal.
+  `induced_slot` leaves `range` at `default_range` and puts the classes under
+  `any_of`, so `seal`'s class test sees `string` and the fact lands in the wrong
+  column silently. Profile §6 has one such relationship — "Stock count counted
+  Material or Pan" — so the map either gives those two a common superclass or
+  `seal` learns to read `any_of` · blocks: map

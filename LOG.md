@@ -1108,3 +1108,34 @@ resolved a minted label through it since the first hundred lines, and
 The gap the item names — a map declaring relationships the log cannot honour —
 was never in the log. It was seven lines of `seal` calling `str()` on everything
 it saw.
+
+---
+
+## 2026-08-30 · Verifying the `value_ref` item, and one range shape it misses
+
+Ran: `make check` — 44 passed, replay identical twice at 5334 bytes, exit 0.
+`ffb08eb` already carries the item; this run re-ran it against the committed
+tree and read the 29 Aug decisions in order to check the entry above was written
+against what stands. It was: the interview is deferred, the map is hand-authored
+and goes through the same gate, `value_ref` is required before v1 rather than
+after, and the morning's episode runner was undecided again by evening — none of
+which changes what `seal` does with a range.
+
+Probed one shape the item does not cover, because the next item needs it. A slot
+whose ranges are all classes but stated as `any_of` — no top-level `range` —
+comes back from `induced_slot` with `range='string'` (the schema's
+`default_range`) and the two classes under `.any_of`. So `slot.range in classes`
+is `False` and the fact lands as a literal. No refusal, no warning: the wrong
+column, silently.
+
+That is not hypothetical for the map. Profile §6 lists "Stock count counted
+Material or Pan", which is exactly that shape. The map can avoid it — give the
+two a common superclass, which the flat `is_a`-only decision of 29 Aug allows —
+or `seal` learns to read `any_of`. Choosing between those is the map's decision,
+not this item's, so it is a line in OPEN.md blocking `map` rather than a change
+here.
+
+Surprising: `default_range` makes the miss silent rather than loud. Without one,
+`range` would be `None` and an `any_of` slot would at least be visibly unranged;
+with `string` declared at the top of the schema, an unranged slot and a
+class-union slot are indistinguishable to the rule as written.
