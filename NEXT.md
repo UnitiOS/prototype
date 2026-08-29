@@ -157,7 +157,7 @@ Adding a sixth item means removing one.
       version's `sealed_at` and every assertion's `recorded_at`; and
       `make check` exits 0
 
-- [ ] Empty the map store, and stop a test depending on what it holds
+- [x] Empty the map store, and stop a test depending on what it holds
       `business/v1.yaml` and `v2.yaml` are fixture drafts sealed for real. Left
       there, the first role-played interview lands as v3 superseding a business
       nobody described. They cannot simply be deleted:
@@ -177,19 +177,60 @@ Adding a sixth item means removing one.
       by the default DSN reports zero rows in all three tables; and `make check`
       exits 0
 
-- [ ] `interview`: the skill, and one session run through it
-      `components/interview/SKILL.md` is written and uploaded to Claude Desktop
-      by hand. The business is played from a one-page brief written by whoever
-      plays it — not by whoever wrote the skill — and frozen before the session
-      starts.
-      done when: a role-played session leaves `business/draft.yaml` and
-      `business/draft.txt`; `seal` exits 0 on that draft; the resulting
-      `business/vN.yaml` carries no `facts` block and names its transcript;
-      every `predicate` stated in the session resolves to exactly one entity in
-      the log; and `make check` exits 0
+- [ ] Keep the first session's evidence, then empty both stores again
+      `business/` holds an untracked `v1.yaml`, `v1.txt`, `draft.yaml` and
+      `draft.txt` from the 28 Aug interview, and the working log holds the
+      1 intent / 7 entities / 8 assertions that seal wrote. It is the only
+      record of the first real session, so it is committed before it is
+      removed — evidence, not a fixture.
+      done when: those four files are committed in a commit of their own that
+      touches nothing else; `business/` then holds no `v*.yaml` and no
+      `draft.*`; the working database named by the default DSN reports zero rows
+      in all three tables; and `make check` exits 0
+
+- [ ] Competency questions, written and frozen before any data is curated
+      `episodes/questions.md`. Drawn from the five classes in the 27 Aug
+      decision, not from what the map or the data happens to make easy. This is
+      the frozen-brief guard moved to where authorship now sits; written after
+      the data, it measures nothing.
+      done when: the file names at least one question per class and says which
+      class each tests; `git log --diff-filter=A` shows it added before any
+      file under `episodes/` other than itself; and it is never modified after
+
+- [ ] The inventory map, hand-authored and sealed as v1
+      Blocked until the shape of a derived rule inside `annotations` is settled
+      — that is a T3 and it is the next discussion. Structure only: the draft
+      states no facts.
+      done when: `business/v1.yaml` carries classes and slots for stock and
+      movement with a unit on every quantity; every top-level slot declares a
+      `slot_uri`; `annotations.transcript` names a provenance note that sits
+      beside it after the seal; at least one derived rule is expressed in the
+      agreed shape; `seal` exits 0; the sealed file carries no `facts` block;
+      and `make check` exits 0
+
+- [ ] `episodes`: the runner, and one act replayed
+      A new component. Curated acts in files, replayed through `perform()` —
+      never a direct INSERT. One act is one call at one `recorded_at`. Facts
+      carry a local key so a later act can revoke an earlier one.
+      done when: one episode file replayed twice into a freshly dropped database
+      produces byte-identical projections; every assertion's `ontology_version`
+      equals what `components/ontology/resolve.py` returns for that act's
+      clocks, with no version written in the file; a fact whose slot declares a
+      class as its `range` lands as `value_ref` and a type range as a literal;
+      a later act revokes an earlier act's fact by its key; and `make check`
+      exits 0
+
+- [ ] The three data sets, as one log that grows
+      Onboarding, three months, one year — one history, not three. Curated to
+      carry what the frozen questions ask of it: late recording, one real
+      correction, one gap never filled, one stated rule the facts violate.
+      done when: replaying all three in order produces a log whose `recorded_at`
+      values span the whole period; a read at three different `as_of` values
+      over one subject returns three different answers; every predicate in the
+      log resolves to exactly one entity; and `make check` exits 0
 
 ---
 
-Episodes two and three are not here yet: they need a write path for a fact
-correction, which is the T3 in `OPEN.md`. `seal` is the only writer into the
-kernel today, and a correction is not a map change.
+The interview is deferred, not abandoned — see `DECISIONS.md`, 29 Aug.
+`components/interview/SKILL.md` stays in the repo unused; the stage is run after
+the consuming components have been through a lap.

@@ -18,8 +18,9 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
 - Does the diff attribute a difference to the individual rule that moved, or is
   data-vs-definition decomposition enough for the PoC · blocks: report + diff
 - The shape of a derived rule inside `annotations` — SQL, a narrow declarative
-  aggregate, or both with a sentence. Decided from real stated rules, not before
-  · blocks: generator
+  aggregate, or both with a sentence. The 26 Aug deferral expired 29 Aug: the
+  map is hand-authored, so a real stated rule now comes from there. This is the
+  next thing to settle · blocks: map + generator
 - Does graph review need competency questions written by someone other than the
   ontology's author, plus one deliberately wrong concept — now that "every
   predicate in the log exists in the ontology" is a query · blocks: graph review
@@ -27,13 +28,14 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
   interview commits at a single recorded_at — answered 27 Aug: dated role-play
   episodes, each sealed at its own instant. Left as a line only until an episode
   has actually been run that way · blocks: -
-- What writes a fact correction. `seal` is the only path into the kernel, and a
-  correction is not a map change — sealing one bumps the ontology version for
-  data that moved, which makes the definition-vs-data decomposition lie
-  · blocks: report + diff
+- What writes a fact correction — answered 29 Aug: the episode runner is a
+  second writer into the kernel, so a correction is an ordinary episode and no
+  longer bumps the ontology version. Left as a line only until one has actually
+  been replayed that way · blocks: -
 - Does `report` come before `generator`, now that the spread comes from episodes
   rather than live use — the generator shows the system can be used, the report
-  shows it is better · blocks: report
+  shows it is better. Sharpened 29 Aug: with the interview deferred, this is the
+  only remaining ordering question in the lap · blocks: report
 - `seal` never writes a `value_ref`. `perform()` takes one, but `_facts()`
   str()s every value, so a stated relationship lands as a literal that merely
   looks like a URI — confirmed 28 Aug: every assertion from a seal has
@@ -41,8 +43,10 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
   `range: Freezer`; the log cannot honour it, so the graph has nodes and no
   edges. A draft could say which is which, or `seal` could read the slot's
   `range` from the map — a class means a ref, a type means a literal — which
-  needs no new key and puts the logic where the logic lives
-  · blocks: graph review
+  needs no new key and puts the logic where the logic lives. Decided 29 Aug:
+  the range rule, shared by `seal` and the runner. The hand-authored draft
+  states no facts, so the runner is where it must land first; `seal`'s own
+  fact path is unused for this PoC · blocks: episodes
 - Operational definition of "the kernel recorded it correctly" — every screen
   state reproducible from the log alone at some (valid_at, as_of)? · blocks:
   live use
@@ -63,8 +67,10 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
   definition change. Sharpened 27 Aug — this PoC is also simulation, so the
   question stays open by construction. A role-player never rambles, never
   contradicts themselves unnoticed, and never has tacit knowledge they cannot
-  articulate. Either the brief carries that mess or nothing does
-  · blocks: definition change
+  articulate. Either the brief carries that mess or nothing does. Deferred
+  29 Aug: there is no interview at all in this PoC, so this is not merely open
+  by construction — it is untouched, and the interview stage is where it gets
+  asked · blocks: -
 - Can a person dictate a precise ontology change and have the chatbot execute it
   mechanically, keeping LLM authoring off the critical path · blocks: -
 - What must already work before the first ontology is written · blocks: -
@@ -143,9 +149,9 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
 - Migrating the working log and destroying it are the same command. Emptying it
   on 28 Aug was done by re-applying `001_schema.sql` to the default DSN, which
   is still the only thing that has ever migrated that database — and it opens
-  with three `DROP TABLE`s. Once a real episode is sealed there, no schema
-  change can be applied without losing the evidence it was applied to
-  · blocks: kernel recording
+  with three `DROP TABLE`s. Softened 29 Aug rather than fixed: once the whole
+  log replays from episode files, destruction is recoverable and a schema change
+  · blocks: kernel recording — softened only while every fact there came from a file
 - The two databases have not actually diverged: before the 28 Aug wipe, the
   working log's indexes, check constraints, foreign keys and deny triggers
   matched `uniti_check` exactly. They match by history alone, so the wipe
@@ -155,3 +161,32 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
   empty directory, and both `seal`'s default `--into` and the interview skill
   write into it by path. First real seal makes the placeholder redundant
   · blocks: -
+- Replaying an episode file twice appends it twice. `perform()` has no
+  idempotency and the kernel forbids delete, so a deterministic re-run means
+  dropping the tables first. Does the runner refuse a non-empty log, or is that
+  the caller's problem · blocks: episodes
+- Where episode files live, and their exact shape. Sketched 29 Aug: one act per
+  entry with `recorded_at`, `action_name`, and facts carrying a local `key` for
+  a later `revokes` to name · blocks: episodes
+- How many acts per data set — guess is 1 for onboarding, 30-40 for three
+  months, ~150 for a year. Enough spread to be real, few enough to read by hand
+  when a number looks wrong · blocks: episodes
+- What the runner does when `resolve_version` returns None for an act's clocks —
+  an act dated before the map's first `sealed_at` has no version to name
+  · blocks: episodes
+- Where the frozen competency questions live. Not a design document and not a
+  root `.md`: proposed `episodes/questions.md`, data beside the data it guards
+  · blocks: episodes
+- Whether a hand-authored map needs `gen-erdiagram` to be readable at all before
+  it is sealed, or whether the graph render stays a graph-review concern
+  · blocks: -
+- Does the restatement report — every number that moved since the last close,
+  split into data, correction and definition — belong in `report` or is it the
+  same harness seen from a different angle · blocks: report + diff
+- `confidence` has three levels and has never been used by any writer. Curated
+  data needs at least one low-confidence fact for a number to carry what it is
+  made of · blocks: episodes
+- Two competing counts of the same thing at the same valid_at, neither revoking
+  the other — the read rule breaks the tie on record time and returns one. Is
+  that right for a disputed number, or does the reader need to see both
+  · blocks: report + diff

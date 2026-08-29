@@ -406,3 +406,150 @@ reasoning lives in `../archived/`. They are closed, which means not re-discussed
              not enforced, and that a stated rule is recorded verbatim rather
              than formalised. Everything about how to hold a conversation is
              left to the model.
+
+2026-08-29 · The interview is deferred until the consuming components exist. For
+             the PoC the map is an **input** to what is being proven, not part
+             of it: what has to be shown sits at the reading end — projections,
+             a generated UI, an agent finding something nobody pointed at.
+             Requiring a working interview first puts the longest and least
+             certain component on the critical path of every other one. The
+             stage is not abandoned; it is completed after the rest of the lap
+             runs. The cost is named rather than absorbed: the T2 on LLM
+             authoring stays open, which under the 27 Aug simulation decision it
+             already was.
+2026-08-29 · A second author of the map, not a second writer. The 26 Aug line
+             "only the chatbot writes the ontology" conflated composing a draft
+             with writing the store. The writer is `seal` — it numbers the
+             version, stamps `sealed_at`, refuses invalid LinkML, mints
+             predicates from `slot_uri`. A hand-authored draft goes through the
+             same gate, so versions stay linear, there is no reconciliation
+             between writers, and the viewer stays read-only. That line's
+             restriction on who may compose a draft is superseded; its rule
+             about who writes is not.
+2026-08-29 · The hand-authored draft states structure only, and no facts. Every
+             fact enters through an episode instead. A seal's facts all land at
+             one `recorded_at` carrying the version's `valid_from`, which is
+             exactly the flat history the episodes exist to avoid, and one kind
+             of thing should have one writer. `seal`'s fact path stays in the
+             code for the interview later.
+2026-08-29 · Facts are written through `perform()`, never by direct INSERT. The
+             deny triggers refuse UPDATE, DELETE and TRUNCATE, so one wrong row
+             can only be corrected by dropping the tables and rewriting the whole
+             history; and the gate is also what mints entities and registers
+             URIs, so a hand-written INSERT is the same work plus bookkeeping.
+             Measured, not assumed: 200 assertions through the gate, one
+             transaction each, cost 0.84 s.
+2026-08-29 · Curated data lives in episode files outside the database, and a
+             runner replays them. The whole log must be reproducible from a
+             source outside Postgres, deterministically and repeatedly, because
+             DROP-and-rewrite is the only correction the kernel allows. This is
+             the discipline `make replay` already proves for the synthetic seed,
+             applied to evidence rather than to a fixture.
+2026-08-29 · A fact in an episode carries a local key, and the runner holds the
+             key-to-uuid map across a whole replay. `revokes` names the id of
+             another row, and an id exists only after that row is written — so a
+             correction in month nine cannot reach a fact from month one by any
+             other means.
+2026-08-29 · One act is one `perform()` call at one `recorded_at`, following the
+             25 Aug line. The record-time spread comes from the number of acts,
+             not from varying the instant inside one.
+2026-08-29 · The runner derives `ontology_version` by resolving the map at the
+             act's clocks; it is never written in the episode file. Typed in, the
+             map-to-log join is never exercised, and that join is part of what
+             the PoC claims. Derived, the curated data proves the map is read on
+             both time axes as a side effect of existing.
+2026-08-29 · The three data sets are one log that grows, not three separate
+             datasets. An `as_of` read that crosses all three is the axis being
+             demonstrated; three logs would make that read meaningless.
+2026-08-29 · A value whose slot declares a class as its `range` is written as
+             `value_ref`; a type range stays a literal. This answers the open
+             question on `seal` never writing a ref. Inventory is mostly
+             relationships, so without refs the graph has nodes and no edges and
+             the agent has nothing to navigate. The rule is read from the map and
+             needs no new key, and both writers use the one rule — two writers
+             disagreeing about which values are refs would be worse than no edges
+             at all.
+2026-08-29 · What writes a fact correction — answered. The runner is the second
+             writer into the kernel, so a correction is an ordinary episode and
+             no longer bumps the ontology version for data that moved. The
+             definition-vs-data decomposition stops lying. This closes the T3
+             that blocked report and diff, and it closes it because a component
+             appeared, not because the argument improved.
+2026-08-29 · Competency questions are written and frozen before any data is
+             curated. This is the frozen-brief guard of 27 Aug moved to where
+             authorship now sits: data curated first will be curated to answer
+             the questions its author imagines, and the demo then validates
+             itself. They are drawn from the five classes in the 27 Aug line,
+             which forces the data to carry late recording, one real correction,
+             one gap that is never filled, and one stated rule the recorded facts
+             violate.
+2026-08-29 · A hand-authored map carries a provenance note as its transcript.
+             `seal` requires `annotations.transcript` to name a file that exists,
+             and one page saying where the terms and the numbers came from is
+             real evidence — in six weeks it is the only thing that answers why
+             the map says what it says. Loosening `seal`'s contract would cost
+             more and remove a guarantee.
+2026-08-29 · Derived rules are in scope for the hand-authored map, so the shape
+             of a rule inside `annotations` must be settled before the map is
+             written. The 26 Aug line deferred that shape until a real stated
+             rule had been heard; a hand-authored map is now where such a rule
+             comes from, so the deferral expires rather than being overruled.
+2026-08-29 · `business/` is emptied again and the hand-authored map is sealed as
+             v1. The interview's v1 is three classes with no unit on either stock
+             slot; keeping it as an onboarding version would force the proper map
+             to build on a vocabulary nobody chose. It is committed to git before
+             being removed — it is the only record of the first real session, and
+             it is evidence, not a fixture.
+2026-08-29 · The episode runner is a component of its own, and enters through
+             `NEXT.md`. It is not part of `seal`: seal turns a description into a
+             version, the runner turns curated acts into history, and the two
+             fail in different ways.
+2026-08-29 · The definition of done stays the shrinkage report while the design
+             widens. Designing for one report makes the system narrow, but
+             dropping the one concrete report leaves nothing that can falsify the
+             premise — and a widening with no falsifier is the exact shape of the
+             archived corpus: 2,800 lines of design and no code. Shrinkage is the
+             instance, not the target. Any single concrete report would serve;
+             this one is already named and already understood.
+2026-08-29 · Additional target rules are chosen because their **shapes** differ,
+             not because they complete the domain: stock on hand (aggregation
+             over movements), shrinkage (a ratio of two derived quantities, and
+             dependent on the first), a low-stock threshold (a threshold that
+             produces violations, which is what exercises "is what was recorded
+             consistent with the rules that were stated"), and usage rate per
+             week (a windowed aggregation feeding the threshold). A rule shape
+             that survives only one of the four is found out before the map is
+             written rather than after.
+2026-08-29 · The claim against BI is narrowed to **contested numbers**, and its
+             limits are named. What warehouses already do: SCD2, daily
+             snapshots, engine-level time travel, metrics as versioned code. What
+             breaks: the knowledge axis dies at the ETL boundary — a correction
+             is learned at the next load and SCD2 sits on dimensions, not facts,
+             so the old value is overwritten; a metric version has no join to the
+             numbers it produced, so "compute this on March's definition" is a
+             code checkout, not a query; lineage names which table fed which,
+             never whether a number moved because of data, a correction or a
+             definition. Not helped, and said out loud: data quality, pipeline
+             reliability, and metric sprawl. Ingestion gets more expensive, not
+             less.
+2026-08-29 · Month-end close is curated as a real moment: each month has a
+             recorded (valid_at, as_of) pair at which its report was actually
+             read. Otherwise "what did the March report say" has no referent and
+             `as_of` is a number chosen at demo time, which is a performance
+             rather than a demonstration. It also gives the restatement report
+             its baseline — every number that moved since the last close.
+2026-08-29 · One metric in one period must move for all three reasons — a
+             late-recorded fact, a real correction, and a definition change.
+             Spread across different metrics or different periods, the
+             data-correction-definition decomposition is never exercised by the
+             data that exists.
+2026-08-29 · Claude Code curates the data; the competency questions are written
+             here with Fareza and frozen before it starts. Curation is not done
+             until it is replayed, counted and checked, and only Claude Code can
+             run anything — Desktop could write 150 acts without ever knowing one
+             of them landed. But an agent that invents the data must not also
+             invent the questions, which is the 27 Aug guard in a new place. The
+             separation is weaker than between two people — Claude Code reads the
+             repo and knows what the PoC must prove — so what holds it is the
+             questions being frozen first with git order as evidence, Fareza
+             reading a sample, and the data being cheap to redo.
