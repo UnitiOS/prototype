@@ -1288,3 +1288,62 @@ chocolate, stracciatella and the three sorbets announce their base in their own
 names, and writing those down would have been the one invention nothing
 downstream could detect — fifteen inferred facts indistinguishable from the one
 stated fact. It is recorded as choice 10 in the note for that reason.
+
+## 2026-08-31 · §10's rules, and keys for the things the business identifies
+
+Ran: `business/draft.yaml`, 18 facts added, 176 -> 194. `make check` — **47
+passed**, replay identical twice at 5334 bytes, exit 0, run again after the note
+was written and the same. `business/` still holds no `v*.yaml` and the working
+`uniti` database still reads 0/0/0: nothing here touched the kernel, and nothing
+was sealed.
+
+What changed in the map:
+
+    +1 class    Policy, no key, no required slot — the shop identifies a rule
+                by nothing
+    +4 slots    policy_rule (string), policy_threshold (decimal, no unit fixed
+                on the slot), policy_unit (range Unit, a value_ref) and
+                base_ingredients (range Material, multivalued)
+    +3 keys     MixBatch (mix_pasteurised_on + mix_base), StockCount
+                (count_taken_on + count_location), Sale (sale_date +
+                sale_flavour), as `unique_keys`, and those six slots required
+    +18 facts   six rules, six thresholds, three rules pointing at a unit, and
+                day, week and percent as three more Unit individuals
+
+18 classes -> 19, 45 slots -> 49, 48 subjects -> 57, slots carrying a fact
+19 -> 22, empty 26 -> 27, class-ranged slots 16 -> 18 with 4 of them exercised.
+
+Every clause of the done condition checked by running it. The six sentences were
+compared byte for byte against profile.md §10's own bullet list rather than
+against what the draft says they are: `stated == recorded` for all six. All six
+carry a threshold — 0, 5, 3, 3, 8, 5 — and three carry a unit: day, week,
+percent. The five-litre rule carries 5 and nothing points at `uniti:litre` from
+any rule; "never fewer than eight flavours" carries 8 and no unit either, on the
+narrower ground that the map counts things without a unit elsewhere. Pan and the
+five movement classes hold no key, no identifier and no required slot, and so
+does Policy. `base_ingredients` is on Base, ranges Material, is multivalued and
+receives no fact.
+
+`SchemaView` loads clean. `gen-owl --no-use-native-uris`, `gen-doc` and
+`gen-mermaid-class-diagram` all exit 0 with `PYTHONIOENCODING=utf-8` set: 58,525
+bytes of TTL, 89 doc pages, 19 diagrams.
+
+Surprising: `unique_keys` reaches the OWL as `owl:hasKey`, and `required: true`
+as an `owl:minCardinality 1` beside the `maxCardinality 1` a single-valued slot
+already had. Three keys and six minimums are the first thing in this map a
+reasoner could act on, and nothing in the PoC reads OWL. Not the same question
+as the 27 Aug T1, which found `gen-shacl` suppressing `minCount` on an
+`identifier` slot: none of these six is an identifier, and this is `gen-owl`.
+
+Also surprising: the earlier note's Mermaid count did not reproduce. It said
+twenty of thirty-two edges were "the same six seen five times"; the actual
+arrows are the four class-ranged slots of StockMovement, drawn once on the
+parent and once on each of five children, and the current render has 40 arrows
+of which 24 are those. The 20 in the old sentence was right and the "six" was
+not. Restated in the note against a render that was run.
+
+Found and not fixed: each of the six rules is now in the map twice — as a
+`Policy` fact and as the `stated_rule` annotation that has sat on the slot since
+the first draft. The annotation carries the number, so it goes stale the first
+time Marta moves a threshold, and a sealed version cannot be corrected without a
+v2. Removing it was not in this item and it is a line in OPEN.md instead.

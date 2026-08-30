@@ -85,6 +85,7 @@ classes:
       a fruit sorbet base with no dairy in it.
     slots:
       - base_name
+      - base_ingredients
 
   Flavour:
     description: >-
@@ -110,6 +111,15 @@ classes:
       - mix_made_by
       - mix_litres
       - mix_pasteurised_on
+    unique_keys:
+      batch_date_and_base:
+        description: >-
+          What the shop says identifies a batch: the date it was pasteurised and
+          which of the three formulas it is. No single slot carries it, so both
+          are required and neither is an identifier.
+        unique_key_slots:
+          - mix_pasteurised_on
+          - mix_base
 
   StockCount:
     description: >-
@@ -121,6 +131,15 @@ classes:
       - count_location
       - count_taken_on
       - count_quantity
+    unique_keys:
+      count_date_and_location:
+        description: >-
+          A count is the date it was taken and the place it was taken in. Two
+          counts of one freezer on one evening are one count by this key, which
+          is what makes them argue rather than sit side by side.
+        unique_key_slots:
+          - count_taken_on
+          - count_location
 
   Sale:
     description: >-
@@ -131,6 +150,14 @@ classes:
       - sale_flavour
       - sale_date
       - sale_scoops
+    unique_keys:
+      sale_date_and_flavour:
+        description: >-
+          One day's till total for one flavour, which is the grain the till
+          exports at and the grain the shop reads.
+        unique_key_slots:
+          - sale_date
+          - sale_flavour
 
   StockMovement:
     description: >-
@@ -179,6 +206,18 @@ classes:
     description: >-
       A scoop given away from the display cabinet. Nobody records it. Marta
       counts it as shrinkage and Dan does not.
+
+  Policy:
+    description: >-
+      A rule the shop states about itself, in the words it states it in. None of
+      them is written down anywhere in the shop and none of them is enforced
+      here: a rule that stops a number being recorded is a derived rule, and
+      this version has none. The shop identifies a rule by nothing, so this
+      class declares no key.
+    slots:
+      - policy_rule
+      - policy_threshold
+      - policy_unit
 
 slots:
 
@@ -321,6 +360,18 @@ slots:
     range: string
     description: white, chocolate, or sorbet.
 
+  base_ingredients:
+    slot_uri: uniti:base_ingredients
+    range: Material
+    multivalued: true
+    description: >-
+      Which materials go into this base. A base mix is milk, cream, sugar, milk
+      powder, dextrose and stabiliser, and that is said of a base mix in
+      general — not of the white one, the chocolate one, or the sorbet, which
+      has no dairy in it at all. No quantity is stated for any of them and the
+      shop never says this relationship out loud, so the slot is here and no
+      fact is.
+
   flavour_name:
     slot_uri: uniti:flavour_name
     identifier: true
@@ -378,6 +429,7 @@ slots:
 
   mix_base:
     slot_uri: uniti:mix_base
+    required: true
     range: Base
     description: Which of the three formulas this batch is.
 
@@ -399,6 +451,7 @@ slots:
 
   mix_pasteurised_on:
     slot_uri: uniti:mix_pasteurised_on
+    required: true
     range: date
     description: The day it was pasteurised, from Dan's paper log.
 
@@ -411,11 +464,13 @@ slots:
 
   count_location:
     slot_uri: uniti:count_location
+    required: true
     range: Location
     description: Where the count happened.
 
   count_taken_on:
     slot_uri: uniti:count_taken_on
+    required: true
     range: date
     description: The day of the count, in the evening after close.
 
@@ -429,11 +484,13 @@ slots:
 
   sale_flavour:
     slot_uri: uniti:sale_flavour
+    required: true
     range: Flavour
     description: Which flavour the day's total is for.
 
   sale_date:
     slot_uri: uniti:sale_date
+    required: true
     range: date
     description: The day the till total covers. It is read the next morning.
 
@@ -484,6 +541,30 @@ slots:
     slot_uri: uniti:received_from
     range: Supplier
     description: Who the delivery came from.
+
+  policy_rule:
+    slot_uri: uniti:policy_rule
+    range: string
+    description: >-
+      The rule in the words Marta says it in, kept as a sentence rather than
+      turned into a formula. How vaguely she says it is the thing worth keeping.
+
+  policy_threshold:
+    slot_uri: uniti:policy_threshold
+    range: decimal
+    description: >-
+      The number the rule turns on, where the rule gives one. This slot fixes no
+      unit: the rules disagree about theirs, and one of them names none anybody
+      can act on.
+
+  policy_unit:
+    slot_uri: uniti:policy_unit
+    range: Unit
+    description: >-
+      What the threshold is counted in. Days for a shelf life, weeks for a pan
+      on display, percent for shrinkage — so it is a thing a fact points at
+      rather than a unit fixed on the slot. A rule that names no unit carries no
+      fact here.
 
 annotations:
   transcript: draft.txt
@@ -538,6 +619,20 @@ annotations:
     - subject: uniti:piece
       predicate: uniti:unit_name
       value: piece
+
+    # ---- Three more units, named by the rules in section 10 -----------------
+    # A shelf life in days, a pan's age in weeks, shrinkage in percent. Units
+    # the same way litre and kg are — what a number is counted in — and written
+    # in the shop's lower case and in the singular, as the first three are.
+    - subject: uniti:day
+      predicate: uniti:unit_name
+      value: day
+    - subject: uniti:week
+      predicate: uniti:unit_name
+      value: week
+    - subject: uniti:percent
+      predicate: uniti:unit_name
+      value: percent
 
     # ---- The three mix formulas (section 3, listed again in section 4) ------
     # A white dairy base, a chocolate dairy base, and a fruit sorbet base with
@@ -1121,3 +1216,75 @@ annotations:
     - subject: uniti:gingerbread
       predicate: uniti:flavour_scoop_price
       value: 5.50
+
+    # ---- The six rules the shop states (section 10) ------------------------
+    # Sentences, in Marta's wording, on six subjects of their own. Nothing
+    # enforces them and nothing computes from them: a rule that stops a number
+    # being recorded is a derived rule, and this version has none. A threshold
+    # is attached where she gives a number, which is all six of them, and a unit
+    # only where the rule names one the profile does not then take back. They
+    # take effect 2025-09-01 like every other fact here, which is what lets her
+    # move a threshold later without last month's report moving with it.
+
+    # No unit: stock is measured in whatever each material is measured in, and
+    # section 5 says so rather than naming one for this rule.
+    - subject: uniti:rule_stock_never_negative
+      predicate: uniti:policy_rule
+      value: Stock should never go below zero. If it does, something was recorded wrong.
+    - subject: uniti:rule_stock_never_negative
+      predicate: uniti:policy_threshold
+      value: 0
+
+    # The rule says litres and section 12 says nobody has ever stated which
+    # litres — of mix, or of finished gelato — and that it has been applied both
+    # ways. Recording uniti:litre here would settle that on the shop's behalf,
+    # so the threshold stands alone.
+    - subject: uniti:rule_flavour_below_five_litres
+      predicate: uniti:policy_rule
+      value: A flavour below five litres across the whole shop should be made again.
+    - subject: uniti:rule_flavour_below_five_litres
+      predicate: uniti:policy_threshold
+      value: 5
+
+    - subject: uniti:rule_milk_older_than_three_days
+      predicate: uniti:policy_rule
+      value: Fresh milk older than three days does not go into a base.
+    - subject: uniti:rule_milk_older_than_three_days
+      predicate: uniti:policy_threshold
+      value: 3
+    - subject: uniti:rule_milk_older_than_three_days
+      predicate: uniti:policy_unit
+      value: uniti:day
+
+    - subject: uniti:rule_pan_older_than_three_weeks
+      predicate: uniti:policy_rule
+      value: A pan older than three weeks comes out of display, whatever is left in it.
+    - subject: uniti:rule_pan_older_than_three_weeks
+      predicate: uniti:policy_threshold
+      value: 3
+    - subject: uniti:rule_pan_older_than_three_weeks
+      predicate: uniti:policy_unit
+      value: uniti:week
+
+    # No unit: eight flavours is a count of things this map already holds, and
+    # the map counts things without a unit elsewhere — flavour_pans_on_display
+    # and sale_scoops are both bare integers.
+    - subject: uniti:rule_eight_flavours_in_the_cabinet
+      predicate: uniti:policy_rule
+      value: Never fewer than eight flavours in the cabinet, or the display looks poor.
+    - subject: uniti:rule_eight_flavours_in_the_cabinet
+      predicate: uniti:policy_threshold
+      value: 8
+
+    # The number the whole shop argues about. What shrinkage is stays out of
+    # this version — section 11 computes it two ways and neither is written
+    # down — so what is recorded is the threshold and not the arithmetic.
+    - subject: uniti:rule_shrinkage_above_five_percent
+      predicate: uniti:policy_rule
+      value: Shrinkage above five percent in a month means something is wrong.
+    - subject: uniti:rule_shrinkage_above_five_percent
+      predicate: uniti:policy_threshold
+      value: 5
+    - subject: uniti:rule_shrinkage_above_five_percent
+      predicate: uniti:policy_unit
+      value: uniti:percent

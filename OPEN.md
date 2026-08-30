@@ -268,3 +268,11 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
   base, not a material in the map. Either the profile slipped or Marta genuinely
   never counted them; the second reading is the more useful one and matches §12's
   temper, but nobody has said so · blocks: -
+- Each of §10's six rules is now in the map twice: as a `Policy` fact carrying
+  the sentence and its threshold, and as the `stated_rule` annotation on the slot
+  the rule is about, which has been there since the first draft. The annotation
+  says something the fact does not — which slot the rule is about — but it also
+  carries the number, so it is stale the first time Marta moves a threshold, and
+  a sealed version cannot be corrected without a v2. Either the annotation drops
+  the sentence and keeps the pointer, or it goes. Found 31 Aug giving §10 a home
+  in the log while leaving the map's copy where it was · blocks: -

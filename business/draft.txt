@@ -32,30 +32,38 @@ that evening.
   section 6         eleven slots whose range is a class, listed below
   section 7         five more classes under one parent, listed below
   section 8         the five places stock sits, each with its temperature
-  section 10        six stated_rule annotations, verbatim, on the slot each rule
-                    is about
+  section 10        six rules, as facts on six Policy subjects of their own,
+                    each carrying Marta's sentence and, where she gives one, a
+                    threshold and a unit; three more units, day, week and
+                    percent, because three of the rules are counted in them;
+                    and, left as they were, six stated_rule annotations naming
+                    the slot each rule is about
   section 11        two readings of "the vanilla" as two slots on one subject;
                     two meanings of "batch" as MixBatch and GoodsReceived
   section 12        gaps, kept as gaps: no slot was written for any of them
   section 13        the count itself — nineteen materials and ten flavours
 
-176 facts, and every one of them comes from a section above:
+194 facts, and every one of them comes from a section above:
 
   section 13        125    nineteen materials, ten flavours, three units
+  section 10         18    six rules, six thresholds, three of the rules
+                           pointing at a unit, and three more units named
   section 8          10    five locations, a name and a temperature each
   section 5          36    sixteen prices, sixteen rotations, one flavour base,
                            and three attributes of two materials
   section 3           3    the white, chocolate and sorbet bases
   section 1           2    Marta and Dan
 
-Three classes are not in section 4 and are there because section 6 or the
-avoidance of any_of requires them:
+Four classes are not in section 4 and are there because section 6, section 10 or
+the avoidance of any_of requires them:
 
   Person      section 6 states "Mix batch was made by a person", and a
               relationship's range has to be a class
   Unit        section 6 states "Material is measured in Unit"
   StockItem   the common parent of Material and Pan, so that "Stock count
               counted Material or Pan" is one class-ranged slot
+  Policy      section 10 states six rules, and a rule recorded as a fact needs
+              a subject to be a fact about
 
 Section 6, relationship by relationship, so the coverage can be checked:
 
@@ -71,18 +79,34 @@ Section 6, relationship by relationship, so the coverage can be checked:
   Stock count happened at Location   count_location      -> Location
   Sale was of Flavour                sale_flavour        -> Flavour
 
-Three of the sixteen class-ranged slots carry a fact: stock_location,
-material_unit and flavour_base. The other thirteen are in the table below.
+Four of the eighteen class-ranged slots carry a fact: stock_location,
+material_unit, flavour_base and policy_unit. The other fourteen are in the table
+below.
+
+Two class-ranged slots are not section 6 relationships at all. policy_unit is
+what a rule's threshold is counted in, and section 10 is where the rules are.
+base_ingredients points a Base at the Materials in it, which section 3 states in
+prose — "a 25-litre batch of milk, cream, sugar, milk powder, dextrose and
+stabiliser" — and section 6 then leaves out of its table. It is declared and
+receives no fact; the reason is below.
 
 
 WHO WOULD HAVE WRITTEN THESE FACTS
 ----------------------------------
 
-All 176 facts are one act: what Marta and Dan stated on the evening of
+All 194 facts are one act: what Marta and Dan stated on the evening of
 31 August 2025, described to an interviewer and sealed. That is the onboarding
 writer named by the 30 Aug decision — the interview and `seal` — so they belong
 in one intent and there is nothing here a generated form or an agent would have
 written instead. No daily entry, no correction, no derived total.
+
+The six rules belong to that same act. Section 10 says they are what Marta says
+out loud, and an interviewer asking a shop owner how the shop runs is exactly
+where a sentence like "shrinkage above five percent in a month means something
+is wrong" is uttered. They are stated, not observed and not computed, so the
+writer is the interview and `seal` like everything else here — and when one of
+them moves, the writer is the form or the agent, and it corrects this fact
+rather than needing a new version.
 
 The test applied while writing: if a fact would have arrived on a Friday from an
 invoice, on a Sunday from Dan's paper log, or as a correction, it does not
@@ -232,6 +256,79 @@ and the alternative is recorded so it can be taken back.
     calls the column Typical. The shop states one menu price and one seasonal
     price, and a menu with no prices on it is not what the profile describes.
 
+15. Section 10's six rules are facts on six Policy subjects, and the six
+    stated_rule annotations already on the slots are left where they are.
+    A rule is data by the test that separates the two: Marta can move the
+    reorder threshold from five litres to four and last month's report still
+    stands, because five was the rule then. So each rule is a sentence, a
+    threshold and sometimes a unit, hanging on a subject of its own and dated
+    1 September like everything else here.
+    Rejected: writing the thresholds into the slot definitions as minimum_value
+    and maximum_value. That would put the number in the map, where moving it
+    needs a new version and rewrites last month with it — and it would make the
+    map enforce something, which nothing in v1 does.
+    Not rejected but not resolved: the same sentence is now in two places, as a
+    fact and as a stated_rule annotation on the slot the rule is about. The
+    annotation says which slot a rule is about, which the fact does not; but it
+    also carries the number, so it goes stale the first time Marta moves one.
+    Left alone because this item did not ask for it, and appended to OPEN.md.
+
+16. Subjects are uniti:rule_*, and the slots are uniti:policy_*.
+    A rule's subject and the slot it is stated through would otherwise differ by
+    a suffix and be read past. Rejected: uniti:policy_stock_never_negative,
+    which sits one underscore away from the slot uniti:policy_rule.
+
+17. Three units are new — day, week and percent — and two of the six rules
+    carry none.
+    Marta counts a shelf life in days, a pan's age in weeks and shrinkage in
+    percent, so these are units the same way litre and kg are, and they are
+    written lower case and singular like the three the count named.
+    "Stock should never go below zero" names no unit because stock is measured
+    in whatever each material is measured in, which is what material_unit
+    already says. "A flavour below five litres" names one and section 12 takes
+    it back: nobody has ever stated whether that is litres of mix or of finished
+    gelato, and the rule has been applied both ways, so recording uniti:litre
+    would settle it on the shop's behalf.
+    "Never fewer than eight flavours in the cabinet" also carries no unit, and
+    this one is a judgement rather than a gap: eight flavours is a count of
+    things the map already holds, and the map counts things without a unit
+    elsewhere — flavour_pans_on_display and sale_scoops are both bare integers.
+    Rejected: minting a flavour unit for it, which would sit one capital letter
+    from the Flavour class and make a unit out of a thing.
+
+18. Three classes declare a unique_keys, seven declare an identifier, and nine
+    declare neither.
+    Section 4's "identified by" column gives composites for three things — a mix
+    batch is a date and a base, a stock count a date and a location, a sale a
+    date and a flavour — so those become unique_keys rather than identifiers,
+    because no single slot carries them, and the slots inside each key become
+    required.
+    Pan declares no key. Section 4 says a pan is identified by a number written
+    on tape and section 12 says the numbers are reused, so the number does not
+    identify and there is nothing else to identify by. A surrogate key would
+    bury exactly that.
+    The five movement classes stay keyless and every one of their slots stays
+    optional, including movement_recorded_by. Section 7 records three of the
+    nine movements as recorded by nobody, never, so a required recorder would
+    assert that someone was there.
+    Rejected: giving the other nine a surrogate key for the generator's
+    benefit. The asymmetry — ten things the shop can name an identity for, nine
+    it cannot — is the finding, and a key on every class would erase it.
+
+19. base_ingredients exists on Base, points at Material, is multivalued, and
+    receives no fact at all.
+    Section 3 names six ingredients for "a base mix" — milk, cream, sugar, milk
+    powder, dextrose and stabiliser — without saying which of the three bases
+    takes which, and the sorbet base has no dairy in it, so milk, cream and
+    milk powder are wrong for at least one of the three. No quantity is stated for any of them,
+    and section 6 leaves the relationship out of its table altogether.
+    Rejected: giving the white and chocolate bases all six and the sorbet base
+    the three that are not dairy. That is a recipe, and the recipe book is the
+    one thing in the shop this profile never opens.
+    Also rejected: leaving the slot out. Then the map would have no place a
+    recipe goes, and the reason material stock can only ever rise here would be
+    invisible instead of being an empty slot with a name.
+
 
 WHAT WAS DELIBERATELY NOT WRITTEN
 ---------------------------------
@@ -246,7 +343,15 @@ totals, so twenty-one individuals would mean twenty-one invented weights, and
 section 12 says the numbers on the tape are reused. Nothing about a supplier is
 named either: section 4 counts four and names none.
 
-Twenty-six of the forty-five slots receive no fact. That is what the shop had
+No eggs. Section 8 puts them in the chiller, beside the milk, the cream and the
+mix batches ageing. No other section mentions them: section 3's base mix does
+not contain them, section 13 did not count them, and there is no Material
+individual for them here. A material named in one section and counted in none is
+either a slip in the profile or a thing Marta genuinely never counts, and the
+profile is frozen, so it stays as it is written and this note records that it
+was seen rather than missed.
+
+Twenty-seven of the forty-nine slots receive no fact. That is what the shop had
 not said by the evening of 31 August, and each one is empty for a reason the
 profile gives:
 
@@ -285,6 +390,10 @@ profile gives:
   movement_recorded_by       movements are never recorded at all
   received_from
 
+  base_ingredients           §3 names six ingredients for "a base mix" without
+                             saying which of the three bases takes which, and
+                             §6 omits the relationship; choice 19 above
+
 Four more slots are stated for one subject each and empty for the rest, for the
 same kind of reason: flavour_base for pistachio (choice 10 above),
 material_shelf_life_days for fresh milk, material_pack_size and
@@ -297,23 +406,33 @@ WHAT THE RENDERS SHOWED
 -----------------------
 
 `gen-owl --no-use-native-uris`, `gen-doc` and `gen-mermaid-class-diagram` all
-exit 0. The OWL carries eighteen classes and all seven is_a edges, and the six
-stated_rule annotations survive as triples. Three things worth knowing before
-anyone looks:
+exit 0, the OWL under `PYTHONIOENCODING=utf-8` — without it the minus signs in
+section 8's temperatures kill it and leave a zero-byte file. The OWL carries
+nineteen classes and all seven is_a edges, and the six stated_rule annotations
+survive as triples. Four things worth knowing before anyone looks:
 
-The OWL carries the whole facts block as one 16,673-character string literal on
+Each `unique_keys` becomes an `owl:hasKey`, and each `required: true` becomes an
+`owl:minCardinality 1` restriction beside the `maxCardinality 1` every single-
+valued slot already had. So the three keys and the six required slots are the
+first thing in this map that a reasoner could act on, and nothing in the PoC
+reads OWL yet.
+
+The OWL carries the whole facts block as one 18,870-character string literal on
 one line, because facts live under `annotations` and gen-owl renders annotations
-as triples on the ontology. It was 12,176 characters at 127 facts and is now a
-third of the TTL. It disappears when the draft is sealed — `seal` strips
-`facts` — so this is a property of looking at a draft, not of looking at a
-version.
+as triples on the ontology. It was 12,176 characters at 127 facts and 16,673 at
+176, and is now nearly a third of the TTL. It disappears when the draft is
+sealed — `seal` strips `facts` — so this is a property of looking at a draft,
+not of looking at a version.
 
-The Mermaid diagram flattens is_a, so each of the five movement subclasses
-repeats its parent's six relationships: twenty of the thirty-two edges are the
-same six seen five times. Readable, but a change to StockMovement in v2 will
-show up six times in the diff rather than once. `gen-mermaid-class-diagram`
-writes one file per class into a directory and requires `-d`; `gen-doc` writes
-84 Markdown files the same way.
+The Mermaid diagrams flatten is_a, so each of the five movement subclasses
+repeats its parent's four class-ranged slots: twenty-four of the forty arrows
+are the same four seen six times, once on StockMovement and once on each child.
+Readable, but a change to StockMovement in v2 will show up six times in the diff
+rather than once. `gen-mermaid-class-diagram` writes one file per class into a
+directory and requires `-d`, so nineteen diagrams; `gen-doc` writes 89 Markdown
+files the same way. The required slots show in both: mix_base, count_location
+and sale_flavour draw "1" where every other arrow draws "0..1", and
+base_ingredients draws "*".
 
 The slot-level `unit` metadata does not reach the OWL at all. Kilograms, litres,
 pounds and days are in the YAML and in nothing generated from it so far.
