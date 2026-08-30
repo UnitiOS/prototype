@@ -653,3 +653,52 @@ reasoning lives in `../archived/`. They are closed, which means not re-discussed
              be interesting is not a business, and an agent set loose on one
              would find something remarkable in every direction. Not a condition
              at the onboarding stage, where there are too few acts to measure it.
+2026-08-30 · `seal` takes an optional fourth fact key, `confidence`, and passes
+             it to `perform()`. Profile §13 is the only place in the whole PoC
+             where the business states confidence about a single fact — six of
+             nineteen opening quantities were eyeballed rather than weighed —
+             and Q4, frozen this morning, asks exactly that. The kernel column
+             has existed since the first schema and no writer has ever set it.
+             `counted` is `high`, `estimated` is `low`; `medium` is unused in v1
+             because the business states two states, not three. No default: a
+             fact silent about its own confidence records NULL, on the same
+             reasoning as the 27 Aug refusal of a `valid_from` fallback — a
+             default claims more than anyone knows. The invariant that kept
+             `FACT_KEYS` closed is named rather than loosened: the ontology
+             resolver's annotation reader is shallow and takes any `key: value`
+             under `annotations:`, so a fact key may never collide with a
+             version metadata key. `confidence` does not collide.
+2026-08-30 · A quantity hangs on the thing it is a quantity of, never on the
+             count that observed it, and no class receives individuals the
+             profile does not name. `Pan` and `StockCount` are declared as
+             classes because §4 and §6 require them, and neither gets an
+             individual in v1: §13 records twenty-one pans weighed one by one
+             but reports totals per flavour, so minting twenty-one pans means
+             inventing twenty-one weights that happen to sum — inventing
+             business — and §12 says pan numbers are reused, so a URI minted at
+             onboarding is an identity the business itself cannot reproduce.
+             The decisive reason for the subject rule is Q6: it can only fail
+             the way it is predicted to fail if two counts compete on one
+             (subject, predicate). Hung off the count, two counters produce two
+             subjects, nothing competes, and the dispute dissolves instead of
+             breaking. The same shape gives §11 a home — the counter staff's
+             "the vanilla" is a pan slot at the display, Marta's is kilograms
+             across the shop, two slots on one subject. Accepted consciously:
+             location is folded into the pan slot names, which is untidy and
+             stays untidy, because the 30 Aug line requires the map to look like
+             something an interview produced and this is the candidate
+             definition change with a real blast radius for v2. Dan's per-pan
+             shrinkage cannot be computed until movements exist, which is
+             correct: v1 carries no derived rule.
+2026-08-30 · A unit belonging to an individual is a class and a `value_ref`; a
+             unit belonging to an attribute is LinkML's own `unit` metadata on
+             the slot. §6 states "Material is measured in Unit" as a
+             relationship the business utters, and materials disagree — milk in
+             litres, sugar in kilograms, cones in pieces — so a per-slot `unit`
+             would be wrong for most of them. But §5 also states fixed units per
+             attribute: a pan is weighed in kilograms, a mix is made in litres,
+             a price is in pounds, and there the slot-level metadata is right.
+             This is not a compromise between two mechanisms; it is a
+             distinction the profile already draws. The `NEXT.md` clause "every
+             quantity slot names its unit" is replaced accordingly, because one
+             reading of it is unreachable.

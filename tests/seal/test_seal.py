@@ -9,6 +9,10 @@ A third, `draft_ranges`, is about one rule and nothing else: which column a
 value lands in. It declares a class-ranged slot beside a type-ranged one and an
 unranged one, and names one freezer only on the value side.
 
+A fourth, `draft_confidence`, is about the optional fourth fact key: one fact
+weighed, one estimated, one silent — and the silent one has to reach the log as
+NULL rather than as a level nobody stated.
+
 The seals land in a temporary directory rather than in `business/`: a test that
 wrote there would leave a v3 behind every time `make check` ran, and a test that
 merely read there would make the production map store a fixture. Nothing here
@@ -40,6 +44,7 @@ FIXTURES = Path(__file__).resolve().parent / "fixtures"
 SEALED_ONE = datetime(2026, 3, 1, 9, 0, tzinfo=timezone.utc)
 SEALED_TWO = datetime(2026, 4, 1, 9, 0, tzinfo=timezone.utc)
 SEALED_RANGES = datetime(2026, 6, 1, 9, 0, tzinfo=timezone.utc)
+SEALED_CONFIDENCE = datetime(2026, 7, 1, 9, 0, tzinfo=timezone.utc)
 BACKDATED = "2026-01-15T09:00:00Z"
 
 
@@ -66,6 +71,14 @@ def ranged(conn, tmp_path_factory):
     into = tmp_path_factory.mktemp("ranges")
     return seal(conn, FIXTURES / "draft_ranges.yaml", actor_id="test",
                 into=into, sealed_at=SEALED_RANGES)
+
+
+@pytest.fixture(scope="module")
+def confident(conn, tmp_path_factory):
+    """The confidence draft, sealed into a directory of its own."""
+    into = tmp_path_factory.mktemp("confidence")
+    return seal(conn, FIXTURES / "draft_confidence.yaml", actor_id="test",
+                into=into, sealed_at=SEALED_CONFIDENCE)
 
 
 def _rows(conn, intent_id):
@@ -314,6 +327,62 @@ def test_a_class_ranged_value_registers_a_uri_nothing_else_names(conn, ranged):
 
     refs = [ref for _, lit, ref in _stated(conn, ranged["intent_id"]) if ref]
     assert refs.count(freezer_e) == 1
+
+
+def _confidences(conn, intent_id):
+    """The facts of one seal, as (predicate_uri, confidence), in order."""
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT p.value_literal, a.confidence
+            FROM assertion a
+            JOIN assertion p ON p.subject_id = a.predicate_id
+                            AND p.subject_id <> p.predicate_id
+                            AND p.value_literal IS NOT NULL
+            WHERE a.intent_id = %s AND a.source = %s
+            ORDER BY a.seq
+            """,
+            (intent_id, "human_stated"),
+        )
+        return cur.fetchall()
+
+
+def test_a_stated_confidence_reaches_the_log_and_silence_stays_null(conn, confident):
+    """Absent is NULL, not `high`: a default would claim what nobody said."""
+    stated = _confidences(conn, confident["intent_id"])
+    assert stated == [
+        ("uniti:material_kilograms", "high"),
+        ("uniti:material_kilograms", "low"),
+        ("uniti:material_label", None),
+    ]
+    # The minted URI rows are the tool's own act and state nothing either.
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT DISTINCT confidence FROM assertion "
+            "WHERE intent_id = %s AND source = %s",
+            (confident["intent_id"], "system_derived"),
+        )
+        assert cur.fetchall() == [(None,)]
+
+
+def test_a_confidence_the_kernel_does_not_know_is_refused(conn, tmp_path):
+    """Refused here rather than by the check constraint, and non-zero at the CLI."""
+    before = _counts(conn)
+    with pytest.raises(DraftError, match="fairly sure"):
+        seal(conn, FIXTURES / "bad_confidence.yaml", actor_id="test", into=tmp_path)
+    assert main([str(FIXTURES / "bad_confidence.yaml"), "--actor", "test",
+                 "--into", str(tmp_path)]) != 0
+    assert list(tmp_path.iterdir()) == []
+    assert _counts(conn) == before
+
+
+def test_a_fifth_key_on_a_fact_is_still_refused(conn, tmp_path):
+    """The set is closed, not loosened: one key was added, not the door."""
+    before = _counts(conn)
+    with pytest.raises(DraftError, match="authority"):
+        seal(conn, FIXTURES / "extra_fact_key.yaml", actor_id="test", into=tmp_path)
+    assert list(tmp_path.iterdir()) == []
+    assert _counts(conn) == before
 
 
 def _counts(conn):

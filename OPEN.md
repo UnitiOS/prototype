@@ -20,7 +20,8 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
 - The shape of a derived rule inside `annotations` — SQL, a narrow declarative
   aggregate, or both with a sentence. The 26 Aug deferral expired 29 Aug: the
   map is hand-authored, so a real stated rule now comes from there. This is the
-  next thing to settle · blocks: map + generator
+  next thing to settle. No longer blocks the map: v1 carries no derived rule
+  (29 Aug), and the first generator item reads a rule-free v1 · blocks: generator
 - Does graph review need competency questions written by someone other than the
   ontology's author, plus one deliberately wrong concept — now that "every
   predicate in the log exists in the ontology" is a query · blocks: graph review
@@ -185,7 +186,9 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
   same harness seen from a different angle · blocks: report + diff
 - `confidence` has three levels and has never been used by any writer. Curated
   data needs at least one low-confidence fact for a number to carry what it is
-  made of · blocks: episodes
+  made of — answered 30 Aug: `seal` takes it as an optional fact key, and §13's
+  six estimated quantities are the first use any writer has made of the column
+  · blocks: -
 - Two competing counts of the same thing at the same valid_at, neither revoking
   the other — the read rule breaks the tie on record time and returns one. Is
   that right for a disputed number, or does the reader need to see both
@@ -200,4 +203,11 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
   `any_of`, so `seal`'s class test sees `string` and the fact lands in the wrong
   column silently. Profile §6 has one such relationship — "Stock count counted
   Material or Pan" — so the map either gives those two a common superclass or
-  `seal` learns to read `any_of` · blocks: map
+  `seal` learns to read `any_of` — answered 30 Aug: the map gives the two a
+  common superclass and `seal` is not taught `any_of`, so a draft written that
+  way is still silently wrong and nothing guards it · blocks: -
+- Location is folded into the pan slot names in v1, so "how much vanilla is in
+  the shop" is a sum the reader assembles rather than a slot it reads. Accepted
+  30 Aug as the untidiness an interview would have produced, and named here
+  because it is also the candidate definition change with a real blast radius
+  for v2 · blocks: -

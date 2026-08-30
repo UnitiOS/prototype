@@ -1,0 +1,43 @@
+id: https://uniti.example/business
+name: business
+title: Ice cream inventory, with a fifth key on a fact
+description: Two opening quantities, one weighed and one eyeballed.
+prefixes:
+  linkml: https://w3id.org/linkml/
+  uniti: https://uniti.example/business/
+default_prefix: uniti
+imports:
+  - linkml:types
+default_range: string
+classes:
+  Material:
+    description: A thing the shop holds stock of.
+    slots:
+      - material_label
+      - material_kilograms
+slots:
+  material_label:
+    slot_uri: uniti:material_label
+    description: What the staff call it.
+  material_kilograms:
+    slot_uri: uniti:material_kilograms
+    description: How much of it there was.
+annotations:
+  transcript: draft_confidence.txt
+  valid_from: '2026-07-01T00:00:00Z'
+  facts:
+    # Weighed on the scale.
+    - subject: uniti:sugar
+      predicate: uniti:material_kilograms
+      value: 24.0
+      confidence: high
+    # Eyeballed through the sack.
+    - subject: uniti:hazelnut_paste
+      predicate: uniti:material_kilograms
+      value: 3
+      confidence: low
+      authority: Marta
+    # Says nothing about how sure it is, so the log says nothing either.
+    - subject: uniti:sugar
+      predicate: uniti:material_label
+      value: Sugar

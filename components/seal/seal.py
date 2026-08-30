@@ -16,7 +16,8 @@ What is where:
                **stripped** from the sealed version: a fact kept in the map is
                a fact living outside the log.
 
-A fact is stated in the draft's `annotations.facts`, three keys and no more:
+A fact is stated in the draft's `annotations.facts`, three keys and an
+optional fourth:
 
     annotations:
       valid_from: '2026-01-01T00:00:00Z'
@@ -24,6 +25,12 @@ A fact is stated in the draft's `annotations.facts`, three keys and no more:
         - subject: uniti:freezer_a
           predicate: uniti:freezer_label
           value: Freezer A
+          confidence: low
+
+`confidence` is how sure the business is of this one fact, and it is the
+kernel's own vocabulary — `high`, `medium`, `low`. It has no default: a fact
+that says nothing about its own confidence records NULL, because a business
+that weighed nineteen tubs and eyeballed six of them said two things, not one.
 
 `predicate` is a `slot_uri` the draft declares — that is the whole of the join
 between map and log. `subject` is a URI too, because the kernel's `entity` has
@@ -74,8 +81,18 @@ URI_PREDICATE = "uniti:uri"
 
 # A fact says who, what, and what it is. Anything else is a typo — and an
 # unknown key here would also be read as version metadata by the ontology
-# resolver, which scans the annotations block shallowly.
+# resolver, which scans the annotations block shallowly. That invariant is why
+# the set stays closed: a fact key may never collide with a version metadata
+# key, and `confidence` does not.
 FACT_KEYS = ("subject", "predicate", "value")
+
+# How sure the business is of this one fact. Optional, and never defaulted —
+# absent records NULL, because a default claims more than anyone said.
+FACT_OPTIONAL = ("confidence",)
+
+# The kernel's confidence_levels constraint, checked here so a typo is refused
+# with the fact's number rather than as an integrity error mid-transaction.
+CONFIDENCE_LEVELS = ("high", "medium", "low")
 
 # The four keys seal stamps itself. Whatever a draft says under them is
 # replaced, so `_sealed_document` carries neither them nor `facts` across.
@@ -164,7 +181,8 @@ def _facts(annotations, ranges, name):
     """The stated facts, checked against the vocabulary the draft declares.
 
     Each carries `ref`, taken from its predicate's range: `True` where the
-    value names an entity rather than saying something about one.
+    value names an entity rather than saying something about one, and
+    `confidence`, which is `None` unless the fact stated one.
     """
     stated = annotations.get("facts") or []
     if not isinstance(stated, list):
@@ -174,10 +192,17 @@ def _facts(annotations, ranges, name):
     for i, fact in enumerate(stated, start=1):
         if not isinstance(fact, dict):
             raise DraftError(f"{name}: fact {i} is not a mapping")
-        if set(fact) != set(FACT_KEYS):
+        keys = set(fact)
+        if not keys >= set(FACT_KEYS) or not keys <= set(FACT_KEYS + FACT_OPTIONAL):
             raise DraftError(
                 f"{name}: fact {i} has keys {sorted(fact)}, expected "
-                f"{sorted(FACT_KEYS)}"
+                f"{sorted(FACT_KEYS)} and optionally {sorted(FACT_OPTIONAL)}"
+            )
+        confidence = fact.get("confidence")
+        if confidence is not None and confidence not in CONFIDENCE_LEVELS:
+            raise DraftError(
+                f"{name}: fact {i} states confidence {confidence!r}, which is "
+                f"not one of {sorted(CONFIDENCE_LEVELS)}"
             )
         if fact["predicate"] not in ranges:
             raise DraftError(
@@ -192,6 +217,7 @@ def _facts(annotations, ranges, name):
                 "predicate": str(fact["predicate"]),
                 "value": str(fact["value"]),
                 "ref": ranges[fact["predicate"]],
+                "confidence": confidence,
             }
         )
     return facts
@@ -406,6 +432,7 @@ def seal(conn, draft_path, *, actor_id, into=None, sealed_at=None):
             ),
             "valid_from": valid_from,
             "source": FACT_SOURCE,
+            "confidence": fact["confidence"],
         }
         for fact in facts
     ]

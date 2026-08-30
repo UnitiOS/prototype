@@ -1139,3 +1139,37 @@ Surprising: `default_range` makes the miss silent rather than loud. Without one,
 `range` would be `None` and an `any_of` slot would at least be visibly unranged;
 with `string` declared at the top of the schema, an unranged slot and a
 class-union slot are indistinguishable to the rule as written.
+
+## 2026-08-30 · `seal` carries `confidence` on a fact
+
+Ran `make check`: **47 passed**, replay identical twice at 5334 bytes, exit 0.
+Three tests added, from 44.
+
+`seal` now takes an optional fourth fact key. `FACT_KEYS` stays the three
+required ones and a new `FACT_OPTIONAL` holds `confidence`; the key check went
+from equality to two subset tests, so the set is widened by exactly one name
+rather than opened. The level is checked against `CONFIDENCE_LEVELS`
+— `high`, `medium`, `low`, copied from the kernel's `confidence_levels`
+constraint — and refused with the fact's number if it is anything else. No
+default: `fact.get("confidence")` is `None` when the fact is silent, and
+`perform()` has read `a.get("confidence")` since it was written, so the
+pass-through is one dict key. Fourteen lines of `seal`, nothing in the kernel.
+
+Fixtures: `draft_confidence.yaml` states three facts — one `high`, one `low`,
+one silent — and `bad_confidence.yaml` and `extra_fact_key.yaml` are that same
+draft with `fairly sure` and with an added `authority: Marta`. Both refusals
+land in `_facts`, which runs before the `valid_from`, `_flat` and transcript
+checks, so nothing is written before either is raised; the bad-confidence test
+also runs the CLI to check the exit code is non-zero rather than only that the
+exception is raised.
+
+Mutation-checked the three clauses. Dropping the pass-through, replacing the
+level check with `if False`, and dropping the upper subset test each turn at
+least one new test red. The second and third also break the first test as
+collateral: a bad draft that is no longer refused writes assertions, and the
+seal fixtures are module-scoped against a shared database.
+
+Surprising: nothing, which is itself the point — the column has existed since
+`001_schema.sql` and no writer had ever set it, and the whole cost of the first
+one was a subset test and a dict key. The 27 Aug `valid_from` refusal is what
+made the no-default choice cheap to make: the shape was already in the file.

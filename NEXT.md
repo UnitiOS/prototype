@@ -199,28 +199,54 @@ Adding a sixth item means removing one.
 - [x] Competency questions, frozen before any history is curated
       done: `business/questions.md`, six questions, Q6 expected to fail.
 
-- [ ] The inventory map v1, with opening balances, sealed
-      Structure and facts in one draft — opening balances genuinely share one
-      `valid_from` and one `recorded_at`, so `seal` is the right writer. No
-      derived rules: stock on hand at onboarding is the opening balance.
-      Coverage is at least what an ERP inventory module holds for this business:
-      items, units of measure, locations, opening balances. Authored from
+- [ ] `seal` carries `confidence` on a fact
+      One optional fourth key beside subject/predicate/value, passed through to
+      `perform()`, which has accepted it since the first hundred lines. No
+      default — absent means NULL, not `high`. Only the kernel's three levels
+      are legal. Nothing else in `seal` changes.
+      done when: a fact carrying `confidence: low` writes an assertion with
+      `confidence = 'low'`; a fact carrying none writes NULL; a fact carrying a
+      level the kernel does not know is refused, exits non-zero, and leaves the
+      target directory and the three table counts untouched; a fact carrying any
+      fifth key is still refused; and `make check` exits 0
+
+- [ ] The inventory map v1 draft, written and rendered, not sealed
+      `business/draft.yaml` and its provenance note. Authored from
       `business/profile.md` and nothing else. Flat: `is_a` only, no mixins, no
-      elaborate derived types, so the OWL render stays readable. Profile §6 has
-      one relationship over two things — "Stock count counted Material or Pan" —
-      and the `any_of` OPEN line says `seal` reads that as a literal; give the
-      two a common superclass rather than teaching `seal` `any_of`. The map
-      should look like something an interview could have produced, not tidier.
-      Every fact's intent names the writer that would have written it.
-      done when: `business/v1.yaml` carries classes and slots for items, units,
-      locations and stock; every quantity slot names its unit; every top-level
-      slot declares a `slot_uri`; every relationship in profile §6 is a slot
-      whose range is a class, and its fact lands as a `value_ref`;
-      `annotations.transcript` names a provenance note sitting beside the
-      version after the seal; the sealed file carries no `facts` block; every
-      predicate in the log resolves to exactly one entity; `gen-owl` produces a
-      TTL file without error and `gen-erdiagram` a Mermaid diagram; and
-      `make check` exits 0
+      elaborate derived types, so the OWL render stays readable. No derived
+      rules: stock on hand at onboarding is the opening balance. Structure
+      covers every thing in §4 and every relationship in §6 — coverage is at
+      least what an ERP inventory module holds for this business. Facts cover
+      only §13. "Stock count counted Material or Pan" gets a common superclass
+      rather than an `any_of`. The map should look like something an interview
+      could have produced, not tidier. Every fact's intent names the writer that
+      would have written it.
+      done when: `SchemaView` loads the draft clean; every top-level slot
+      declares a `slot_uri`; every relationship in §6 is a slot whose range is a
+      class; no slot uses `any_of`; every material in §13 carries a quantity, a
+      unit and a location fact and every flavour in its pan table carries a
+      kilogram fact; the six estimated rows carry `confidence: low` and the
+      thirteen counted rows `high`; no fact names a subject of a class §13 does
+      not list, so `Pan`, `StockCount`, `MixBatch`, `Sale`, `Base` and
+      `Supplier` have none; `gen-owl --no-use-native-uris` produces TTL without
+      error and `gen-erdiagram` a Mermaid diagram; `business/` still holds no
+      `v*.yaml`; and `make check` exits 0
+
+- [ ] Seal v1, and look at what landed
+      Sealed at the evening the count was taken (§2, §9), never at today's
+      clock: the record-time axis starts where the business learned it. The
+      balances take effect the next morning, so `recorded_at` precedes
+      `valid_from` here — correct, and nothing in the kernel forbids it.
+      done when: `--sealed-at 2025-08-31T21:00:00Z` stamps both the version and
+      every assertion; `business/v1.yaml` carries no `facts` block and its transcript
+      sits beside it; every predicate in the log resolves to exactly one entity;
+      every §6 relationship fact landed in `value_ref` and not
+      `value_literal`; the six estimated quantities read `confidence = 'low'`;
+      every assertion from the seal shares one `recorded_at` equal to the
+      version's `sealed_at`; the facts carry 2025-09-01 rather than the seal
+      instant; `make check` run twice leaves that seal's assertion count
+      unchanged; and the three table counts and anything surprising are in
+      LOG.md
 
 - [ ] `generator`: one projection table and one form from v1 alone
       The first look at whether the map is worth anything. Reads the sealed v1

@@ -1,0 +1,5 @@
+Provenance note for draft_confidence.yaml.
+
+Hand-authored fixture, not a conversation. Three facts: one the shop weighed,
+one it estimated, and one that is not a quantity and states no confidence at
+all. What it exercises is that the third records NULL rather than a default.
