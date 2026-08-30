@@ -1,0 +1,13 @@
+Transcript, generator fixture.
+
+Not a real conversation. The seal tool requires a transcript beside every
+draft, and this file is what that requirement looks like when the draft was
+written to exercise a generator rather than to describe a shop.
+
+What the fixture says, in the order the facts are stated:
+
+  Vanilla is a flavour.
+  Tub 1 is a tub, weighs 4.8 kg, holds vanilla, and stands in the display
+  cabinet.
+  Tub 2 is a tub, and that is all anybody said about it.
+  The crate stands in the dry store. Nobody said it was a tub.

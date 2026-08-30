@@ -221,42 +221,27 @@ Adding a sixth item means removing one.
       `make check` ok, 47 passed. `gen-owl` exits 0 only with a UTF-8 stdout —
       see OPEN.
 
-- [ ] §10's rules, and keys for the things the business identifies
-      Two gaps found by auditing the draft against the whole profile rather than
-      against the item that produced it. §10 has no home anywhere, and eleven
-      event classes carry neither a key nor a required slot. Both are cheap now
-      and cost a v2 later. Nothing here enforces anything or computes anything.
-      done when: a `Policy` class exists carrying the rule as Marta states it,
-      with an optional threshold and an optional unit, and all six §10 rules are
-      facts on it effective 2025-09-01; the five-litre rule carries its
-      threshold and no unit, because §12 leaves that unstated; `MixBatch`,
-      `StockCount` and `Sale` each declare a `unique_keys` over exactly the
-      slots §4 names as identifying, and those slots become required; `Pan`
-      declares no key and the provenance note says why; the five movement
-      classes keep no key and no required slot; a `base_ingredients` slot exists
-      on `Base`, range `Material`, multivalued, and receives no fact at all,
-      because §3 names six ingredients for "a base mix" without saying which of
-      the three and §6 omits the relationship; the note records the eggs of §8
-      as a material named in one section and counted in none; `SchemaView` loads
-      clean; `gen-doc` and `gen-mermaid-class-diagram` exit 0, and `gen-owl
-      --no-use-native-uris` exits 0 under `PYTHONIOENCODING=utf-8`; `business/`
-      still holds no `v*.yaml`; and `make check` exits 0
+- [x] §10's rules, and keys for the things the business identifies
+      done: 5d86fd7, verified clause by clause. Classes 18 → 19, slots 45 → 49,
+      facts 176 → 194, subjects 48 → 57. All six §10 rules verbatim, the
+      five-litre one with a threshold and no unit. `unique_keys` on the three
+      classes §4 identifies, their slots required; `Pan` and the five movement
+      classes keyless and optional. `base_ingredients` declared and empty.
+      Nothing enforces, nothing computes. No duplicate (subject, predicate)
+      pair anywhere, and every class-ranged fact is a URI. Two consequences
+      nobody asked for went to OPEN: `Unit` widened to six, and multivalued
+      slots have no supersession story.
 
-- [ ] Seal v1, and look at what landed
-      Sealed at the evening the count was taken (§2, §9), never at today's
-      clock: the record-time axis starts where the business learned it. The
-      balances take effect the next morning, so `recorded_at` precedes
-      `valid_from` here — correct, and nothing in the kernel forbids it.
-      done when: `--sealed-at 2025-08-31T21:00:00Z` stamps both the version and
-      every assertion; `business/v1.yaml` carries no `facts` block and its transcript
-      sits beside it; every predicate in the log resolves to exactly one entity;
-      every §6 relationship fact landed in `value_ref` and not
-      `value_literal`; the six estimated quantities read `confidence = 'low'`;
-      every assertion from the seal shares one `recorded_at` equal to the
-      version's `sealed_at`; the facts carry 2025-09-01 rather than the seal
-      instant; `make check` run twice leaves that seal's assertion count
-      unchanged; and the three table counts and anything surprising are in
-      LOG.md
+- [x] Seal v1, and look at what landed
+      done: 346274d, counts re-checked here straight against Postgres rather
+      than from LOG: 1 intent, 107 entities, 301 assertions, one `recorded_at`
+      of 2025-08-31T21:00Z, one `valid_from` of 2025-09-01, 194 stated over 57
+      subjects, 42 refs, 6 low and 13 high. Every other clause passed. The "194
+      over 57" clause was mine and it was wrong — it counted the draft's facts
+      and was then read back against a table that also registers a URI per
+      entity. Three things went to OPEN and one to DECISIONS: §10's rules are
+      sealed in two places, the map is not valid until the balances are, and
+      coverage measures nothing.
 
 - [ ] `generator`: one projection table and one form from v1 alone
       The first look at whether the map is worth anything. Reads the sealed v1

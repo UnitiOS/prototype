@@ -1,0 +1,87 @@
+id: https://uniti.example/business
+name: business
+title: Generator fixture
+description: A shop small enough that a generated table can be checked by eye.
+  Everything it declares is namespaced g_ so that sealing it leaves the other
+  suites' entities alone — the URI registry is global.
+prefixes:
+  linkml: https://w3id.org/linkml/
+  uniti: https://uniti.example/business/
+default_prefix: uniti
+imports:
+  - linkml:types
+default_range: string
+classes:
+  Held:
+    description: Anything the shop holds and can say where it is.
+    slots:
+      - g_place
+  Tub:
+    is_a: Held
+    description: One tub of gelato. Inherits g_place, which is what makes the
+      crate turn up in this table.
+    slots:
+      - g_tub_name
+      - g_tub_kilograms
+      - g_tub_flavour
+  Flavour:
+    description: One entry in the recipe book.
+    slots:
+      - g_flavour_name
+  Rumour:
+    description: A class the shop declares and never states one fact about.
+    slots:
+      - g_rumour_text
+slots:
+  g_place:
+    slot_uri: uniti:g_place
+    range: string
+    description: Where it stands.
+  g_tub_name:
+    slot_uri: uniti:g_tub_name
+    identifier: true
+    range: string
+    description: What is written on the tape.
+  g_tub_kilograms:
+    slot_uri: uniti:g_tub_kilograms
+    required: true
+    range: decimal
+    description: What it weighed when it was filled.
+  g_tub_flavour:
+    slot_uri: uniti:g_tub_flavour
+    range: Flavour
+    description: Which flavour is in it.
+  g_flavour_name:
+    slot_uri: uniti:g_flavour_name
+    identifier: true
+    range: string
+    description: What it is called on the board.
+  g_rumour_text:
+    slot_uri: uniti:g_rumour_text
+    range: string
+    description: Something someone said.
+annotations:
+  transcript: draft_shop.txt
+  valid_from: '2026-01-01T00:00:00Z'
+  facts:
+    - subject: uniti:g_vanilla
+      predicate: uniti:g_flavour_name
+      value: Vanilla
+    - subject: uniti:g_tub_1
+      predicate: uniti:g_tub_name
+      value: Tub 1
+    - subject: uniti:g_tub_1
+      predicate: uniti:g_tub_kilograms
+      value: '4.8'
+    - subject: uniti:g_tub_1
+      predicate: uniti:g_tub_flavour
+      value: uniti:g_vanilla
+    - subject: uniti:g_tub_1
+      predicate: uniti:g_place
+      value: Display cabinet
+    - subject: uniti:g_tub_2
+      predicate: uniti:g_tub_name
+      value: Tub 2
+    - subject: uniti:g_crate
+      predicate: uniti:g_place
+      value: Dry store

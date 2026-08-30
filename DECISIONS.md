@@ -765,3 +765,17 @@ reasoning lives in `../archived/`. They are closed, which means not re-discussed
              required recorder would assert that someone was there. Eleven event
              classes holding no key and no required slot was not a decision
              anyone took; this is the decision.
+2026-08-31 · Coverage as the 27 Aug line defines it measures nothing, and is
+             replaced by its converse. "Every predicate used in the log has a
+             home in the map, which is a query" is true by construction: `seal`
+             registers one entity per declared `slot_uri` whether or not
+             anything ever says it, so the map's whole vocabulary enters the log
+             at seal time and the query returns everything, always. Measured
+             after the first real seal rather than argued: of 107 entities, 28
+             are never the subject or the predicate of a stated fact — the 27
+             declared slots carrying no fact, plus `uniti:uri` itself. The
+             direction with content is the other one, how much of the map the
+             log exercises, and it reads 22 of 49 slots ever used. That number
+             can fall as well as rise, which is what a measure is for, and it is
+             the one to carry into episodes. The other three measures are
+             untouched; this corrects an implementation, not a judgement.

@@ -59,6 +59,24 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
   — NOT EXISTS never asks whether the revoker is itself revoked · blocks: -
 - Nothing ties `revokes` to the same (subject, predicate); a row about Bob can
   silently remove a standing fact about Alice · blocks: -
+- Nothing says an entity is a Material. The map declares classes and slots, the
+  log holds (subject, predicate, value), and CLAUDE.md's third closed finding
+  says class membership is an assertion — but v1 states none, so a generator has
+  to guess which entities are a class's rows. Its rule is the only one the two
+  files support: a row is a subject of one of that table's own columns. An
+  inherited slot breaks it in the open — `stock_location` is a column of both
+  Material and Pan, so the generated Pan table holds nineteen materials with
+  every pan column blank. Whether membership is a fact the interview must state,
+  a rule read off the identifier slot, or a filter only the projection applies,
+  is undecided. Found 31 Aug generating the first two tables · blocks: generation
+- `required: true` reaches a generated form as a label and stops nothing. The
+  map says `material_name` is required, the form prints "required", and the
+  submit path writes whatever it is handed; the kernel has no opinion, because
+  no constraint compares a fact against the map. Refusing the entry is a
+  judgement made at write time, which is the one thing the log is not supposed
+  to make, so it is not obvious the form should refuse either. Whether required
+  lives in the form, in a generated table's constraints, or only in the report
+  that says what is missing, is undecided · blocks: live use
 
 ## T2 — wait for a user
 
@@ -301,3 +319,23 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
   nothing, falls back to the earliest version, or is refused is undecided — the
   27 Aug item settled the same question on the `as_of` axis only. Found 31 Aug
   reading v1 back after the seal · blocks: report
+- Each of §10's six rules sits in v1 twice, and v1 is sealed. Once as a `Policy`
+  fact in the log, once as a `stated_rule` annotation on a slot where it has sat
+  since the first draft. The 31 Aug item added the second home without removing
+  the first, because the clause written here never mentioned an annotation
+  nobody had noticed. The wordings already differ — Marta's "Stock should never
+  go below zero. If it does, something was recorded wrong" against the
+  annotation's run-on paraphrase — while the numbers still agree, so nothing
+  contradicts today. The first time Marta moves a threshold the log supersedes
+  and the sealed annotation cannot, and the map will answer a question the log
+  answers differently. Directly against the 30 Aug line on where a number lives.
+  This is the first thing v2 carries · blocks: -
+- One `valid_from` serves both the version and its facts, so the map is not
+  valid until the balances are. `annotations.valid_from` is 1 September and the
+  seal instant is 21:00 on 31 August, so in between `resolve_version` returns no
+  version and `resolve_single` returns nothing: for three hours the shop has
+  counted its stock, 301 rows are written, and the log answers nothing about
+  either the stock or the map that describes it. The facts genuinely do not
+  apply until the morning and that half is right. Whether a map's own
+  `valid_from` should instead be its seal instant, so the words mean something
+  from the moment they are sealed, is undecided · blocks: episodes

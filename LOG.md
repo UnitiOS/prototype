@@ -1428,3 +1428,81 @@ is 6 characters in 9 bytes with U+2212 rather than a hyphen, and 2–4 °C keeps
 its en dash. And no `(subject, predicate)` pair occurs twice in the whole log,
 so nothing in v1 competes — which is also why Q6 cannot fail yet: it needs the
 second count.
+
+## 2026-08-31 · `generator`: one projection table and one form from v1 alone
+
+Built `components/generator/generate.py` and `tests/generator/`. Ran
+`make check` — **57 passed** (47 before, 10 new), replay identical at 5334
+bytes, exit 0. Then ran the CLI against `business/v1.yaml` and the working
+`uniti` database, which still reads 1 / 107 / 301 afterwards: nothing here
+wrote to it.
+
+What was generated, from the sealed `v1.yaml` and nothing else — not
+`draft.yaml`, not `profile.md`:
+
+    table Material   19 rows, 8 columns, 73 of 152 cells blank
+                     verified: 152 cells equal a direct read of the log
+    table Pan        19 rows, 7 columns, 114 of 133 cells blank
+                     verified: 133 cells equal a direct read of the log
+    form  Material   8 fields, 3 of them over a class range
+    form  Pan        7 fields, 3 of them over a class range
+
+Columns are the class's *induced* slots read through `SchemaView`, so `is_a`
+and `default_range` apply. Every cell is one `resolve_single()` call at the
+same (valid_at, as_of) — the table is a read of the kernel, never a store.
+`--verify` re-derives every cell with one `DISTINCT ON` statement that never
+calls `resolve_single`, so what the equality proves is the generator's pivot —
+which entity is a row, which value lands in which column — rather than the read
+rule against itself.
+
+**The map does not say which entities are a class's rows, and that is the
+result of this item.** A class is a set of slots; the log is (subject,
+predicate, value); no assertion anywhere states that an entity is a Material.
+CLAUDE.md's third closed finding says class membership is an assertion, and v1
+asserts none for any of its 19 classes. So the generator guesses, on the only
+rule the two files support: a row is an entity that is the subject of a fact
+under one of that table's own columns and has at least one value standing at
+those clocks. Nothing was reached for outside the map to patch this.
+
+The guess is visibly wrong the first time it is asked a second question. The
+Pan table above holds **nineteen materials** — cocoa powder, cones, lemons —
+each with `stock_location` filled and all six pan columns blank, because
+`stock_location` is declared on `StockItem` and inherited by both Material and
+Pan. Two classes, one shared column, one indistinguishable row set. It is a
+line in OPEN.md rather than a fix, because fixing it means inventing a class
+assertion the business never made. The fixture test suite records the same
+shape deliberately: a crate that nobody called a tub is a row of the tub table.
+
+Surprising: **the generated form is the first thing that made an OPEN line
+visible rather than argued.** `material_unit` offers six options read from the
+log — day, kg, litre, percent, piece, week — so the dropdown for how much milk
+is measured in offers "week". That is the 31 Aug line about `Unit` widened to
+six by §10's thresholds, and it took a rendered form to make it a thing you can
+see rather than a thing you can reason about.
+
+Two more absences the form showed without being asked. `material_supplier`
+offers nothing at all: §5 names four suppliers, the draft states none, so the
+column is empty in the table and the dropdown is empty in the form — one of the
+27 slots carrying no fact, working exactly as it should. And `pan_mix` offers
+nothing for the same reason, while `pan_flavour` offers all sixteen flavours,
+so one form shows both halves of that defect side by side.
+
+Not done, and why. **No value was entered into the working log.** The form's
+write path is exercised in `tests/generator` against the check database — a
+literal and an edge on an existing subject, a new subject minted, both read
+back through `resolve_single`, and the same table shown before and after the
+`as_of` the entry was recorded at. Writing into `uniti` would append rows that
+`git revert` cannot take back, to the log whose 301 rows are the evidence the
+last item measured, and entering data is the next stage rather than this one.
+One command does it if that is wanted.
+
+Three decisions taken inside the item, none of which needed a new column or a
+new rule. A row with nothing standing at those clocks is not a row, so an
+entity the log has gone quiet about disappears rather than showing as a line of
+blanks. A `value_ref` renders as the target's URI, not as a label, because
+resolving a label needs the range class's identifier slot and the URIs are
+legible as they stand. And `submit()` does not read the six `stated_rule`
+annotations: the same rules are in the log as `Policy` facts, and the 31 Aug
+OPEN line says the annotation goes stale the first time Marta moves a
+threshold — a generated form that repeated it would put the stale copy in front
+of the user.
