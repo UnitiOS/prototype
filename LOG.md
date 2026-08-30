@@ -1347,3 +1347,84 @@ Found and not fixed: each of the six rules is now in the map twice — as a
 the first draft. The annotation carries the number, so it goes stale the first
 time Marta moves a threshold, and a sealed version cannot be corrected without a
 v2. Removing it was not in this item and it is a line in OPEN.md instead.
+
+## 2026-08-31 · Seal v1, and look at what landed
+
+Ran: `components/seal/seal.py business/draft.yaml --actor fareza --sealed-at
+2025-08-31T21:00:00Z` against the working `uniti` database, which read 0/0/0
+beforehand, with `business/` holding no `v*.yaml`. Then `make check` twice —
+**47 passed**, replay identical at 5334 bytes, exit 0 both times — and a
+read-back through `resolve_single` and `resolve_version`.
+
+The three table counts after the seal, and unchanged after both `make check`
+runs:
+
+    intent          1
+    entity        107   = 1 uniti:uri + 49 declared slot_uris + 57 subjects
+    assertion     301   = 107 URI registrations + 194 stated facts
+
+Every clause checked against the tables rather than against what `seal` is
+supposed to do:
+
+    sealed-at stamps both    v1.yaml carries sealed_at 2025-08-31T21:00:00+00:00;
+                             all 301 assertions carry one recorded_at equal to
+                             it; intent.occurred_at is the same instant
+    no facts block           v1.yaml's annotations hold valid_from, sealed_at,
+                             supersedes: null and transcript: v1.txt, nothing
+                             else. 42,342 bytes of draft sealed to 17,200
+    transcript beside it     v1.txt sits in business/ and is byte-identical to
+                             draft.txt
+    194 over 57              NOT as written — see below
+    one entity per predicate 23 predicate URIs in use (22 slots + uniti:uri),
+                             each resolving to exactly one entity id; no URI
+                             registered twice; no predicate row unregistered
+    four slots in value_ref  flavour_base 1, material_unit 19, policy_unit 3,
+                             stock_location 19 = 42 refs and zero literals on
+                             those four; no other predicate carries a ref at
+                             all; all 42 targets are registered entities
+    six read low             six low, thirteen high, 282 NULL. The six are
+                             sugar, lemons, cones, cups 3 oz, cups 5 oz and
+                             spoons — exactly profile §13's "estimated" rows,
+                             compared row by row against the table there
+    facts carry 2025-09-01   one valid_from across all 301 rows
+    make check twice         301 before, 301 after each run
+
+The read rule was exercised on real data rather than on the fixture: fresh milk
+reads `('38', 'high')` at valid_at 1 Sep as_of today and as_of the seal instant,
+`None` one second before the seal, and `material_unit` returns a `value_ref`
+that hops to `litre`. `resolve_version` returns v1 for any valid_at from 1 Sep
+seen after 21:00 on 31 Aug, and nothing before either bound. `gen-owl` and
+`gen-erdiagram` both exit 0 on the sealed file — 39,768 and 3,223 bytes — so
+what the generator will read next is a file the generators can still read.
+
+Surprising, and the reason the fourth clause is marked: **194 over 57 counts
+facts, and the log is a table.** It holds 301 assertions over 107 entities. The
+194 and the 57 are both exactly right as a subset — 194 rows carry
+`source = 'human_stated'` over 57 distinct subjects — but 107 rows register a
+URI and 50 entities are not subjects of anything. Nothing malfunctioned:
+registering every URI under `uniti:uri` has been in `seal` since it was written
+and is documented in its own docstring. The clause was written about the draft's
+facts and read back against the tables, and those are two different counts.
+
+Also surprising: **28 of the 107 entities are never the subject or the predicate
+of a stated fact** — the 27 declared `slot_uri`s that carry no fact, plus
+`uniti:uri` itself. `seal` mints one predicate entity per declared slot whether
+or not anything says it, so the map's whole vocabulary enters the log at seal
+time, not the exercised part of it. "Every predicate in the log has a home in
+the map" is therefore true by construction and measures nothing; the question
+with content is the other direction, and 27 of 49 slots have never been used.
+
+Also surprising: **the evening of the count is the one evening the system cannot
+answer for.** `recorded_at` 21:00 on 31 August precedes `valid_from` midnight on
+1 September, deliberately, and nothing in the kernel objected — no constraint
+compares the two columns. The consequence only shows on a read: at valid_at
+22:00 on 31 August, `resolve_single` returns None for fresh milk and
+`resolve_version` returns no version at all. For three hours the shop has just
+counted its stock, `seal` has written all 301 rows, and the log answers nothing
+about either the stock or the map that describes it.
+
+Two smaller facts. Unicode survived the round trip into Postgres intact: −35 °C
+is 6 characters in 9 bytes with U+2212 rather than a hyphen, and 2–4 °C keeps
+its en dash. And no `(subject, predicate)` pair occurs twice in the whole log,
+so nothing in v1 competes — which is also why Q6 cannot fail yet: it needs the
+second count.

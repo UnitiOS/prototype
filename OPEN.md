@@ -276,3 +276,28 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
   a sealed version cannot be corrected without a v2. Either the annotation drops
   the sentence and keeps the pointer, or it goes. Found 31 Aug giving §10 a home
   in the log while leaving the map's copy where it was · blocks: -
+- A multivalued slot has no story in the kernel. `base_ingredients` is the first
+  one and it is empty, so nothing breaks yet. But an assertion is one subject,
+  one predicate, one value, and supersession works on that pair — so six
+  ingredients on one base would be six assertions competing for the same pair,
+  and the sixth would most likely retire the other five rather than join them.
+  Either multivalued slots are refused at the map, or the pair stops being the
+  unit of supersession, or a collection gets its own subject. Found 31 Aug while
+  checking the draft for duplicate pairs before sealing · blocks: episodes
+- `Unit` now holds litre, kg, piece, day, week and percent. The last three came
+  from §10's thresholds and the business does utter them, so nothing was
+  invented, but `material_unit` and `policy_unit` now share one class across two
+  uses that never overlap. A generated dropdown for a material's unit will offer
+  "week". Whether that wants two classes, a subset, or nothing at all is
+  undecided · blocks: generator
+- Nothing answers for an instant before the map's own `valid_from`. v1 is sealed
+  at 21:00 on 31 August and takes effect at midnight, so for three hours
+  `resolve_version` returns None and `resolve_single` returns None for every one
+  of the 194 facts — the shop has just counted its stock, `seal` has written all
+  301 rows, and both readers say nothing about either the stock or the
+  vocabulary that describes it. Harmless while nothing happened before 1
+  September, but a report takes a period and a correction can be backdated below
+  the first version. Whether a `valid_at` under the earliest `valid_from` returns
+  nothing, falls back to the earliest version, or is refused is undecided — the
+  27 Aug item settled the same question on the `as_of` axis only. Found 31 Aug
+  reading v1 back after the seal · blocks: report
