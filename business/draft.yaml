@@ -1,0 +1,943 @@
+id: https://uniti.example/business
+name: marlow_gelato
+title: Marlow Gelato inventory
+description: >-
+  What a single-branch artisan gelato shop in north London holds, where it holds
+  it, and how it moves. The shop adopts the system on 1 September 2025, and the
+  facts stated here are the count taken the evening before.
+prefixes:
+  linkml: https://w3id.org/linkml/
+  uniti: https://uniti.example/business/
+default_prefix: uniti
+imports:
+  - linkml:types
+default_range: string
+
+classes:
+
+  Person:
+    description: >-
+      Someone who works in the shop. Marta does the buying and the books, Dan
+      runs the batch freezer three mornings a week, and three part-time counter
+      staff scoop, take payment, and write nothing down.
+    slots:
+      - person_name
+
+  Supplier:
+    description: >-
+      One company the shop buys from. There are four, one of them for dairy.
+    slots:
+      - supplier_name
+
+  Location:
+    description: >-
+      One place stock sits. The display cabinet is kept warmer than the freezers
+      on purpose, so the gelato scoops properly.
+    slots:
+      - location_name
+      - location_temperature
+
+  Unit:
+    description: >-
+      What a quantity is counted in. Materials disagree about this: milk is in
+      litres, sugar in kilograms, cones in pieces.
+    slots:
+      - unit_name
+
+  StockItem:
+    description: >-
+      Anything the shop holds and counts. A count goes through the materials in
+      the dry store and the chiller and the pans in the freezers, and Marta
+      calls all of it stock.
+    slots:
+      - stock_location
+
+  Material:
+    is_a: StockItem
+    description: >-
+      One purchasable input. Milk, cream, sugar, cocoa, cones, cups.
+    slots:
+      - material_name
+      - material_quantity
+      - material_unit
+      - material_supplier
+      - material_pack_size
+      - material_pack_price
+      - material_shelf_life_days
+
+  Pan:
+    is_a: StockItem
+    description: >-
+      One steel tray of finished gelato, holding about five litres. It hardens
+      in the blast freezer for two hours, waits in the storage freezer, and goes
+      to the display cabinet when the one on display runs out.
+    slots:
+      - pan_number
+      - pan_flavour
+      - pan_mix
+      - pan_filled_kilograms
+      - pan_pulled_kilograms
+      - pan_filled_on
+
+  Base:
+    description: >-
+      One of three mix formulas: a white dairy base, a chocolate dairy base, and
+      a fruit sorbet base with no dairy in it.
+    slots:
+      - base_name
+
+  Flavour:
+    description: >-
+      One entry in the recipe book. Sixteen exist and ten are on display, because
+      the two best sellers take two pans each. Peach runs June to August and
+      gingerbread runs in December only.
+    slots:
+      - flavour_name
+      - flavour_base
+      - flavour_scoop_price
+      - flavour_in_rotation
+      - flavour_pans_on_display
+      - flavour_pans_in_storage
+      - flavour_kilograms
+
+  MixBatch:
+    description: >-
+      One 25-litre pasteurised batch, aged in the chiller for at least four hours
+      before it is flavoured and run through the batch freezer. This is what Dan
+      means by a batch. Marta means a delivery, and both of them say batch.
+    slots:
+      - mix_base
+      - mix_made_by
+      - mix_litres
+      - mix_pasteurised_on
+
+  StockCount:
+    description: >-
+      One physical count of one location on one date. The last Sunday of the
+      month after close, sometimes weekly, entered the same evening. It is the
+      only moment the shop looks at its numbers and calls them settled.
+    slots:
+      - count_of
+      - count_location
+      - count_taken_on
+      - count_quantity
+
+  Sale:
+    description: >-
+      One day's till total for one flavour. Not one transaction: the till exports
+      a count of scoops per flavour per day, and the shop reads it the next
+      morning.
+    slots:
+      - sale_flavour
+      - sale_date
+      - sale_scoops
+
+  StockMovement:
+    description: >-
+      Stock leaving one place, arriving in another, or leaving the shop
+      altogether. Three of the ways stock moves here are never recorded by
+      anybody, which is the reason the numbers argue.
+    slots:
+      - movement_of
+      - movement_quantity
+      - movement_out_of
+      - movement_into
+      - movement_happened_on
+      - movement_recorded_by
+
+  GoodsReceived:
+    is_a: StockMovement
+    description: >-
+      A delivery from a supplier into the dry store or the chiller. Marta records
+      it on the Friday, from the invoice, when the invoice is paid, so a Monday
+      delivery is learned on the Friday. This is what Marta calls a batch.
+    slots:
+      - received_from
+
+  PanMoved:
+    is_a: StockMovement
+    description: >-
+      A pan going from the blast or storage freezer into the storage freezer or
+      the display cabinet. Nobody records it and nobody ever has.
+
+  PanPulled:
+    is_a: StockMovement
+    description: >-
+      A pan coming out of display at roughly a fifth full, because it looks poor
+      and the scoop drags. Nobody records it. What is left is given away as
+      tastings over the next two days, taken home by staff, or thrown out, and
+      which of the three happens is decided in the moment.
+
+  ThrownOut:
+    is_a: StockMovement
+    description: >-
+      Stock discarded. Marta records it when she remembers, which is days later
+      or never.
+
+  TastingGiven:
+    is_a: StockMovement
+    description: >-
+      A scoop given away from the display cabinet. Nobody records it. Marta
+      counts it as shrinkage and Dan does not.
+
+slots:
+
+  person_name:
+    slot_uri: uniti:person_name
+    identifier: true
+    range: string
+    description: What the shop calls this person.
+
+  supplier_name:
+    slot_uri: uniti:supplier_name
+    identifier: true
+    range: string
+    description: The company name, which is what identifies a supplier here.
+
+  location_name:
+    slot_uri: uniti:location_name
+    identifier: true
+    range: string
+    description: What the staff call this place.
+
+  location_temperature:
+    slot_uri: uniti:location_temperature
+    range: string
+    description: >-
+      How cold it is kept, stated the way the shop states it, which is a range
+      for the freezers and the word ambient for the dry store.
+
+  unit_name:
+    slot_uri: uniti:unit_name
+    identifier: true
+    range: string
+    description: litre, kg, or piece.
+
+  stock_location:
+    slot_uri: uniti:stock_location
+    range: Location
+    description: >-
+      Where this sits. A pan sits in a freezer or in the cabinet; a material sits
+      in the dry store or the chiller.
+
+  material_name:
+    slot_uri: uniti:material_name
+    identifier: true
+    range: string
+    description: What the shop calls it, and what identifies it.
+
+  material_quantity:
+    slot_uri: uniti:material_quantity
+    range: decimal
+    description: >-
+      How much of it is on hand. This slot names no unit, because materials do
+      not agree on one: the unit is whatever material_unit says for this
+      material.
+    annotations:
+      stated_rule: stock should never go below zero, and if it does, something was recorded wrong
+
+  material_unit:
+    slot_uri: uniti:material_unit
+    range: Unit
+    description: >-
+      What this material is measured in. It differs per material, so it is a
+      thing a fact points at rather than a unit fixed on the slot.
+
+  material_supplier:
+    slot_uri: uniti:material_supplier
+    range: Supplier
+    description: Who it is bought from.
+
+  material_pack_size:
+    slot_uri: uniti:material_pack_size
+    range: decimal
+    description: >-
+      How much arrives in one pack; a carton of cream is one litre. As with
+      material_quantity, the unit is the material's own.
+
+  material_pack_price:
+    slot_uri: uniti:material_pack_price
+    range: decimal
+    unit:
+      symbol: GBP
+      descriptive_name: pounds
+    description: What was paid for one pack, taken from the invoice.
+
+  material_shelf_life_days:
+    slot_uri: uniti:material_shelf_life_days
+    range: integer
+    unit:
+      ucum_code: d
+      descriptive_name: days
+    description: How long it keeps once it has been opened. Dan knows these.
+    annotations:
+      stated_rule: fresh milk older than three days does not go into a base
+
+  pan_number:
+    slot_uri: uniti:pan_number
+    range: string
+    description: >-
+      The number written on tape on the side of the tray. Not an identifier:
+      numbers are reused, so the same number refers to different pans over time.
+
+  pan_flavour:
+    slot_uri: uniti:pan_flavour
+    range: Flavour
+    description: Which flavour is in it.
+
+  pan_mix:
+    slot_uri: uniti:pan_mix
+    range: MixBatch
+    description: Which mix batch it was filled from.
+
+  pan_filled_kilograms:
+    slot_uri: uniti:pan_filled_kilograms
+    range: decimal
+    unit:
+      ucum_code: kg
+      descriptive_name: kilograms
+    description: What it weighed when Dan filled it, from his paper log.
+
+  pan_pulled_kilograms:
+    slot_uri: uniti:pan_pulled_kilograms
+    range: decimal
+    unit:
+      ucum_code: kg
+      descriptive_name: kilograms
+    description: >-
+      What it weighed when it came out of display, from the same paper log. Dan
+      reads shrinkage off this against what the till says was sold that week.
+
+  pan_filled_on:
+    slot_uri: uniti:pan_filled_on
+    range: date
+    description: The day it was filled, which is not the day the system learns it.
+    annotations:
+      stated_rule: a pan older than three weeks comes out of display, whatever is left in it
+
+  base_name:
+    slot_uri: uniti:base_name
+    identifier: true
+    range: string
+    description: white, chocolate, or sorbet.
+
+  flavour_name:
+    slot_uri: uniti:flavour_name
+    identifier: true
+    range: string
+    description: What it is called on the menu board.
+
+  flavour_base:
+    slot_uri: uniti:flavour_base
+    range: Base
+    description: Which of the three mix formulas it is made from.
+
+  flavour_scoop_price:
+    slot_uri: uniti:flavour_scoop_price
+    range: decimal
+    unit:
+      symbol: GBP
+      descriptive_name: pounds
+    description: What one scoop costs on the menu. Seasonal flavours cost more.
+
+  flavour_in_rotation:
+    slot_uri: uniti:flavour_in_rotation
+    range: boolean
+    description: >-
+      Whether it is being made at the moment. Ten of the sixteen are; the others
+      have a sticker over them on the menu board.
+
+  flavour_pans_on_display:
+    slot_uri: uniti:flavour_pans_on_display
+    range: integer
+    description: >-
+      How many pans of it are in the display cabinet. This is what the counter
+      staff mean when they say a flavour has run out, because the cabinet is all
+      they can see.
+    annotations:
+      stated_rule: never fewer than eight flavours in the cabinet, or the display looks poor
+
+  flavour_pans_in_storage:
+    slot_uri: uniti:flavour_pans_in_storage
+    range: integer
+    description: >-
+      How many pans of it are waiting in the storage freezer. When a counter
+      staff member says the vanilla has run out, this is often two.
+
+  flavour_kilograms:
+    slot_uri: uniti:flavour_kilograms
+    range: decimal
+    unit:
+      ucum_code: kg
+      descriptive_name: kilograms
+    description: >-
+      How much of it there is in the whole shop, display and storage and anything
+      still hardening. This is what Marta means when she says the vanilla.
+    annotations:
+      stated_rule: a flavour below five litres across the whole shop should be made again
+
+  mix_base:
+    slot_uri: uniti:mix_base
+    range: Base
+    description: Which of the three formulas this batch is.
+
+  mix_made_by:
+    slot_uri: uniti:mix_made_by
+    range: Person
+    description: Who made it. In practice Dan, on Monday, Wednesday and Friday mornings.
+
+  mix_litres:
+    slot_uri: uniti:mix_litres
+    range: decimal
+    unit:
+      ucum_code: L
+      descriptive_name: litres
+    description: >-
+      How much was made. A batch is 25 litres. Four litres of mix comes out of
+      the batch freezer as roughly five litres of gelato, and by how much more is
+      not measured.
+
+  mix_pasteurised_on:
+    slot_uri: uniti:mix_pasteurised_on
+    range: date
+    description: The day it was pasteurised, from Dan's paper log.
+
+  count_of:
+    slot_uri: uniti:count_of
+    range: StockItem
+    description: >-
+      What was counted, which is a material or a pan. Both of them are stock,
+      which is why they share a parent here.
+
+  count_location:
+    slot_uri: uniti:count_location
+    range: Location
+    description: Where the count happened.
+
+  count_taken_on:
+    slot_uri: uniti:count_taken_on
+    range: date
+    description: The day of the count, in the evening after close.
+
+  count_quantity:
+    slot_uri: uniti:count_quantity
+    range: decimal
+    description: >-
+      How much was found. The unit is whatever the thing counted is measured in.
+    annotations:
+      stated_rule: shrinkage above five percent in a month means something is wrong
+
+  sale_flavour:
+    slot_uri: uniti:sale_flavour
+    range: Flavour
+    description: Which flavour the day's total is for.
+
+  sale_date:
+    slot_uri: uniti:sale_date
+    range: date
+    description: The day the till total covers. It is read the next morning.
+
+  sale_scoops:
+    slot_uri: uniti:sale_scoops
+    range: integer
+    description: >-
+      How many scoops the till counted. A scoop is meant to be 80 grams, nobody
+      weighs one, and what is served runs between 70 and 105.
+
+  movement_of:
+    slot_uri: uniti:movement_of
+    range: StockItem
+    description: What moved.
+
+  movement_quantity:
+    slot_uri: uniti:movement_quantity
+    range: decimal
+    description: How much moved, in whatever the thing that moved is measured in.
+
+  movement_out_of:
+    slot_uri: uniti:movement_out_of
+    range: Location
+    description: Where it left. A delivery leaves a supplier rather than a location.
+
+  movement_into:
+    slot_uri: uniti:movement_into
+    range: Location
+    description: >-
+      Where it arrived. Nothing arrives anywhere when it is sold, thrown out or
+      given away.
+
+  movement_happened_on:
+    slot_uri: uniti:movement_happened_on
+    range: date
+    description: >-
+      The day it moved, which is not the day the system learns it. A pan filled
+      on the Wednesday is learned on the Sunday.
+
+  movement_recorded_by:
+    slot_uri: uniti:movement_recorded_by
+    range: Person
+    description: >-
+      Who wrote it down. For a pan moved, a pan pulled and a tasting given the
+      honest answer is nobody, and it has always been nobody.
+
+  received_from:
+    slot_uri: uniti:received_from
+    range: Supplier
+    description: Who the delivery came from.
+
+annotations:
+  transcript: draft.txt
+  valid_from: '2025-09-01T00:00:00Z'
+  facts:
+
+    # ---- Where the count found things (profile section 13, Location column) --
+    - subject: uniti:chiller
+      predicate: uniti:location_name
+      value: Chiller
+    - subject: uniti:dry_store
+      predicate: uniti:location_name
+      value: Dry store
+
+    # ---- What the quantities are counted in (section 13, Unit column) --------
+    - subject: uniti:litre
+      predicate: uniti:unit_name
+      value: litre
+    - subject: uniti:kg
+      predicate: uniti:unit_name
+      value: kg
+    - subject: uniti:piece
+      predicate: uniti:unit_name
+      value: piece
+
+    # ---- Opening balances, counted 2025-08-31 after close -------------------
+    # Nineteen materials. The confidence is the shop's own word for the number:
+    # counted is high, estimated is low. The dry store was not weighed.
+
+    - subject: uniti:fresh_milk
+      predicate: uniti:material_name
+      value: Fresh milk
+    - subject: uniti:fresh_milk
+      predicate: uniti:material_quantity
+      value: 38
+      confidence: high
+    - subject: uniti:fresh_milk
+      predicate: uniti:material_unit
+      value: uniti:litre
+    - subject: uniti:fresh_milk
+      predicate: uniti:stock_location
+      value: uniti:chiller
+
+    - subject: uniti:double_cream
+      predicate: uniti:material_name
+      value: Double cream
+    - subject: uniti:double_cream
+      predicate: uniti:material_quantity
+      value: 24
+      confidence: high
+    - subject: uniti:double_cream
+      predicate: uniti:material_unit
+      value: uniti:litre
+    - subject: uniti:double_cream
+      predicate: uniti:stock_location
+      value: uniti:chiller
+
+    - subject: uniti:skimmed_milk_powder
+      predicate: uniti:material_name
+      value: Skimmed milk powder
+    - subject: uniti:skimmed_milk_powder
+      predicate: uniti:material_quantity
+      value: 12
+      confidence: high
+    - subject: uniti:skimmed_milk_powder
+      predicate: uniti:material_unit
+      value: uniti:kg
+    - subject: uniti:skimmed_milk_powder
+      predicate: uniti:stock_location
+      value: uniti:dry_store
+
+    # Eyeballed through the sack. Marta knew it was approximate and used it.
+    - subject: uniti:sugar
+      predicate: uniti:material_name
+      value: Sugar
+    - subject: uniti:sugar
+      predicate: uniti:material_quantity
+      value: 45
+      confidence: low
+    - subject: uniti:sugar
+      predicate: uniti:material_unit
+      value: uniti:kg
+    - subject: uniti:sugar
+      predicate: uniti:stock_location
+      value: uniti:dry_store
+
+    - subject: uniti:dextrose
+      predicate: uniti:material_name
+      value: Dextrose
+    - subject: uniti:dextrose
+      predicate: uniti:material_quantity
+      value: 6
+      confidence: high
+    - subject: uniti:dextrose
+      predicate: uniti:material_unit
+      value: uniti:kg
+    - subject: uniti:dextrose
+      predicate: uniti:stock_location
+      value: uniti:dry_store
+
+    - subject: uniti:stabiliser
+      predicate: uniti:material_name
+      value: Stabiliser
+    - subject: uniti:stabiliser
+      predicate: uniti:material_quantity
+      value: 1.5
+      confidence: high
+    - subject: uniti:stabiliser
+      predicate: uniti:material_unit
+      value: uniti:kg
+    - subject: uniti:stabiliser
+      predicate: uniti:stock_location
+      value: uniti:dry_store
+
+    - subject: uniti:cocoa_powder
+      predicate: uniti:material_name
+      value: Cocoa powder
+    - subject: uniti:cocoa_powder
+      predicate: uniti:material_quantity
+      value: 4
+      confidence: high
+    - subject: uniti:cocoa_powder
+      predicate: uniti:material_unit
+      value: uniti:kg
+    - subject: uniti:cocoa_powder
+      predicate: uniti:stock_location
+      value: uniti:dry_store
+
+    # The block, not the gelato. The flavour of the same name is
+    # uniti:dark_chocolate_flavour, and the shop calls both dark chocolate.
+    - subject: uniti:dark_chocolate
+      predicate: uniti:material_name
+      value: Dark chocolate
+    - subject: uniti:dark_chocolate
+      predicate: uniti:material_quantity
+      value: 8
+      confidence: high
+    - subject: uniti:dark_chocolate
+      predicate: uniti:material_unit
+      value: uniti:kg
+    - subject: uniti:dark_chocolate
+      predicate: uniti:stock_location
+      value: uniti:dry_store
+
+    - subject: uniti:pistachio_paste
+      predicate: uniti:material_name
+      value: Pistachio paste
+    - subject: uniti:pistachio_paste
+      predicate: uniti:material_quantity
+      value: 3
+      confidence: high
+    - subject: uniti:pistachio_paste
+      predicate: uniti:material_unit
+      value: uniti:kg
+    - subject: uniti:pistachio_paste
+      predicate: uniti:stock_location
+      value: uniti:chiller
+
+    - subject: uniti:vanilla_paste
+      predicate: uniti:material_name
+      value: Vanilla paste
+    - subject: uniti:vanilla_paste
+      predicate: uniti:material_quantity
+      value: 1.2
+      confidence: high
+    - subject: uniti:vanilla_paste
+      predicate: uniti:material_unit
+      value: uniti:kg
+    - subject: uniti:vanilla_paste
+      predicate: uniti:stock_location
+      value: uniti:chiller
+
+    - subject: uniti:matcha_powder
+      predicate: uniti:material_name
+      value: Matcha powder
+    - subject: uniti:matcha_powder
+      predicate: uniti:material_quantity
+      value: 0.8
+      confidence: high
+    - subject: uniti:matcha_powder
+      predicate: uniti:material_unit
+      value: uniti:kg
+    - subject: uniti:matcha_powder
+      predicate: uniti:stock_location
+      value: uniti:dry_store
+
+    - subject: uniti:strawberry_puree
+      predicate: uniti:material_name
+      value: Strawberry puree
+    - subject: uniti:strawberry_puree
+      predicate: uniti:material_quantity
+      value: 5
+      confidence: high
+    - subject: uniti:strawberry_puree
+      predicate: uniti:material_unit
+      value: uniti:kg
+    - subject: uniti:strawberry_puree
+      predicate: uniti:stock_location
+      value: uniti:chiller
+
+    - subject: uniti:lemons
+      predicate: uniti:material_name
+      value: Lemons
+    - subject: uniti:lemons
+      predicate: uniti:material_quantity
+      value: 60
+      confidence: low
+    - subject: uniti:lemons
+      predicate: uniti:material_unit
+      value: uniti:piece
+    - subject: uniti:lemons
+      predicate: uniti:stock_location
+      value: uniti:chiller
+
+    - subject: uniti:hazelnut_paste
+      predicate: uniti:material_name
+      value: Hazelnut paste
+    - subject: uniti:hazelnut_paste
+      predicate: uniti:material_quantity
+      value: 2.5
+      confidence: high
+    - subject: uniti:hazelnut_paste
+      predicate: uniti:material_unit
+      value: uniti:kg
+    - subject: uniti:hazelnut_paste
+      predicate: uniti:stock_location
+      value: uniti:chiller
+
+    - subject: uniti:cones
+      predicate: uniti:material_name
+      value: Cones
+    - subject: uniti:cones
+      predicate: uniti:material_quantity
+      value: 900
+      confidence: low
+    - subject: uniti:cones
+      predicate: uniti:material_unit
+      value: uniti:piece
+    - subject: uniti:cones
+      predicate: uniti:stock_location
+      value: uniti:dry_store
+
+    - subject: uniti:cups_3_oz
+      predicate: uniti:material_name
+      value: Cups 3 oz
+    - subject: uniti:cups_3_oz
+      predicate: uniti:material_quantity
+      value: 1400
+      confidence: low
+    - subject: uniti:cups_3_oz
+      predicate: uniti:material_unit
+      value: uniti:piece
+    - subject: uniti:cups_3_oz
+      predicate: uniti:stock_location
+      value: uniti:dry_store
+
+    - subject: uniti:cups_5_oz
+      predicate: uniti:material_name
+      value: Cups 5 oz
+    - subject: uniti:cups_5_oz
+      predicate: uniti:material_quantity
+      value: 600
+      confidence: low
+    - subject: uniti:cups_5_oz
+      predicate: uniti:material_unit
+      value: uniti:piece
+    - subject: uniti:cups_5_oz
+      predicate: uniti:stock_location
+      value: uniti:dry_store
+
+    - subject: uniti:spoons
+      predicate: uniti:material_name
+      value: Spoons
+    - subject: uniti:spoons
+      predicate: uniti:material_quantity
+      value: 2000
+      confidence: low
+    - subject: uniti:spoons
+      predicate: uniti:material_unit
+      value: uniti:piece
+    - subject: uniti:spoons
+      predicate: uniti:stock_location
+      value: uniti:dry_store
+
+    - subject: uniti:tubs_500_ml
+      predicate: uniti:material_name
+      value: Tubs, 500 ml
+    - subject: uniti:tubs_500_ml
+      predicate: uniti:material_quantity
+      value: 180
+      confidence: high
+    - subject: uniti:tubs_500_ml
+      predicate: uniti:material_unit
+      value: uniti:piece
+    - subject: uniti:tubs_500_ml
+      predicate: uniti:stock_location
+      value: uniti:dry_store
+
+    # ---- The twenty-one pans, reported per flavour (section 13) -------------
+    # Twelve on display and nine in storage, weighed pan by pan but written
+    # down as a total per flavour. The pans themselves are not named: their
+    # numbers are reused, so a number is not an identity, and twenty-one
+    # individual weights that happen to sum to these totals are not in the
+    # profile. The two readings of "the vanilla" are two slots on one subject.
+
+    - subject: uniti:vanilla
+      predicate: uniti:flavour_name
+      value: Vanilla
+    - subject: uniti:vanilla
+      predicate: uniti:flavour_pans_on_display
+      value: 2
+    - subject: uniti:vanilla
+      predicate: uniti:flavour_pans_in_storage
+      value: 2
+    - subject: uniti:vanilla
+      predicate: uniti:flavour_kilograms
+      value: 11.4
+
+    - subject: uniti:dark_chocolate_flavour
+      predicate: uniti:flavour_name
+      value: Dark chocolate
+    - subject: uniti:dark_chocolate_flavour
+      predicate: uniti:flavour_pans_on_display
+      value: 2
+    - subject: uniti:dark_chocolate_flavour
+      predicate: uniti:flavour_pans_in_storage
+      value: 1
+    - subject: uniti:dark_chocolate_flavour
+      predicate: uniti:flavour_kilograms
+      value: 8.6
+
+    - subject: uniti:pistachio
+      predicate: uniti:flavour_name
+      value: Pistachio
+    - subject: uniti:pistachio
+      predicate: uniti:flavour_pans_on_display
+      value: 1
+    - subject: uniti:pistachio
+      predicate: uniti:flavour_pans_in_storage
+      value: 1
+    - subject: uniti:pistachio
+      predicate: uniti:flavour_kilograms
+      value: 5.8
+
+    - subject: uniti:matcha
+      predicate: uniti:flavour_name
+      value: Matcha
+    - subject: uniti:matcha
+      predicate: uniti:flavour_pans_on_display
+      value: 1
+    - subject: uniti:matcha
+      predicate: uniti:flavour_pans_in_storage
+      value: 0
+    - subject: uniti:matcha
+      predicate: uniti:flavour_kilograms
+      value: 2.4
+
+    - subject: uniti:strawberry_sorbet
+      predicate: uniti:flavour_name
+      value: Strawberry sorbet
+    - subject: uniti:strawberry_sorbet
+      predicate: uniti:flavour_pans_on_display
+      value: 1
+    - subject: uniti:strawberry_sorbet
+      predicate: uniti:flavour_pans_in_storage
+      value: 1
+    - subject: uniti:strawberry_sorbet
+      predicate: uniti:flavour_kilograms
+      value: 5.2
+
+    - subject: uniti:stracciatella
+      predicate: uniti:flavour_name
+      value: Stracciatella
+    - subject: uniti:stracciatella
+      predicate: uniti:flavour_pans_on_display
+      value: 1
+    - subject: uniti:stracciatella
+      predicate: uniti:flavour_pans_in_storage
+      value: 1
+    - subject: uniti:stracciatella
+      predicate: uniti:flavour_kilograms
+      value: 5.6
+
+    - subject: uniti:lemon_sorbet
+      predicate: uniti:flavour_name
+      value: Lemon sorbet
+    - subject: uniti:lemon_sorbet
+      predicate: uniti:flavour_pans_on_display
+      value: 1
+    - subject: uniti:lemon_sorbet
+      predicate: uniti:flavour_pans_in_storage
+      value: 0
+    - subject: uniti:lemon_sorbet
+      predicate: uniti:flavour_kilograms
+      value: 1.9
+
+    - subject: uniti:cookies_and_cream
+      predicate: uniti:flavour_name
+      value: Cookies and cream
+    - subject: uniti:cookies_and_cream
+      predicate: uniti:flavour_pans_on_display
+      value: 1
+    - subject: uniti:cookies_and_cream
+      predicate: uniti:flavour_pans_in_storage
+      value: 1
+    - subject: uniti:cookies_and_cream
+      predicate: uniti:flavour_kilograms
+      value: 5.9
+
+    - subject: uniti:salted_caramel
+      predicate: uniti:flavour_name
+      value: Salted caramel
+    - subject: uniti:salted_caramel
+      predicate: uniti:flavour_pans_on_display
+      value: 1
+    - subject: uniti:salted_caramel
+      predicate: uniti:flavour_pans_in_storage
+      value: 1
+    - subject: uniti:salted_caramel
+      predicate: uniti:flavour_kilograms
+      value: 5.7
+
+    - subject: uniti:mango_sorbet
+      predicate: uniti:flavour_name
+      value: Mango sorbet
+    - subject: uniti:mango_sorbet
+      predicate: uniti:flavour_pans_on_display
+      value: 1
+    - subject: uniti:mango_sorbet
+      predicate: uniti:flavour_pans_in_storage
+      value: 1
+    - subject: uniti:mango_sorbet
+      predicate: uniti:flavour_kilograms
+      value: 5.1
+
+    # ---- The six with a sticker over them on the menu board -----------------
+    # Named by section 13 and nothing else was said about them. No quantity
+    # fact, rather than a quantity of zero: nobody counted these.
+
+    - subject: uniti:peach
+      predicate: uniti:flavour_name
+      value: Peach
+    - subject: uniti:tiramisu
+      predicate: uniti:flavour_name
+      value: Tiramisu
+    - subject: uniti:hazelnut
+      predicate: uniti:flavour_name
+      value: Hazelnut
+    - subject: uniti:raspberry_sorbet
+      predicate: uniti:flavour_name
+      value: Raspberry sorbet
+    - subject: uniti:black_sesame
+      predicate: uniti:flavour_name
+      value: Black sesame
+    - subject: uniti:gingerbread
+      predicate: uniti:flavour_name
+      value: Gingerbread

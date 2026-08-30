@@ -1,0 +1,203 @@
+Provenance note for business/draft.yaml — Marlow Gelato, the v1 draft.
+
+There was no conversation. The interview is deferred for this PoC (DECISIONS.md,
+29 Aug), so the map was authored by hand from business/profile.md and from
+nothing else, and this note stands where a transcript would. It records what was
+read, what was decided where the profile does not decide, and what was rejected,
+so that "why does the map say this" is answerable from a file rather than from
+whoever wrote it.
+
+Nothing outside profile.md was used as a source. DECISIONS.md and NEXT.md were
+read as instructions about how to author, never as facts about the shop.
+
+
+WHAT BECAME WHAT
+----------------
+
+The profile's own read order was followed: section 4 things became classes,
+section 5 attributes became slots, section 6 relationships became slots whose
+range is another class, section 7 movements became classes, and section 13 is
+the whole of the facts.
+
+  section 1, 3, 8   descriptions on the classes, in the shop's own words
+  section 4         nine classes: Material, Supplier, Flavour, Base, MixBatch,
+                    Pan, Location, StockCount, Sale
+  section 5         the attribute slots, each carrying the profile's unit where
+                    the profile fixes one
+  section 6         eleven slots whose range is a class, listed below
+  section 7         five more classes under one parent, listed below
+  section 10        six stated_rule annotations, verbatim, on the slot each rule
+                    is about
+  section 11        two readings of "the vanilla" as two slots on one subject;
+                    two meanings of "batch" as MixBatch and GoodsReceived
+  section 12        gaps, kept as gaps: no slot was written for any of them
+  section 13        127 facts, and no fact comes from anywhere else
+
+Three classes are not in section 4 and are there because section 6 or the
+avoidance of any_of requires them:
+
+  Person      section 6 states "Mix batch was made by a person", and a
+              relationship's range has to be a class
+  Unit        section 6 states "Material is measured in Unit"
+  StockItem   the common parent of Material and Pan, so that "Stock count
+              counted Material or Pan" is one class-ranged slot
+
+Section 6, relationship by relationship, so the coverage can be checked:
+
+  Flavour is made from Base          flavour_base        -> Base
+  Mix batch is a batch of Base       mix_base            -> Base
+  Mix batch was made by a person     mix_made_by         -> Person
+  Pan holds Flavour                  pan_flavour         -> Flavour
+  Pan was filled from Mix batch      pan_mix             -> MixBatch
+  Pan sits in Location               stock_location      -> Location
+  Material is bought from Supplier   material_supplier   -> Supplier
+  Material is measured in Unit       material_unit       -> Unit
+  Stock count counted Material/Pan   count_of            -> StockItem
+  Stock count happened at Location   count_location      -> Location
+  Sale was of Flavour                sale_flavour        -> Flavour
+
+
+WHO WOULD HAVE WRITTEN THESE FACTS
+----------------------------------
+
+All 127 facts are one act: the count Marta and Dan took on the evening of
+31 August 2025, described to an interviewer and sealed. That is the onboarding
+writer named by the 30 Aug decision — the interview and `seal` — so they belong
+in one intent and there is nothing here a generated form or an agent would have
+written instead. No daily entry, no correction, no derived total.
+
+The test applied while writing: if a fact would have arrived on a Friday from an
+invoice, on a Sunday from Dan's paper log, or as a correction, it does not
+belong in this draft. Nothing in section 13 arrives that way.
+
+
+CHOICES THE PROFILE DOES NOT MAKE
+---------------------------------
+
+Each of these was underdetermined by profile.md. The plainest option was taken,
+and the alternative is recorded so it can be taken back.
+
+1. Section 7's movements are five classes, not nine and not none.
+   Four of the nine rows are already section 4 things — "base made" is a
+   MixBatch, "pan filled" is a Pan, "scoop sold" is a Sale, "stock counted" is a
+   StockCount — so only five are new: GoodsReceived, PanMoved, PanPulled,
+   ThrownOut, TastingGiven. They share one StockMovement parent carrying what
+   section 7's table states: what moved, how much, out of where, into where,
+   when, and who recorded it.
+   Rejected: omitting section 7 entirely. The done condition names sections 4
+   and 6 only, but it also sets a floor — at least what an ERP inventory module
+   holds — and an inventory module with no stock movements does not clear it.
+   Also rejected: one class with a movement_kind enum. The three movements
+   nobody records are three of these five, and as enum values they would be
+   three strings rather than three things a reader can see are empty.
+
+2. StockItem carries stock_location, so a material and a pan use one slot to say
+   where they sit.
+   Rejected: separate material_location and pan_location slots, leaving
+   StockItem with nothing in it. Section 8 states location as a property of
+   stock in general ("one place stock sits"), and a parent that exists only to
+   be the range of one slot is an artefact of avoiding any_of rather than
+   something the business says.
+
+3. The pan-table facts state no confidence at all.
+   Section 13 gives a Confidence column to the nineteen materials and none to
+   the ten flavours, so the six estimated quantities record `low`, the thirteen
+   counted ones record `high`, and every other fact records NULL.
+   Rejected: marking the flavour rows `high` from section 13's prose, "the
+   freezers were counted pan by pan". It is true, but the business wrote a
+   confidence beside nineteen numbers and not beside these, and a default claims
+   more than anyone said — the same reasoning as the 30 Aug decision.
+
+4. Location and Unit receive a name fact; Supplier, Base, Person, Pan,
+   MixBatch, StockCount, Sale and the five movements receive nothing.
+   Section 13's Location and Unit columns name chiller, dry store, litre, kg and
+   piece, so those five entities are named by the profile as well as pointed at.
+   Rejected: leaving them as bare URIs minted only because a fact points at
+   them. Then "38 litres in the chiller" would be readable nowhere but in the
+   URI, and a URI is not a name.
+
+5. The flavour called Dark chocolate is uniti:dark_chocolate_flavour, while the
+   eight kilograms of chocolate in the dry store is uniti:dark_chocolate.
+   The shop uses one phrase for two things, exactly as section 11 describes for
+   "the vanilla" and "batch". It is the only collision in section 13.
+   Rejected: prefixing every URI with its class — uniti:material_sugar,
+   uniti:flavour_vanilla. Tidier, and it hides that the collision happened.
+
+6. A name slot is `identifier: true` only where section 4 names one field that
+   identifies the thing: Material, Supplier, Flavour, Base, Location, Unit,
+   Person. Pan is not — section 4 says the number is written on tape and section
+   12 says numbers are reused, so pan_number is an ordinary slot. MixBatch,
+   StockCount and Sale are identified by two fields each, so none of their slots
+   is an identifier either.
+   Rejected: no identifiers anywhere. That would drop the one place the profile
+   is explicit about identity, and it would lose the finding that four of the
+   nine things have no single identifier the shop can state.
+
+7. The six flavours with a sticker over them carry a name and nothing else.
+   Section 13 names peach, tiramisu, hazelnut, raspberry sorbet, black sesame
+   and gingerbread as having had no stock.
+   Rejected: a quantity of zero. Nobody weighed them; "had no stock" is a
+   sentence, and 0.0 kg is a measurement. Also rejected: leaving them out
+   entirely, which would lose six of the sixteen recipes the shop has.
+
+8. Section 10's shrinkage rule is a stated_rule on count_quantity, and there is
+   no shrinkage slot.
+   The month-end count is where section 9 says the shop settles its numbers, so
+   the threshold hangs there. v1 carries no derived rule, per the 29 Aug
+   decision, so how shrinkage is computed is not in this map at all — only that
+   above five percent means something is wrong.
+   Rejected: a shrinkage slot carrying Marta's arithmetic in prose. It would be
+   a derived quantity in a version that is supposed to have none, and it would
+   spend the definition change before it happens.
+
+9. The rule on flavour_kilograms still says "below five litres" while the slot
+   is in kilograms. Left as it stands: section 12 records that nobody has ever
+   said which unit that rule means, and rewriting it in kilograms would answer
+   the question on the shop's behalf.
+
+
+WHAT WAS DELIBERATELY NOT WRITTEN
+---------------------------------
+
+Section 12's gaps are gaps. There is no slot for density per flavour, for actual
+overrun, for actual scoop weight, or for a supplier lot number, and there is no
+history before 1 September 2025. A map that answers those would have invented
+business.
+
+Location is folded into the pan slot names — flavour_pans_on_display and
+flavour_pans_in_storage — rather than being a dimension of one quantity, which
+is the untidiness the 30 Aug decision accepted on purpose. "How much vanilla is
+in the shop" is flavour_kilograms; "how much is out front" is a pan count, and
+the two do not add up to each other.
+
+No pan is named. Section 13 weighed twenty-one of them and wrote down ten
+totals, so twenty-one individuals would mean twenty-one invented weights, and
+section 12 says the numbers on the tape are reused.
+
+Thirty-five of the forty-five slots receive no fact at all: every price, every
+pack size, the shelf life, the base of each flavour, whether it is in rotation,
+and everything about a mix batch, a pan, a sale, a count and a movement. At
+onboarding the shop stated a balance and not a history, and the empty slots are
+the honest shape of that.
+
+
+WHAT THE RENDERS SHOWED
+-----------------------
+
+`gen-owl --no-use-native-uris` and `gen-erdiagram` both exit 0. The OWL carries
+eighteen classes and all seven is_a edges, and the six stated_rule annotations
+survive as triples. Two things worth knowing before anyone looks at either:
+
+The OWL carries the whole facts block as one 12,000-character string literal,
+because facts live under `annotations` and gen-owl renders annotations as
+triples on the ontology. A quarter of the TTL is the log. It disappears when the
+draft is sealed — `seal` strips `facts` — so this is a property of looking at a
+draft, not of looking at a version.
+
+The Mermaid diagram flattens is_a, so each of the five movement subclasses
+repeats its parent's six relationships: twenty of the thirty-two edges are the
+same six seen five times. Readable, but a change to StockMovement in v2 will
+show up six times in the diff rather than once.
+
+The slot-level `unit` metadata does not reach the OWL at all. Kilograms, litres,
+pounds and days are in the YAML and in nothing generated from it so far.

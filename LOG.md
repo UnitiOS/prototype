@@ -1173,3 +1173,66 @@ Surprising: nothing, which is itself the point — the column has existed since
 `001_schema.sql` and no writer had ever set it, and the whole cost of the first
 one was a subset test and a dict key. The 27 Aug `valid_from` refusal is what
 made the no-default choice cheap to make: the shape was already in the file.
+
+---
+
+## 2026-08-30 · The v1 draft, written and rendered, not sealed
+
+Ran: `make check` — **47 passed**, replay identical twice at 5334 bytes, exit 0.
+`gen-owl --no-use-native-uris business/draft.yaml` and
+`gen-erdiagram business/draft.yaml` both exit 0. The working `uniti` database
+still reads 0/0/0 and `business/` holds no `v*.yaml`: nothing here touched the
+kernel, because every check ran `seal`'s own validators as functions rather than
+through `seal()`.
+
+Two files: `business/draft.yaml` and `business/draft.txt`, the provenance note
+that stands where a transcript would. 18 classes, 45 top-level slots, 127 facts,
+7 identifier slots, 6 `stated_rule` annotations. Every done condition checked by
+running it, not by reading:
+
+    SchemaView loads clean; all 45 slots declare a slot_uri; all 11 section-6
+    relationships are class-ranged and Pan inherits a Location-ranged slot;
+    no any_of anywhere, in the parse or in the text; 19 materials each with a
+    quantity, a unit and a location; 10 pan-table flavours each with a
+    kilogram fact; exactly 6 `low` and 13 `high`; no fact whose predicate is
+    declared by Pan, StockCount, MixBatch, Sale, Base or Supplier.
+
+The pans reconcile: 12 on display, 9 in storage, 21 in all, 57.6 kg.
+
+Three findings about the renders, all now lines in OPEN.md. `gen-owl` carries
+the draft's entire `facts` block into the TTL as one 12,176-character string
+literal on the ontology node — a quarter of the file — because facts live under
+`annotations` and gen-owl renders annotations as triples. It disappears on seal.
+`gen-erdiagram` flattens `is_a`, so the five movement subclasses repeat their
+parent's six relationships and 20 of the 32 edges are the same six seen five
+times. And slot-level `unit` reaches nothing: `ucum_code` and `symbol` appear
+zero times in the TTL, so half of the 30 Aug unit decision survives a generator
+and half does not.
+
+Nine choices the profile underdetermines are recorded in the note with the
+alternative rejected, not as comments in the draft. The one that most deserves
+a second look before the seal, and a proposed wording for it:
+
+> 2026-08-30 · Section 7's movements are five classes in v1, not nine and not
+> none. Four of the nine rows are already section 4 things — "base made" is a
+> MixBatch, "pan filled" is a Pan, "scoop sold" is a Sale, "stock counted" is a
+> StockCount — so only GoodsReceived, PanMoved, PanPulled, ThrownOut and
+> TastingGiven are new, under one StockMovement parent carrying what section 7's
+> table states. The done condition names sections 4 and 6 only, but it also sets
+> a floor — at least what an ERP inventory module holds — and an inventory
+> module with no stock movements does not clear it. Three of the five are the
+> movements nobody records, which is the finding the profile insists on
+> preserving; as values of a `movement_kind` enum they would be three strings
+> rather than three things a reader can see are empty.
+
+Surprising: the profile's own read order says "movements become classes of their
+own", and following it turned out to add five classes rather than nine, because
+four of section 7's rows are section 4 things seen from the other side. The
+overlap is not stated anywhere in the profile — it only appears when both tables
+are translated at once.
+
+Also surprising, and it decided the URI scheme: exactly one name collides.
+"Dark chocolate" is 8 kg in the dry store and a flavour in the cabinet, and
+nothing else in section 13 collides at all, so prefixing every URI with its
+class would have been a scheme built for one case — and would have hidden the
+case it was built for.

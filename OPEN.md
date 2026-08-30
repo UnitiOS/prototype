@@ -211,3 +211,19 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
   30 Aug as the untidiness an interview would have produced, and named here
   because it is also the candidate definition change with a real blast radius
   for v2 · blocks: -
+- `gen-owl` renders a draft's whole `annotations.facts` block as one string
+  literal on the ontology node — 12,176 characters, a quarter of the TTL, for
+  the 127-fact v1 draft. Found 30 Aug rendering the draft. It vanishes on seal,
+  because `seal` strips `facts`, so it is a property of looking at a draft and
+  not of looking at a version; anyone opening a draft in Protege or WebVOWL
+  sees the log inside the map · blocks: -
+- `gen-erdiagram` flattens `is_a`: each subclass repeats its parent's
+  relationships rather than inheriting an edge. The v1 draft's five movement
+  subclasses turn six parent relationships into thirty, so twenty of the
+  thirty-two edges are repetition. The 29 Aug decision makes this render the
+  diffable working view, so a v2 change to a parent shows up once per child
+  · blocks: graph review
+- Slot-level `unit` metadata does not reach `gen-owl` at all: no `ucum_code`,
+  no symbol, no triple. The 30 Aug decision puts a fixed unit on the slot and a
+  varying one in a `value_ref`, and only the second half of that survives a
+  generator so far · blocks: generator
