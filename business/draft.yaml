@@ -490,13 +490,43 @@ annotations:
   valid_from: '2025-09-01T00:00:00Z'
   facts:
 
-    # ---- Where the count found things (profile section 13, Location column) --
-    - subject: uniti:chiller
-      predicate: uniti:location_name
-      value: Chiller
+    # ---- The five places stock sits (section 8) -----------------------------
+    # Each with the temperature the shop states, which is a range for the
+    # chiller, a single figure for the freezers and the cabinet, and the word
+    # ambient for the dry store. Only two of the five are pointed at by
+    # anything: the count reported pans per flavour rather than per freezer, so
+    # the blast freezer, the storage freezer and the display cabinet are named
+    # here and hold nothing.
     - subject: uniti:dry_store
       predicate: uniti:location_name
       value: Dry store
+    - subject: uniti:dry_store
+      predicate: uniti:location_temperature
+      value: ambient
+    - subject: uniti:chiller
+      predicate: uniti:location_name
+      value: Chiller
+    - subject: uniti:chiller
+      predicate: uniti:location_temperature
+      value: 2–4 °C
+    - subject: uniti:blast_freezer
+      predicate: uniti:location_name
+      value: Blast freezer
+    - subject: uniti:blast_freezer
+      predicate: uniti:location_temperature
+      value: −35 °C
+    - subject: uniti:storage_freezer
+      predicate: uniti:location_name
+      value: Storage freezer
+    - subject: uniti:storage_freezer
+      predicate: uniti:location_temperature
+      value: −22 °C
+    - subject: uniti:display_cabinet
+      predicate: uniti:location_name
+      value: Display cabinet
+    - subject: uniti:display_cabinet
+      predicate: uniti:location_temperature
+      value: −14 °C
 
     # ---- What the quantities are counted in (section 13, Unit column) --------
     - subject: uniti:litre
@@ -508,6 +538,33 @@ annotations:
     - subject: uniti:piece
       predicate: uniti:unit_name
       value: piece
+
+    # ---- The three mix formulas (section 3, listed again in section 4) ------
+    # A white dairy base, a chocolate dairy base, and a fruit sorbet base with
+    # no dairy in it. In the shop's own lower case, as the units are. Only
+    # pistachio points at one of them: section 5 states the base of one flavour.
+    - subject: uniti:white_base
+      predicate: uniti:base_name
+      value: white
+    - subject: uniti:chocolate_base
+      predicate: uniti:base_name
+      value: chocolate
+    - subject: uniti:sorbet_base
+      predicate: uniti:base_name
+      value: sorbet
+
+    # ---- The two people the profile names (section 1) -----------------------
+    # Marta does the buying and the books; Dan runs the batch freezer three
+    # mornings a week. The three part-time counter staff are counted and never
+    # named, so they are three people this map does not hold. Nothing points at
+    # either of these two yet: who made a mix is a fact about a mix batch, and
+    # there were none in the chiller on the evening of the count.
+    - subject: uniti:marta
+      predicate: uniti:person_name
+      value: Marta
+    - subject: uniti:dan
+      predicate: uniti:person_name
+      value: Dan
 
     # ---- Opening balances, counted 2025-08-31 after close -------------------
     # Nineteen materials. The confidence is the shop's own word for the number:
@@ -526,6 +583,10 @@ annotations:
     - subject: uniti:fresh_milk
       predicate: uniti:stock_location
       value: uniti:chiller
+    # Section 5: it keeps three days once opened, and Dan is who knows that.
+    - subject: uniti:fresh_milk
+      predicate: uniti:material_shelf_life_days
+      value: 3
 
     - subject: uniti:double_cream
       predicate: uniti:material_name
@@ -540,6 +601,15 @@ annotations:
     - subject: uniti:double_cream
       predicate: uniti:stock_location
       value: uniti:chiller
+    # Section 5: a carton is one litre and the invoice says £2.80. The only
+    # pack size and the only price the profile states; the other eighteen
+    # materials arrive in packs nobody stated at prices nobody stated.
+    - subject: uniti:double_cream
+      predicate: uniti:material_pack_size
+      value: 1
+    - subject: uniti:double_cream
+      predicate: uniti:material_pack_price
+      value: 2.80
 
     - subject: uniti:skimmed_milk_powder
       predicate: uniti:material_name
@@ -788,6 +858,8 @@ annotations:
     # numbers are reused, so a number is not an identity, and twenty-one
     # individual weights that happen to sum to these totals are not in the
     # profile. The two readings of "the vanilla" are two slots on one subject.
+    # Each also carries what section 5 states about every flavour: whether it is
+    # in rotation, which for these ten is true, and the price of a scoop.
 
     - subject: uniti:vanilla
       predicate: uniti:flavour_name
@@ -801,6 +873,12 @@ annotations:
     - subject: uniti:vanilla
       predicate: uniti:flavour_kilograms
       value: 11.4
+    - subject: uniti:vanilla
+      predicate: uniti:flavour_in_rotation
+      value: true
+    - subject: uniti:vanilla
+      predicate: uniti:flavour_scoop_price
+      value: 4.20
 
     - subject: uniti:dark_chocolate_flavour
       predicate: uniti:flavour_name
@@ -814,6 +892,12 @@ annotations:
     - subject: uniti:dark_chocolate_flavour
       predicate: uniti:flavour_kilograms
       value: 8.6
+    - subject: uniti:dark_chocolate_flavour
+      predicate: uniti:flavour_in_rotation
+      value: true
+    - subject: uniti:dark_chocolate_flavour
+      predicate: uniti:flavour_scoop_price
+      value: 4.20
 
     - subject: uniti:pistachio
       predicate: uniti:flavour_name
@@ -827,6 +911,18 @@ annotations:
     - subject: uniti:pistachio
       predicate: uniti:flavour_kilograms
       value: 5.8
+    - subject: uniti:pistachio
+      predicate: uniti:flavour_in_rotation
+      value: true
+    - subject: uniti:pistachio
+      predicate: uniti:flavour_scoop_price
+      value: 4.20
+    # Section 5 names the base of one flavour and only one: pistachio uses
+    # white. The other fifteen are made from something too, and the profile
+    # does not say what.
+    - subject: uniti:pistachio
+      predicate: uniti:flavour_base
+      value: uniti:white_base
 
     - subject: uniti:matcha
       predicate: uniti:flavour_name
@@ -840,6 +936,12 @@ annotations:
     - subject: uniti:matcha
       predicate: uniti:flavour_kilograms
       value: 2.4
+    - subject: uniti:matcha
+      predicate: uniti:flavour_in_rotation
+      value: true
+    - subject: uniti:matcha
+      predicate: uniti:flavour_scoop_price
+      value: 4.20
 
     - subject: uniti:strawberry_sorbet
       predicate: uniti:flavour_name
@@ -853,6 +955,12 @@ annotations:
     - subject: uniti:strawberry_sorbet
       predicate: uniti:flavour_kilograms
       value: 5.2
+    - subject: uniti:strawberry_sorbet
+      predicate: uniti:flavour_in_rotation
+      value: true
+    - subject: uniti:strawberry_sorbet
+      predicate: uniti:flavour_scoop_price
+      value: 4.20
 
     - subject: uniti:stracciatella
       predicate: uniti:flavour_name
@@ -866,6 +974,12 @@ annotations:
     - subject: uniti:stracciatella
       predicate: uniti:flavour_kilograms
       value: 5.6
+    - subject: uniti:stracciatella
+      predicate: uniti:flavour_in_rotation
+      value: true
+    - subject: uniti:stracciatella
+      predicate: uniti:flavour_scoop_price
+      value: 4.20
 
     - subject: uniti:lemon_sorbet
       predicate: uniti:flavour_name
@@ -879,6 +993,12 @@ annotations:
     - subject: uniti:lemon_sorbet
       predicate: uniti:flavour_kilograms
       value: 1.9
+    - subject: uniti:lemon_sorbet
+      predicate: uniti:flavour_in_rotation
+      value: true
+    - subject: uniti:lemon_sorbet
+      predicate: uniti:flavour_scoop_price
+      value: 4.20
 
     - subject: uniti:cookies_and_cream
       predicate: uniti:flavour_name
@@ -892,6 +1012,12 @@ annotations:
     - subject: uniti:cookies_and_cream
       predicate: uniti:flavour_kilograms
       value: 5.9
+    - subject: uniti:cookies_and_cream
+      predicate: uniti:flavour_in_rotation
+      value: true
+    - subject: uniti:cookies_and_cream
+      predicate: uniti:flavour_scoop_price
+      value: 4.20
 
     - subject: uniti:salted_caramel
       predicate: uniti:flavour_name
@@ -905,6 +1031,12 @@ annotations:
     - subject: uniti:salted_caramel
       predicate: uniti:flavour_kilograms
       value: 5.7
+    - subject: uniti:salted_caramel
+      predicate: uniti:flavour_in_rotation
+      value: true
+    - subject: uniti:salted_caramel
+      predicate: uniti:flavour_scoop_price
+      value: 4.20
 
     - subject: uniti:mango_sorbet
       predicate: uniti:flavour_name
@@ -918,26 +1050,74 @@ annotations:
     - subject: uniti:mango_sorbet
       predicate: uniti:flavour_kilograms
       value: 5.1
+    - subject: uniti:mango_sorbet
+      predicate: uniti:flavour_in_rotation
+      value: true
+    - subject: uniti:mango_sorbet
+      predicate: uniti:flavour_scoop_price
+      value: 4.20
 
     # ---- The six with a sticker over them on the menu board -----------------
-    # Named by section 13 and nothing else was said about them. No quantity
-    # fact, rather than a quantity of zero: nobody counted these.
+    # Named by section 13 as the six recipes that had no stock. They carry a
+    # name, a rotation of false and a price, because section 5 states those for
+    # every flavour and a menu price does not stop existing when a flavour is
+    # off. No quantity fact, rather than a quantity of zero: nobody counted
+    # these. Peach and gingerbread are section 1's two seasonal flavours, so
+    # they carry section 5's seasonal price; both are out of rotation on
+    # 31 August, one because its season ended and one because its season is
+    # December.
 
     - subject: uniti:peach
       predicate: uniti:flavour_name
       value: Peach
+    - subject: uniti:peach
+      predicate: uniti:flavour_in_rotation
+      value: false
+    - subject: uniti:peach
+      predicate: uniti:flavour_scoop_price
+      value: 5.50
     - subject: uniti:tiramisu
       predicate: uniti:flavour_name
       value: Tiramisu
+    - subject: uniti:tiramisu
+      predicate: uniti:flavour_in_rotation
+      value: false
+    - subject: uniti:tiramisu
+      predicate: uniti:flavour_scoop_price
+      value: 4.20
     - subject: uniti:hazelnut
       predicate: uniti:flavour_name
       value: Hazelnut
+    - subject: uniti:hazelnut
+      predicate: uniti:flavour_in_rotation
+      value: false
+    - subject: uniti:hazelnut
+      predicate: uniti:flavour_scoop_price
+      value: 4.20
     - subject: uniti:raspberry_sorbet
       predicate: uniti:flavour_name
       value: Raspberry sorbet
+    - subject: uniti:raspberry_sorbet
+      predicate: uniti:flavour_in_rotation
+      value: false
+    - subject: uniti:raspberry_sorbet
+      predicate: uniti:flavour_scoop_price
+      value: 4.20
     - subject: uniti:black_sesame
       predicate: uniti:flavour_name
       value: Black sesame
+    - subject: uniti:black_sesame
+      predicate: uniti:flavour_in_rotation
+      value: false
+    - subject: uniti:black_sesame
+      predicate: uniti:flavour_scoop_price
+      value: 4.20
     - subject: uniti:gingerbread
       predicate: uniti:flavour_name
       value: Gingerbread
+    - subject: uniti:gingerbread
+      predicate: uniti:flavour_in_rotation
+      value: false
+    - subject: uniti:gingerbread
+      predicate: uniti:flavour_scoop_price
+      value: 5.50

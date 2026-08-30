@@ -227,3 +227,21 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
   no symbol, no triple. The 30 Aug decision puts a fixed unit on the slot and a
   varying one in a `value_ref`, and only the second half of that survives a
   generator so far · blocks: generator
+- WebVOWL cannot see the shape it is there to check. `gen-owl` writes no
+  `rdfs:domain` at all — a slot's domain becomes an `owl:Restriction` inside
+  each class, 135 of them in the v1 draft — and VOWL draws a property as an edge
+  only when it carries both a domain and a range. So all 16 relationships render
+  out of a generic node and the only class-to-class edges left are the 7
+  `subClassOf` links. The 29 Aug line names WebVOWL the shape check and warns it
+  validates nothing; the sharper problem is the inverse of the one that line
+  feared, a picture that looks poorer than the map is. Found 30 Aug by counting
+  the triples behind a picture that looked wrong. LinkML's own `gen-doc` and
+  `gen-mermaid-class-diagram` draw both inheritance and associations
+  · blocks: graph review
+- `seal` stringifies a fact's value with `str()`, so the draft's first boolean
+  reaches `value_literal` as `True` rather than `true`, and a scoop price
+  written `4.20` reaches it as `4.2`. The map declares `range: boolean` and
+  `range: decimal` and the draft states a boolean and a decimal, so what is
+  Python's spelling here is the tool's, not the map's. Found 30 Aug adding the
+  sixteen `flavour_in_rotation` facts, the first booleans and the first money in
+  the PoC · blocks: generator

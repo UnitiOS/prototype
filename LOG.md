@@ -1236,3 +1236,55 @@ Also surprising, and it decided the URI scheme: exactly one name collides.
 nothing else in section 13 collides at all, so prefixing every URI with its
 class would have been a scheme built for one case — and would have hidden the
 case it was built for.
+
+## 2026-08-30 · The draft's facts reach the master data, still not sealed
+
+Ran: 49 facts added to `business/draft.yaml`, 127 -> 176. `make check` —
+**47 passed**, replay identical twice at 5334 bytes, exit 0. The working `uniti`
+database still reads 0/0/0 and `business/` holds no `v*.yaml`: nothing here
+touched the kernel. No class and no slot changed; the item was facts only.
+
+What arrived, and the section each came from:
+
+    §8   the five places stock sits, each with a name and a temperature —
+         three of them, the blast freezer, the storage freezer and the display
+         cabinet, are named and pointed at by nothing
+    §3   the white, chocolate and sorbet bases
+    §1   Marta and Dan, and no counter staff
+    §5   sixteen `flavour_in_rotation`, sixteen scoop prices, pistachio's base,
+         fresh milk's three-day shelf life, cream's one-litre pack and £2.80
+
+Every clause of the done condition checked by running it, not by reading:
+
+    five locations with a name and a temperature; three bases; two people;
+    16 flavours each stating rotation, the 6 stickered false and the other 10
+    true; 16 prices with peach and gingerbread at 5.50 and the rest at 4.20;
+    `flavour_base` on pistachio and nothing else; shelf life on fresh milk and
+    nothing else; pack size and price on double cream and nothing else; no
+    fact whose predicate is declared by Supplier, Pan, MixBatch, Sale or
+    StockCount; confidence still exactly 6 `low` and 13 `high`.
+
+Slots receiving a fact: 19 of 45, was 10. Slots receiving none: 26, was 35, and
+the provenance note now lists all 26 beside the section that leaves each empty.
+Class-ranged slots exercised: 3 of 16, was 2 — `flavour_base` joined
+`stock_location` and `material_unit`. Subjects: 48, was 40.
+
+`gen-owl --no-use-native-uris`, `gen-doc` and `gen-mermaid-class-diagram` all
+exit 0. `gen-mermaid-class-diagram` requires `-d` like `gen-doc` and writes one
+file per class: 18 diagrams, 84 doc pages. The TTL's facts literal grew from
+12,176 characters to 16,673 on one line, now a third of the file.
+
+`seal`'s validators run as functions accept all 176 facts; 39 would land in
+`value_ref` (19 `material_unit`, 19 `stock_location`, 1 `flavour_base`).
+Nothing was sealed.
+
+Surprising: `seal` stringifies with `str()`, so the first boolean in the PoC
+reads `True` rather than `true` and `4.20` reads `4.2`. The draft states a
+boolean where the map says `range: boolean`, so the draft is not the place to
+fix it — appended to OPEN.md as a T1 line blocking `generator`.
+
+Also surprising: the profile states the base of exactly one flavour. Dark
+chocolate, stracciatella and the three sorbets announce their base in their own
+names, and writing those down would have been the one invention nothing
+downstream could detect — fifteen inferred facts indistinguishable from the one
+stated fact. It is recorded as choice 10 in the note for that reason.
