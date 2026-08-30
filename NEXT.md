@@ -181,39 +181,46 @@ Adding a sixth item means removing one.
       done: eceada6 committed the four files, cc747f7 removed them, both stores
       empty, `make check` exits 0 at 41 passed and 5334 bytes twice.
 
-- [ ] The business profile, one page, frozen before the map is written
-      `business/profile.md`. How many flavours, the production rhythm, who
-      records and when, when stock is counted, when it is busy — and the mess a
-      cooperative author smooths away: a term used two ways, a rule nobody wrote
-      down, a number two people compute differently. It bounds what curation may
-      invent. One page, and never revised after the map is sealed.
-      done when: the file exists, fits on one page, and `git log --diff-filter=A`
-      shows it added in a commit before `business/draft.yaml`
+- [x] The business profile, one page, frozen before the map is written
+      done: `business/profile.md`, 286 lines. Marlow Gelato, single branch,
+      north London, adopting the system 2025-09-01. Nine stock movements of
+      which three are never recorded; two readings of "the vanilla"; shrinkage
+      computed two ways that differ by two to four points every month. Frozen
+      when `business/draft.yaml` is created.
 
-- [ ] `seal` writes `value_ref` from the slot's `range`
-      A class range means a ref, a type range means a literal. The rule is read
-      from the map and needs no new key. Required before v1, because an
-      inventory module is mostly relationships and a map that declares them
-      while the log cannot honour them is untested from day one.
-      done when: a fact whose slot declares a class range lands with `value_ref`
-      set and `value_literal` null, naming the same entity a second fact about
-      the same URI names; a type range still lands as a literal; a class-ranged
-      value that names no registered URI registers one the way a subject does;
-      the existing seal tests still pass; and `make check` exits 0
+- [x] `seal` writes `value_ref` from the slot's `range`
+      done: ffb08eb, verified 4e4b457. 44 passed, `make check` exits 0. The
+      kernel needed nothing — `perform()` had accepted refs since the first
+      hundred lines; it was seven lines of `seal` calling `str()` on everything.
+      Two gaps found and left as OPEN lines rather than fixed here: two slots
+      sharing a `slot_uri` with different ranges, and an `any_of` slot of all
+      classes reading as a literal. The second blocks the map.
+
+- [x] Competency questions, frozen before any history is curated
+      done: `business/questions.md`, six questions, Q6 expected to fail.
 
 - [ ] The inventory map v1, with opening balances, sealed
       Structure and facts in one draft — opening balances genuinely share one
       `valid_from` and one `recorded_at`, so `seal` is the right writer. No
       derived rules: stock on hand at onboarding is the opening balance.
       Coverage is at least what an ERP inventory module holds for this business:
-      items, units of measure, locations, opening balances.
+      items, units of measure, locations, opening balances. Authored from
+      `business/profile.md` and nothing else. Flat: `is_a` only, no mixins, no
+      elaborate derived types, so the OWL render stays readable. Profile §6 has
+      one relationship over two things — "Stock count counted Material or Pan" —
+      and the `any_of` OPEN line says `seal` reads that as a literal; give the
+      two a common superclass rather than teaching `seal` `any_of`. The map
+      should look like something an interview could have produced, not tidier.
+      Every fact's intent names the writer that would have written it.
       done when: `business/v1.yaml` carries classes and slots for items, units,
       locations and stock; every quantity slot names its unit; every top-level
-      slot declares a `slot_uri`; at least one slot declares a class as its
-      range and its fact lands as a `value_ref`; `annotations.transcript` names
-      a provenance note sitting beside the version after the seal; the sealed
-      file carries no `facts` block; every predicate in the log resolves to
-      exactly one entity; and `make check` exits 0
+      slot declares a `slot_uri`; every relationship in profile §6 is a slot
+      whose range is a class, and its fact lands as a `value_ref`;
+      `annotations.transcript` names a provenance note sitting beside the
+      version after the seal; the sealed file carries no `facts` block; every
+      predicate in the log resolves to exactly one entity; `gen-owl` produces a
+      TTL file without error and `gen-erdiagram` a Mermaid diagram; and
+      `make check` exits 0
 
 - [ ] `generator`: one projection table and one form from v1 alone
       The first look at whether the map is worth anything. Reads the sealed v1

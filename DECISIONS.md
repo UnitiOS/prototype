@@ -592,3 +592,64 @@ reasoning lives in `../archived/`. They are closed, which means not re-discussed
              when stock is counted, when it is busy. It is the 27 Aug frozen
              brief moved to where authorship now sits — then it bounded what an
              interview could hear, now it bounds what curation may invent.
+2026-08-29 · Three viewers for three jobs, and none of them is a component.
+             `gen-erdiagram` is the working view: Mermaid, text, in the repo,
+             diffable — so a v1-to-v2 map change shows up in `git diff` as a
+             change in shape rather than as two pictures to compare by eye,
+             which serves the definition-change demo directly. WebVOWL, via
+             `gen-owl`, is the shape check: a force-directed graph makes it
+             immediately visible when the map is nodes with no edges. Protégé
+             with a reasoner is the only one of the three that can say the map is
+             *wrong*, and it is used once at v1 and then left alone. All three
+             are commands, so none enters the component table.
+2026-08-29 · WebVOWL validates nothing. It renders. Saying so now because the
+             temptation later will be to treat a clean picture as a passing test.
+             Data validation stays `linkml-validate`; LinkML is closed-world and
+             OWL is open-world, so a reasoner over `gen-owl` output will infer
+             values for slots that are merely not required, without calling it an
+             error.
+2026-08-29 · The map stays flat: `is_a` only, no mixins, no elaborate derived
+             types. A mixin-heavy schema produces a polyhierarchy that is hard to
+             read, and WebVOWL supports most but not all OWL 2 constructs —
+             complex datatypes among the gaps. Flatness here is not modesty about
+             modelling; it is a requirement of being able to look at the result.
+2026-08-29 · The business profile is set in London and written entirely in
+             English, at Fareza's instruction. Nothing in the mechanics changed —
+             the same nine movements with three of them never recorded, the same
+             two readings of "the vanilla", the same two ways of computing
+             shrinkage. One inconsistency was fixed on the way through: the first
+             draft claimed eighteen recipes and described sixteen.
+
+2026-08-30 · The competency questions are frozen in `business/questions.md`, six
+             of them, written before the map exists and before any act. Q6 is
+             expected to fail: two honest counts of the same freezer at the same
+             `valid_at`, and the read rule breaks the tie on record time and
+             returns one, which is the same overwrite an ERP performs. A set of
+             questions that all pass was never a test. If Q6 turns out to have a
+             good answer that is a finding; if it is quietly dropped, the
+             exercise is a performance.
+2026-08-30 · Every curated act must be able to name the component that would
+             have written it. Onboarding is the interview and `seal`; a daily
+             entry is the generated form; a correction is the form or the agent.
+             An act with no writer is not a gap in the data — it is a missing
+             component, and it is far cheaper to find that in a file than after
+             the generator is built. `intent.source` already exists and already
+             has a closed vocabulary, so this needs no new mechanism, only the
+             discipline of not defaulting everything to `system_derived`.
+2026-08-30 · The interview being deferred means the conversation is skipped, not
+             the artefact. The hand-authored map must look like something that
+             interview could have produced, imperfections included. A map that is
+             tidier than any interview would yield tests the generator against an
+             input it will never receive.
+2026-08-30 · Curation is staged and stops to look. Onboarding, then the
+             generator, then look; three months, then look; a year, then the
+             agent. Curated top-down in one pass, the data would be shaped by
+             what we imagine the components need, and what the first look teaches
+             would cost a rewrite of a year of history rather than of one act.
+2026-08-30 · At the year stage, the majority of acts must serve no question at
+             all. Six questions touch perhaps ten acts out of a hundred and
+             fifty; the rest is routine production and sales that illustrates
+             nothing. That is not waste — a log in which every event happens to
+             be interesting is not a business, and an agent set loose on one
+             would find something remarkable in every direction. Not a condition
+             at the onboarding stage, where there are too few acts to measure it.
