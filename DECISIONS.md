@@ -702,3 +702,18 @@ reasoning lives in `../archived/`. They are closed, which means not re-discussed
              distinction the profile already draws. The `NEXT.md` clause "every
              quantity slot names its unit" is replaced accordingly, because one
              reading of it is unreachable.
+2026-08-30 · Onboarding facts are not confined to §13. The clause "facts cover
+             only §13" was written into `NEXT.md` here, and it is wrong: §13 is
+             the count, but §1, §3, §4, §5 and §8 state standing master data the
+             shop already holds — five locations with their temperatures, three
+             named bases, two named people, a material's pack size and price and
+             shelf life, which flavours are in rotation. An item master carrying
+             only a name, a quantity, a unit and a location, beside a location
+             master holding two of five locations, is below the floor the 29 Aug
+             line set. Measured before deciding, not after: 35 of the draft's 45
+             slots receive no fact and 2 of its 16 relationships are exercised.
+             The ceiling stays the profile and is stated as loudly as the floor:
+             no Supplier individual, because §4 says there are four and names
+             none, and no counter staff, because §1 says three and names none.
+             What is still empty afterwards is a gap the business has rather
+             than one the map invented, and Q4 is the question that needs it.

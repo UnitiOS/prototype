@@ -199,37 +199,39 @@ Adding a sixth item means removing one.
 - [x] Competency questions, frozen before any history is curated
       done: `business/questions.md`, six questions, Q6 expected to fail.
 
-- [ ] `seal` carries `confidence` on a fact
-      One optional fourth key beside subject/predicate/value, passed through to
-      `perform()`, which has accepted it since the first hundred lines. No
-      default — absent means NULL, not `high`. Only the kernel's three levels
-      are legal. Nothing else in `seal` changes.
-      done when: a fact carrying `confidence: low` writes an assertion with
-      `confidence = 'low'`; a fact carrying none writes NULL; a fact carrying a
-      level the kernel does not know is refused, exits non-zero, and leaves the
-      target directory and the three table counts untouched; a fact carrying any
-      fifth key is still refused; and `make check` exits 0
+- [x] `seal` carries `confidence` on a fact
+      done: d5601e7. 47 passed, three tests added. `FACT_OPTIONAL` holds the one
+      name; the key check went from equality to two subset tests, so the set is
+      widened by exactly one rather than opened. No default, and the kernel
+      needed nothing.
 
-- [ ] The inventory map v1 draft, written and rendered, not sealed
-      `business/draft.yaml` and its provenance note. Authored from
-      `business/profile.md` and nothing else. Flat: `is_a` only, no mixins, no
-      elaborate derived types, so the OWL render stays readable. No derived
-      rules: stock on hand at onboarding is the opening balance. Structure
-      covers every thing in §4 and every relationship in §6 — coverage is at
-      least what an ERP inventory module holds for this business. Facts cover
-      only §13. "Stock count counted Material or Pan" gets a common superclass
-      rather than an `any_of`. The map should look like something an interview
-      could have produced, not tidier. Every fact's intent names the writer that
-      would have written it.
-      done when: `SchemaView` loads the draft clean; every top-level slot
-      declares a `slot_uri`; every relationship in §6 is a slot whose range is a
-      class; no slot uses `any_of`; every material in §13 carries a quantity, a
-      unit and a location fact and every flavour in its pan table carries a
-      kilogram fact; the six estimated rows carry `confidence: low` and the
-      thirteen counted rows `high`; no fact names a subject of a class §13 does
-      not list, so `Pan`, `StockCount`, `MixBatch`, `Sale`, `Base` and
-      `Supplier` have none; `gen-owl --no-use-native-uris` produces TTL without
-      error and `gen-erdiagram` a Mermaid diagram; `business/` still holds no
+- [x] The inventory map v1 draft, written and rendered, not sealed
+      done: 94a01b1. 18 classes, 45 slots, 127 facts, `gen-owl` and
+      `gen-erdiagram` both exit 0. Its done condition was wrong, not its
+      execution — see the next item.
+
+- [ ] The draft's facts reach the master data the profile states
+      The draft stopped at §13 because the clause above said so, and that clause
+      was written here. 35 of 45 slots receive no fact and 2 of 16 relationships
+      are exercised, so the item master holds a name, a quantity, a unit and a
+      location and nothing more, and 2 of §8's 5 locations exist. Add what the
+      profile states and nothing beyond it; the prohibitions matter as much as
+      the additions, because what stays empty afterwards is what Q4 asks about.
+      Do not touch `business/profile.md`: it is frozen, and it already states
+      everything below.
+      done when: all five §8 locations carry a name and a temperature; §3's
+      three named bases and §1's two named people exist; every one of the
+      sixteen flavours carries `flavour_in_rotation`, with §13's six
+      stickered flavours false and the other ten true; every flavour carries a
+      scoop price, the two §1 names as seasonal at the seasonal price;
+      `flavour_base` is stated for pistachio and for no other flavour, because
+      §5 names one; fresh milk carries its three-day shelf life and cream its
+      one-litre pack and £2.80, and no other material carries an attribute §5
+      does not state for it; no `Supplier`, `Pan`, `MixBatch`, `Sale` or
+      `StockCount` individual exists; the provenance note lists every slot still
+      receiving no fact beside the profile section that leaves it empty;
+      `SchemaView` loads clean; `gen-owl --no-use-native-uris`, `gen-doc` and
+      `gen-mermaid-class-diagram` all exit 0; `business/` still holds no
       `v*.yaml`; and `make check` exits 0
 
 - [ ] Seal v1, and look at what landed
