@@ -210,29 +210,37 @@ Adding a sixth item means removing one.
       `gen-erdiagram` both exit 0. Its done condition was wrong, not its
       execution — see the next item.
 
-- [ ] The draft's facts reach the master data the profile states
-      The draft stopped at §13 because the clause above said so, and that clause
-      was written here. 35 of 45 slots receive no fact and 2 of 16 relationships
-      are exercised, so the item master holds a name, a quantity, a unit and a
-      location and nothing more, and 2 of §8's 5 locations exist. Add what the
-      profile states and nothing beyond it; the prohibitions matter as much as
-      the additions, because what stays empty afterwards is what Q4 asks about.
-      Do not touch `business/profile.md`: it is frozen, and it already states
-      everything below.
-      done when: all five §8 locations carry a name and a temperature; §3's
-      three named bases and §1's two named people exist; every one of the
-      sixteen flavours carries `flavour_in_rotation`, with §13's six
-      stickered flavours false and the other ten true; every flavour carries a
-      scoop price, the two §1 names as seasonal at the seasonal price;
-      `flavour_base` is stated for pistachio and for no other flavour, because
-      §5 names one; fresh milk carries its three-day shelf life and cream its
-      one-litre pack and £2.80, and no other material carries an attribute §5
-      does not state for it; no `Supplier`, `Pan`, `MixBatch`, `Sale` or
-      `StockCount` individual exists; the provenance note lists every slot still
-      receiving no fact beside the profile section that leaves it empty;
-      `SchemaView` loads clean; `gen-owl --no-use-native-uris`, `gen-doc` and
-      `gen-mermaid-class-diagram` all exit 0; `business/` still holds no
-      `v*.yaml`; and `make check` exits 0
+- [x] The draft's facts reach the master data the profile states
+      done: b3b4f7b, verified here clause by clause rather than from LOG.
+      Facts 127 → 176, subjects 40 → 48, slots carrying facts 10 → 19, empty
+      slots 35 → 26. Five §8 locations with their temperatures, three bases,
+      Marta and Dan, sixteen rotation flags with the right six false, one
+      `flavour_base`, and no forbidden individual anywhere. The 26 slots that
+      stay empty each need an event that has not happened or an instance the
+      profile refuses to name, and the note pairs every one with its section.
+      `make check` ok, 47 passed. `gen-owl` exits 0 only with a UTF-8 stdout —
+      see OPEN.
+
+- [ ] §10's rules, and keys for the things the business identifies
+      Two gaps found by auditing the draft against the whole profile rather than
+      against the item that produced it. §10 has no home anywhere, and eleven
+      event classes carry neither a key nor a required slot. Both are cheap now
+      and cost a v2 later. Nothing here enforces anything or computes anything.
+      done when: a `Policy` class exists carrying the rule as Marta states it,
+      with an optional threshold and an optional unit, and all six §10 rules are
+      facts on it effective 2025-09-01; the five-litre rule carries its
+      threshold and no unit, because §12 leaves that unstated; `MixBatch`,
+      `StockCount` and `Sale` each declare a `unique_keys` over exactly the
+      slots §4 names as identifying, and those slots become required; `Pan`
+      declares no key and the provenance note says why; the five movement
+      classes keep no key and no required slot; a `base_ingredients` slot exists
+      on `Base`, range `Material`, multivalued, and receives no fact at all,
+      because §3 names six ingredients for "a base mix" without saying which of
+      the three and §6 omits the relationship; the note records the eggs of §8
+      as a material named in one section and counted in none; `SchemaView` loads
+      clean; `gen-doc` and `gen-mermaid-class-diagram` exit 0, and `gen-owl
+      --no-use-native-uris` exits 0 under `PYTHONIOENCODING=utf-8`; `business/`
+      still holds no `v*.yaml`; and `make check` exits 0
 
 - [ ] Seal v1, and look at what landed
       Sealed at the evening the count was taken (§2, §9), never at today's

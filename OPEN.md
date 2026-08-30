@@ -245,3 +245,26 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
   Python's spelling here is the tool's, not the map's. Found 30 Aug adding the
   sixteen `flavour_in_rotation` facts, the first booleans and the first money in
   the PoC · blocks: generator
+- `gen-owl` dies on the map's own data under Windows' default console codec.
+  §8's temperatures use U+2212 MINUS SIGN, the draft copies them faithfully, and
+  Python encodes stdout as cp1252 when it is redirected, so the render exits 1
+  leaving a zero-byte file, with the `UnicodeEncodeError` buried under two
+  screens of deprecation warnings. `PYTHONIOENCODING=utf-8` fixes it. Not fixed
+  by normalising the character: §8 writes it that way and the map copies what
+  the business said. The sharper half is that `make check` never runs `gen-owl`,
+  so the repo's own check cannot see this, and it could not have appeared before
+  30 Aug because `location_temperature` had no facts until then. Found by
+  auditing a session whose own check passed · blocks: graph review
+- The recipe is never stated, so material stock can only ever rise. §3 names six
+  ingredients for a 25-litre base mix and gives no quantity for any of them, and
+  §6 omits the Base-to-Material relationship altogether even though §3's prose
+  states it. `GoodsReceived` adds and `StockCount` counts; nothing consumes. An
+  inventory module for a business that manufactures needs a bill of materials,
+  and this one has none — not because the map dropped it but because the shop
+  never said it. Whether v2 states a recipe, or records consumption per batch,
+  or leaves the dead end visible as the honest answer, is undecided
+  · blocks: generator
+- Eggs sit in §8's chiller and nowhere else. Not in §13's count, not in §3's
+  base, not a material in the map. Either the profile slipped or Marta genuinely
+  never counted them; the second reading is the more useful one and matches §12's
+  temper, but nobody has said so · blocks: -

@@ -717,3 +717,51 @@ reasoning lives in `../archived/`. They are closed, which means not re-discussed
              none, and no counter staff, because §1 says three and names none.
              What is still empty afterwards is a gap the business has rather
              than one the map invented, and Q4 is the question that needs it.
+2026-08-30 · Where a number lives, and the test that decides. Four homes, not
+             two. An observation about one thing at one time is a row in
+             `assertion` — 38 litres of milk on 1 September. A constraint on what
+             kind of number may be said at all is the slot definition in the
+             map. A policy is a row in `assertion` too, on a subject of its own.
+             A definition is the map, and is the reason the map carries versions
+             at all. The test between the last two: if this number changed,
+             would a report about last month change with it? Marta moves the
+             reorder threshold from five litres to four and last month's report
+             stands, because five was the rule then — data, with its own
+             `valid_from`. Marta changes what shrinkage means and the same
+             events now yield a different number — map, new version, which is
+             exactly Q2. The same five percent is therefore data in one place
+             and map in another, and nothing about the number itself decides
+             which. The map never holds a number about a thing; it holds the
+             possibility of that number. `seal` enforces this literally, by
+             deleting the `facts` block on the way through.
+2026-08-30 · §10's six rules enter v1 as facts on a `Policy` subject, not as
+             constraints inside the map. By the test above they are data: Marta
+             can move a threshold without rewriting last month. §10 was the only
+             section of the profile with no home anywhere in the draft, and the
+             profile's own fourth line warns that §11 and §12 are the parts a
+             cooperative author smooths away. The draft invented nothing, which
+             was the thing being guarded against, but it smoothed §10 and §11 by
+             omission instead, which was not. The rules are recorded as Marta
+             states them: the sentence kept, a threshold attached only where she
+             gives a number. "A flavour below five litres" carries a threshold
+             and no unit, because §12 says nobody ever stated whether that means
+             litres of mix or of finished gelato, and typing it as a slot would
+             settle that silently. Nothing enforces any of them in v1 —
+             enforcement needs a derived rule and derived rules are v2 — and
+             §11's two shrinkage definitions stay out for that reason and only
+             that one.
+2026-08-30 · A class the business identifies gets a key; a class the business
+             does not record gets nothing; the asymmetry is the finding rather
+             than an omission. §4's "identified by" column is an instruction to
+             the translator and it gives composites — a mix batch is a date and
+             a base, a stock count a date and a location, a sale a date and a
+             flavour. Those become `unique_keys` rather than `identifier`,
+             because no single slot carries them, and the slots inside each key
+             become required. `Pan` gets no key at all: §12 says the number on
+             the tape is reused, so it does not identify, and minting a
+             surrogate would bury the one fact that makes Q6 worth asking. The
+             five movement classes stay keyless and entirely optional, because
+             §7 records three of nine movements as "nobody" and "never", and a
+             required recorder would assert that someone was there. Eleven event
+             classes holding no key and no required slot was not a decision
+             anyone took; this is the decision.
