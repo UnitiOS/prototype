@@ -353,3 +353,40 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
   annotation on the class, or a sign read off which location slot is filled.
   Nothing in v1 says `GoodsReceived` adds and `ThrownOut` subtracts, and no
   balance can be computed without it. Raised 1 Sep · blocks: generator
+- `received_from` is a field the form offers and the log can never fill. It is
+  the only picker in the eight document forms with zero options: v1 states no
+  supplier individual, §5's four suppliers never became facts, and none of the
+  eight forms creates a Supplier, so nothing will ever mint one for the options
+  rule to find. `submit()` would mint a supplier URI typed on the command line,
+  which means the field is reachable from the CLI and unreachable from the form
+  it belongs to. The same form's `movement_out_of` offers only the five internal
+  locations, so a delivery's origin has no correct answer either: the outside of
+  the business is unrepresentable twice in one document. Found 1 Sep rendering
+  the eight forms · blocks: generator
+- A pan movement cannot name a pan. `movement_of` ranges over `StockItem` and
+  the picker offers nineteen materials in all five movement forms, because no
+  Pan entity has ever been minted and the options rule can only offer entities
+  the log already holds. `count_of` on StockCount is the same nineteen, so the
+  stock count cannot count a pan. Whether pans are minted by a Pan form, by the
+  seal, or by the first `MixBatch` that fills one, is undecided — and until one
+  of those happens `PanMoved` and `PanPulled` are forms about a thing that does
+  not exist. Found 1 Sep · blocks: generator
+- `PanMoved`, `PanPulled`, `ThrownOut` and `TastingGiven` render byte-identical
+  apart from the class name in the header: same six fields, same four pickers,
+  same options. All four are `StockMovement` with nothing added, so filling one
+  and filling another writes the same facts, and the only trace of which
+  document was used is `intent.action_name`, which `submit()` writes as
+  `submit_<Class>`. Whether that is enough — the class lives on the intent and
+  never on the assertions — or whether a movement's kind has to be a fact,
+  is undecided. Adjacent to the 1 Sep direction line but not the same question:
+  that one asks which way the number moves, this one asks whether the log can
+  say which of four documents was filled in. Found 1 Sep · blocks: generator
+- `required` renders and enforces nothing. The form marks `count_location` and
+  `count_taken_on` required from the map, and `submit()` rejects only an unknown
+  field name and an empty submission, so a StockCount carrying `count_quantity`
+  alone would be written. The 30 Aug T1 already found `gen-shacl` emits no
+  `minCount` beside an identifier; this is the second place `required` means
+  nothing, and the first where a user is being shown the word. Whether the write
+  gate enforces it, the generator refuses the submission, or `required` is a
+  documentation-only marker in this PoC, is undecided. Found 1 Sep reading
+  `submit()` after rendering the forms · blocks: generator

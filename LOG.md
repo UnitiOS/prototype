@@ -1593,3 +1593,70 @@ and looking at the output earned its place.
 And commit f25c4eb swept up uncommitted DECISIONS.md and NEXT.md edits made at
 this desk, so git history shows Claude Code touching files it does not own.
 Commit before handing over a session.
+
+## 2026-09-01 · The eight document forms, rendered and looked at
+
+`[T1]`. Ran, once per class, against `business/v1.yaml` and the working `uniti`
+database:
+
+    .venv/Scripts/python.exe -m components.generator.generate form \
+        business/v1.yaml <CLASS> --out build/<class>_form.txt
+
+All eight exited 0. Eight files in `build/`: `stockcount_form.txt`,
+`goodsreceived_form.txt`, `panmoved_form.txt`, `panpulled_form.txt`,
+`thrownout_form.txt`, `tastinggiven_form.txt`, `mixbatch_form.txt`,
+`sale_form.txt`. **No class failed to render**, which was the outcome this item
+was prepared to record as its finding. `make check` after: 57 passed, replay
+identical at 5334 bytes, exit 0. The working log reads **1 / 107 / 301** before
+and after — nothing here wrote to it, and `form` has no write path.
+
+| class | fields | pickers over a class range | of those, offering zero |
+|---|---|---|---|
+| StockCount | 4 | 2 | 0 |
+| GoodsReceived | 7 | 5 | 1 |
+| PanMoved | 6 | 4 | 0 |
+| PanPulled | 6 | 4 | 0 |
+| ThrownOut | 6 | 4 | 0 |
+| TastingGiven | 6 | 4 | 0 |
+| MixBatch | 4 | 2 | 0 |
+| Sale | 3 | 1 | 0 |
+
+Option counts, the same across every form that offers them: `movement_of` and
+`count_of` 19, `movement_out_of` / `movement_into` / `count_location` 5,
+`movement_recorded_by` / `mix_made_by` 2, `mix_base` 3, `sale_flavour` 16,
+`received_from` 0.
+
+**The four pan and waste forms are byte-identical apart from their own name.**
+`panmoved_form.txt` is 1511 bytes, `panpulled_form.txt` and `thrownout_form.txt`
+1512, `tastinggiven_form.txt` 1515 — exactly the difference in the length of the
+class name in the header line. All four are `StockMovement` with nothing added,
+so the six fields, the four pickers and the option lists are the same character
+for character. Filling one and filling another produces the same facts; the only
+place the class survives is `intent.action_name`, which `submit()` writes as
+`submit_<Class>`. GoodsReceived is the one subclass that adds a slot
+(`received_from`), and it is the one whose picker is empty.
+
+**A pan movement cannot name a pan.** `movement_of` ranges over `StockItem`,
+whose subclasses are Material and Pan, and the picker offers nineteen materials
+— cocoa powder, cones, lemons — because no pan entity exists in the log for the
+options rule to find. `count_of` on StockCount is the same nineteen, so the
+stock count cannot count a pan either. This is the 31 Aug row-rule line seen
+from the other side: there it put materials into the Pan *table*, here it keeps
+pans out of the pan *form*.
+
+Surprising, and not what was expected going in: the forms that read worst are
+the ones with the fewest empty pickers. StockCount and Sale are clean and
+usable. GoodsReceived, the only form with a zero-option picker, is also the only
+one where the empty picker is the point — a delivery comes from outside the
+shop, `received_from` offers nothing, and `movement_out_of` offers only the five
+internal locations, so the outside of the business is unrepresentable twice over
+in one form. Nothing about that shows up in the field count.
+
+Also visible without being asked: `required` renders as a column and enforces
+nothing. `count_location` and `count_taken_on` are marked required in the
+StockCount form; reading `submit()`, it rejects an unknown field name and an
+empty submission and checks nothing else, so a StockCount naming only
+`count_quantity` would be written. Left as a line, not a fix.
+
+Four lines appended to OPEN.md. Nothing was repaired, no map was touched, and
+no second case was generalised.
