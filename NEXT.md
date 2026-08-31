@@ -256,22 +256,33 @@ Adding a sixth item means removing one.
 
 ---
 
-- [ ] Render the eight document forms from sealed v1 and look
-      A `[T1]`. No new map, no new mechanism, no kernel change. `v1` already
-      declares the document classes and not one has ever been rendered:
-      `python -m components.generator form business/v1.yaml <CLASS> --out ...`
-      for `StockCount`, `GoodsReceived`, `PanMoved`, `PanPulled`, `ThrownOut`,
-      `TastingGiven`, `MixBatch` and `Sale`. The question is what a document
-      form already looks like, and it is cheaper to render than to argue about.
-      If a class fails to render, that is the finding — record the error, do
-      not repair the map.
-      done when: eight renders sit in `build/`, one file per class, each naming
-      its class and listing its fields; one table in `LOG.md` gives per class
-      the field count, how many fields are pickers over a class range, and how
-      many of those pickers offer zero options; `make check` still exits 0 at
-      57 passed; the database named by the default DSN still reports 1 intent,
-      107 entities and 301 assertions; and every field a form offers that the
-      log can never fill is one appended line in `OPEN.md`
+- [x] Render the eight document forms from sealed v1 and look
+      done: 71c916d, re-checked here against Postgres and by re-running rather
+      than read from LOG. All eight rendered, none failed. `make check` 57
+      passed, replay identical twice at 5334 bytes; working log unchanged at
+      1 / 107 / 301. Four OPEN lines. Two of the four predictions made at this
+      desk were wrong and that was the value: of 26 pickers exactly **one** is
+      empty, and `count_of` offers nineteen materials rather than nothing — so
+      the defect is a picker confidently offering the wrong set, not a picker
+      that is bare. `PanMoved`, `PanPulled`, `ThrownOut` and `TastingGiven` are
+      byte-identical apart from the class name. And direction turns out to be
+      in the map already as the `movement_out_of` / `movement_into` pair; what
+      is missing is that the outside of the business has no location, which
+      profile §7 does state.
+
+- [ ] `make check` fails if the generator knows what a business is
+      The claim milestone one rests on is that the graph carries the logic, and
+      the failure that looks like success is a generator that carries it
+      instead. Measured before writing the guard rather than after: every match
+      for inventory vocabulary under `components/` today sits in a docstring, a
+      comment or a usage example, and none in executable code — so the baseline
+      is clean and the guard is worth having before the generator grows.
+      done when: one script parses every `.py` under `components/` with `ast`,
+      strips comments and docstrings, and reports any remaining occurrence of a
+      business term drawn from a list it holds in one place; it exits 0 against
+      the tree as it stands and non-zero when a term is planted into a live
+      code path; `make check` runs it and still exits 0 at 57 passed; and the
+      working log named by the default DSN still reports 1 / 107 / 301
 
 ---
 

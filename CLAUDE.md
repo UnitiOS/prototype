@@ -11,6 +11,18 @@ Definition of done for the PoC: **the same shrinkage report, computed as it was
 computed then and with today's definition, side by side with why the numbers
 differ.**
 
+It is reached in three milestones, because a single distant target cannot be
+tracked against — between here and there every week looks the same.
+
+- **Milestone one** — onboarding. A graph accurate to the business, generated
+  forms and an operational database. Done when one operational day is entered
+  entirely through generated forms and the closing balances match a hand
+  computation.
+- **Milestone two** — refinement, and the business changing.
+- **Milestone three** — analysis of what has accumulated.
+
+The shrinkage report is not milestone one.
+
 ## The stages
 
 A **flow**, not a build list: one lap the system runs for one business, from
@@ -50,7 +62,7 @@ one stage needs several components.
 | `report` | harness | definition change |
 | `agent` | MCP | agentic access |
 
-**Built: `kernel`, `ontology`, `seal`. Nothing else exists.**
+**Built: `kernel`, `ontology`, `seal`, `generator`. Nothing else exists.**
 
 **The interview is deferred for this PoC** (29 Aug). For the PoC the map is an
 input to what is being proven, not part of it: the map is authored by hand and
@@ -78,6 +90,25 @@ Closed means not re-discussed, not proven. Reasoning lives in `../archived/`.
 6. The largest risk is process, not technical. Four previous projects died
    because nobody outside the team ever used them.
 
+## Reading a result
+
+A failure goes in one of three baskets, and one question decides which: **is
+there an input that would make this pass?**
+
+- **Missing information** — yes, there is. Repair the profile or the data.
+  Nothing has been learned about the system. Most of what v1 exposed is here.
+- **Missing mechanism** — no input would make it pass. This is what the PoC is
+  for. Either widen the mechanism, or accept the limit and write it down.
+- **Passing by cheating** — it passed, but only because the generator knew the
+  domain. Counts as a **failure**, however correct the output looked.
+
+**The generator may not know what a business is.** No business term reaches a
+live code path under `components/` — not `stock`, not `material`, not
+`quantity`. Comments, docstrings and usage examples are documentation and are
+exempt; a branch on the word is not. If the code carries the logic then the
+graph is decoration, and milestone one's claim is false even when every form
+renders perfectly.
+
 ## The kernel
 
 Three tables: `intent`, `assertion`, `entity`. The column list is closed.
@@ -91,6 +122,10 @@ emergent layer · impact routing · multi-tenancy · marketplace · export
 
 Not forbidden — routed. Nothing here is built unless an item in `NEXT.md` names
 it. Components enter through `NEXT.md`, never by editing this file.
+
+`constraint engine` is the one that arrives by accident, so it has its own
+brake: a key enters a map's `annotations` only when a rule already stated in the
+business profile cannot be expressed without it — never in anticipation of one.
 
 ## Deciding alone, and stopping
 

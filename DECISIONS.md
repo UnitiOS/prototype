@@ -938,3 +938,83 @@ reasoning lives in `../archived/`. They are closed, which means not re-discussed
              literally: overrun and density have never been measured, so a map
              carrying a formula for either would be inventing business. The map
              holds the gap, which is what Q4 asks about.
+2026-09-01 · The question milestone one was being asked cannot be answered,
+             because it cannot fail. "How do we design a graph that produces
+             projections, forms and a usable database, compared against ordinary
+             ERPs" has no threshold for usable and none for compared, so no
+             result could ever close it and the discussion returns to it every
+             session. It is replaced by five claims that can each fail, listed
+             below. Recorded as a decision rather than a rephrasing because the
+             old question will otherwise come back looking reasonable.
+2026-09-01 · How a failure is read is fixed before any result exists, with one
+             question deciding the basket: is there an input that would make
+             this pass? If yes, it is **missing information** — the profile or
+             the data is repaired and nothing is learned about the system. If
+             no input would make it pass, it is a **missing mechanism**, and
+             that is what the PoC is for: either widen the mechanism under the
+             1 Sep annotation-key rule, or accept the limit and name it. If it
+             passes only because the generator knew the domain, it counts as a
+             **failure** however correct the output looked. Written now because
+             after a result exists every basket is arguable, and the first
+             argument would be about v1's gaps, which are the first kind and
+             were being treated as the second.
+2026-09-01 · The generator may not know what a business is, and this is checked
+             rather than trusted. If domain vocabulary reaches a live code path
+             then the code carries the logic and the graph is decoration, so
+             milestone one's whole claim is false even when every form renders
+             correctly. Measured before the rule was written rather than after:
+             every occurrence of inventory vocabulary under `components/` today
+             sits in a docstring, a comment or a usage example, and none in
+             executable code. The rule is therefore stated against code with
+             comments and docstrings stripped — a findings note naming Material
+             is documentation, a branch on the word is a violation — because the
+             blunt version would fail today for the wrong reason and be dropped
+             the first time it did.
+2026-09-01 · Five claims, each able to fail, replacing the question above.
+             **A, form derivability** — every field, picker, required marker and
+             option set on a target document follows from the graph alone;
+             it fails if one field can only appear by being hardcoded.
+             **B, number derivability** — every number on a target read screen
+             comes from a declarative rule living in the graph, not from SQL
+             written by hand per report; never attempted so far.
+             **C, row identity** — the system knows which entities are a class's
+             rows without guessing; it has already failed twice in two different
+             shapes and is the likeliest to fail again.
+             **D, the full loop and the two clocks** — a submission is written,
+             a projection reads it back, the number moves as it should; then the
+             same screen at two `as_of` values gives two answers for one
+             late-recorded movement. It fails if the application layer flattens
+             the two clocks into one, which is the bet itself.
+             **E, benchmark coverage** — every mechanism on the 1 Sep inventory
+             list ends up either admitted or refused with a reason; a mechanism
+             that fits neither means our own position on it is not understood.
+             Five and not more, so that each one is actually run.
+2026-09-01 · Milestone one is done when one operational day of the business is
+             entered entirely through generated forms and the closing balances
+             match a hand computation. This replaces the words "the forms can be
+             used", which cannot be checked and would be settled by whoever
+             spoke last. A day is the smallest period that carries a receipt, a
+             production run, sales and a count, and hand arithmetic over one day
+             is something a person can actually do and disagree with.
+2026-09-01 · v1 stops being a reference and becomes evidence. Its gaps are
+             missing information, not missing mechanism — no supplier is named,
+             no recipe is stated, no pan is minted — so measuring anything
+             against it measures the profile that fed it rather than the system.
+             It stays in the repo and in the log as the record of what a map
+             written without a target produces. The cost is named: every
+             measured number in this PoC so far came from v1, so what replaces
+             it has to produce new measurements rather than reuse the old ones.
+2026-09-01 · The design order is reversed: the target artefacts are written
+             first, and the graph is derived from them. Forward — profile, map,
+             generate, look — found every gap at the far end, one at a time and
+             expensively. Reversed, "is the map accurate", which has no referent,
+             becomes "does this map produce this artefact", which is checkable;
+             and a set of target artefacts is the generator's scope written as
+             an artefact instead of prose, which is what the 1 Sep open line
+             asked for. Two limits are accepted rather than discovered later. A
+             form is a view and not a model, so several graphs satisfy the same
+             form and the reversal gives a floor rather than a shape. And an ERP
+             form carries ERP assumptions — `docstatus`, `amended_from`, one
+             posting date — all of which exist because its rows are mutable and
+             its clock is single, so each is admitted or refused under the 1 Sep
+             benchmark rule rather than copied.
