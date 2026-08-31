@@ -803,3 +803,138 @@ reasoning lives in `../archived/`. They are closed, which means not re-discussed
              three or a done condition written badly here. Widening this bound
              is Fareza's to do and takes one sentence; drifting past it is what
              this line exists to prevent.
+
+
+2026-09-01 · The definition of done is staged into three milestones instead of
+             being held as one distant point. The 24 Aug line — the same
+             shrinkage report under two definitions — stays the thing that
+             decides whether this is better than what exists, but as a lone
+             target it is too far out to track movement against: between here
+             and there every week looks identical. Milestone one is onboarding:
+             an ontology graph accurate to the business and readable as a
+             digital twin of its inventory, generated forms and an operational
+             database, at least the mechanisms an inventory module has proven it
+             must carry, and forms actually used with everything entered landing
+             in the log. Milestone two is refinement, and the business changing.
+             Milestone three is analysis of what has accumulated. These are
+             milestones, not stages: the stages stay a flow one lap runs, and
+             milestone one contains several of them. Which of the two later
+             milestones owns the shrinkage report is not decided here.
+2026-09-01 · "Projections are not a priority" in milestone one means reports
+             and analytics, not this repo's own sense of the word. A generated
+             table is a projection by construction — a read of the log, never a
+             store — and stock on hand is a projection by the 24 Aug line, which
+             chose this domain for exactly that reason. An inventory module with
+             no stock-on-hand read is not an inventory module. So generated
+             tables and stock on hand sit inside milestone one, and the
+             shrinkage-class reports do not.
+2026-09-01 · An ERP is a benchmark, not a direction to face. What is taken from
+             it is the list of mechanisms an inventory module has proven it must
+             carry; each is then held against this system's own design and
+             either admitted or refused with a reason. Copying the module would
+             make the PoC a reimplementation of the thing CLAUDE.md already
+             calls a commodity, and would import decisions an ERP took because
+             it has one clock and a mutable row. The comparison is the work; the
+             imitation is not.
+2026-09-01 · The frozen-brief guard is lifted for one rewrite of the business
+             profile, at Fareza's instruction. 27 Aug froze the brief at one
+             page and forbade revision once a session began; 29 Aug said an
+             error in the profile is corrected as a later fact, never by editing
+             the file. Both guarded against a brief drifting during interviews,
+             and there is no interview. What changed is the bar: `profile.md`
+             was written to feed a shrinkage demo and was never meant to be
+             judged against the mechanisms an inventory module carries, so
+             holding it frozen would preserve an input already known to be wrong
+             for milestone one — a rule working against its own purpose. Two
+             halves of the guard are kept: the rewrite is a new dated file,
+             frozen once written, and `profile.md` stays in the repo as the
+             evidence of what produced v1.
+2026-09-01 · The 31 Aug bound on the re-evaluation is widened, and this is the
+             one sentence that line said it would take. It named three joints —
+             typing, enforcement, the writer — and excluded everything else.
+             Milestone one adds two: the business profile, and the generator's
+             own scope. The kernel stays outside the bound, on the same grounds
+             as before: nothing has complained about it. Widening it in writing
+             is what the bound was for; drifting past it silently is the failure
+             it names.
+2026-09-01 · "All the business logic in the graph" is five kinds of thing, not
+             one, and they cost differently enough that collapsing them hides
+             the work. Structure — classes, slots, ranges — is LinkML, and
+             already generates a table and a form. A threshold is a fact in the
+             log carrying its own valid time, settled 30 Aug. A derivation is a
+             number computed over other rows, attached to a slot through
+             `annotations` and compiled by the generator. A constraint is a
+             derivation that returns a boolean. An action is a class whose
+             instances are named by `intent.action_name`. Two of the five work
+             today and three do not, but only one of the three needs a mechanism
+             that does not exist yet — the derivation shape. Recorded because
+             the sentence reads as one task, is five, and four of the five are
+             data rather than machinery.
+2026-09-01 · Stock is modelled as movements, and the aggregation that needs
+             costs the kernel nothing. v1 hangs `stock_quantity` on Material, so
+             one material is one subject with one winning row and a receipt
+             never moves it — which is why the OPEN line says material stock can
+             only ever rise. Under movements each event is its own entity:
+             `resolve_single` still returns one winner per (subject, predicate)
+             for that event's own quantity, and a balance is a sum over many
+             entities each resolved at the same clocks. That is a projection,
+             which is what the 24 Aug line already called stock on hand. The
+             error was v1's modelling, not the read rule, so the 31 Aug bound
+             excluding the kernel survives this session intact. It also makes
+             the two clocks visible for the first time: Dan's paper log reaches
+             the system on Sunday, so Wednesday's balance genuinely differs read
+             at Friday's `as_of` and at Monday's. Under a standing quantity that
+             never happens.
+2026-09-01 · Typing has a second reason, and it is the load-bearing one. Until
+             now the missing class assertion showed as a cosmetic defect — the
+             generated Pan table holds nineteen materials. Under movements it
+             blocks the main number: gathering every movement that touches one
+             material is a traversal over slot ranges, and a traversal has to
+             know which entities are movements. Direction is the same shape of
+             gap. A balance needs to know that `GoodsReceived` adds and
+             `ThrownOut` subtracts, and nothing in v1 says so. Typing stops
+             being tidiness and becomes the thing standing between the map and
+             stock on hand.
+2026-09-01 · A constraint is a derived boolean, and the enforcement joint was
+             answered on 21 Aug — violations are projections, not assertions.
+             "Stock never goes below zero" is computed by the same machinery as
+             stock on hand and produces a list of violations; a form may show it
+             and never refuses the write. One mechanism rather than two, and
+             consistent with the second closed finding, that the log stores raw
+             facts and never judgements. This is also the difference from an ERP
+             worth defending out loud: an ERP blocks negative stock, and in this
+             shop three of nine movements are never recorded, so blocking would
+             make Marta enter a number she knows is false to get the form to
+             save. Accept, then report.
+2026-09-01 · A key enters `annotations` only when a rule already stated in the
+             business profile cannot be expressed without it, never in
+             anticipation of one. The moment arbitrary expressions are possible
+             we have built the constraint engine on CLAUDE.md's stop-list, and a
+             rule language is precisely the artefact four previous cycles died
+             producing. The four rule shapes named on 29 Aug — an aggregation, a
+             ratio of two derived quantities, a threshold that produces
+             violations, and a windowed aggregation — are the demand it grows
+             against, one key at a time. This bounds the 26 Aug open question
+             rather than answering it.
+2026-09-01 · A form is generated per class, and the document classes are already
+             classes. `generate.py form()` renders a class's induced slots — a
+             class range becomes a picker, a type range an input — and v1
+             already declares `StockCount`, `GoodsReceived`, `PanMoved`,
+             `PanPulled`, `ThrownOut`, `TastingGiven`, `MixBatch` and `Sale`.
+             A document form therefore needs no new mechanism, and not one of
+             those classes has ever been rendered. What they lack is instances,
+             keys and a type assertion — data, not machinery. This answers the
+             form question raised this session without adding a row to the
+             component table.
+2026-09-01 · Refused for milestone one, each with its reason, so that none comes
+             back as a proposal. A general expression language — see the
+             annotation-key rule above. Workflow, approval and document status
+             transitions — nothing in the profile needs a state machine.
+             Inventory valuation, FIFO or moving average — the profile states no
+             method, and both are decisions an ERP took because its rows can be
+             updated. Lot and serial tracking — §12 already refuses it, and it
+             is the clearest case of a mechanism compared against the benchmark
+             and declined rather than missed. And "all the business logic" taken
+             literally: overrun and density have never been measured, so a map
+             carrying a formula for either would be inventing business. The map
+             holds the gap, which is what Q4 asks about.

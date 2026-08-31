@@ -77,6 +77,16 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
   to make, so it is not obvious the form should refuse either. Whether required
   lives in the form, in a generated table's constraints, or only in the report
   that says what is missing, is undecided · blocks: live use
+- The generator's scope and capabilities are written down nowhere, and the graph
+  structure cannot be judged until they are. The map exists to satisfy its
+  readers and the generator is the first one, so "is this map good" has no
+  referent while what the generator must produce is unstated — every argument
+  about typing or enforcement is then an argument about a target nobody has
+  named. Raised 1 Sep · blocks: generator
+- Which milestone owns the shrinkage report. The 24 Aug definition of done is
+  staged rather than dropped and is not milestone one; whether a definition
+  change belongs to refinement or to analysis is undecided, and it decides
+  whether the map must carry two versions before any analysis exists · blocks: -
 
 ## T2 — wait for a user
 
@@ -339,3 +349,7 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
   apply until the morning and that half is right. Whether a map's own
   `valid_from` should instead be its seal instant, so the words mean something
   from the moment they are sealed, is undecided · blocks: episodes
+- How a movement class declares its direction — a slot on the class, an
+  annotation on the class, or a sign read off which location slot is filled.
+  Nothing in v1 says `GoodsReceived` adds and `ThrownOut` subtracts, and no
+  balance can be computed without it. Raised 1 Sep · blocks: generator

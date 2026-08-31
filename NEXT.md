@@ -256,10 +256,22 @@ Adding a sixth item means removing one.
 
 ---
 
-NEXT is deliberately empty. The first full loop closed on 31 August —
-profile, draft, seal, log, generated table — and the re-evaluation it opened is
-bounded by the 31 Aug line to three joints: typing, enforcement, and the writer.
-Queueing implementation before that settles would be building past the question.
+- [ ] Render the eight document forms from sealed v1 and look
+      A `[T1]`. No new map, no new mechanism, no kernel change. `v1` already
+      declares the document classes and not one has ever been rendered:
+      `python -m components.generator form business/v1.yaml <CLASS> --out ...`
+      for `StockCount`, `GoodsReceived`, `PanMoved`, `PanPulled`, `ThrownOut`,
+      `TastingGiven`, `MixBatch` and `Sale`. The question is what a document
+      form already looks like, and it is cheaper to render than to argue about.
+      If a class fails to render, that is the finding — record the error, do
+      not repair the map.
+      done when: eight renders sit in `build/`, one file per class, each naming
+      its class and listing its fields; one table in `LOG.md` gives per class
+      the field count, how many fields are pickers over a class range, and how
+      many of those pickers offer zero options; `make check` still exits 0 at
+      57 passed; the database named by the default DSN still reports 1 intent,
+      107 entities and 301 assertions; and every field a form offers that the
+      log can never fill is one appended line in `OPEN.md`
 
 ---
 
