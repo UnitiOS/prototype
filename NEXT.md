@@ -243,14 +243,23 @@ Adding a sixth item means removing one.
       sealed in two places, the map is not valid until the balances are, and
       coverage measures nothing.
 
-- [ ] `generator`: one projection table and one form from v1 alone
-      The first look at whether the map is worth anything. Reads the sealed v1
-      and the log; generates, does not hand-write.
-      done when: a projection table is generated from `business/v1.yaml` alone
-      and its rows equal a direct read of the log at the same (valid_at, as_of);
-      a form is generated for one class from the same file; a value entered
-      through that form reaches the log via `perform()` and is returned by
-      `resolve_single`; and `make check` exits 0
+- [x] `generator`: one projection table and one form from v1 alone
+      done: f25c4eb, re-run here rather than read from LOG. `--verify` clean on
+      both tables; the working log still reads 1 / 107 / 301, so nothing was
+      written to it. Material: 19 rows, 8 columns, 73 blank. Pan: 19 rows, 7
+      columns, 114 blank, and every one of those rows is a material — the
+      finding, not a bug. `make check` 57 passed. The fourth clause was mine and
+      it was loose: it said "the log" without saying which, and the write path
+      was exercised against the check database instead, which is the better
+      reading. Three OPEN lines came out of running it that no amount of
+      arguing had produced.
+
+---
+
+NEXT is deliberately empty. The first full loop closed on 31 August —
+profile, draft, seal, log, generated table — and the re-evaluation it opened is
+bounded by the 31 Aug line to three joints: typing, enforcement, and the writer.
+Queueing implementation before that settles would be building past the question.
 
 ---
 

@@ -1506,3 +1506,90 @@ annotations: the same rules are in the log as `Policy` facts, and the 31 Aug
 OPEN line says the annotation goes stale the first time Marta moves a
 threshold — a generated form that repeated it would put the stale copy in front
 of the user.
+
+## 2026-08-31 · Desktop's session: what the first full loop showed
+
+The loop closed today for the first time: a frozen profile, a hand-authored
+draft, a seal, a log, and a table generated back out of the sealed map. Four
+components run — kernel, ontology, seal, generator — and `interview` is still a
+SKILL.md with no code. Written here as material for the re-evaluation Fareza
+opened at the end of the day, so a later session has the state without reading
+the whole LOG.
+
+Measured, not recalled. Every number below was re-checked this session against
+Postgres or by re-running the tool, not taken from the entry above it.
+
+    log            1 intent, 107 entities, 301 assertions
+                   one recorded_at 2025-08-31T21:00Z, one valid_from 2025-09-01
+                   194 stated facts over 57 subjects, 42 refs, 6 low, 13 high
+    v1             19 classes, 49 slots; draft 42,342 bytes sealed to 17,200
+                   22 of 49 slots have ever carried a fact, 27 never have
+    tests          57 passed, replay identical twice at 5334 bytes
+    generated      Material 19 rows / 8 cols / 73 blank cells
+                   Pan      19 rows / 7 cols / 114 blank cells
+
+Four sessions of Claude Code work in two days, each verified here clause by
+clause rather than accepted from LOG. Every clause passed except two, and both
+of those were clauses written here, not work done there: "194 over 57" counted
+the draft's facts and was read back against a table that also registers a URI
+per entity, and "reaches the log" never said which log, so the form's write path
+went to the check database instead — the better reading, and the safer one,
+since the working log's 301 rows are the evidence the seal item measured.
+
+### What the loop exposed, in weight order
+
+**The log cannot say what a thing is.** No assertion states a type, so a
+generator asking which entities are a class's rows has to guess. Its rule is
+the only one the map and the log support: a row is a subject of one of that
+table's own columns. `stock_location` is declared on `StockItem` and inherited
+by both Material and Pan, so the Pan table holds nineteen materials with every
+pan column blank. CLAUDE.md's third closed finding already says class
+membership is an assertion; v1 states none, and no done condition written here
+across four sessions ever asked for one. That is this desk's miss, not Claude
+Code's.
+
+**The map describes and does not bind.** `required: true` reaches a generated
+form as a label and stops nothing. §10's six rules are in the log and inert.
+No constraint anywhere compares a fact against the map, which is deliberate —
+the log is not meant to judge at write time — but it means the first of Marta's
+rules, that stock never goes below zero, currently prevents nothing.
+
+**There is one writer, and it writes map versions.** `seal` is it. Adding 57
+type assertions therefore means bumping a map version for a purely data
+reason. For v2 that happens to be honest, since six annotations need removing
+anyway, but the pattern does not survive contact with episodes.
+
+Everything else found this week is downstream of one of those three, or is a
+correction to something written here: §10's rules sealed in two homes at once,
+coverage measuring nothing because `seal` registers every declared slot whether
+used or not, the three-hour hole between a 21:00 seal and a midnight
+`valid_from`, `Unit` widened to six so a material's unit dropdown offers
+"week", and a `stated_rule` annotation nobody had noticed since the first
+draft.
+
+### What was not done, and why
+
+No v2. Last session this desk argued for running the generator first so v2
+would carry more than one fix; the generator answered, and v2 now has three
+clear payloads — type assertions, the six annotations removed, and a decision
+on `Unit`. It was not started because Fareza opened the re-evaluation, and
+building v2 during it would be building past the question.
+
+NEXT is empty on purpose. DECISIONS carries a line bounding the re-evaluation
+to three joints and explicitly excluding the kernel, on the grounds that
+nothing has complained about it: three tables, append-only, a replay identical
+twice, 301 rows unchanged across a seal and two check runs, and Unicode intact
+through Postgres. That bound is one sentence to widen and exists only so this
+cycle does not end the way the previous four did.
+
+### Two things worth keeping in view
+
+The generator was the first thing all week to make an OPEN line visible rather
+than arguable. The `Unit` widening had been reasoned about the day before; it
+took a rendered dropdown offering "week" for how milk is measured to make it a
+thing anyone could see. Whatever the re-evaluation concludes, generating early
+and looking at the output earned its place.
+
+And commit f25c4eb swept up uncommitted DECISIONS.md and NEXT.md edits made at
+this desk, so git history shows Claude Code touching files it does not own.
+Commit before handing over a session.

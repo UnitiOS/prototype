@@ -779,3 +779,27 @@ reasoning lives in `../archived/`. They are closed, which means not re-discussed
              can fall as well as rise, which is what a measure is for, and it is
              the one to carry into episodes. The other three measures are
              untouched; this corrects an implementation, not a judgement.
+2026-08-31 · The re-evaluation has three joints, and the kernel is not one of
+             them. Stepping back to think again is the shape that ended the
+             previous four cycles, so this one is bounded before it starts, and
+             the bound is drawn from what actually complained rather than from
+             taste. Nothing has complained about the kernel: three tables,
+             append-only, 57 tests, a replay identical twice in a row, 301 rows
+             that survived a seal and two `make check` runs unchanged, and
+             Unicode intact through Postgres. Nothing has complained about
+             sealing or resolution either. What complained, and did so by being
+             run rather than by being argued about, is one layer up, and it is
+             three joints. First, typing: the log cannot say what a thing is,
+             so the generated Pan table holds nineteen materials and every
+             downstream reader must guess. Second, enforcement: `required: true`
+             reaches a form as a label and stops nothing, §10's six rules are
+             recorded and inert, and no constraint anywhere compares a fact
+             against the map — the map describes and does not bind. Third, the
+             writer: `seal` is the only one, and it writes a map version, so
+             new facts cannot arrive without bumping the map, which fuses a
+             schema change to a data arrival. Everything else found this week —
+             rules in two homes, coverage measuring nothing, the three-hour
+             hole, `Unit` widened to six — is a consequence of one of those
+             three or a done condition written badly here. Widening this bound
+             is Fareza's to do and takes one sentence; drifting past it is what
+             this line exists to prevent.
