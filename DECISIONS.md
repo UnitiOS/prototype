@@ -1106,3 +1106,44 @@ reasoning lives in `../archived/`. They are closed, which means not re-discussed
              — seal the map, fill the master-data forms, then begin operating —
              and it is what an ERP does, where the item master is a screen and
              not a configuration file.
+2026-09-01 · Reading a value applies the range the map declares, and the caster
+             lives in `ontology` where the generator calls it. The trial found
+             `{left} + {right}` returning `'34'` for 3 + 4 — no exception, a
+             valid `str`, a wrong number — because `assertion.value_literal` is
+             text, the map says `decimal`, and nothing between them applies it.
+             The reach is wider than derivation: Marta's first rule compares
+             stock against five litres, and as text `'10' < '5'` is **true**,
+             so the low-stock warning would fire for the things piling up.
+             Sorting, minimums and a form's write-back have the same defect.
+             Not the kernel — it is map-blind and that boundary is worth more
+             than the convenience. Not the expression evaluator alone — then
+             only derived numbers are typed while comparisons and writes stay
+             text. `ontology` already reads maps and the generator already holds
+             both the row and the schema, so the cast is a function there and a
+             call in `table()`, reusable later by `report` and `agent`.
+2026-09-01 · LinkML's class `rules` are refused. They survive the seal intact
+             and read back with preconditions and postconditions whole, and
+             `linkml_runtime` raises `NotImplementedError` the first time it is
+             asked to apply one — not for a malformed rule, for any rule. A map
+             could therefore carry §10's six rules looking exactly like
+             enforcement and never execute one, which is worse than the feature
+             being absent, because absence is visible. Nothing is lost: the
+             21 Aug and 1 Sep lines already make a constraint a derived boolean,
+             so "below the reorder point" is an ordinary slot with
+             `range: boolean` and `equals_expression: "{on_hand} < {reorder}"`,
+             and the violation list is a projection that filters on it.
+2026-09-01 · `designates_type` is refused, and the reason strengthens the form
+             decision rather than weakening it. It survives the seal and nothing
+             reads it, but the deeper objection is that it puts the class in a
+             column on a row. In this system class membership is a fact in the
+             log with a valid time and a recorded time, correctable like any
+             other fact — which is what the kernel's third finding says. Ours is
+             better for our case, so this is a benchmark mechanism compared and
+             declined with a reason rather than one missed.
+2026-09-01 · A done condition may not pin a total test count while also asking
+             for new tests. Written at this desk twice now — 31 Aug named "the
+             log" without saying which, and 1 Sep asked for tests under `tests/`
+             and for `make check` to stay at 57 passed. Both times Claude Code
+             reported the conflict instead of hiding it, which is the behaviour
+             wanted, but the cost is a clause nobody could satisfy. The form
+             that works is "the 57 that existed still pass", never a total.
