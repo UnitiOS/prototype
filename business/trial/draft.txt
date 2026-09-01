@@ -1,0 +1,4 @@
+Not a conversation. `seal` requires a transcript beside every draft, so this
+file exists to satisfy that contract and says only what the draft is for:
+a trial of five LinkML metamodel features against seal, SchemaView and the
+generator. No business was described.

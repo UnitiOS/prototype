@@ -1660,3 +1660,159 @@ empty submission and checks nothing else, so a StockCount naming only
 
 Four lines appended to OPEN.md. Nothing was repaired, no map was touched, and
 no second case was generalised.
+
+## 2026-09-01 · Which LinkML features survive the seal, and which can compute
+
+An investigation. Nothing was made to work, and no feature that failed was
+repaired. LinkML 1.11.1 and linkml-runtime 1.11.1 throughout — everything below
+was run, not read from documentation.
+
+A throwaway map, `business/trial/draft.yaml`: two classes, six slots, ten
+stated facts, no business vocabulary anywhere. It carries the five features
+under trial and nothing else. Sealed against the **throwaway** database, into
+its own directory:
+
+    UNITI_DSN=postgresql://uniti:uniti@localhost:5433/uniti_check \
+        .venv/Scripts/python.exe components/seal/seal.py business/trial/draft.yaml \
+        --actor trial --into business/trial --sealed-at 2026-02-01T09:00:00Z
+
+**`seal` accepted it.** No refusal to record. 9 entities minted, 19 assertions,
+`business/trial/v1.yaml` and `v1.txt` written. All five features are still in
+the sealed file, character for character, because `seal` copies the schema
+through `yaml.safe_load` -> `yaml.safe_dump` and strips only
+`annotations.facts` — none of the five is a fact, so none of them was ever a
+candidate for stripping. That is the whole reason they survive, and it means
+the answer would be the same for any metamodel key that is not called `facts`.
+
+Read back from the sealed file through `SchemaView`, seven tests, no database:
+
+    .venv/Scripts/python.exe -m pytest tests/trial -q          # 7 passed
+
+Each of the five is asserted both on the raw slot and on the **induced** slot,
+because `class_induced_slots` is the door the generator uses and a feature that
+survived the file but not induction would be invisible to every reader we have.
+All five survive induction too.
+
+### The table
+
+Usable means it survives the seal **and** something can act on it today.
+Unusable means it survives and nothing can. Untried means exactly that.
+
+| feature | seal | reads back | computes | verdict | what it would serve |
+|---|---|---|---|---|---|
+| `equals_expression` (slot) | kept | yes, incl. induced | yes, via `generate_slot_value` | **usable, with a trap** | derivation within one row — the half of the 1 Sep split that is LinkML's |
+| `rules` + `preconditions` / `postconditions` (class) | kept | yes, whole block | **no** | **unusable** | §10's stated rules, as something checked rather than recited |
+| `unit` with `ucum_code` (slot) | kept | yes, incl. induced | n/a — metadata | **usable as declaration only** | a fixed unit on a slot, so a quantity is not a bare number |
+| `unique_keys` (class) | kept | yes | n/a — nothing enforces | **usable as declaration only** | identity for the three things §4 says the business identifies |
+| `designates_type` (slot) | kept | yes, incl. induced | n/a — nothing reads it | **usable as declaration only** | the open class-membership question: a row saying which class it is |
+| `multivalued` as an expression input | kept | yes | partly — `len`/`max` yes, `sum` no | **unusable for a total** | the collection a cross-row number would be computed over |
+| `minimum_value` / `required` inside a rule condition | kept | yes | no — the rule never runs | **unusable** | the constraint half of a stated rule |
+| `eval_expr` functions `max` `min` `len` `str` `strlen` `case` | n/a | n/a | yes | **usable** | the only aggregation LinkML brings; `case` is a conditional value |
+| `eval_expr` `sum` | n/a | n/a | **no** | **unusable** | the one aggregate an inventory actually needs |
+| `infer_all_slot_values` | n/a | n/a | **no-op, silently** | **unusable here** | the documented entry point; see below |
+| `string_serialization` (slot) | untried | untried | untried | **untried** | a computed *string* — the sibling of `equals_expression`, and the path `Config` enables by default |
+| `classification_rules` (class) | untried | untried | untried | **untried** | inferring which class a row belongs to, which is the 31 Aug row-rule question |
+| `any_of` / `all_of` / `none_of` | untried here | — | — | **untried** | a slot ranging over two classes; already known broken for `seal` (OPEN, 30 Aug) |
+| `pattern` / `structured_pattern` | untried | — | — | **untried** | the shape of an identifier, e.g. a pan number |
+| `enum` / `permissible_values` | untried | — | — | **untried** | a closed vocabulary as map structure instead of as entities |
+| `slot_usage` | untried | — | — | **untried** | narrowing an inherited slot per subclass — the five movement classes |
+| `abstract` / `mixin` | untried | — | — | **untried** | saying `StockItem` is never itself a row |
+
+### Evaluating one over a row this system assembles
+
+    UNITI_DSN=.../uniti_check .venv/Scripts/python.exe scripts/trial_equals_expression.py
+
+The row is not an object. It is `components/generator`'s `table()` output at a
+stated `(valid_at, as_of)` — every cell one `resolve_single()` call. For
+`trial:reading_one` at valid_at and as_of 2026-03-01:
+
+    row as assembled     {'left_amount': '3', 'right_amount': '4', 'total_amount': None,
+                          'held_amount': '5.5', 'thing_id': 'reading_one',
+                          'thing_kind': 'Reading'}
+    computed from it     '34'   (str)
+    row cast to the map  {'left_amount': 3, 'right_amount': 4, ...}
+    computed from that   7      (int)
+
+**This is the finding of the item.** The expression evaluates, at the right
+clocks, over a bitemporal read — the mechanism is there. But
+`assertion.value_literal` is text, nothing between the kernel and the evaluator
+consults the map's `range`, and `eval_expr` dispatches `+` on Python types. So
+`{left_amount} + {right_amount}` over a real row returns `'34'` and raises
+nothing. The second row gives `'102'` for 10 + 2. A total that is silently a
+concatenation is worse than one that fails, and no test anywhere would have
+caught it: `'34'` is a perfectly good `str`.
+
+Casting each cell to the range the map already declares gives 7 and 12. The map
+has the information; nobody applies it. Who applies it is the OPEN line.
+
+Two mechanics worth not re-deriving:
+
+- `generate_slot_value` requires a `jsonasobj2.JsonObj`, and `Config` must be
+  built with `use_expressions=True` — the default is False (as is `use_rules`).
+- `infer_all_slot_values`, the documented walker, **does nothing at all** on a
+  row that is not a `YAMLRoot`. `traverse_object_tree` calls its `infer` on
+  every node, `infer` tests `isinstance(in_obj, YAMLRoot)` and falls through,
+  and the call returns cleanly having changed nothing. A generator row is a
+  dict; a `YAMLRoot` only comes from `gen-python`. So the obvious entry point
+  is a silent no-op and `generate_slot_value` is the one to call.
+
+### Trying to sum across rows, in LinkML alone
+
+    UNITI_DSN=.../uniti_check .venv/Scripts/python.exe scripts/trial_sum_across_rows.py
+
+Seven attempts over the two rows' `held_amount`, `[5.5, 1.25]`, whose sum is
+6.75. Errors verbatim, nothing worked around:
+
+| attempt | result |
+|---|---|
+| `sum([1, 2, 3])` | `NotImplementedError: Call <ast.Name object at 0x...> not implemented. node = <ast.Call object at 0x...>` |
+| `sum({amounts})` over the rows' own values | the same `NotImplementedError` |
+| `{a} + {b}`, arity fixed when the map was written | `Decimal('6.75')` |
+| `max({amounts})` | `Decimal('5.5')` |
+| a schema slot `batch_total: sum({parts})` over a multivalued slot | the same `NotImplementedError` |
+| the same shape, `batch_count: len({parts})` | `2` |
+| the sealed map's `rules` block, `use_rules=True` | `NotImplementedError: Rules not implemented for Config(use_string_serialization=False, parse_string_serialization=False, use_rules=True, use_expressions=False, resolve_function=None)` |
+
+`eval_utils.funcs` holds exactly six names — `max`, `min`, `len`, `str`,
+`strlen`, `case` — and `sum` is not one of them. The shape is legal LinkML and
+the schema loads; it fails at evaluation. So the 1 Sep split is confirmed from
+below, and more narrowly than it was stated: LinkML can count a collection and
+take its maximum, and cannot add it up.
+
+`rules` is the sharper half. The block survives the seal perfectly, reads back
+with its precondition and postcondition intact, and `linkml_runtime` raises
+`NotImplementedError` the first time it is asked to apply one — not for our
+rule, for any rule. A map may therefore carry §10's six rules as structure that
+no reader in this stack can execute.
+
+### After
+
+    make check          # 64 passed, replay identical twice at 5334 bytes, exit 0
+
+Working log named by the default DSN: **1 / 107 / 301** before the session and
+1 / 107 / 301 after, checked directly against Postgres both times. Every write
+here went to `uniti_check`, and `make schema` wiped that database during the
+final `make check` — so the trial seal's 19 assertions are gone and only the
+sealed file remains, which is why `tests/trial` was written to need no database.
+
+One clause of the done condition cannot hold: it asks for a test under `tests/`
+**and** for `make check` to still exit 0 "at 57 passed". Adding tests changes
+the count. 57 was the number before; it is 64 now, all 57 originals still
+passing, and nothing existing was touched. Reported, not worked around by
+hiding the tests somewhere `pytest tests` does not look.
+
+Surprising, in order:
+
+1. **All five survived, and that is not evidence of anything.** `seal` strips
+   one key and copies the rest, so "does it survive the seal" has the same
+   answer for every metamodel feature there will ever be. The interesting
+   question was never survival; it is what can act on what survived, and there
+   the five split three ways.
+2. **The trap is silent.** `'3' + '4' = '34'`, no exception, right type, wrong
+   number. The one place a computed value could have been trusted turns out to
+   be the one place a wrong value looks most like a right one.
+3. **`infer_all_slot_values` is a no-op, not an error.** The documented
+   function ran cleanly on our row and changed nothing.
+4. `len()` and `max()` work across a collection and `sum()` does not. The
+   boundary is not "LinkML cannot aggregate" — it is a six-name dictionary that
+   happens to omit the one aggregate an inventory is made of.

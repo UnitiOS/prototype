@@ -87,6 +87,18 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
   staged rather than dropped and is not milestone one; whether a definition
   change belongs to refinement or to analysis is undecided, and it decides
   whether the map must carry two versions before any analysis exists · blocks: -
+- Nothing types a cell between the log and LinkML's evaluator, so a computed
+  value can be silently wrong. `assertion.value_literal` is text, the generator
+  hands the row over as text, and `eval_expr` dispatches on Python types: the
+  trial map's `{left_amount} + {right_amount}` returns `'34'` for 3 + 4 and
+  `'102'` for 10 + 2, with no exception and a perfectly good `str`. Casting each
+  cell to the `range` the map already declares gives 7 and 12, so the
+  information is there and nobody applies it. Whether the caster is the
+  generator's `table()`, the kernel's read, or the expression evaluation itself
+  is undecided — and the same question decides what a form's typed field writes
+  back. Adjacent: `infer_all_slot_values`, the documented entry point, walks a
+  row that is not a `YAMLRoot` and changes nothing without erroring. Found 1 Sep
+  in the LinkML feature trial · blocks: generator
 
 ## T2 — wait for a user
 

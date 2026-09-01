@@ -1,0 +1,82 @@
+id: https://uniti.example/trial
+name: linkml_feature_trial
+version: v1
+title: Which LinkML features survive the seal
+description: 'A throwaway map. It exists to be sealed and read back, not to describe
+  anything. One class carries the five metamodel features under trial: equals_expression,
+  a rules block with preconditions and postconditions, unit with a ucum_code, unique_keys,
+  and designates_type. Nothing here is business vocabulary and nothing here is ever
+  sealed into the working log.'
+prefixes:
+  linkml: https://w3id.org/linkml/
+  trial: https://uniti.example/trial/
+default_prefix: trial
+imports:
+- linkml:types
+default_range: string
+classes:
+  Thing:
+    description: The parent, so designates_type has something to designate.
+    slots:
+    - thing_id
+    - thing_kind
+  Reading:
+    is_a: Thing
+    description: 'Two stated numbers and one that is not stated. The third is what
+      the trial is about: a value the map says how to compute rather than a value
+      anyone said.'
+    slots:
+    - left_amount
+    - right_amount
+    - total_amount
+    - held_amount
+    unique_keys:
+      by_id:
+        description: One reading per identifier.
+        unique_key_slots:
+        - thing_id
+    rules:
+    - description: A reading whose left side is stated must state its right side too.
+      preconditions:
+        slot_conditions:
+          left_amount:
+            minimum_value: 1
+      postconditions:
+        slot_conditions:
+          right_amount:
+            required: true
+slots:
+  thing_id:
+    slot_uri: trial:thing_id
+    identifier: true
+    description: The identifier of one thing.
+  thing_kind:
+    slot_uri: trial:thing_kind
+    designates_type: true
+    range: string
+    description: Which class this row is an instance of.
+  left_amount:
+    slot_uri: trial:left_amount
+    range: integer
+    description: One stated number.
+  right_amount:
+    slot_uri: trial:right_amount
+    range: integer
+    description: The other stated number.
+  total_amount:
+    slot_uri: trial:total_amount
+    range: integer
+    equals_expression: '{left_amount} + {right_amount}'
+    description: Not stated. The map says how to get it from the two that are.
+  held_amount:
+    slot_uri: trial:held_amount
+    range: decimal
+    unit:
+      ucum_code: L
+      symbol: L
+    description: A quantity that carries a unit in the map rather than beside it.
+annotations:
+  valid_from: '2026-02-01T00:00:00+00:00'
+  sealed_at: '2026-02-01T09:00:00+00:00'
+  supersedes: null
+  transcript: v1.txt
