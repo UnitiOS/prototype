@@ -270,14 +270,12 @@ Adding a sixth item means removing one.
       is missing is that the outside of the business has no location, which
       profile §7 does state.
 
-- [ ] Which LinkML features survive the seal, and which of them can compute
-      The 1 Sep line splits derivation in two: within a row is LinkML's and we
-      write nothing, across rows is ours. That split is worth nothing until it
-      is known that these features reach a **sealed** map and can be evaluated
-      over a row this system assembles, which is not an ordinary object — it is
-      resolved from many assertions at a stated `valid_at` and `as_of`. Report
-      what is true, do not make anything work: a feature that does not survive
-      the seal is the finding, not a bug to fix.
+- [x] Which LinkML features survive the seal, and which of them can compute
+      done: ed3e6dd. All five survive the seal and read back. `equals_expression`
+      computes over an assembled row; `rules` raise `NotImplementedError` for any
+      rule at all; `infer_all_slot_values` is a no-op on our rows; `sum` is
+      absent from a six-name function table while `len` and `max` are present.
+      The split holds: within a row is LinkML's, across rows is ours.
       done when: a throwaway map under `business/trial/`, never sealed into the
       working log, declares one class carrying `equals_expression`, a `rules`
       block with preconditions and postconditions, `unit` with a `ucum_code`,
@@ -294,7 +292,18 @@ Adding a sixth item means removing one.
       serve; `make check` still exits 0 at 57 passed; and the working log named
       by the default DSN still reports 1 / 107 / 301
 
-- [ ] Prove or break the `derive` idea with a throwaway
+- [x] Prove or break the `derive` idea with a throwaway
+      done: c4dce98, reproduced at this desk by re-running both seals and the
+      script rather than read from LOG. It held. Same `valid_at`, two `as_of`
+      five weeks apart, two different correct tables: alpha at place_one nets 6
+      read on 6 March and 3 read on 11 April, and the script asserts the
+      difference equals the late movement's own quantity taken from the log.
+      The script holds two words about the map, `Holding` and `aggregate`;
+      `Movement` and its four slots are read from the sealed file at run time.
+      292 lines, `make check` 64 passed, working log untouched at 1 / 107 / 301.
+      The only break was spelling: LinkML reads a mapping under an annotation
+      tag as `Annotation`'s own constructor arguments, so the declaration needs
+      a `value:` wrapper.
       Not the component — one script under `scripts/`, and nothing under
       `components/` is created or changed. The claim under test is the whole
       design in miniature: a computation **declared in a sealed map**, executed
@@ -319,6 +328,29 @@ Adding a sixth item means removing one.
       declaration verbatim, both tables, and the script's line count; `make
       check` still exits 0 with the 64 existing tests passing; and the working
       log named by the default DSN still reports 1 / 107 / 301
+
+- [ ] Sorella's profile gains what a graph needs, without being rewritten
+      `business/sorella/profile.md` — 496 lines, written in a clean directory
+      with no access to this repo, and it is the business now. Marlow is
+      retired. The arithmetic largely survives checking at this desk: 110 kg of
+      base wants 7.2 bags of milk against 12 in and 9 counted; Base 50 burns
+      0.67 kg of a 2 kg bag against 13 counted. What it lacks is not detail but
+      **reach** — a graph built from it today has movements starting from
+      nothing, sixteen flavours that cannot consume anything, and no price
+      anywhere.
+      Append to the same file in the same voice; keep every word already there.
+      done when: `business/sorella/profile.md` states the opening stock of every
+      location at the start of Monday 15 June 2026; a recipe for each of the
+      sixteen flavours that has none; which flavour is sold in which of the
+      seven formats; the twenty-six unnamed wholesale accounts, including which
+      two are on thirty-day terms; a purchase price and pack size for every
+      bought item and a sell price for every product including scoops at both
+      shops; a lead time and minimum order for every supplier; how many pans
+      exist and what is known of where they are; and Monday 15 June through
+      Sunday 21 June at Tuesday's level of detail. Tuesday's dairy delivery is
+      corrected — 16 June 2026 is a Tuesday and milk comes Monday, Wednesday and
+      Friday, so the day moves, not the schedule. Nothing is computed anywhere
+      in the file and no balance is ever stated as what should have been on hand
 
 - [ ] `make check` fails if the generator knows what a business is
       The claim milestone one rests on is that the graph carries the logic, and

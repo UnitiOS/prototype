@@ -1245,3 +1245,52 @@ reasoning lives in `../archived/`. They are closed, which means not re-discussed
              basket in a form invisible to the instrument built to detect it.
              Nothing inside is judgement anyway: gather, resolve, cast, sum,
              evaluate a bounded expression. Every step is mechanical.
+2026-09-02 · A computation declared in a map is one annotation whose tag names
+             the computation and whose `value:` carries a mapping. The wording
+             is Claude Code's, proposed in `LOG.md` and recorded here, because
+             someone will ask why it is spelled so oddly. LinkML refuses a
+             mapping placed directly under the tag — `Annotation` reads it as
+             its own constructor arguments and raises `TypeError` — and of the
+             two other accepted spellings, flat tags lose the structure and a
+             nested `annotations` block buries it two levels down. Read back
+             with `jsonasobj2.as_dict()`; `.items()` and `.get()` both raise on
+             a `JsonObj`. The shape that ran: `over` names the class gathered,
+             `sum` the slot added up, `by` the named dimensions, and a separate
+             slot's `equals_expression` subtracts one total from another. Four
+             keys, no arithmetic inside the aggregate, and the subtraction is
+             LinkML's.
+2026-09-02 · `derive` is not built, and the contradiction about it is left
+             standing rather than resolved. Two entries dated 1 Sep disagree:
+             one says the generator has quietly become the layer that joins a
+             map to a log and no new component should be created until a second
+             consumer exists, the other proposes `derive` as a fourth component.
+             The first is right and the second was written at this desk from a
+             more elegant argument about an agent that does not exist, which is
+             structure before need — the shape on the stop-list. Nothing is
+             being built either way: the trial that proved the idea was a 292
+             line throwaway. So neither line is corrected. Where the code
+             eventually lives is a filing question, and it gets decided when
+             `report` exists and there is a second caller, not before.
+2026-09-02 · The refusal of `designates_type` is withdrawn, on evidence. It was
+             refused on 1 Sep for putting a class in a column on a row, when in
+             fact it names **which slot carries the type** and the value stays
+             an assertion in the log with both clocks. In the trial it is what
+             cut eight candidate rows down to the four the log calls Movements,
+             in three lines — the first answer the row-identity question has
+             had that was tried rather than argued. Claim C's oldest failure
+             may be closed by the feature this desk had just discarded.
+2026-09-02 · The business is Sorella Gelato, and Marlow is retired. A gelato
+             producer with its own kitchen, two shops it stocks itself and
+             thirty-one wholesale accounts — a shape that makes every kind of
+             stock movement appear without being asked for, which a single shop
+             never did. Written in an empty directory with no sight of this
+             repo. `business/profile.md` stays where it is as the record of what
+             produced v1; nothing is measured against it any more.
+2026-09-02 · Decisions are written at the rate evidence arrives, not at the rate
+             arguments do. Thirty-five entries were added here in two days
+             against a hundred and thirty in the fortnight before, and almost
+             every one of the thirty-five came out of a conversation rather than
+             out of failing code or a user. Two of them contradict each other
+             and a third has already been withdrawn. The existing rule covers
+             reopening a decision; this one covers making one. If nothing is
+             being built and nothing has failed, the honest entry is no entry.

@@ -457,3 +457,12 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
   quietly excludes three of nine movements is the exact failure the report
   exists to expose. Whether a derived slot needs a companion count, a
   confidence, or a refusal to compute, is undecided. Found 2 Sep · blocks: derive
+- Claim F is stated twice in `DECISIONS.md`, at 1150 and 1179, written hours
+  apart by two sessions that could not see each other. The two wordings agree.
+  Neither is removed because the file is append-only; a reader should know one
+  claim is meant, not two. Raised 2 Sep · blocks: -
+- Sorella's Tuesday has 4.8 kg of strawberries unaccounted for: fourteen punnets
+  in, one binned mouldy, 2.6 used by the sorbet batch, and eight counted where
+  10.4 were expected. Nothing in the profile says whether that is deliberate
+  shrinkage or an arithmetic slip, and an unmarked discrepancy cannot be told
+  apart from a mistake. Raised 2 Sep · blocks: -
