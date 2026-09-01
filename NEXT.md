@@ -294,6 +294,32 @@ Adding a sixth item means removing one.
       serve; `make check` still exits 0 at 57 passed; and the working log named
       by the default DSN still reports 1 / 107 / 301
 
+- [ ] Prove or break the `derive` idea with a throwaway
+      Not the component — one script under `scripts/`, and nothing under
+      `components/` is created or changed. The claim under test is the whole
+      design in miniature: a computation **declared in a sealed map**, executed
+      against the log at a stated pair of clocks, gives the right number, and
+      gives a *different* right number when the same question is asked at a
+      later `as_of` because one movement was recorded late. If it breaks, the
+      break is the finding; do not build around it.
+      done when: a throwaway map under `business/trial2/` declares a movement
+      class, a place class, and two derived quantities as
+      `annotations.aggregate` carrying `over`, `sum` and named `by` dimensions,
+      plus a third slot whose `equals_expression` subtracts one from the other;
+      `seal` accepts it against the check database and the `aggregate`
+      annotation reads back through `SchemaView` on the induced slot; the map's
+      stated facts include hand-written class-membership assertions, at least
+      four movements across two places, and one movement whose `recorded_at` is
+      later than the rest; one script prints the derived quantity for every
+      (thing, place) pair at a stated `valid_at`; run at two `as_of` values it
+      prints two tables that differ, and the script itself asserts that the
+      difference equals the late movement's quantity rather than leaving it to
+      the eye; one movement carries no quantity fact at all and whatever the
+      script does with it is printed, not decided; `LOG.md` records the
+      declaration verbatim, both tables, and the script's line count; `make
+      check` still exits 0 with the 64 existing tests passing; and the working
+      log named by the default DSN still reports 1 / 107 / 301
+
 - [ ] `make check` fails if the generator knows what a business is
       The claim milestone one rests on is that the graph carries the logic, and
       the failure that looks like success is a generator that carries it

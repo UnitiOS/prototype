@@ -409,3 +409,10 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
   its own form there is no reason for a document form to create anything but its
   own subject. Recommended at this desk, not yet decided. Raised 1 Sep ·
   blocks: generator
+- What a movement with no stated quantity means when it is summed. Zero, or
+  unknown, or an error. Treating it as zero makes a total quietly wrong in the
+  same way `'34'` was quietly wrong; treating it as an error makes a real
+  business — where three of nine movements go unrecorded — unable to see any
+  balance at all. This is not a mechanism question and cannot be settled at this
+  desk: it is a statement the business profile has to make, so it joins what
+  profile v2 must state. Raised 1 Sep · blocks: derive

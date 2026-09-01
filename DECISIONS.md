@@ -1176,3 +1176,72 @@ reasoning lives in `../archived/`. They are closed, which means not re-discussed
              extraction into its own component waits for a second consumer,
              which will be `report`. Splitting it today would be structure
              before need, which is the shape on the stop-list.
+2026-09-01 · Claim F, and it is the one closest to why this project exists. An
+             LLM given this graph answers a business question correctly where
+             the same LLM given ordinary tables answers it wrongly. Its sharpest
+             form is a question whose answer depends on a definition that has
+             since changed, because an ordinary system answers with today's
+             definition and is silently wrong rather than visibly wrong. A
+             through E all test whether the system works; not one of them tests
+             whether it makes an agent better, which is the whole reason for
+             building it. Without F this PoC can succeed completely and prove
+             the wrong thing. It is not milestone one and it is written down now
+             so that it is not invented later to fit whatever was built.
+2026-09-01 · The shape of the whole system, stated once because it explains
+             what `seal` is for. Judgement is allowed at the two edges and
+             forbidden in the middle. An interview turns a conversation into a
+             draft map, which is interpretation, ambiguity and correction — an
+             LLM's work. An agent reads finished answers and decides what to do
+             — an LLM's work again. Between them nothing may guess. `seal` is
+             therefore not merely the thing that gives a map a version: it is
+             **the boundary between the probabilistic and the deterministic**,
+             and that is the reason it refuses to accept a map twice. This also
+             answers why a map exists at all. Without one, a model would have to
+             re-derive the business's meaning on every single read, and every
+             read could differ. The map is one model's judgement, frozen once,
+             then executed by machinery at no cost and with identical results
+             forever. That is the product.
+2026-09-01 · A fourth component, `derive`, and the recommendation this replaces
+             was wrong. It was proposed at this desk that `ontology` become the
+             layer that reads a map against a log. `components/ontology` is one
+             5 KB file whose only function is `resolve_version(valid_at, as_of)`
+             — which sealed map file applies at two clocks. It never touches the
+             database and never imports the kernel. The role was inferred from
+             the component's name instead of its code, which is the failure
+             CLAUDE.md warns about, and it is recorded rather than quietly
+             dropped. What is actually missing is execution, not storage: the
+             map can hold a rule's shape and the log can hold its numbers, and
+             three ways of avoiding a new component were tried and failed.
+             Writing derived values into the log as facts breaks the finding
+             that the log holds no judgements, and forces every downstream value
+             to be rewritten whenever a movement arrives late, which is exactly
+             what storing balances does to an ERP. Letting LinkML run it fails
+             on measurement: no `sum`, `rules` raise, `infer_all_slot_values` is
+             a no-op. Putting it in the kernel fails because the kernel must not
+             know the map, and that boundary is what lets one kernel serve any
+             business. So `derive` takes a declaration from the map version that
+             applies, gathers the rows by walking slot ranges, resolves each
+             cell through the kernel at the same two clocks, casts it to the
+             declared range, sums, and hands expressions to LinkML's evaluator.
+             It **stores nothing** — storing rules would make it a second source
+             of truth competing with the map — and can be deleted and rebuilt.
+             It is not folded into the generator because an agent asking whether
+             stock is below the reorder point should not have to go through a
+             table renderer. `ontology` keeps its real job: saying which rule
+             version applies, which is what makes one report computable two
+             ways. Named `derive` and deliberately not `engine`, a word on the
+             stop-list that should not be borrowed even for something legitimate.
+2026-09-01 · `derive` is deterministic and no model may sit inside it. `make
+             check` already replays a projection twice and compares it byte for
+             byte, because the same question at the same two clocks giving the
+             same answer is the foundation everything else stands on. The
+             definition of done needs it too: if the computation varies, the
+             difference between two shrinkage reports can no longer be
+             attributed to the definition change rather than to the model. And
+             the sharpest reason is that a model in the read path is the purest
+             possible leak of domain vocabulary and the grep guard would never
+             see it — the code would contain no business word while the weights
+             supplied every one of them. That is the "passing by cheating"
+             basket in a form invisible to the instrument built to detect it.
+             Nothing inside is judgement anyway: gather, resolve, cast, sum,
+             evaluate a bounded expression. Every step is mechanical.
