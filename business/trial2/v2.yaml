@@ -1,0 +1,110 @@
+id: https://uniti.example/trial2
+name: derive_trial
+version: v2
+title: Prove or break the derive idea
+description: A throwaway map. It exists to declare a computation and have that computation
+  run against the log at a stated pair of clocks, not to describe anything. Two slots
+  on Holding carry an `aggregate` annotation naming what to sum, over which class,
+  grouped by which dimensions; a third subtracts one from the other with LinkML's
+  own `equals_expression`. Nothing here is business vocabulary and nothing here is
+  ever sealed into the working log.
+prefixes:
+  linkml: https://w3id.org/linkml/
+  trial2: https://uniti.example/trial2/
+default_prefix: trial2
+imports:
+- linkml:types
+default_range: string
+classes:
+  Thing:
+    description: Something that moves. Named by an assertion, like everything else.
+    slots:
+    - entity_class
+  Place:
+    description: Somewhere a thing can be.
+    slots:
+    - entity_class
+  Movement:
+    description: One thing leaving somewhere, arriving somewhere, or both. The rows
+      the two aggregates are computed over.
+    slots:
+    - entity_class
+    - movement_thing
+    - movement_out_of
+    - movement_into
+    - movement_quantity
+  Holding:
+    description: 'Nobody states a Holding. Every column of it is computed: two by
+      summing Movements, the third by subtracting one sum from the other. The two
+      dimensions are what the aggregates group by.'
+    slots:
+    - holding_thing
+    - holding_place
+    - in_total
+    - out_total
+    - net_total
+slots:
+  entity_class:
+    slot_uri: trial2:entity_class
+    designates_type: true
+    range: string
+    description: Which class this entity is an instance of. Stated, never guessed.
+  movement_thing:
+    slot_uri: trial2:movement_thing
+    range: Thing
+    description: What moved.
+  movement_out_of:
+    slot_uri: trial2:movement_out_of
+    range: Place
+    description: Where it left, if it left anywhere.
+  movement_into:
+    slot_uri: trial2:movement_into
+    range: Place
+    description: Where it arrived, if it arrived anywhere.
+  movement_quantity:
+    slot_uri: trial2:movement_quantity
+    range: decimal
+    description: How much moved. Not every movement states one.
+  holding_thing:
+    slot_uri: trial2:holding_thing
+    range: Thing
+    description: One dimension of the pair this row is about.
+  holding_place:
+    slot_uri: trial2:holding_place
+    range: Place
+    description: The other dimension of the pair this row is about.
+  in_total:
+    slot_uri: trial2:in_total
+    range: decimal
+    description: Everything that arrived, for this pair. Computed, never stated.
+    annotations:
+      aggregate:
+        value:
+          over: Movement
+          sum: movement_quantity
+          by:
+            holding_thing: movement_thing
+            holding_place: movement_into
+  out_total:
+    slot_uri: trial2:out_total
+    range: decimal
+    description: Everything that left, for this pair. Computed, never stated.
+    annotations:
+      aggregate:
+        value:
+          over: Movement
+          sum: movement_quantity
+          by:
+            holding_thing: movement_thing
+            holding_place: movement_out_of
+  net_total:
+    slot_uri: trial2:net_total
+    range: decimal
+    equals_expression: '{in_total} - {out_total}'
+    description: What is left. LinkML's own within-a-row derivation, standing on two
+      values that LinkML cannot compute.
+annotations:
+  valid_from: '2026-03-01T00:00:00+00:00'
+  sealed_at: '2026-04-10T09:00:00+00:00'
+  supersedes: v1
+  transcript: v2.txt

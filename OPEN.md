@@ -99,6 +99,28 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
   back. Adjacent: `infer_all_slot_values`, the documented entry point, walks a
   row that is not a `YAMLRoot` and changes nothing without erroring. Found 1 Sep
   in the LinkML feature trial · blocks: generator
+- The declared aggregate now has a shape that runs end to end, so the shape line
+  above has evidence instead of options: `over`, `sum` and a named `by` mapping,
+  read off the induced slot of a sealed map, summed over rows the generator
+  assembled at both clocks. What is not settled is the spelling. LinkML refuses
+  a mapping placed directly under an annotation tag — `TypeError:
+  Annotation.__init__() got an unexpected keyword argument 'over'` — and accepts
+  three alternatives that are not equivalent: under `value:` (structure intact,
+  what trial2 used), under a nested `annotations:` (two levels deeper, one
+  `Annotation` per key), or as flat tags (`aggregate_over:`, structure gone).
+  Whether `derive` reads an annotation at all or reads SQL is still the
+  question; the trial shows only that a narrow declarative aggregate is enough
+  for one number. Found 2 Sep · blocks: derive
+- A seal that changes no definition still mints a version. A fact recorded later
+  than the rest can only be stated *through the map* by a second seal, because
+  `seal` writes one `recorded_at` per intent — so trial2's v2 exists, supersedes
+  v1, and is byte-identical to it apart from its own annotations.
+  `resolve_version` hands every later reader v2, and nothing in the sealed store
+  distinguishes a version that moved a definition from one that only added
+  facts, which is the exact distinction the report exists to make. The 29 Aug
+  answer — episodes are the second writer into the kernel — removes the need for
+  most such seals but not for a fact that belongs to the map itself. Found 2 Sep
+  · blocks: report
 
 ## T2 — wait for a user
 
@@ -416,3 +438,22 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
   balance at all. This is not a mechanism question and cannot be settled at this
   desk: it is a statement the business profile has to make, so it joins what
   profile v2 must state. Raised 1 Sep · blocks: derive
+- `designates_type` can carry class membership, and reading it repairs the
+  generator's row rule. Measured in trial2: the generator offered 8 candidate
+  rows for Movement and the log states that 4 of them are one — in a map with no
+  inheritance at all, because `entity_class` is a column of Movement, Thing and
+  Place alike, so every entity in the map is a candidate row of every table.
+  Three lines in a throwaway script filtered it. That is one of the three
+  options the 31 Aug row-rule line left undecided, tried rather than argued;
+  where the filter belongs — `columns()`, `table()`, or a per-class rule in the
+  map — is untried, and so is whether the interview can be relied on to state
+  membership for every entity it names. Found 2 Sep · blocks: generation
+- A derived total has nowhere to say what it left out. `out_total` printed 4 and
+  then 7 for a pair whose group also held a movement stating no quantity, and
+  `0` for a pair holding no movement at all; all four are the same kind of cell,
+  and only the breakdown printed beside the table tells them apart. This is not
+  the 1 Sep line about what a missing quantity *means* — even once that is
+  settled, one decimal has no room to carry it, and a shrinkage number that
+  quietly excludes three of nine movements is the exact failure the report
+  exists to expose. Whether a derived slot needs a companion count, a
+  confidence, or a refusal to compute, is undecided. Found 2 Sep · blocks: derive

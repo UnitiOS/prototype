@@ -1816,3 +1816,224 @@ Surprising, in order:
 4. `len()` and `max()` work across a collection and `sum()` does not. The
    boundary is not "LinkML cannot aggregate" — it is a six-name dictionary that
    happens to omit the one aggregate an inventory is made of.
+
+## 2026-09-02 · Prove or break the `derive` idea with a throwaway
+
+The claim held. A computation declared in a sealed map, executed against the
+log at a stated pair of clocks, produced the right number — and produced a
+different right number when the same question was asked at a later `as_of`,
+because one movement had been recorded five weeks late. Nothing under
+`components/` was created or changed. `scripts/trial_derive.py` is **292 lines**
+(38 of them the opening docstring, 49 blank) and is expected to be deleted.
+
+One thing broke on the way, and it broke first.
+
+### The declaration is not spelled the way anyone would spell it
+
+The obvious shape — a mapping directly under an annotation tag — is refused by
+LinkML before any of this starts:
+
+    in_total:
+      annotations:
+        aggregate:
+          over: Movement
+          sum: movement_quantity
+
+    TypeError: Annotation.__init__() got an unexpected keyword argument 'over'
+
+`Annotation` is a metamodel class with `tag`, `value`, `annotations` and
+`extensions`, so a mapping under the tag is read as that class's own keyword
+arguments. Four spellings were tried and three are accepted:
+
+| spelling | SchemaView | reads back as |
+|---|---|---|
+| `aggregate: {over: ...}` | **TypeError**, above | — |
+| `aggregate: {value: {over: ...}}` | accepted | one `JsonObj`, structure intact |
+| `aggregate: {annotations: {over: {...}}}` | accepted | nested `Annotation` per key |
+| `aggregate_over: ...`, `aggregate_sum: ...` | accepted | four flat tags, structure gone |
+
+The second was used. It is one word away from the shape the item named and
+keeps `over`, `sum` and the named `by` dimensions where a reader expects them.
+Read back with `jsonasobj2.as_dict(slot.annotations["aggregate"].value)`, which
+returns a plain nested dict; `.items()` on an annotation block raises
+`AttributeError: 'JsonObj' object has no attribute 'items'`, and so does
+`.get()`.
+
+### The declaration, verbatim from `business/trial2/v1.yaml`
+
+    in_total:
+      slot_uri: trial2:in_total
+      range: decimal
+      description: Everything that arrived, for this pair. Computed, never stated.
+      annotations:
+        aggregate:
+          value:
+            over: Movement
+            sum: movement_quantity
+            by:
+              holding_thing: movement_thing
+              holding_place: movement_into
+    out_total:
+      slot_uri: trial2:out_total
+      range: decimal
+      description: Everything that left, for this pair. Computed, never stated.
+      annotations:
+        aggregate:
+          value:
+            over: Movement
+            sum: movement_quantity
+            by:
+              holding_thing: movement_thing
+              holding_place: movement_out_of
+    net_total:
+      slot_uri: trial2:net_total
+      range: decimal
+      equals_expression: '{in_total} - {out_total}'
+
+`Holding` is a class nobody ever states a value for. Its two dimensions come
+from the `by` keys, its two totals from the `by` values, and its third column
+from LinkML's own within-a-row derivation standing on two sums LinkML cannot
+compute. The script holds two literals about this map — the class name
+`Holding` and the annotation key `aggregate`. `Movement`, `movement_quantity`,
+`movement_into` and `movement_out_of` appear nowhere in it; all four are read
+out of the sealed file at run time and are printed in the header of every run.
+
+### The commands
+
+Two seals of the same schema into the same directory, five weeks apart, both
+against the **throwaway** database:
+
+    UNITI_DSN=postgresql://uniti:uniti@localhost:5433/uniti_check \
+        .venv/Scripts/python.exe components/seal/seal.py business/trial2/draft.yaml \
+        --actor trial2 --into business/trial2 --sealed-at 2026-03-05T09:00:00Z
+
+    UNITI_DSN=postgresql://uniti:uniti@localhost:5433/uniti_check \
+        .venv/Scripts/python.exe components/seal/seal.py business/trial2/late.yaml \
+        --actor trial2 --into business/trial2 --sealed-at 2026-04-10T09:00:00Z
+
+    UNITI_DSN=postgresql://uniti:uniti@localhost:5433/uniti_check \
+        .venv/Scripts/python.exe scripts/trial_derive.py
+
+`seal` accepted both. v1: 19 entities minted, 39 assertions, one `recorded_at`
+of 2026-03-05T09:00Z. v2: **1** entity minted, 5 assertions, one `recorded_at`
+of 2026-04-10T09:00Z — the ten `slot_uri` predicates and `uniti:uri` were
+reused, so only `trial2:move_late` was new. Both versions state
+`valid_from: 2026-03-01`, so both seals describe the same day.
+
+The map states 8 hand-written class-membership assertions under a slot carrying
+`designates_type: true`, and four movements across two places, one of which
+(`trial2:move_four`) states no quantity at all.
+
+### The two tables
+
+Same `valid_at`. Same map, byte-identical apart from its annotations. Two
+`as_of` values, five weeks apart.
+
+    the map itself resolves to v1 at as_of 2026-03-06T00:00:00Z
+
+    Holding  (v1, v1.yaml)
+    valid_at   2026-03-01T00:00:00Z
+    as_of      2026-03-06T00:00:00Z
+
+    holding_thing       holding_place     in_total  out_total  net_total
+    ------------------  ----------------  --------  ---------  ---------
+    trial2:thing_alpha  trial2:place_one  10        4          6
+    trial2:thing_alpha  trial2:place_two  4         0          4
+    trial2:thing_beta   trial2:place_two  7         0          7
+
+    Movement: the generator offered 8 rows, the log states 4 of them are one
+      (trial2:thing_alpha, trial2:place_one).in_total = 10 from 1 movement(s)
+      (trial2:thing_alpha, trial2:place_one).out_total = 4 from 1 movement(s), and 1 that matched but stated no quantity and added nothing: trial2:move_four
+      (trial2:thing_alpha, trial2:place_two).in_total = 4 from 1 movement(s)
+      (trial2:thing_alpha, trial2:place_two).out_total = 0 from 0 movement(s)
+      (trial2:thing_beta, trial2:place_two).in_total = 7 from 1 movement(s)
+      (trial2:thing_beta, trial2:place_two).out_total = 0 from 0 movement(s)
+
+    the map itself resolves to v2 at as_of 2026-04-11T00:00:00Z
+
+    Holding  (v2, v2.yaml)
+    valid_at   2026-03-01T00:00:00Z
+    as_of      2026-04-11T00:00:00Z
+
+    holding_thing       holding_place     in_total  out_total  net_total
+    ------------------  ----------------  --------  ---------  ---------
+    trial2:thing_alpha  trial2:place_one  10        7          3
+    trial2:thing_alpha  trial2:place_two  4         0          4
+    trial2:thing_beta   trial2:place_two  7         0          7
+
+    Movement: the generator offered 9 rows, the log states 5 of them are one
+      (trial2:thing_alpha, trial2:place_one).in_total = 10 from 1 movement(s)
+      (trial2:thing_alpha, trial2:place_one).out_total = 7 from 2 movement(s), and 1 that matched but stated no quantity and added nothing: trial2:move_four
+      (trial2:thing_alpha, trial2:place_two).in_total = 4 from 1 movement(s)
+      (trial2:thing_alpha, trial2:place_two).out_total = 0 from 0 movement(s)
+      (trial2:thing_beta, trial2:place_two).in_total = 7 from 1 movement(s)
+      (trial2:thing_beta, trial2:place_two).out_total = 0 from 0 movement(s)
+
+    what the two tables say to each other
+      Movements visible at the later as_of and not the earlier: ['trial2:move_late']
+      their quantity, resolved at the later as_of: 3
+      pairs in both tables whose net_total differs: {'trial2:thing_alpha/trial2:place_one': (Decimal('6'), Decimal('3'))}
+      pairs in one table and not the other: none
+      asserted: exactly one movement arrived late, exactly one pair moved (trial2:thing_alpha/trial2:place_one net_total 6 -> 3), and |6 - 3| == 3, that movement's own quantity
+
+The script asserts three things and does not leave them to the eye: exactly one
+movement is visible at the later `as_of` and not the earlier; exactly one pair's
+`net_total` moved; and the size of that move equals the late movement's own
+quantity, **resolved from the log at the later `as_of`** rather than typed into
+the script. It exits 0.
+
+### The movement with no quantity
+
+`trial2:move_four` — thing_alpha out of place_one, no `movement_quantity` fact
+anywhere. It matches the `out_total` group for its pair, so it is not invisible;
+it contributes nothing, so the total behaves as though it were zero. The script
+prints that in the breakdown under every table (`1 that matched but stated no
+quantity and added nothing`) and decides nothing. The table itself shows `4`,
+then `7`, with no mark of any kind. What it should mean is already an OPEN line
+from 1 Sep and is a question for profile v2, not for this desk.
+
+### After
+
+    make check          # 64 passed, replay identical twice at 5334 bytes, exit 0
+
+Working log named by the default DSN: **1 / 107 / 301** before this session,
+1 / 107 / 301 after, read straight from Postgres both times. Every write went to
+`uniti_check`. `make schema` inside the final `make check` dropped and recreated
+that database, so trial2's 44 assertions are gone and only the four sealed files
+remain — re-running the script needs both seals run again first. The script
+refuses to start unless `UNITI_DSN` is set, and refuses a DSN ending in
+`/uniti`.
+
+Four lines appended to OPEN.md. Nothing was repaired and no map was changed.
+
+A wording proposed for DECISIONS.md, because someone will ask why it is spelled
+this way: *a computation declared in a map is one annotation whose tag names the
+computation and whose `value:` carries a mapping. LinkML refuses a mapping
+placed directly under the tag — `Annotation` reads it as its own constructor
+arguments — and the two other accepted spellings either lose the structure
+(flat tags) or bury it two levels deep (nested `annotations`).*
+
+Surprising, in order:
+
+1. **The break was in the spelling, not the mechanism.** Everything expected to
+   be hard — reading a declaration out of a sealed file, summing across a
+   bitemporal read, getting two different right answers — worked first time.
+   The one refusal came from writing `over:` where LinkML wanted
+   `value: {over: ...}`.
+2. **The generator offered 8 rows and the log says 4 are Movements.** The
+   31 Aug row-rule defect showed up unprompted in a map with no inheritance at
+   all: `entity_class` is a column of Movement, Thing and Place alike, so every
+   entity in the trial is a candidate row of the Movement table. Reading the
+   `designates_type` slot as the membership assertion filtered it in three lines
+   — the first time that open question has had an answer tried rather than
+   argued.
+3. **A late fact needed a new map version.** `seal` writes one `recorded_at` per
+   intent, so the only way to state a fact later than the rest through the map
+   is a second seal — and v2's schema is byte-identical to v1's. The version
+   number counted a seal, not a change of definition, and nothing in the sealed
+   store says which it was.
+4. `net_total` came back as `Decimal('6')`, not `'104'`. The 1 Sep concatenation
+   trap is entirely a question of who casts: cast both operands to the range the
+   map declares and LinkML's `equals_expression` is arithmetic; skip the cast and
+   `-` would have raised `TypeError` on two strings rather than returning a
+   plausible number, which is the one mercy of subtraction over addition.
