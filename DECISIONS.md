@@ -1147,3 +1147,32 @@ reasoning lives in `../archived/`. They are closed, which means not re-discussed
              reported the conflict instead of hiding it, which is the behaviour
              wanted, but the cost is a clause nobody could satisfy. The form
              that works is "the 57 that existed still pass", never a total.
+2026-09-01 · **Claim F**, added to the five and deliberately not part of
+             milestone one: an LLM given this graph answers a business question
+             correctly where the same LLM given ordinary tables answers it
+             wrongly. Its sharpest form is a question whose answer depends on a
+             definition that has changed, because an ordinary system answers
+             with today's definition and is quietly wrong, which is the 24 Aug
+             definition of done arriving as an agent test rather than a report.
+             Recorded because A through E all ask whether the system works and
+             none asks whether it makes an agent better, and the second is the
+             reason the project exists. Without F the PoC can prove the wrong
+             thing very neatly.
+2026-09-01 · The line written earlier today putting the cast in `ontology` is
+             wrong, and is corrected here rather than edited. `ontology` was
+             opened afterwards: `resolve_version()` answers only which map
+             version applies at two clocks, reading sealed files from a
+             directory, and it never touches the database. The kernel's
+             `resolve_single()` answers which fact wins. **Neither joins them.**
+             The thing that holds a map and a log at the same time is
+             `generate.py` — twenty kilobytes importing `connect`, `perform`,
+             `resolve_single` and `URI_PREDICATE`, and reading the schema
+             through `SchemaView` itself. The generator has quietly become the
+             resolver. So there is no new layer to add and nowhere to move
+             anything: the layer already exists, unnamed, inside a component
+             named after one of its consumers. The cast and the aggregation go
+             there. What is done now is naming the seam inside the file —
+             joining a map to a log on one side, rendering on the other — and
+             extraction into its own component waits for a second consumer,
+             which will be `report`. Splitting it today would be structure
+             before need, which is the shape on the stop-list.
