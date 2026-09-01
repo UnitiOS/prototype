@@ -390,3 +390,10 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
   gate enforces it, the generator refuses the submission, or `required` is a
   documentation-only marker in this PoC, is undecided. Found 1 Sep reading
   `submit()` after rendering the forms · blocks: generator
+- Whether a ref field may mint at all. `submit()` today mints any URI it has not
+  seen, including one typed into a ref field, so a supplier misspelled once
+  becomes a second supplier silently. An ERP refuses this — a receipt picks a
+  supplier from a list and cannot invent one — and if master data enters through
+  its own form there is no reason for a document form to create anything but its
+  own subject. Recommended at this desk, not yet decided. Raised 1 Sep ·
+  blocks: generator

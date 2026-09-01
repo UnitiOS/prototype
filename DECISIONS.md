@@ -1018,3 +1018,91 @@ reasoning lives in `../archived/`. They are closed, which means not re-discussed
              posting date — all of which exist because its rows are mutable and
              its clock is single, so each is admitted or refused under the 1 Sep
              benchmark rule rather than copied.
+2026-09-01 · A class earns its existence by changing the shape of its form. Four
+             of v1's movement classes render byte-identical apart from the name
+             in the header, so a user cannot tell which document they filled and
+             neither can the log — the only trace is `intent.action_name`, which
+             never reaches an assertion. Those collapse into one movement class
+             carrying a reason as a field, which is also ERPNext's answer: one
+             Stock Entry with a purpose. `GoodsReceived` stays separate because
+             it adds a slot. Stated as a rule rather than a one-off merge so it
+             can be checked mechanically — rendering two forms and comparing the
+             files is the test, and it already exists.
+2026-09-01 · The outside of the business is modelled as locations — the
+             supplier's world, the customer, waste, tasting — so every movement
+             has both an origin and a destination. v1 minted five locations, all
+             internal, so a delivery came from nowhere nameable and a discard
+             went nowhere nameable. The return is out of proportion to the cost:
+             **direction becomes free**. Stock at a place is everything whose
+             `movement_into` names it minus everything whose `movement_out_of`
+             does, and nothing has to declare that `GoodsReceived` adds while
+             `ThrownOut` subtracts. The graph carries it. The objection that a
+             customer is not a place is answered by double-entry bookkeeping,
+             which has posted to accounts that are not places for five hundred
+             years — and this invents nothing, since profile §7 already has
+             "Out of / Into" columns naming a supplier.
+2026-09-01 · A form refuses exactly one thing: a required field left empty. Two
+             ideas had been sharing the word. Whether a document is complete
+             enough to be that document is the form's business and it may
+             refuse. Whether the business's rules are satisfied — stock never
+             below zero — is never a refusal and leaves as a violation list, per
+             21 Aug. So `required` moves from a printed label to the single
+             gate, the refusal is explainable in one sentence, and it stays
+             domain-blind because the word comes from the map and never from the
+             code. `gen-shacl` is not the enforcement path; the generator is.
+2026-09-01 · The 26 Aug line was wrong and is corrected here rather than edited.
+             It said derived rules do not live in LinkML itself and must attach
+             through `annotations`. LinkML 1.11.1, which is what is installed,
+             carries `equals_expression` on a slot, class `rules` with
+             preconditions, postconditions and `slot_conditions`,
+             `classification_rules`, `defining_slots`, `unit` with a UCUM code,
+             `unique_keys`, `designates_type`, and the boolean constraints
+             `any_of` / `all_of` / `none_of` / `exactly_one_of`. Its expression
+             evaluator was tried directly: `{a} + {b}`, `{a} / {b}` and `max()`
+             evaluate, `sum([1,2,3])` raises — arbitrary calls are not
+             implemented and there are no loops. That is a bounded expression
+             language of exactly the shape this project was about to invent,
+             already written and already tested by someone else. Two cautions
+             carried with it: the documentation marks `equals_expression`
+             experimental and says it may be replaced by a more general rules
+             mechanism, and `infer_all_slot_values` defaults `use_expressions`
+             and `use_rules` to false, so both are opt-in.
+2026-09-01 · Derivation is two problems, and the line between them is the line
+             between using something and building something. **Within a row** —
+             a number computed from other fields of the same record, which is
+             unit conversion and any ratio of fields — is LinkML's
+             `equals_expression`, and this project writes nothing. **Across
+             rows** — gather many records and sum them, which is stock on hand
+             and any rate over a period — is absent from LinkML, and the
+             evaluator refusing `sum` shows that is deliberate rather than an
+             omission. Four products that solve the second problem, dbt, Cube,
+             Malloy and LookML, converge on the same four parts: an aggregation
+             function, the field aggregated, the set of records covered, and the
+             dimensions grouped by. Ours needs fewer, because the set of records
+             covered is a slot whose range points back and the graph already
+             holds it. The consequence worth stating: the aggregation layer may
+             stay arithmetic-free. Stock is `arrivals` and `departures`, two
+             plain sums, and the subtraction is an `equals_expression` over two
+             named derived slots. The rule proposed on 1 Sep — arithmetic only
+             between named derived slots — turns out not to be a rule this
+             project invented but the natural seam between two tools.
+2026-09-01 · Master data enters through generated forms, and `submit` writes the
+             class-membership assertion. Both re-evaluation joints close on one
+             answer. Verified in the code before deciding rather than after:
+             `submit()` already mints a URI never seen before and registers it
+             under `uniti:uri` exactly as `seal` does, and it already receives
+             `class_name`, which it spends on `action_name` alone. What it does
+             not do today is state the class as a fact, and that is one added
+             assertion per minted entity. It stays domain-blind because the code
+             learns nothing about materials: it learns that a form came from
+             class X, so what it mints is an X. For an entity minted from a ref
+             field the class comes from the **slot's range** instead — a
+             supplier first named on a receipt form is a Supplier, not a
+             GoodsReceived — and the range is in the map, so that is blind too.
+             The split this leaves is clean: **`seal` writes map versions,
+             `submit` writes facts.** Adding a supplier stops being a reason to
+             publish a new map version, which is what made the writer a joint.
+             It also fixes the order of onboarding without anyone designing one
+             — seal the map, fill the master-data forms, then begin operating —
+             and it is what an ERP does, where the item master is a screen and
+             not a configuration file.

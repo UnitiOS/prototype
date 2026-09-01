@@ -270,6 +270,30 @@ Adding a sixth item means removing one.
       is missing is that the outside of the business has no location, which
       profile §7 does state.
 
+- [ ] Which LinkML features survive the seal, and which of them can compute
+      The 1 Sep line splits derivation in two: within a row is LinkML's and we
+      write nothing, across rows is ours. That split is worth nothing until it
+      is known that these features reach a **sealed** map and can be evaluated
+      over a row this system assembles, which is not an ordinary object — it is
+      resolved from many assertions at a stated `valid_at` and `as_of`. Report
+      what is true, do not make anything work: a feature that does not survive
+      the seal is the finding, not a bug to fix.
+      done when: a throwaway map under `business/trial/`, never sealed into the
+      working log, declares one class carrying `equals_expression`, a `rules`
+      block with preconditions and postconditions, `unit` with a `ucum_code`,
+      `unique_keys` and `designates_type`; `seal` either accepts it or the
+      refusal is recorded verbatim; whatever is accepted is read back from the
+      sealed file through `SchemaView` and each of the five is asserted present
+      or absent by a test under `tests/`; one script evaluates the
+      `equals_expression` slot over a row the generator assembled at a stated
+      pair of clocks, with `use_expressions=True`, and prints both the row and
+      the computed value; one script tries to express a sum across many
+      instances in LinkML alone and records the exact error rather than working
+      around it; `LOG.md` carries one table listing every metamodel feature
+      tried as usable, unusable or untried, with one line each on what it would
+      serve; `make check` still exits 0 at 57 passed; and the working log named
+      by the default DSN still reports 1 / 107 / 301
+
 - [ ] `make check` fails if the generator knows what a business is
       The claim milestone one rests on is that the graph carries the logic, and
       the failure that looks like success is a generator that carries it
