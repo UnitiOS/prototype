@@ -584,3 +584,53 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
   asks and has never had a cabinet card or a season. So the range and the buying
   table disagree by one item, in the direction the map will not notice: an unused
   material looks exactly like a correct one. Raised 2 Sep · blocks: -
+
+- A pan has a weight now and still has no weight on any document. `§2.4` states
+  about 3.3 kg of gelato, from three pans weighed on one morning because a hotel
+  asked; every count, transfer, delivery note and van sheet in the business is in
+  whole pans and part pans, and a part pan is ½ or ¾ by eye. Whether the map
+  carries a pan as a container with a nominal fill, as a unit of measure, or as
+  neither — and what a half pan converts to when a recipe is in kilograms — is
+  untried, and milestone one joins a recipe to a count through exactly this.
+  Raised 3 Sep · blocks: interview
+- No quantity in the profile says whether it is gross or net. The pan's two
+  readings differ by the pan itself: 3.6 kg was the pan on the scale as it stood
+  and 3.3 kg is what is in it, and nothing on either occasion recorded which was
+  meant. The tub and the mini are stated as fills only, with no gross anywhere.
+  This is what made three of Tuesday's batches read as putting out more than went
+  in. Whether a quantity in the log needs a basis beside its unit is untried, and
+  it is cheap to try. Raised 3 Sep · blocks: interview
+- Three of Tuesday's five wholesale drops are under the stated minimum. `§3.4`
+  sets a minimum wholesale order of 4 pans; `§4.3` has Bar Trentanove on 3 pans,
+  Cleeve on 3, and The Hollow on 2 pans plus 4 catering tubs. Written in session
+  4, found in session 5 by reading the rule against the day. Whether the minimum
+  counts pans or units, whether a rule nobody has ever enforced belongs in the
+  map, and what a generated order form should do with it, are three different
+  answers. Raised 3 Sep · blocks: interview
+- A correction can live on a document that is not the one it corrects. The Blue
+  Kettle's delivery note of 18 June says 5 pans and 4 were handed over; what puts
+  it right is a sentence Steve wrote across **Saturday's van sheet** two days
+  later, and an invoice Marina typed on the Sunday for 4. The note itself was
+  never altered and both its copies still say 5. So the log would hold two
+  assertions about one delivery, sourced from two documents about two different
+  days, and the only thing joining them is that Steve remembered. Whether the
+  second is a retraction of the first, an independent assertion that happens to
+  win on recorded time, or something the map has to be told to relate, is
+  undecided — and this is the first correction in the material, so it is the
+  first test of the mechanism the whole PoC rests on. Raised 3 Sep · blocks: kernel
+- The week has no closing count. The count sheet is monthly and the last one is
+  the June one; nothing was counted anywhere in the business between Dan's
+  evening count on Tuesday 16 June and the end of Sunday 21 June. So there is an
+  opening position and one two-day stretch that can be checked, and five days
+  after it that cannot be checked against anything. Whether milestone one's
+  “closing balances match a hand computation” has anything to land on past
+  Tuesday, or whether the business would have to be asked to count again, is not
+  something the profile can answer. Raised 3 Sep · blocks: live use
+- A pan's age is a date on a label and nothing tracks where the pan has been. The
+  lemon sorbet pan the Blue Kettle did not take stood in the van from Thursday to
+  Saturday and then went into the holding freezer with the rest, and its label
+  still reads *frozen 17/6*. `§3.4` puts a wholesale pan's best-before at 14 days
+  from the freeze date and the holding freezer's maximum age at 21 days, so both
+  rules read off a label and neither reads off a location. Whether the log should
+  hold the two days in the van at all, when no document in the business names
+  them, is undecided. Raised 3 Sep · blocks: interview

@@ -6,11 +6,11 @@ Nothing here is computed. Where a balance, a total or a variance could follow
 from what is written, working it out is the system's job and not this file's.
 Every figure is one somebody in the business would know or say.
 
-**This file is being rebuilt in five sessions.** It was planned as four. Session
-4 was to hold the opening count and every operational day, and one session
-cannot write seven days at the density that makes a day enterable, so the week
-is split: sessions 1 to 4 are written, and session 5 carries Wednesday to
-Sunday.
+**This file was rebuilt in five sessions.** It was planned as four. Session 4
+was to hold the opening count and every operational day, and one session cannot
+write seven days at the density that makes a day enterable, so the week was
+split: sessions 1 to 4 carry the frame and the first two days, and session 5
+carries Wednesday to Sunday. All five are written and the file is finished.
 
 | Session | What it holds | State |
 |---|---|---|
@@ -18,7 +18,7 @@ Sunday.
 | 2 | How a product is made and sold — recipes, formats, yield, the coffee side | Written |
 | 3 | The rules with their dates; every way stock moves, and the document filled | Written |
 | 4 | The opening count on the adoption date, Monday 15 June, and Tuesday 16 June | Written |
-| 5 | Wednesday 17 June to Sunday 21 June, and the week's close | Not yet written |
+| 5 | Wednesday 17 June to Sunday 21 June, and the week's close | Written |
 
 ---
 ---
@@ -1004,7 +1004,7 @@ bench. What Dan expects, per format:
 
 | Format | Filled to | Expected off a 12 kg mix |
 |---|---|---|
-| 5 L napoli pan | Level with the rim, by eye | Three pans and a part pan |
+| 5 L napoli pan | Level with the rim, by eye. About 3.3 kg of gelato | Three pans and a part pan |
 | 500 ml retail tub | About 460 g, above the rim so the lid domes | Twenty-six tubs |
 | 125 ml mini tub | About 100 g | About a hundred and fifteen minis |
 | 1.5 L catering tub | About 1.15 kg | Ten tubs |
@@ -1014,9 +1014,20 @@ filled to about 460 g, which is a weight. §1.5 already says that none of the
 three numbers is the same number.
 
 Dan weighed a full napoli pan on the bench scale once, out of curiosity, and it
-read 3.6 kg. Nobody has weighed one since, and nothing in the building depends
-on it. Off machine 2 the part pan comes out smaller and the pans come out
-heavier, and nobody notices either.
+read **3.6 kg**. That was the pan on the scale as it stood, gelato and pan
+together, and nothing anywhere says so. It sat as the only weight in the
+business against a pan until **Wednesday 17 June 2026**, when a hotel asked
+Marina how many kilos are in one and Dan weighed three properly: an empty
+polycarbonate pan read 0.3 kg, he tared it, and the three filled pans off that
+morning's fior di latte read **3.25 kg, 3.30 kg and 3.40 kg**. The number he
+gives now is **about 3.3 kg**, and §5.1 is the morning he arrived at it.
+
+Off machine 2 the part pan comes out smaller and the pans come out heavier, and
+nobody notices either. A batch never fills back to the weight that went into it:
+what is left clings to the beater, the outlet and the spatula and is washed out
+at the end of the run, and nobody has ever weighed that either. The rest of the
+difference disappears into the part pan, because ½ and ¾ are the only fractions
+anybody writes and both are by eye.
 
 A batch is rarely one format's worth of anything: the pans go first, and the
 minis are the tail — whatever is left in the machine once the pans are full.
@@ -1037,10 +1048,14 @@ to Callum.
 
 ### What is expected and what is recorded
 
-Two different numbers. The production sheet's columns are pans out and tubs out,
-and against a 12.0 kg mix the counts written in them run to five and six pans.
-Dan expects three and a part. Nobody has put the two figures next to each other,
-and the sheet is the only record of a production day that outlives the day.
+The production sheet's columns are pans out and tubs out, and against a 12.0 kg
+mix the counts written in them run to two or three pans and a part, which is
+what Dan expects. What the sheet does not carry is a weight: the only weight on
+a production sheet is the mix that went into the machine, so nothing on it says
+how much came out. Joining the two ends of the row needs a weight for a pan, and
+until 17 June 2026 there was not one. Nobody has put the two figures next to
+each other even now, and the sheet is the only record of a production day that
+outlives the day.
 
 ## 2.5 Which flavours go in which format
 
@@ -2735,10 +2750,422 @@ on Monday and was not there on Tuesday, and the habit lasted one day.
 ---
 ---
 
-# Session 5 — Wednesday to Sunday
+# Session 5 — Wednesday to Sunday, and the week's close
 
-**Not yet written.** Session 5 carries Wednesday 17 June to Sunday 21 June: the
-rest of the first week in the system, the Thursday and Saturday van runs, the
-Severn drop that did not come on Tuesday, Hilary's Wednesday afternoon in the
-office tray, and Marina's Sunday — the invoicing, the spreadsheet, and the
-milk text.
+Milestone one's material was complete at the end of Tuesday. What this session
+adds is the rest of the week at the density the rest of the week deserves, one
+Sunday, and one thing that was written down wrong and later put right.
+
+## 5.1 Wednesday 17 to Saturday 20 June
+
+**These four days are written at less detail than Monday and Tuesday, and that
+is deliberate.** Each of them states five things: what was delivered, what was
+produced, what went out on the van, what each shop took off the van, and what
+each shop took over the counter. It does not state the till's line breakdown,
+who gave what away, what went in a bin, or where every pan in the holding
+freezer came from and went. Monday and Tuesday carry all of that because one day
+entered end to end is what makes a day enterable; four more at that density
+would add length and nothing else. Nothing below is reconciled pan by pan
+against the holding freezer, and no count was taken on any of these four days —
+the count sheet is monthly, and the next one is not until July.
+
+The week's shape is the shape §3.1 and §3.4 already give it. Milk comes Monday,
+Wednesday and Friday. The van runs Tuesday, Thursday and Saturday. Severn comes
+Thursday. Kingsdown come twice in the week. Hilary comes on Wednesday afternoon.
+None of that moved.
+
+### Wednesday 17 June 2026
+
+*Less detail than Tuesday: the five things below and no more. Two days entered
+end to end are enough to show that a day can be entered; a third would add
+length and nothing else.*
+
+Warm, 22 °C. Full production day, both shops open, van does not run.
+
+**Deliveries received**
+
+| Time | Supplier | Received |
+|---|---|---|
+| 06:30 | Whitehall Dairy | 10 × 10 L bag-in-box whole milk; 6 × 5 L jerry can cream 38%. Note dated Wed 17 June, printed from the standing order. Dan was in and signed it. |
+
+**Produced.** Pasteuriser runs: 07:05, 55 kg white base. 09:15, 55 kg white
+base. 11:10, 30 kg sorbet syrup.
+
+| Batch | Flavour | Mix into freezer | Output filled |
+|---|---|---|---|
+| 2026-0846 | Fior di latte | 12.0 kg | 3 × 5 L pan, 1 half pan |
+| 2026-0847 | Salted caramel | 12.0 kg | 3 × 5 L pan, 1 half pan |
+| 2026-0848 | Pistachio | 12.0 kg | 3 × 5 L pan, 1 quarter pan |
+| 2026-0849 | Mint choc chip | 12.0 kg | 3 × 5 L pan, 1 half pan |
+| 2026-0850 | Biscuit | 12.0 kg | 3 × 5 L pan, 1 half pan |
+| 2026-0851 | Coffee | 12.0 kg | 2 × 5 L pan, 10 × 500 ml tub |
+| 2026-0852 | Mango sorbet | 12.0 kg | 3 × 5 L pan, 1 half pan |
+| 2026-0853 | Lemon sorbet | 12.0 kg | 3 × 5 L pan, 14 × 125 ml mini |
+
+Freeze times against four of the eight. Initials on all eight at 17:20, in
+Dan's hand.
+
+**Out on the van.** Nothing. Wednesday is not a run day between May and
+September.
+
+**What the shops took off the van.** Nothing, at either shop. Both traded
+Wednesday off Tuesday's transfer and what was already in them.
+
+**What the shops took over the counter.**
+
+- **Cotham Hill**, 11:00–22:00, takings **£2,410.55**. Cash £478.15, card
+  £1,932.40, variance box blank.
+- **Gloucester Road**, 12:00–21:00, takings **£968.20**. Cash £231.40, card
+  £736.80, variance box 0.
+
+The till reports carry the line breakdown for both. It is not written out here.
+
+**Also on Wednesday.**
+
+- **Hilary, 13:30 to 17:00, in the office.** She keyed four supplier invoices
+  into Xero and matched three of them to notes in the tray: Terra Nostra's
+  Tuesday pallet, Avonside's note with *"2 short"* on the packer's line, and
+  Whitehall's note **dated Mon 15 June** for goods handed over on **Tue 16
+  June**, which she keyed against a Whitehall invoice covering the week. She did
+  not query the date and nothing on the note or in Xero now says the two days
+  were different. The fourth was Severn's monthly account and she left it
+  unmatched: nothing in the tray from Severn since the 4th. There was nothing at
+  all to match Kingsdown against — no note exists, and Marina's text is on
+  Marina's phone.
+- **A container run at 15:40.** Steve and Jordan took **8 pans** to Avonmouth
+  with a tub of dry ice — three mango sorbet and two lemon sorbet made that
+  morning, and three raspberry sorbet made on Monday. Written on the kitchen
+  whiteboard as *"8 pans → cont. 17/6"*. Nothing else records it.
+- **Somebody weighed a pan.** Avon Gorge House Hotel rang Marina in the morning
+  wanting gelato for a function on 4 July and asked how many kilos are in a pan.
+  Marina did not know, and rang Dan. Dan put an empty polycarbonate napoli pan
+  on the bench scale — it read 0.3 kg — tared it, and weighed three filled pans
+  off batch 2026-0846 as they came off the bench: **3.25 kg, 3.30 kg and
+  3.40 kg**. He told Marina "three and a bit, call it three and a quarter".
+  Marina quoted the hotel by the pan at £28.50, as she does everybody, because
+  §3.4 prices a pan and does not price a kilo. §2.4 now carries the number, and
+  it is the first weight anybody has ever put against a pan of gelato that was
+  not a single reading Dan half remembers.
+
+### Thursday 18 June 2026
+
+*Less detail than Tuesday, for the same reason: the five things below and no
+more.*
+
+Dry, 20 °C. Van run day. Six in production and on the road.
+
+**Deliveries received**
+
+| Time | Supplier | Received |
+|---|---|---|
+| 09:15 | Severn Catering Supplies | 6 × 25 kg sacks caster sugar; 2 × 25 kg bags SMP; 3 × 5 kg bags lemons; 2 × 2 kg tubs ricotta; 1 × 2 kg tub cream cheese; 20 packs digestives; 2 boxes nitrile gloves; 1 case blue roll. **This includes the 4 sacks of sugar and 2 bags of SMP that were on Tuesday's drop that did not come.** Signed with a finger on the driver's hand-held by Jordan, who was nearest the door. The printed docket went into the tray. Nobody at Sorella rang Severn about Tuesday and nobody from Severn rang the kitchen. |
+
+**Produced.** Pasteuriser runs: 07:00, 55 kg white base. 10:45, 30 kg sorbet
+syrup.
+
+| Batch | Flavour | Mix into freezer | Output filled |
+|---|---|---|---|
+| 2026-0854 | Fior di latte | 12.0 kg | 3 × 5 L pan, 1 half pan |
+| 2026-0855 | Stracciatella | 12.0 kg | 3 × 5 L pan, 1 half pan |
+| 2026-0856 | Dark chocolate | 12.0 kg | 3 × 5 L pan, 1 quarter pan |
+| 2026-0857 | Hazelnut | 12.0 kg | 2 × 5 L pan, 10 × 500 ml tub |
+| 2026-0858 | Raspberry sorbet | 12.0 kg | 3 × 5 L pan, 1 half pan |
+| 2026-0859 | Strawberry sorbet (frozen purée) | 12.0 kg | 3 × 5 L pan, 12 × 125 ml mini |
+
+Six batches on a van day, against eight on Wednesday. Freeze times against two
+of the six.
+
+**Out on the van — wholesale run 07:40 to 11:35**
+
+| Customer | Delivered | Empty pans collected |
+|---|---|---|
+| Caffè Umberto, Clifton | 5 × 5 L pan | 4 |
+| The Blue Kettle, Redland | **The note says 5 × 5 L pan. Four were carried in.** See §5.3 | 3 |
+| Marlborough & Vine, Kingsdown | 4 × 5 L pan | 2 |
+| Sixpenny Coffee, Southville | 4 × 5 L pan | 0 |
+| Rowan & Rye, Bedminster | 4 × 5 L pan | 5 |
+| Trellick Coffee House, Montpelier | 4 × 5 L pan | 3 |
+| Papavero Delicatessen, Whiteladies Road | 18 × 500 ml tub | — |
+| The Regent Picture House, Bishopston | 60 × 125 ml mini | — |
+
+Steve wrote all eight notes at Caffè Umberto, the first drop, off the loading
+list in his head. §3.2 already says this is what he does and that these are the
+only documents in the business written before the thing they record.
+
+**What the shops took off the van, 13:30**
+
+- **Cotham Hill:** 8 × 5 L pan; 12 × 500 ml tub; 1 case wafer cones. Van sheet
+  signed by Aoife.
+- **Gloucester Road:** 5 × 5 L pan; 4 × 500 ml tub. Van sheet left on the
+  counter, unsigned, as it was on Tuesday.
+
+**What the shops took over the counter.**
+
+- **Cotham Hill**, 11:00–22:00, takings **£2,566.80**. Cash £501.30, card
+  £2,065.50, variance box blank.
+- **Gloucester Road**, 12:00–21:00, takings **£1,042.55**. Cash £248.05, card
+  £794.50, variance box 0.
+
+**Also on Thursday.**
+
+- **The cake ordered on Tuesday at 14:20 was collected at 18:30**, on
+  forty-eight hours' notice, which is now the rule. Rekha built it Thursday
+  morning off two pans in the holding freezer and put both back part-used;
+  which two is on nothing, as §3.2 says.
+- **Aoife filled in the Cotham waste sheet from memory** before Marina came
+  over, and that is where the line *"Mon — 3 pans"* comes from — three part pans
+  binned at 21:05 on Monday 15 June, written on Thursday 18 June with the
+  flavours, the amount, the reason and the initials all blank. §4.2 records it
+  from Monday's end; this is the day the paper was written.
+- Gloucester Road's afternoon temperature read is not initialled. Nobody
+  noticed and nothing happened.
+
+### Friday 19 June 2026
+
+*Less detail than Tuesday: the five things below and no more.*
+
+Hot, 26 °C, and the first properly busy day of the week at both counters.
+
+**Deliveries received**
+
+| Time | Supplier | Received |
+|---|---|---|
+| 06:30 | Whitehall Dairy | 12 × 10 L bag-in-box whole milk; 8 × 5 L jerry can cream 38%. Note dated Fri 19 June. Nobody was in the kitchen; the driver let himself in, stacked it and left the note on the chiller shelf. It is unsigned. |
+| 08:05 | Kingsdown Fruit Farm | 10 × 2 kg punnets of strawberries, left at the roller door. No note. Kingsdown texted Marina *"10 trays"* at 21:15 that evening. |
+| 11:50 | Bristol Cash & Carry | Aoife drove over for the weekend: 4 cases whole milk 2 L, 1 case oat milk, 3 cases 12 oz cups, 2 cases cup lids, 6 cases cans, 3 cases water. Paid on the shop's card, receipt into the envelope behind the Cotham till. She dropped 2 cases of cans and 1 case of water at Gloucester Road on the way back, out of her own car, and nothing was written for that at either end. |
+
+**Produced.** Pasteuriser runs: 06:55, 55 kg white base. 09:10, 55 kg white
+base. 11:30, 30 kg sorbet syrup. The biggest production day of the week.
+
+| Batch | Flavour | Mix into freezer | Output filled |
+|---|---|---|---|
+| 2026-0860 | Fior di latte | 12.0 kg | 3 × 5 L pan, 1 half pan |
+| 2026-0861 | Pistachio | 12.0 kg | 2 × 5 L pan, 9 × 500 ml tub, 6 × 125 ml mini |
+| 2026-0862 | Vanilla | 12.0 kg | 3 × 5 L pan, 2 × 500 ml tub |
+| 2026-0863 | Salted caramel | 12.0 kg | 3 × 5 L pan, 1 half pan |
+| 2026-0864 | Elderflower sorbet (special) | 12.0 kg | 3 × 5 L pan, 1 quarter pan |
+| 2026-0865 | Strawberry sorbet (Kingsdown fruit) | 12.0 kg | 3 × 5 L pan, 1 half pan |
+| 2026-0866 | Coconut | 12.0 kg | 3 × 5 L pan, 10 × 125 ml mini |
+| 2026-0867 | Dark chocolate | 12.0 kg | 3 × 5 L pan, 1 half pan |
+| 2026-0868 | Amarena cherry | 12.0 kg | 3 × 5 L pan, 1 quarter pan |
+
+Four trays of that morning's Kingsdown strawberries were hulled for 0865, out
+of the ten that were left at the door. The hulls went in the kitchen bin and
+were not weighed. Nothing records the six that stayed in the chiller either.
+
+**Out on the van.** Nothing. Friday is not a run day.
+
+**What the shops took off the van.** Nothing, at either shop. Cotham ran out of
+pistachio at about seven in the evening and had none in the back freezers;
+Aoife did not drive any over, and the well stood empty until Saturday
+afternoon. Nothing records an empty well.
+
+**What the shops took over the counter.**
+
+- **Cotham Hill**, 11:00–22:00, takings **£3,104.25**. Cash £612.85, card
+  £2,491.40, variance box blank.
+- **Gloucester Road**, 12:00–21:00, takings **£1,287.40**. Cash £302.90, card
+  £984.50, variance box 0.
+
+**Also on Friday.** Aoife emailed Coldharbour the beans order before the
+Friday cut-off, for Tuesday delivery to Cotham Hill.
+
+### Saturday 20 June 2026
+
+*Less detail than Tuesday: the five things below and no more, and the one thing
+Steve found.*
+
+Hot, 27 °C. Van run day, the busiest counter day of the week, and a short
+morning in the kitchen.
+
+**Deliveries received.** None. No supplier delivers on a Saturday.
+
+**Produced.** Pasteuriser run: 07:10, 55 kg white base. Tomas ran the kitchen;
+Dan was in until nine.
+
+| Batch | Flavour | Mix into freezer | Output filled |
+|---|---|---|---|
+| 2026-0869 | Fior di latte | 12.0 kg | 3 × 5 L pan, 1 half pan |
+| 2026-0870 | Pistachio | 12.0 kg | 3 × 5 L pan, 1 quarter pan |
+| 2026-0871 | Mango sorbet | 12.0 kg | 3 × 5 L pan, 1 half pan |
+| 2026-0872 | Stracciatella | 12.0 kg | 3 × 5 L pan, 1 half pan |
+
+**Out on the van — wholesale run 07:35 to 11:50**
+
+| Customer | Delivered | Empty pans collected |
+|---|---|---|
+| Caffè Umberto, Clifton | 4 × 5 L pan | 3 |
+| Bar Trentanove, Stokes Croft | 4 × 5 L pan | 4 |
+| Cleeve Coffee House, Bishopston | 4 × 5 L pan | 2 |
+| The Hollow, Old City | 4 × 1.5 L catering tub vanilla; 2 × 5 L pan | 2 |
+| Wapping Wharf Kitchen | 4 × 5 L pan; 24 × 500 ml tub | 3 |
+| The Chandlery Café, Harbourside | 4 × 5 L pan | 0 |
+| Nore Coffee, St Werburgh's | 4 × 5 L pan | 2 |
+
+**What the shops took off the van, 13:30**
+
+- **Cotham Hill:** 9 × 5 L pan, including a pistachio for the well that had been
+  empty since Friday evening; 16 × 500 ml tub; 2 cases waffle cones. Van sheet
+  signed by Aoife.
+- **Gloucester Road:** 6 × 5 L pan; 6 × 500 ml tub; 1 case waffle cones. Van
+  sheet unsigned again.
+
+**What the shops took over the counter.**
+
+- **Cotham Hill**, 11:00–22:00, takings **£3,742.90**. Cash £795.60 on the till
+  against £793.10 counted, and the variance box says −2.50 and nothing else;
+  card £2,947.30.
+- **Gloucester Road**, 12:00–21:00, takings **£1,596.35**. Cash £401.25, card
+  £1,195.10, variance box 0.
+
+**Also on Saturday.**
+
+- **The two cakes built on Tuesday were collected**, one at 12:15 and one at
+  16:40, both from Cotham Hill.
+- **Six pans came back from the container** at about two o'clock — four mango
+  sorbet and two raspberry sorbet, fetched because Saturday's run had emptied
+  the sorbet end of the holding freezer. Steve and Ben went out. **Nothing was
+  written for it at either end**, which is what §3.2 says about that movement.
+- **Steve found a pan in the van that should not have been there.** That is
+  §5.3.
+
+## 5.2 Sunday 21 June 2026 — Marina at the kitchen table
+
+The kitchen is shut. The van does not move. Both shops open and trade. Marina is
+the only person working on the business rather than in a shop, and she does it
+at her own kitchen table between about five and half past nine in the evening,
+with the tray of second copies beside the laptop.
+
+**What the shops took over the counter.**
+
+- **Cotham Hill**, 11:00–22:00, takings **£3,188.40**. Cash £668.50, card
+  £2,519.90, variance box blank.
+- **Gloucester Road**, 12:00–21:00, takings **£1,352.80**. Cash £330.20, card
+  £1,022.60, variance box 0.
+
+Both shops' Sunday cash-up sheets reach Marina on the Monday, so Sunday is the
+one day of the week she keys from a photograph Aoife sends and a number Priya
+texts.
+
+### The invoicing run
+
+Marina typed **thirteen wholesale invoices in Xero**, off the second copies of
+the delivery notes in the tray, and emailed them the same evening. Every one of
+them is dated **Sunday 21 June 2026**, because §3.3 says the invoice date is the
+Sunday and not the day of the drop.
+
+Two of the week's runs are on those thirteen. This is what the gap looks like
+when it is written out:
+
+| Account | What was handed over | The day it was handed over | The day it was invoiced |
+|---|---|---|---|
+| Caffè Umberto | 6 × 5 L pan | Tue 16 June, about 08:10 | Sun 21 June |
+| Wapping Wharf Kitchen | 4 × 5 L pan, 24 × 500 ml tub | Tue 16 June, about 10:35 | Sun 21 June |
+| Cleeve Coffee House | 3 × 5 L pan | Tue 16 June, about 11:00 | Sun 21 June |
+| The Blue Kettle | 4 × 5 L pan — see §5.3 | Thu 18 June, about 08:25 | Sun 21 June |
+| Marlborough & Vine | 4 × 5 L pan | Thu 18 June | Sun 21 June |
+| The Regent Picture House | 60 × 125 ml mini | Thu 18 June | Sun 21 June |
+
+**Five days is the longest gap this week between something happening in this
+business and anything being written about it** — longer than Kingsdown's text at
+eleven and a half hours, longer than Whitehall's note by a day, longer than the
+waste sheet by two. §3.2 puts it at up to six. Nothing on the invoice says when
+the pan changed hands. The only document that carries the delivery day is the second copy of
+the delivery note in the tray, and once Marina has keyed it she puts it in the
+back of the same tray for Hilary.
+
+Saturday's run — Caffè Umberto again, Bar Trentanove, Cleeve, The Hollow,
+Wapping Wharf, The Chandlery, Nore — is **not** on Sunday's invoices. Steve's
+copies were still in the van door pocket; he brings them in on Monday morning,
+so a Saturday drop goes onto the *following* Sunday's run. Marina knows this and
+says it is why she does not chase a Saturday. §3.2 puts the gap between a drop
+and its invoice at up to six days, and a Saturday drop invoiced on the next
+Sunday but one is longer than that. Nobody has ever counted it.
+
+Prices came off Marina's memory. There is no printed price list, a pan is £28.50
+whatever is in it, and she typed £28.50 against every pan line on all thirteen
+without looking anything up.
+
+### The rest of the Sunday
+
+- **The takings, keyed.** Fourteen rows into the *Weekly takings* tab of
+  "Sorella Master 2026.xlsx" — seven days, two shops, cash and card. Where a
+  cash-up sheet carries two cash figures she keys the counted one: Monday's
+  Cotham row went in as **£412.35**, not the £414.35 the till said, and the
+  spreadsheet holds nothing to say the two numbers were ever different.
+  Saturday's went in the same way, at £793.10.
+- **Kingsdown paid.** One bank transfer for both of the week's drops — the 14
+  trays of Tuesday 16 June and the 10 trays of Friday 19 June — at the price in
+  Marina's two texts. The transfer is the only record at Sorella that either
+  delivery happened, and it is one payment for two days.
+- **Dan's milk text**, from his own phone at about nine: bags and cans for the
+  week, no order number, no copy, nobody else sees it. Whitehall will deliver
+  against it on Monday.
+- **Dan set next week's flavours and specials**, off the cabinet plan and the
+  last monthly count sheet, which is the June one and is three weeks old.
+- **Aoife set the cabinet plan** for both shops for the week beginning Monday
+  22 June, on the sheet on the back wall at Cotham — the same sheet that carries
+  *"48 hrs — M agreed 16/6"* in the corner.
+- Marina did not walk the holding freezer, and nothing was counted anywhere in
+  the business on Sunday.
+
+## 5.3 One fact, written down, found wrong, and restated
+
+**The Blue Kettle's delivery note of Thursday 18 June says five pans. Four were
+handed over.**
+
+What happened. Steve wrote Thursday's eight delivery notes at Caffè Umberto,
+the first drop, from the load in his head, as §3.2 says he does. The Blue Kettle
+note reads **5 × 5 L pan — 2 fior di latte, 1 pistachio, 1 dark chocolate,
+1 lemon sorbet**. At the drop at about 08:25 the Blue Kettle's manager said they
+still had most of a lemon sorbet going and did not want a second one, so Steve
+carried four in and left the lemon sorbet pan in the van. He did not change the
+note, and he did not intend not to — he put it back in the duplicate book with
+the top copy already signed. The manager signed it without reading it. Both
+copies say five.
+
+**Found on Saturday 20 June at about 06:20**, loading for the Saturday run.
+Steve found a lemon sorbet pan standing behind the bulkhead with a label reading
+*lemon sorbet, 2026-0853, frozen 17/6*, which is a Wednesday batch and not one
+of Saturday's. He worked out where it had come from, told Dan, and put it in the
+holding freezer. He wrote across the top of **Saturday's** van sheet: *"1 lemon
+back — B Kettle Thurs, not delivered."*
+
+**So the same fact exists twice, two days apart, and the two disagree.**
+
+| | Thursday 18 June | Saturday 20 June |
+|---|---|---|
+| How many pans the Blue Kettle took | 5 | 4 |
+| Written on | The Blue Kettle delivery note, both copies | The top of Saturday's van sheet |
+| Written by | Steve, at 07:45, before the drop | Steve, at 06:20, two days after it |
+| Who found it | — | Steve |
+
+**Nothing was altered.** The Blue Kettle's top copy is on their spike with five
+on it. The second copy is in Marina's tray with five on it. What Steve wrote on
+Saturday is on a different document, about a different day, in a different book,
+and the only thing joining the two is Steve.
+
+**What it changed.** Marina invoiced the Blue Kettle for **four** pans on
+Sunday 21 June, because Steve texted her about it on the Saturday morning.
+So the invoice and the delivery note it was keyed from do not agree, and the
+invoice is the one that is right. Nobody wrote down why. If Steve had been off
+on the Saturday, the Blue Kettle would have been invoiced £28.50 for a pan they
+never had, and the only thing that would ever have shown it is the Blue Kettle
+counting their own pans.
+
+**And one thing it did not change.** The pan spent Thursday, Friday and Saturday
+morning in the van, which is refrigerated and is kept at the kitchen overnight,
+and then went into the holding freezer with the rest. Its label still says
+frozen 17 June, and §3.4 puts a wholesale pan's best-before at fourteen days
+from the freeze date. Nothing records that it was out of a freezer for two days,
+and nothing in the building would let anybody find out.
+
+**This is not the same as the two things the week already has.** Whitehall's
+note is a *late record* — one fact, one value, written on a day that is not the
+day it happened. The cake notice is a *changed rule* — the world moved on 16
+June and both numbers are true, each on its own side of that date. This is
+neither. Nothing happened between Thursday and Saturday to make the Blue Kettle
+take fewer pans. Four is what they took on Thursday, and five is what the
+document has said about Thursday since Thursday and still says.
+
+*End of session 5, and of the profile.*

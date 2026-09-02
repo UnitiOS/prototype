@@ -2797,3 +2797,201 @@ Four checks, in the scratchpad, all passing.
 Nothing here is proposed for `DECISIONS.md`. Three `OPEN.md` lines were struck —
 the strawberries, Cotham's takings, and the production sheet's pan counts — and
 four were added.
+
+## 2026-09-03 · Sorella's profile, session 5: the week closes, and the pan gets a weight
+
+`business/sorella/profile.md` goes from 2,744 to 3,171 lines. Session 5 is
+Wednesday 17 to Saturday 20 June written lightly and saying so, Sunday 21 June
+at Marina's kitchen table, and one fact recorded during the week, found wrong
+two days later, and restated. **This is the last session that writes profile
+prose.** No `OPEN.md` line was struck; six were added.
+
+### What a filled pan weighs, and how the number was arrived at
+
+**About 3.3 kg of gelato, level with the rim.** `§2.4`'s table now carries it.
+
+The number was not invented to make the sheets pass — it was already implied by
+the three rows sitting beside it. `§2.4` states an expected output per 12 kg mix
+for every format, and each of the other three multiplies out to almost exactly
+the mix:
+
+| Format | Fill stated | Expected off 12 kg | Multiplies to |
+|---|---|---|---|
+| 500 ml tub | 460 g | twenty-six | 11.96 kg |
+| 125 ml mini | 100 g | about a hundred and fifteen | 11.5 kg |
+| 1.5 L catering tub | 1.15 kg | ten | 11.5 kg |
+| **5 L napoli pan** | **nothing** | **three and a part** | — |
+
+Three pans and a half at **3.3 kg** is 11.55 kg, which lands in the same band as
+the other three. At 3.6 kg it is 12.60 kg, which is the one row in the table that
+would put out more than went in. The pan weight was the only free variable and
+the table itself fixed it.
+
+**The 3.6 kg was already on the page**, and had been since session 2 —
+`NEXT.md` records the pan as the format with no weight, and the desk had read
+past a sentence saying Dan weighed one once at 3.6 kg. That sentence is what
+produced the error, and it is now what explains it: **3.6 kg was the pan on the
+scale as it stood, gelato and pan together, and nothing said so.** Session 5
+gives the business a reason to weigh one properly — Avon Gorge House Hotel rang
+on the Wednesday asking how many kilos are in a pan, for a function — and Dan
+put an empty polycarbonate pan on the scale (0.3 kg), tared it, and weighed
+three off that morning's fior di latte: 3.25, 3.30, 3.40 kg. Both readings
+survive on the page and the difference between them is the pan.
+
+### Every batch that moved: none
+
+**Not one row on Monday's or Tuesday's production sheet was changed.** At 3.3 kg
+a pan, all fourteen fillable batches on the two sheets balance, including the
+three that were wrong at 3.6 — fior di latte 0837, stracciatella 0839 and
+strawberry sorbet 0842, each written as 3 pans and a half. The repair is a
+number in `§2.4`, not an edit to a day. Scripted over every production sheet in
+the file, sessions 4 and 5 together:
+
+- **41 fillable batches, 0 failures.** One binned (0844, salted caramel, grainy
+  at extrusion) and correctly ignored.
+- Mass left behind runs from **0.45 kg to 2.08 kg** per batch. The floor is a
+  3-pans-and-a-half batch with nothing added; the ceiling is Monday's mint choc
+  chip 0832, written as 3 pans and a quarter with 0.80 kg of chocolate going in
+  after the machine — the batch with the most added produced the least.
+- At-fill additions are read off `§2.3` per flavour: stracciatella 0.85,
+  mint choc chip 0.80, salted caramel 0.40, biscuit 1.10, amarena 0.55.
+
+`§2.4` now says once, and only once, that a batch never fills back to the weight
+that went into it: what stays clings to the beater, the outlet and the spatula,
+and the rest disappears into a part pan written as ½ or ¾ by eye.
+
+### Forced changes to sessions 1 to 4
+
+**Sessions 1, 3 and 4: zero lines.** Verified by slicing both versions between
+`# Session` headings and diffing.
+
+**Session 2: three edits, all in `§2.4`, all forced by the pan weight.**
+
+1. The table row for the 5 L napoli pan gains *About 3.3 kg of gelato*.
+2. The paragraph carrying Dan's 3.6 kg reading, which now says what the reading
+   was of, when it was weighed properly and what came out, and adds the sentence
+   about what stays in the machine.
+3. *What is expected and what is recorded*, which said the sheets' counts "run
+   to five and six pans" against Dan's three-and-a-part. **That was already
+   false** after session 4 repaired the sheets to two or three pans and a part,
+   and session 4 did not catch it. It now says what is actually true: expected
+   and recorded agree on pans, and the sheet carries no weight for what came
+   out — the only weight on a production sheet is the mix that went in.
+
+The header's session table and its preamble sentence move from "not yet written"
+to written. That is bookkeeping.
+
+### The correction, and why that one
+
+**The Blue Kettle's delivery note of Thursday 18 June says 5 pans. Four were
+handed over.**
+
+Steve writes Thursday's eight notes at Caffè Umberto, the first drop, from the
+load in his head — `§3.2` already says the van sheet and the delivery notes are
+the only documents in this business routinely written *before* the thing they
+record. The Blue Kettle said they still had a lemon sorbet going, Steve carried
+four in, left the fifth in the van, did not change the note, and the manager
+signed it without reading it. On **Saturday 20 June at 06:20**, loading, Steve
+found a pan behind the bulkhead labelled *lemon sorbet, 2026-0853, frozen 17/6*
+— a Wednesday batch on a Saturday load — worked out where it had come from, and
+wrote across **Saturday's van sheet**: *"1 lemon back — B Kettle Thurs, not
+delivered."* Marina invoiced 4 on the Sunday. Both copies of the note still say
+5 and neither was altered.
+
+It is that one for three reasons.
+
+1. **The correction is on a different document, about a different day, in a
+   different book, from the fact it corrects.** Nothing but Steve joins them.
+   That is the hardest shape for a log that has to say *we were wrong* about a
+   specific earlier assertion, and it is the shape this business actually
+   produces.
+2. **It is genuinely not the other two things the week already holds.**
+   Whitehall's note is a late record — one value, written on the wrong day. The
+   cake notice is a changed rule — both numbers true, each on its side of 16
+   June. Nothing happened between Thursday and Saturday to make the Blue Kettle
+   take fewer pans: four is what they took, and five is what the document has
+   said about Thursday since Thursday.
+3. **It has a consequence and a near-miss.** The invoice and the note it was
+   keyed from disagree, and the invoice is the one that is right. Had Steve been
+   off on the Saturday, the Blue Kettle would have been billed £28.50 for a pan
+   they never had, and the only thing that would ever have surfaced it is the
+   café counting their own pans.
+
+### Sunday's invoicing lag, in days
+
+Marina typed **thirteen invoices** on Sunday 21 June, off the second copies in
+the tray, every one dated the Sunday. Two runs are on them.
+
+- **Tuesday 16 June's five drops → invoiced Sunday 21 June: five days.**
+  Caffè Umberto's six pans changed hands at about 08:10 on the Tuesday.
+- **Thursday 18 June's eight drops → invoiced Sunday 21 June: three days.**
+
+**Five days is the longest gap in the week between an event and a record of it**
+— longer than Kingsdown's text at eleven and a half hours, longer than
+Whitehall's note by a day, longer than the waste sheet's three. `§3.2` puts it
+at up to six.
+
+**Saturday's run is not on Sunday's invoices at all.** Steve's copies were still
+in the van door pocket and come in on the Monday, so a Saturday drop goes onto
+the *following* Sunday's run — which is longer than the six days `§3.2` states,
+and nobody has ever counted it. That is now an `OPEN.md` line rather than an
+edit to session 3.
+
+### What was run
+
+Three checks, in the scratchpad, all passing.
+
+- **Mass balance**, every production row in the file: 42 rows parsed, 41
+  fillable, **0 put out more than went in**. Output priced at 3.3 kg a pan,
+  0.460 kg a 500 ml tub, 0.100 kg a mini, 1.15 kg a catering tub, with `§2.3`'s
+  at-fill additions added to the allowance.
+- **Takings**, every till total in the file: **14 found, 13 carry a card figure
+  and all 13 add up exactly.** The fourteenth is Cotham's Monday, where session 4
+  states the two cash figures and no card figure — that gap is real and is left
+  alone.
+- **Session immutability**, sliced between `# Session` headings against `HEAD`:
+  sessions 1, 3 and 4 zero lines changed; session 2 the three `§2.4` edits above
+  and nothing else.
+
+A fourth thing was worked out in the scratchpad and is deliberately **not** in
+the profile: full pans through the holding freezer across the four days, to make
+sure no day asks for a pan that is not there. It runs 63 at Tuesday night → 79
+Wednesday → 58 Thursday → 85 Friday → 63 Sunday, floor 58, never negative. The
+profile states no balance anywhere, and this number appears nowhere in it.
+
+### Surprising
+
+1. **The pan weight was already determined and nobody had read it off.** Three
+   of the four rows of one small table in `§2.4` each multiply out to 11.5–12.0
+   kg against a 12 kg mix. The fourth had no weight. The table was one division
+   away from stating the missing number for four sessions, and the error it
+   caused was found at a desk rather than by any of them.
+2. **The repair changed no day.** The instinct was that three batches on
+   Tuesday's sheet would have to be rewritten. What was wrong was master data,
+   and once the master data was right every operational row that had been called
+   wrong was fine. That is the first time in this profile that a failure moved
+   *up* rather than down.
+3. **Nothing in this business gets counted for five days and nobody notices.**
+   The count sheet is monthly. After Tuesday night there is no observation of
+   stock anywhere in the file until July, and the week closes without anybody
+   knowing what is in the building. Milestone one's done condition wants closing
+   balances matched to a hand computation, and the business only supplies that
+   material on two days out of seven.
+4. **The correction was harder to place than to invent.** Making a wrong number
+   was easy; finding a place where the *right* number could go that was not the
+   document holding the wrong one took most of the thinking. In this business
+   there is nowhere to write a correction. Steve wrote his on the wrong sheet
+   because there is no right sheet, and Marina's invoice is right by accident of
+   a conversation.
+5. **The wholesale minimum is broken on the first day and nobody in four
+   sessions saw it.** `§3.4` sets four pans; Tuesday has a 3, a 3 and a 2. Found
+   by reading a session-3 rule against a session-4 day, which is the first time
+   anybody has done that, and it took thirty seconds.
+6. **Writing four days lightly is harder than writing one day fully.** Every
+   omission has to be a decision that can be defended, and the block needs a
+   sentence at the top saying what is missing and why, or it reads as an
+   unfinished day rather than a summarised one.
+
+Nothing here is proposed for `DECISIONS.md`. The pan weight is a fact about a
+business, not a decision about the system, and the three `§2.4` edits are
+repairs to a description rather than choices.
