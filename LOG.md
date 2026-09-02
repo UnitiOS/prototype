@@ -2162,3 +2162,150 @@ on Tuesday 16 June was left standing as instructed.
    amaretti, panettone, marsala and elderflower. None of them appeared anywhere
    in the previous version's buying sections. The gap that killed v1 was not one
    missing table, it was the same absence in five places.
+
+## 2026-09-02 · Sorella's profile, session 2: how a product is made and sold
+
+`business/sorella/profile.md`, session 2 rewritten in place. 944 lines in,
+1,459 out; the session 2 block is 595 lines against the 85 it replaced. Sessions 3
+and 4 are byte-identical to `9320fea` from the `# Session 3` heading to the end
+of the file, checked by comparing the two slices rather than by reading a diff.
+
+### What was written
+
+Seven sections, `## 2.1` to `## 2.7`, renumbered from the carried `## 4` for the
+same reason session 1 renumbered: sessions 3 and 4 still hold their own `## 4`,
+`## 6`, `## 8` and `## 9`.
+
+- **2.1 How a product gets made.** The carried six-step flow, reflowed to the
+  file's width, with the two batch freezers and the water exception added.
+- **2.2 What is made once and drawn from many times.** Six pages: white base
+  (carried), and new ones for sorbet syrup, biscuit base, the coffee brew, the
+  custard and the stewed rhubarb.
+- **2.3 The batch sheets.** Twenty flavour pages covering twenty-two of the
+  twenty-five flavours in `§1.4`; the fruit sorbet page carries three of them
+  and the hazelnut page carries gianduja under the same name. Three flavours
+  have no page and say so.
+- **2.4 What a batch fills.** Per format, with the fill weight and what Dan
+  expects off a 12 kg mix; the carried yield paragraph; the scoop; and the
+  disagreement between what is expected and what the production sheet records.
+- **2.5 Which flavours go in which format.** All seven `§1.7` products that hold
+  gelato, each with who sets the limit.
+- **2.6 What the packaging consumes.** Fourteen units, per unit filled or sold,
+  and three paragraphs on the pan, the label, and the tub-and-lid mismatch.
+- **2.7 The coffee side.** Eight drinks with what Yusuf says goes in each, and
+  the statement that no page exists to check him against.
+
+Two corrections outside the section, both named in `NEXT.md`. `§1.9`'s prose now
+matches its own table: 14 days as the standard with most of the book on it,
+three cafés on seven days, two pro forma, two on thirty. The table is untouched.
+The status table at the head of the file moves session 2 to *Written* — the only
+edit outside `§1.9` and the section, and it is bookkeeping, not content.
+
+### The place count, corrected
+
+Session 1's `LOG.md` entry says `§1.3` holds **27 places**. It holds **38**, and
+that entry's own list in the same paragraph adds to 38: seven in the kitchen,
+five at Cotham, three at Gloucester Road, three that move, the container, nine
+supplier origins and ten destinations outside the business. Counted here from
+the file's own table rows. The old entry is left as it stands.
+
+### What was carried, untouched
+
+Seven pages, cut with `sed` out of the working file so the bytes are the file's
+own rather than retyped, and verified present verbatim afterwards: white base,
+pistachio, stracciatella, dark chocolate, fruit sorbet, fresh-season strawberry,
+the cake, and the yield paragraph. Of the non-blank lines in `9320fea`, 18 are
+now absent verbatim: 11 inside session 2 — the "not yet written" note, the old
+`## 4` heading, `### Batch sheets`, and the six numbered flow steps, all
+rewritten — and 7 outside it, which are exactly the `§1.9` prose and the
+status-table bookkeeping. Nothing else moved.
+
+### What was invented
+
+- Fifteen new flavour pages and five new intermediate pages, with quantities.
+- **Two bought items in `§1.6`**, which the item's own instruction sanctions:
+  ground cinnamon, for pumpkin and amaretti, and blank freezer labels, which is
+  what a pan and a catering tub carry. 78 items to 80.
+- The coffee brew as a thing that exists. `§1.8` says Coldharbour's beans are
+  "for the shop and for the coffee gelato" and nothing said how a bean became a
+  gelato. It is cold-steeped in a bucket, which is the only method that fits both
+  "grams in the kitchen" and a flavour made at the batch freezer rather than in
+  the pasteuriser.
+- That the printed sleeve is why the 500 ml tub is core flavours only. The tub
+  had to be limited to something, and a printed list with a 10–12 week lead time
+  is a limit the business already owns rather than a rule invented for it.
+- Every fill weight and every per-format expectation.
+
+### Which flavours have no written recipe, and why
+
+Three, all in the seasonal rotation, all running six to eight weeks a year:
+**ricotta and fig**, **panettone and marsala**, **peach and basil**. Each states
+what Dan does instead — the whole ricotta tub and about half the cream cheese,
+honey until it tastes right; a panettone and a good glug; most of a 100 g pack
+of basil torn in and smelled. They are by feel because a flavour made twice a
+year never earns a page, and because in all three the quantity genuinely depends
+on the fruit or the cheese in front of him. The three in `§1.4`'s "in the book"
+group are *not* among them: being in the book is what that group means, so
+coconut, amarena cherry and pink grapefruit each have a page.
+
+### Numbers that check against each other
+
+- **The sorbet syrup reconciles with the carried fruit sorbet page.** That page
+  lists water, sucrose, dextrose and stabiliser rather than syrup. The new syrup
+  page is in the same proportions, so the two agree without either being changed,
+  and the file says the page was written that way in 2021 and never retyped.
+- **The carried fresh-strawberry page already referenced a syrup** — "5.90 kg
+  chilled syrup" — that had no page anywhere. It has one now.
+- **Glucose had no home.** `§1.5`, `§1.6` and `§1.8` all buy and describe glucose
+  syrup DE38 and not one carried recipe uses it. It went to the three sharp
+  sorbets, which is the only place it could go without contradicting a carried
+  page, and `§1.5`'s "scooped warm" is what a hot syrup does to it.
+- **Vanilla paste costs more per kilo than pistachio paste.** £118.00 a 1 kg tub
+  against the £58 a kilo `§1.6` records Terra Nostra quoting, while everyone in
+  the building calls the pistachio the expensive one because a tin is £203.00.
+  Stated in `§2.3` and not resolved, because the business does not resolve it.
+- **A napoli pan costs more than the gelato in it sells for.** £38.00 for steel
+  against £28.50 for a pan of gelato, both figures session 1's.
+- **The deliberate one, and the largest thing this session found:** a 12 kg mix
+  fills three pans and a part, and the carried Tuesday writes five and six pans
+  against 12.0 kg. See OPEN.
+
+### The one clause not satisfied literally
+
+The done condition asks that every ingredient named in any recipe appear in
+`§1.6`'s buying table. **Water does not, and cannot.** `§1.6` says in its own
+preamble that water is not tracked against product; nobody buys it by the pack,
+and inventing a supplier and a price for it would break the rule that every
+number is one a person in the business would say. It is named as the exception
+in `§2.1` under a heading of its own so it cannot be read as an oversight, and it
+is in OPEN. Every other ingredient on every page resolves to a `§1.6` row,
+checked by script; the only other name that does not match a row literally is
+*stabiliser base*, which `§2.2` states is the same bag of Base 50 as *Base 50
+stabiliser/emulsifier* — the two names the carried pages already use.
+
+### Surprising
+
+1. **The mess was already in the file and nobody had put two numbers together.**
+   Three of the checks above are between figures session 1 wrote in one sitting.
+   The pan that costs more than its contents, the vanilla that costs more per
+   kilo than the pistachio, and the syrup with no page were all sitting there.
+   Writing consumption did not create them; it was the first read that had to
+   hold two of them at once.
+2. **The yield contradiction is unfixable from inside session 2.** A pan is five
+   litres, a 12 kg mix is 15.5–17 L, and both numbers are carried. Three pans and
+   a bit follows from them. Six pans off 12 kg would need the mix to more than
+   double in the machine. There is no fill weight that makes the carried Tuesday
+   work, so the choice was to state the expectation honestly and point at the
+   day, or to quietly write a pan the business does not have.
+3. **Half the coffee side is the sink.** The recipe reconciles and the stock will
+   not: a latte is 250 ml and Yusuf steams a full jug because it foams better, so
+   what a bottle actually does is not eight lattes, and Aoife already knows it
+   without knowing why. `§11` calls the coffee side unmeasured; the reason it is
+   unmeasurable is that the measured thing and the consumed thing are different.
+4. **Passionfruit purée is bought and no flavour is made of it.** Found by
+   walking `§1.6` looking for items with nothing consuming them, which is also
+   what turned up the glucose. Two of the eighty had none; both have one now,
+   except that the passionfruit's consumer is not a flavour anybody names.
+
+Nothing here is proposed for `DECISIONS.md`. Nothing was built and nothing
+failed; the six questions this raised are questions, and they are in `OPEN.md`.

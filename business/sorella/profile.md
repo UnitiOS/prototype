@@ -6,14 +6,15 @@ Nothing here is computed. Where a balance, a total or a variance could follow
 from what is written, working it out is the system's job and not this file's.
 Every figure is one somebody in the business would know or say.
 
-**This file is being rebuilt in four sessions.** Session 1 is written. Sessions
-2, 3 and 4 hold the material from the previous version, carried across word for
-word and marked unrevised; each will be rewritten against its own specification.
+**This file is being rebuilt in four sessions.** Sessions 1 and 2 are written.
+Sessions 3 and 4 hold the material from the previous version, carried across word
+for word and marked unrevised; each will be rewritten against its own
+specification.
 
 | Session | What it holds | State |
 |---|---|---|
 | 1 | The frame and the master data — what exists before anything moves | Written |
-| 2 | How a product is made and sold — recipes, formats, yield, the coffee side | Carried, unrevised |
+| 2 | How a product is made and sold — recipes, formats, yield, the coffee side | Written |
 | 3 | The rules with their dates; every way stock moves, and the document filled | Carried, unrevised |
 | 4 | The opening count on the adoption date, and the operational days | Carried, unrevised |
 
@@ -369,6 +370,7 @@ this table.
 | Eggs, medium free range | trays | tray of 30 | £5.40 | Severn Catering Supplies |
 | Digestive biscuits | packs | case of 12 × 400 g | £8.64 | Severn Catering Supplies |
 | Honey, clear | tubs | 3 kg tub | £14.90 | Severn Catering Supplies |
+| Ground cinnamon | tubs | 500 g tub | £6.80 | Severn Catering Supplies |
 | Coffee beans, espresso blend | bags | 1 kg bag | £21.50 | Coldharbour Roastery |
 | Waffle cones | sleeves | case of 4 sleeves × 90 | £46.80 | Marchetti Cones |
 | Wafer cones | sleeves | case of 6 sleeves × 120 | £28.20 | Marchetti Cones |
@@ -392,6 +394,7 @@ this table.
 | Blue roll | rolls | case of 6 rolls | £14.20 | Severn Catering Supplies |
 | Nitrile gloves | boxes | case of 10 × 100 | £38.00 | Severn Catering Supplies |
 | Bin liners, heavy duty | rolls | case of 10 rolls × 25 | £22.50 | Severn Catering Supplies |
+| Freezer label, blank | rolls | roll of 500 | £8.40 | Severn Catering Supplies |
 | Dry ice pellets | tubs | 10 kg insulated tub | £42.00 | Bristol Ice & Dry Ice |
 | Whole milk, coffee bar | bottles | case of 6 × 2 L | £9.60 | Bristol Cash & Carry |
 | Oat milk, barista | cartons | case of 12 × 1 L | £16.80 | Bristol Cash & Carry |
@@ -496,9 +499,11 @@ this table.
 
 ## 1.9 The wholesale accounts
 
-Thirty-one on the book. Standard terms are 14 days. Two accounts are on thirty
-days, both agreed before the standard existed, and Marina has never got either
-of them off it.
+Thirty-one on the book. Standard terms are 14 days and most of the book is on
+them. Three cafés are on seven days. Two accounts are pro forma, one of them
+after two late payments and one of them always. Two are on thirty days, both
+agreed before the standard existed, and Marina has never got either of them off
+it.
 
 | Account | What it is | Where | Credit terms |
 |---|---|---|---|
@@ -541,25 +546,71 @@ of them off it.
 
 # Session 2 — how a product is made and sold
 
-**Not yet written.** Everything below is carried across word for word from the
-version at `44a32e6` and is unrevised. Section numbers inside it are the previous
-version's. Session 2 rewrites it against its own specification: a recipe for
-every flavour, which flavour is sold in which format, yield, and the coffee side.
+Everything a batch eats, and everything a filled unit eats.
 
-## 4. How a product gets made
+Seven pages below are the previous version's, word for word, because their
+numbers are the ones on the wall: white base, pistachio, stracciatella, dark
+chocolate, fruit sorbet, fresh-season strawberry and the cake. Everything else
+here is new.
+
+## 2.1 How a product gets made
 
 ### The flow
 
-1. **Weigh and pasteurise.** Liquid and dry ingredients weighed into a 60 L pasteuriser. Cycle to 85°C, hold, crash to 4°C. A full run is 55 kg of white base and takes about 100 minutes.
-2. **Age.** Base is drawn into 25 L lidded buckets and held in the walk-in chiller for 4–12 hours. Most base made in the afternoon is churned the following morning. **This aged base is the largest single quantity of value in the building at 6 a.m. and no one has ever counted it.**
-3. **Flavour and churn.** Base is weighed into the batch freezer at 12 kg per cycle, flavouring paste or purée added, churned 8–11 minutes.
-4. **Fill.** Extruded straight into pans or tubs on the bench. Variegates (stracciatella chocolate, caramel ripple) are added by hand during filling.
-5. **Blast.** Into the blast freezer at −35°C until the core is below −18°C, target 90 minutes.
-6. **Hold.** Into the holding freezer at −22 to −25°C, labelled with flavour, batch number and freeze date.
+1. **Weigh and pasteurise.** Liquid and dry ingredients weighed into a 60 L
+   pasteuriser. Cycle to 85 °C, hold, crash to 4 °C. A full run is 55 kg of
+   white base and takes about 100 minutes.
+2. **Age.** Base is drawn into 25 L lidded buckets and held in the walk-in
+   chiller for 4–12 hours. Most base made in the afternoon is churned the
+   following morning. **This aged base is the largest single quantity of value in
+   the building at 6 a.m. and no one has ever counted it.**
+3. **Flavour and churn.** Base is weighed into the batch freezer at 12 kg per
+   cycle, flavouring paste or purée added, churned 8–11 minutes.
+4. **Fill.** Extruded straight into pans, tubs or minis on the bench. Variegates
+   — stracciatella chocolate, caramel ripple, biscuit, cherries, amaretti — are
+   added by hand during filling and are not in the machine.
+5. **Blast.** Into the blast freezer at −35 °C until the core is below −18 °C,
+   target 90 minutes.
+6. **Hold.** Into the holding freezer at −22 to −25 °C, labelled with flavour,
+   batch number and freeze date.
 
-Sorbets skip the pasteuriser: a separate syrup (water, sucrose, dextrose, stabiliser) is boiled in 30 kg runs, chilled, then blended with purée or fresh fruit cold.
+Sorbets skip the pasteuriser: sorbet syrup is boiled in 30 kg runs, chilled,
+then blended with purée or fresh fruit cold. Dark chocolate skips it too, being
+water-based, and is boiled in the pasteuriser as a mix of its own rather than
+drawn from base.
 
-### Batch sheets
+A 55 kg base run does four batches and leaves about half a bucket, which goes
+into the first batch of the next morning topped up with new base. Dan does not
+plan runs to come out even and nothing makes him.
+
+### The two machines
+
+Machine 1 and machine 2 are both 12 kg batch freezers and Dan says they are not
+the same machine. Machine 2 comes out drier — stiffer, less air — so a pan off
+it is heavier and a batch gives him less to fill with. Which flavour goes in
+which machine is decided by which one is free.
+
+### The one thing a recipe calls for that nobody buys
+
+Water. It is in the dark chocolate sheet, in the sorbet syrup, in the coffee
+brew, in the stewed rhubarb, and it is what Dan tops the fresh-fruit sorbet up
+with to hit the tank line. It comes off the mains through the filter on the wall
+by the pasteuriser. §1.6 says at the top that water is not tracked against
+product and is not in the buying table, and that is still true. It is the only
+thing named in a recipe below that the buying table does not hold.
+
+## 2.2 What is made once and drawn from many times
+
+Four things are made in a run and then drawn from: white base, sorbet syrup,
+biscuit base and the coffee brew. Two more are made per flavour but not per
+batch — the custard and the stewed rhubarb — because the season is short and
+nobody wants to do them twice a week.
+
+The stabiliser is one bag under two names. The sheets say *Base 50
+stabiliser/emulsifier* on the dairy pages and *stabiliser base* on the water and
+sorbet pages; both mean the 2 kg bag of Base 50 in the dry store. Terra Nostra
+sell a separate sorbet base and Dan does not buy it, because it is one more
+thing to run out of.
 
 **White base — per 10.00 kg of mix**
 
@@ -575,6 +626,107 @@ Sorbets skip the pasteuriser: a separate syrup (water, sucrose, dextrose, stabil
 
 Made in 55 kg runs. Dan scales on the pasteuriser's own scale and rounds milk to the nearest 100 g.
 
+**Sorbet syrup — per 30.00 kg of a run**
+
+| Ingredient | Quantity |
+|---|---|
+| Water | 19.75 kg |
+| Sucrose | 8.05 kg |
+| Dextrose | 1.93 kg |
+| Stabiliser base | 0.27 kg |
+
+Boiled, then chilled in the blast freezer in a stainless tub and moved to the
+chiller. Dan scaled this page off the water-and-sugars half of the fruit sorbet
+page and the proportions are the same, which is how he checks he has not
+mis-scaled a run. The fruit sorbet page still writes the syrup out as its parts,
+because that is how it was written in 2021 and nobody has retyped it; what goes
+in the machine is syrup off the shelf.
+
+**Biscuit base — per run, which is ten packs of digestives**
+
+| Ingredient | Quantity |
+|---|---|
+| Digestive biscuits | 4.00 kg |
+| Honey, clear | 0.75 kg |
+
+Crushed in the food processor and worked with the honey until it clumps. Kept in
+a lidded tub in the ingredient freezer. Rekha makes it and says a run lasts
+"three or four batches and a couple of cakes". It is the only page in the book
+that starts from a count of packs rather than a weight.
+
+**Coffee brew — per bucket**
+
+| Ingredient | Quantity |
+|---|---|
+| Coffee beans, espresso blend | 0.50 kg |
+| Water | 2.40 kg |
+
+Ground coarse, steeped in a lidded bucket in the chiller overnight, strained
+through muslin. About two litres comes through and the grounds keep the rest.
+The beans are Cotham's — the same bag off Coldharbour's weekly drop to the shop,
+carried back to the kitchen by whoever is going that way. Nobody moves it on
+paper and §1.5 already says it is the same bean in two places in two units.
+
+**Custard base — per 12.00 kg**
+
+| Ingredient | Quantity |
+|---|---|
+| Whole milk | 7.32 kg |
+| Cream 38% | 1.35 kg |
+| Egg yolk | 0.95 kg |
+| Sucrose | 1.75 kg |
+| Dextrose | 0.32 kg |
+| Skimmed milk powder | 0.25 kg |
+| Vanilla bean paste | 0.02 kg |
+| Base 50 stabiliser/emulsifier | 0.040 kg |
+
+The yolks come out of two trays of thirty. The whites go in the bin; nothing in
+the building uses them. Dan runs the custard at 24 kg rather than 55 — the only
+short run he does — because rhubarb and custard has a six-week season and nobody
+wants forty kilos of custard in the chiller. The cycle takes the same hundred
+minutes whatever is in it.
+
+**Stewed rhubarb — per box**
+
+| Ingredient | Quantity |
+|---|---|
+| Rhubarb | 5.00 kg |
+| Sucrose | 0.90 kg |
+| Water | 0.20 kg |
+
+One 5 kg box, chopped, cooked down until it collapses. Rekha says "about four
+kilos comes out" and does not weigh it.
+
+## 2.3 The batch sheets
+
+Twenty-five flavours are named in §1.4. Twenty-two have a written page.
+Three do not, and what Dan does instead is written out at the end of this
+section.
+
+A page is **per 12.00 kg into the batch freezer** — what is weighed in before it
+runs. Anything folded, drizzled or rippled in by hand at fill is listed under
+the table instead of in it, because it goes in after the machine and is on top
+of the 12 kg. The carried stracciatella page is the pattern: 12.00 kg of base in
+the machine and 0.85 kg of chocolate after it.
+
+### Made on white base
+
+**Fior di latte — per 12.00 kg**
+
+| Ingredient | Quantity |
+|---|---|
+| White base | 12.00 kg |
+
+Nothing else. Dan tastes this one first on a production day because it is the
+flavour that tells him whether the base is right.
+
+**Stracciatella — per 12.00 kg**
+
+| Ingredient | Quantity |
+|---|---|
+| White base | 12.00 kg |
+| Dark chocolate 70%, melted, drizzled at fill | 0.85 kg |
+
 **Pistachio — per 12.00 kg into the batch freezer**
 
 | Ingredient | Quantity |
@@ -583,12 +735,95 @@ Made in 55 kg runs. Dan scales on the pasteuriser's own scale and rounds milk to
 | Sicilian pistachio paste | 0.68 kg |
 | Sea salt | 0.012 kg |
 
-**Stracciatella — per 12.00 kg**
+**Hazelnut — per 12.00 kg**
 
 | Ingredient | Quantity |
 |---|---|
-| White base | 12.00 kg |
-| Dark chocolate 70%, melted, drizzled at fill | 0.85 kg |
+| White base | 11.32 kg |
+| Hazelnut paste | 0.66 kg |
+| Sea salt | 0.012 kg |
+
+From November to February the same well and the same cabinet card carry
+gianduja, which is this page with chocolate in it: 10.95 kg white base, 0.55 kg
+hazelnut paste and 0.50 kg dark chocolate 70 % melted in, and no salt. The
+production sheet says "hazelnut" either way.
+
+**Salted caramel — per 12.00 kg**
+
+| Ingredient | Quantity |
+|---|---|
+| White base | 11.10 kg |
+| Salted caramel variegate | 0.85 kg |
+| Sea salt | 0.045 kg |
+
+Plus 0.40 kg of the same variegate rippled in by hand at fill. A 3 kg pail is
+opened for the variegate in the machine and the ripple comes out of the same
+pail, so the pail empties at a rate nobody can name.
+
+**Vanilla — per 12.00 kg**
+
+| Ingredient | Quantity |
+|---|---|
+| White base | 11.94 kg |
+| Vanilla bean paste | 0.060 kg |
+
+Vanilla bean paste is £118.00 for a 1 kg tub and §1.6 records Terra Nostra
+quoting pistachio paste at £58 a kilo. Everyone in the building calls the
+pistachio the expensive one, because a tin of it is £203.00. Nobody has put the
+two per-kilo figures next to each other. It makes no difference to a batch: the
+vanilla goes in by the spoon and the pistachio by the kilo.
+
+**Coffee — per 12.00 kg**
+
+| Ingredient | Quantity |
+|---|---|
+| White base | 10.90 kg |
+| Coffee brew | 1.10 kg |
+
+**Mint choc chip — per 12.00 kg**
+
+| Ingredient | Quantity |
+|---|---|
+| White base | 11.96 kg |
+| Peppermint extract | 0.035 kg |
+
+Plus 0.80 kg dark chocolate 70 %, melted, drizzled at fill, the same way
+stracciatella is done. It comes out white. Somebody asks at the counter about
+once a week why it is not green, and there is nothing in the building that would
+make it green.
+
+**Biscuit — per 12.00 kg**
+
+| Ingredient | Quantity |
+|---|---|
+| White base | 11.75 kg |
+| Honey, clear | 0.25 kg |
+
+Plus 1.10 kg biscuit base folded in by hand at fill, late, so it stays in pieces.
+Fold it in the machine and it goes to paste.
+
+**Amarena cherry — per 12.00 kg**
+
+| Ingredient | Quantity |
+|---|---|
+| White base | 11.40 kg |
+| Amarena cherries in syrup, blended | 0.60 kg |
+
+Plus 0.55 kg of whole cherries and their syrup rippled at fill. A jar is opened
+for a batch and what is left goes back in the chiller with cling film over it.
+
+**Pumpkin and amaretti — per 12.00 kg**
+
+| Ingredient | Quantity |
+|---|---|
+| White base | 10.50 kg |
+| Pumpkin purée | 1.40 kg |
+| Honey, clear | 0.08 kg |
+| Ground cinnamon | 0.020 kg |
+
+Plus 0.55 kg amaretti, crushed by hand in the box, folded in at fill.
+
+### Made on water
 
 **Dark chocolate (water-based) — per 12.00 kg**
 
@@ -602,6 +837,20 @@ Made in 55 kg runs. Dan scales on the pasteuriser's own scale and rounds milk to
 | Skimmed milk powder | 0.02 kg |
 | Stabiliser base | 0.048 kg |
 
+### Made on a run of its own
+
+**Rhubarb and custard — per 12.00 kg**
+
+| Ingredient | Quantity |
+|---|---|
+| Custard base | 12.00 kg |
+
+Plus 1.60 kg stewed rhubarb rippled in at fill. It is the only flavour that
+comes off neither white base nor syrup, because the yolks have to go through the
+pasteuriser cycle.
+
+### Made on syrup
+
 **Fruit sorbet (raspberry / mango) — per 12.00 kg**
 
 | Ingredient | Quantity |
@@ -613,13 +862,279 @@ Made in 55 kg runs. Dan scales on the pasteuriser's own scale and rounds milk to
 | Stabiliser base | 0.060 kg |
 | Lemon juice | 0.07 kg |
 
+This is the page for any straight purée swap, and Dan uses it for four of them:
+the year-round **strawberry sorbet** off frozen purée, **raspberry sorbet**,
+**mango sorbet**, and the peach in peach and basil. He writes the purée's name
+in the margin and leaves the rest of the page alone.
+
+There is a fifth. §1.6 buys passionfruit purée and no flavour in §1.4 is made of
+it. It runs on this page when a wholesale account asks for something else, and
+it has never had a cabinet card, a season or a line in the range, so it is not
+in §1.4. Nobody in the building thinks of it as a flavour.
+
+The strawberry needs care, because there are two of them and they have three
+names between them. §1.4 lists **strawberry sorbet**, all year, off frozen
+purée, which runs on this page — and **local strawberry**, June to July, off
+Kingsdown fruit, which has its own page below headed *strawberry sorbet, fresh
+season*. They are two lines on the cabinet card and two lines on the price list
+and have been since 2023. On the production sheet they share one word: the fresh
+one is written as "strawberry sorbet" with "Kingsdown" in brackets when whoever
+is writing remembers the brackets.
+
+**Lemon sorbet — per 12.00 kg**
+
+| Ingredient | Quantity |
+|---|---|
+| Lemon juice, fresh, from about a 5 kg bag of lemons | 1.30 kg |
+| Lemon juice, bottled | 0.30 kg |
+| Water | 7.04 kg |
+| Sucrose | 2.45 kg |
+| Dextrose | 0.40 kg |
+| Glucose syrup DE38, warmed | 0.45 kg |
+| Stabiliser base | 0.060 kg |
+
+The zest of six lemons goes in with the juice. The bottled juice is on the page
+because a bag of lemons never gives the same amount twice and Dan makes the
+shortfall up out of the bottle rather than re-balance the sugar. What the bag
+actually gave is not written anywhere.
+
+**Blood orange sorbet — per 12.00 kg**
+
+| Ingredient | Quantity |
+|---|---|
+| Fruit purée, blood orange | 5.40 kg |
+| Water | 3.90 kg |
+| Sucrose | 1.75 kg |
+| Dextrose | 0.42 kg |
+| Glucose syrup DE38, warmed | 0.40 kg |
+| Stabiliser base | 0.060 kg |
+| Lemon juice | 0.07 kg |
+
+**Pink grapefruit sorbet — per 12.00 kg**
+
+| Ingredient | Quantity |
+|---|---|
+| Fruit purée, pink grapefruit | 5.40 kg |
+| Water | 3.85 kg |
+| Sucrose | 1.80 kg |
+| Dextrose | 0.42 kg |
+| Glucose syrup DE38, warmed | 0.40 kg |
+| Stabiliser base | 0.060 kg |
+| Lemon juice | 0.07 kg |
+
+The three sharp ones — lemon, blood orange, pink grapefruit — are the only
+pages with glucose on them. Dan says it stops them going icy in the well. It is
+scooped warm out of the pail and §1.5 says a pail is never emptied cleanly.
+
+**Elderflower sorbet — per 12.00 kg**
+
+| Ingredient | Quantity |
+|---|---|
+| Elderflower cordial | 1.60 kg |
+| Water | 7.55 kg |
+| Sucrose | 2.00 kg |
+| Dextrose | 0.42 kg |
+| Stabiliser base | 0.060 kg |
+| Lemon juice | 0.37 kg |
+
+**Coconut — per 12.00 kg**
+
+| Ingredient | Quantity |
+|---|---|
+| Sorbet syrup | 8.20 kg |
+| Coconut purée | 3.70 kg |
+| Lemon juice | 0.10 kg |
+
+Made on syrup and not on base, which is Dan's choice. It reads as a milk
+flavour from the cabinet card and it is not one. Nothing on a cabinet card says
+which flavours have dairy in them, and the counter staff answer from memory.
+
+**Local strawberry** is the page below, headed in the book with the other
+strawberry's name.
+
 **Strawberry sorbet, fresh season — per 12.00 kg**: 5.20 kg hulled strawberries macerated overnight with 0.60 kg of the sucrose, then blended with 5.90 kg chilled syrup and 0.30 kg lemon juice. Yield varies with the fruit; Dan tops up with water to hit the tank line, and does not record how much.
 
+### The three with no page
+
+Three of the eight seasonals have never been written down. All three run for six
+or eight weeks a year, and Dan re-invents each of them when the season comes
+round. Asked for a recipe he gives an answer, and the answer is not a quantity.
+
+- **Ricotta and fig.** He starts from a batch of white base and works in a 2 kg
+  tub of ricotta — the whole tub — and some of a 2 kg tub of cream cheese,
+  usually about half, "for the body". Honey goes in until it tastes right, and
+  how much depends on the ricotta, which he says is different every time. The
+  figs are quartered and go in at fill, as many as the trays gave. He has never
+  weighed the honey or counted the figs.
+- **Panettone and marsala.** A 1 kg panettone torn up by hand and soaked in
+  marsala, folded into a batch made on the vanilla page at fill. Dan says "a
+  panettone and a good glug" and has never measured the glug. A 750 ml bottle
+  sees the December run out and there is always some left in it.
+- **Peach and basil.** The peach half runs on the fruit sorbet page. The basil
+  is torn into the machine in the last minute of the churn — most of a 100 g
+  pack, and he smells it and decides. Some batches come out green-flecked and
+  some do not. He says he will not write a quantity down because it depends on
+  the basil.
+
+### The cake
+
 **Gelato cake, 8"**: 0.35 kg crushed biscuit base, 1.4 L of one flavour, 1.1 L of a second, 0.25 kg cream for the collar, decoration. Assembled from pans already in stock.
+
+The decoration is freeze-dried raspberry pieces, dark chocolate 70 % callets and
+crushed amaretti, by eye, and it is the only thing the freeze-dried raspberry is
+bought for. Whipped cream for the collar comes out of a jerry can from the
+chiller. Rekha builds the cakes and draws the gelato down from pans in the
+holding freezer — she never empties a pan on cakes, she takes what she needs off
+two or three of them and puts them back. Rekha says a pan does three cakes as the
+1.4 L flavour and four as the 1.1 L one.
+
+### What no page accounts for
+
+Sanitiser, CIP detergent, blue roll, nitrile gloves, bin liners and dry ice are
+bought, used and never associated with a batch by anybody. Neither is the water.
+Nobody in the building would be able to tell you what a batch costs in any of
+them, and nobody has been asked.
+
+## 2.4 What a batch fills
+
+A batch is 12 kg into the machine and comes out as pans, tubs or minis on the
+bench. What Dan expects, per format:
+
+| Format | Filled to | Expected off a 12 kg mix |
+|---|---|---|
+| 5 L napoli pan | Level with the rim, by eye | Three pans and a part pan |
+| 500 ml retail tub | About 460 g, above the rim so the lid domes | Twenty-six tubs |
+| 125 ml mini tub | About 100 g | About a hundred and fifteen minis |
+| 1.5 L catering tub | About 1.15 kg | Ten tubs |
+
+The 500 ml tub is called 500 ml, takes a little over 600 ml to the brim, and is
+filled to about 460 g, which is a weight. §1.5 already says that none of the
+three numbers is the same number.
+
+Dan weighed a full napoli pan on the bench scale once, out of curiosity, and it
+read 3.6 kg. Nobody has weighed one since, and nothing in the building depends
+on it. Off machine 2 the part pan comes out smaller and the pans come out
+heavier, and nobody notices either.
+
+A batch is rarely one format's worth of anything: the pans go first, and the
+minis are the tail — whatever is left in the machine once the pans are full.
+That is why minis exist in the quantities they do, and why nobody ever plans to
+make them. Dan has never filled a whole batch as minis or as catering tubs.
 
 ### Yield
 
 A 12 kg mix comes out at roughly 15.5–17 L depending on overrun, which depends on the machine, the fat content and how long it is run. Machine 2 is known to run drier. Nobody logs overrun. Output is recorded as **pans and tubs filled**, and a part pan is written as ½ or ¾ by eye.
+
+### The scoop
+
+A scoop has no weight. §1.5 says it is a press of a till button and what leaves
+the well depends on who is holding the spade and how hard the gelato is. Aoife
+tells new staff a pan should do forty-five scoops. She has never weighed one and
+neither has anyone else. She also says Callum's pans do thirty, and she says it
+to Callum.
+
+### What is expected and what is recorded
+
+Two different numbers. The production sheet's columns are pans out and tubs out,
+and against a 12.0 kg mix the counts written in them run to five and six pans.
+Dan expects three and a part. Nobody has put the two figures next to each other,
+and the sheet is the only record of a production day that outlives the day.
+
+## 2.5 Which flavours go in which format
+
+§1.7 prices seven things that hold gelato. Not one of them takes every flavour,
+and the limits come from different places — a printed sleeve, a customer on the
+phone, a driver's notebook, and Rekha saying no.
+
+| Format | Which flavours | Who decides |
+|---|---|---|
+| Single, double, triple scoop | Any of the twenty-five. All of them have been in a well. | Aoife's cabinet plan, for both shops. What actually reaches Gloucester Road's sixteen wells is what was on the van, which is what was in the holding freezer. |
+| Affogato | One scoop of whatever the customer points at. If they do not choose, fior di latte. Cotham Hill only. | The customer, then Yusuf |
+| 500 ml retail tub | The fourteen core only. | The printed sleeve. It carries the fourteen names with a box beside each and Jordan crosses one in biro. |
+| 125 ml mini tub | Any flavour, and in practice whatever was the tail of a batch. The lid is plain and the flavour goes on it in marker. | Nobody. The Regent takes them assorted and has never asked what is in them. |
+| 1.5 L catering tub | The two restaurants order by flavour. The Hollow has taken nothing but vanilla for two years. Wapping Wharf Kitchen takes dark chocolate, pistachio and lemon sorbet. | The restaurant, except stracciatella, which was asked for once and refused — the shards tear a plating portion. Rekha refused it. |
+| 5 L napoli pan | Any flavour. Steel or polycarbonate: sorbets go in polycarbonate because it is lighter, and so does anything going to an account that does not send steel back. | Steve, at loading, off the pan notebook |
+| Gelato cake, 8" | Two flavours a cake, from what Aoife reads out on the phone. No sorbet — it sets too hard to cut and the collar will not hold on it. In practice pistachio, dark chocolate, stracciatella, salted caramel, fior di latte and hazelnut. | The customer, and Rekha, who refuses the sorbets |
+
+A seasonal or a book flavour cannot go in a 500 ml tub without a new sleeve, and
+§1.8 puts Avonside's printed lines at 10–12 weeks with a 5,000 unit minimum.
+Marina decides what is printed on a sleeve. The list has not changed since the
+sleeves were first drawn up and Dan has asked twice for elderflower to go on it.
+
+## 2.6 What the packaging consumes
+
+Per unit filled or sold.
+
+| Unit | What it takes |
+|---|---|
+| 5 L napoli pan | One napoli pan, steel or polycarbonate. One blank label. |
+| 500 ml retail tub | One 500 ml tub, one printed lid, one printed sleeve. No label — the sleeve has a box for the date and Jordan writes it in. |
+| 125 ml mini tub | One 125 ml mini tub with lid, which is one bought item. No label; the flavour goes on the lid in marker. |
+| 1.5 L catering tub | One 1.5 L catering tub with lid, which is one bought item. One blank label. |
+| Gelato cake, 8" | One 8" cake board, one 8" cake box. The customer's name goes on the box in marker. |
+| Scoop on a cone | One wafer cone, or one waffle cone where the 50p supplement is rung. One napkin. |
+| Single or double scoop in a cup | One two-scoop gelato cup, one gelato spoon, one napkin. A single goes in the two-scoop cup; there is no one-scoop cup. |
+| Triple scoop in a cup | One three-scoop gelato cup, one gelato spoon, one napkin. |
+| Any scoop sale | Tasting spoons before the choice. One or two, six on a Saturday with a family. They come 5,000 to a case and nobody has counted them out of one. |
+| Tub or cake taken away | One paper handled bag, if the customer asks or if there is more than one thing. |
+| Affogato | One 8 oz paper cup and one gelato spoon. Cotham had two glasses for it and both broke. |
+| Any drink drunk in | A ceramic cup off the shelf. The ceramics were bought when the shop opened and are not in §1.6. |
+| Any drink taken away | One paper cup, 8 oz or 12 oz by the drink, one lid, and one wooden stirrer if they take sugar. |
+| Canned soft drink, bottled water | Itself. Bought and sold as the same object. |
+
+**The pan.** A pan of gelato occupies a pan. It is not priced, not charged for,
+not deposited and not invoiced: it goes out on the van with the gelato in it and
+comes back empty on a later drop, or it does not. Steve tallies out and back by
+customer in the notebook in the van door pocket. §1.7 prices a pan of gelato at
+£28.50 and §1.6 prices a steel napoli pan at £38.00, so the container costs more
+to buy than the gelato in it sells for. Whether a pan standing at Caffè Umberto
+is Sorella's stock, Sorella's property out on loan, or nobody's, is not a
+question the business has ever had to answer, and nothing in the way it works
+answers it.
+
+**The label.** Every pan and every catering tub carries a hand-written label —
+flavour, batch number, freeze date. They come off a roll of blank freezer labels
+Dan buys from Severn about once a year and nobody has counted a roll.
+
+**The tubs and the lids.** §1.5 says they run out at different times,
+permanently, and §1.6 shows why: a case of tubs is 500 and a case of lids is
+1,000. Every filled tub takes one of each.
+
+## 2.7 The coffee side
+
+Nobody has ever written the coffee down. There is no drink spec, no dial-in
+sheet, no card on the wall. The machine at Cotham Hill takes one basket and the
+basket stays in it. Asked what goes into a drink, Yusuf gives the figures below;
+they are what a barista says, not what a page says, and there is no page to
+check them against.
+
+| Drink | What Yusuf says goes in | Cup |
+|---|---|---|
+| Espresso | 18 g of beans, one basket, two shots into the cup | Ceramic, or 8 oz out |
+| Americano | 18 g, then hot water to the top | 8 oz |
+| Cappuccino | 18 g, about 150 ml of milk, foamed hard | 8 oz |
+| Flat white | 18 g, about 130 ml of milk | 8 oz |
+| Latte | 18 g, about 250 ml of milk | 12 oz |
+| Mocha | 18 g, about 25 g of hot chocolate powder, about 220 ml of milk | 12 oz |
+| Hot chocolate | About 30 g of powder, about 250 ml of milk, no coffee | 12 oz |
+| Affogato | 18 g over one scoop | 8 oz paper cup and a gelato spoon |
+
+Oat milk instead of dairy is the same volume out of a 1 L carton and rings as a
+40p supplement. A syrup shot is "a pump" — the bottles came with pumps, two of
+the three pumps have gone missing, and Yusuf free-pours the vanilla, the
+hazelnut and the caramel. Pressed for a figure he says 15 ml. He has never
+measured it.
+
+The milk poured is not the milk steamed. Yusuf steams what is in the jug and
+what is left goes down the sink, and he says a jug foams better with more in it,
+so on a busy afternoon he fills it for a single latte and pours most of it away.
+He says a 2 L bottle does eight lattes. Aoife says she goes through more milk
+than that and cannot say why.
+
+The milk here is the cash and carry's 2 L bottle, not Whitehall's bag-in-box.
+§1.5 already says two different bought items are called the milk. The beans are
+the same bean as the kitchen's coffee brew, off Coldharbour's weekly drop to the
+shop, and §1.5 says that too.
 
 ---
 ---

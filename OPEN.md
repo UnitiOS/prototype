@@ -493,3 +493,41 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
   do fit — 96 coffees, 12 affogato and 41 cold drinks come to roughly the 18% of
   Cotham's takings that §11 says the coffee side is. So one of the two figures
   moves and it is not the price list. Raised 2 Sep · blocks: profile session 4
+- A 12 kg mix fills three napoli pans and a part, and the production sheet writes
+  five and six. Session 2 states what Dan expects per format — a pan filled level
+  weighs about 3.6 kg, and the carried yield line puts a 12 kg mix at 15.5–17 L,
+  which is three pans and a bit at five litres a pan. The carried Tuesday records
+  6, 5, 5, 4+9 tubs and 4+12 tubs against 12.0 kg each. Both numbers cannot
+  stand: either the pan is not what the profile says it is, or the day is. It is
+  stated in `§2.4` and not settled, because the day is session 4's.
+  Raised 2 Sep · blocks: profile session 4
+- Water is named in four recipes and is deliberately not a bought item. `§1.6`
+  excludes it in its own preamble — not tracked against product — and `§2.1`
+  names it as the one thing a recipe calls for that the buying table does not
+  hold. So a bill of materials has a line with no material behind it. Whether the
+  map carries a material nobody buys, or a recipe line the map is allowed to
+  leave dangling, is untried. Raised 2 Sep · blocks: interview
+- A batch's inputs exceed the batch. Every page is written per 12.00 kg into the
+  batch freezer, and the variegates — 0.85 kg of chocolate on stracciatella, 0.40
+  kg of caramel, 1.10 kg of biscuit base, 1.60 kg of stewed rhubarb — go in by
+  hand after the machine and are on top of it. Whether a recipe is per mix in or
+  per output, and where the at-fill half attaches, decides whether consumption
+  ever balances. Raised 2 Sep · blocks: interview
+- Three flavours have a recipe with no quantities in it. Ricotta and fig,
+  panettone and marsala, and peach and basil are made by feel and `§2.3` says so
+  and says what Dan does instead. A bill of materials that must hold "honey until
+  it tastes right" either carries a null quantity, or carries the ingredient with
+  no number, or refuses the flavour. Every one of the three is a different answer
+  for the generator. Raised 2 Sep · blocks: interview
+- A scoop has no weight, and it is the unit two thirds of the retail sales are
+  counted in. `§1.5` says it is a press of a button; `§2.4` adds that Aoife tells
+  new staff a pan does forty-five and that Callum's do thirty, and that nobody
+  has ever weighed one. Nothing converts a till line into grams out of a well, so
+  a closing balance at either shop cannot be computed from what the business
+  records. This is a missing-information failure in the 1 Sep sense only if a
+  number exists to be found, and none does. Raised 2 Sep · blocks: live use
+- Passionfruit purée is bought, priced and counted, and no flavour in `§1.4` is
+  made of it. `§2.3` states that it runs on the fruit sorbet page when an account
+  asks and has never had a cabinet card or a season. So the range and the buying
+  table disagree by one item, in the direction the map will not notice: an unused
+  material looks exactly like a correct one. Raised 2 Sep · blocks: -
