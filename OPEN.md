@@ -466,3 +466,30 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
   10.4 were expected. Nothing in the profile says whether that is deliberate
   shrinkage or an arithmetic slip, and an unmarked discrepancy cannot be told
   apart from a mistake. Raised 2 Sep · blocks: -
+- A supplier that is collected rather than delivered has no lead time and no
+  minimum order. Session 1 of Sorella's profile states both as "None" for Bristol
+  Cash & Carry, which supplies the whole coffee bar. Whether "None" is a value
+  the map carries or an absence it must allow is untried, and it is the only
+  supplier of the nine shaped that way. Raised 2 Sep · blocks: interview
+- Two bought items in Sorella's session 1 are both called "the milk": Whitehall's
+  10 L bag-in-box in the kitchen and the cash and carry's 2 L bottles for the
+  coffee machine. Two suppliers, two units, two places, one word. Whether that is
+  one material in two packs or two materials is a modelling choice the profile
+  deliberately does not make. Raised 2 Sep · blocks: interview
+- The steel napoli pan is a bought item at £38, a reusable asset, and the
+  container a wholesale sale travels in and comes back from. Session 1 names it
+  once in the buying table and names each of the 31 accounts as a place stock can
+  sit; nothing says whether a pan at a café is stock, a loan, or neither, and
+  §11 (carried) says nobody has ever counted them. Raised 2 Sep · blocks: interview
+- Session 1 states prices as at 15 June 2026 and puts superseded ones in prose —
+  pistachio at £152.00 until September 2024 and £170.50 until February 2026.
+  Whether an old price enters the log as a dated fact or stays prose is
+  undecided, and master data is the cheapest place the two time axes could be
+  exercised on something other than a movement. Raised 2 Sep · blocks: interview
+- Cotham's takings on Sorella's carried Tuesday do not reconcile with its own
+  item list at session 1's prices, and Gloucester Road's do: 149/63/8 scoops plus
+  11 tubs and 14 minis come to £1,103.60 against a stated £1,106, while Cotham's
+  431 scoops would need a single near £3.38 to reach £2,418. The carried drinks
+  do fit — 96 coffees, 12 affogato and 41 cold drinks come to roughly the 18% of
+  Cotham's takings that §11 says the coffee side is. So one of the two figures
+  moves and it is not the price list. Raised 2 Sep · blocks: profile session 4

@@ -2037,3 +2037,128 @@ Surprising, in order:
    map declares and LinkML's `equals_expression` is arithmetic; skip the cast and
    `-` would have raised `TypeError` on two strings rather than returning a
    plausible number, which is the one mercy of subtraction over addition.
+
+## 2026-09-02 · Sorella's profile, session 1: the frame and the master data
+
+`business/sorella/profile.md`, rewritten from the version at `44a32e6`.
+496 lines in, 944 out. Session 1 written; sessions 2, 3 and 4 exist as headings
+holding the previous version's material carried across word for word.
+
+### What was written
+
+Nine sections, `## 1.1` to `## 1.9`. Renumbered from `## 1`–`## 9` because the
+carried blocks keep their own `## 4`, `## 6`, `## 8`, `## 9` and two sets of the
+same numbers in one file is unreadable.
+
+- **1.1 The business.** Premises, and sixteen named people with what each is
+  responsible for. The previous version named three of the sixteen and gave the
+  other thirteen as a headcount with a role breakdown.
+- **1.2 The adoption date.** Monday 15 June 2026, as the brief specified.
+  Nothing in the business argued against it.
+- **1.3 Where stock can sit.** 27 places. Seven in the kitchen, five at Cotham,
+  three at Gloucester Road, three that move (the van, Marina's cool box, the
+  festival trailer), the Avonmouth container, nine supplier origins, and ten
+  destinations outside the business — the walk-in customer, the wholesale
+  account, staff, comps, donations, tastings, Marina's house, and three bins.
+  Three bins and not one, because there are three waste sheets.
+- **1.4 The range.** 14 core, 8 seasonal with their months, and 3 in the recipe
+  book with no season. The third group exists because the carried count sheet
+  has a struck-through line for coconut, "on the cabinet plan but none found",
+  and the previous version's range had no coconut in it.
+- **1.5 The units.** 24 units, 22 items whose ordered / counted / worked units
+  differ, and nine terms two people in the building use for different things.
+- **1.6 Everything the business buys.** 78 items, each with the unit it is
+  counted in, the pack it arrives in, a price per pack and a supplier. Five
+  price movements dated.
+- **1.7 Everything the business sells.** 21 products with a format and a price
+  at each place sold.
+- **1.8 The suppliers.** Nine, each with a lead time and a minimum order.
+- **1.9 The wholesale accounts.** 31 named, with credit terms. Two on thirty
+  days — The Hollow and The Regent Picture House.
+
+### What was carried, untouched
+
+Extracted with `sed` from `git show 44a32e6:...` so the bytes are the file's own,
+not retyped: §4 and its batch sheets and yield (session 2); the year-shape
+bullets, the specials-rate sentence, "constraints that bite", §6 movements, §7
+documents, §8 rules, §9 what Marina measures, §10 what the staff argue about,
+§11 what nobody measures (session 3); the whole of Tuesday 16 June (session 4).
+
+Loss check: of 496 old lines, 75 non-blank lines are not present verbatim in the
+new file. All 75 fall in old §1 (7–21), §2 (24–54), §3 (56–104) and §5
+(183–212) — the four sections session 1 rewrites. Nothing from §4, §6–§11 or the
+Tuesday is missing. Line 44 is the only line inside a carried range that is not
+verbatim: its flavour list became the §1.4 tables and its first sentence is
+quoted word for word under session 3.
+
+### What was invented
+
+- Thirteen people's names, and every person's responsibilities.
+- A ninth supplier, **Bristol Cash & Carry**, because the previous version said
+  the coffee side is "bought locally on the shop's own card" and named no
+  supplier for it. Without one, eleven bought items had nowhere to come from.
+- Every price in the file. The previous version carried exactly one — pistachio
+  paste at £58/kg — and no sell price at all.
+- Lead times and minimum orders for six of the nine suppliers. Three were
+  already stated in "constraints that bite" and are repeated unchanged.
+- 26 wholesale accounts. Five were already named in the Tuesday.
+- About 40 bought items that no previous section mentioned but that the carried
+  recipes and the range require — vanilla paste, peppermint extract, caramel
+  variegate, six more purées, the seasonal ingredients, cleaning chemicals, cake
+  boxes and boards, and the whole coffee bar.
+
+### Numbers that check against each other
+
+- **Gloucester Road's Tuesday reconciles.** Its 149/63/8 scoops, 11 tubs and
+  14 minis come to £1,103.60 at the new prices against the £1,106 the carried
+  day states. That fit is what set the scoop prices; it was not designed for.
+- **Cotham's does not**, and the failure is informative — see OPEN.
+- **The costing tab is wrong by the amount the file says it is.** §9 (carried)
+  says the November 2023 tab puts a pistachio pan at £14.80. At the November
+  2023 prices now stated in prose it works out near that; at 15 June 2026 prices
+  it does not, which is exactly what "pistachio paste has gone up twice since"
+  should do to it.
+- **The free-delivery threshold bites.** The carried §8 raised it from £80 to
+  £120 in April 2026 and sets the wholesale minimum at 4 pans. At £28.50 a pan
+  the minimum order is £114, so the threshold is reached at five pans and the
+  April change moved it from three. A higher pan price would have made the rule
+  dead on arrival.
+- **The deliberate one:** at £28.50 a pan, wholesale pistachio is close to its
+  own ingredient cost while fior di latte is not, and nothing in the business
+  would tell Marina that. It is why "the shops are where the margin is" and why
+  Dan has twice said pistachio should not cost a café the same as fior di latte.
+
+### What was resolved, and what was left alone
+
+The previous version said Cotham "does coffee" in §1 and "the coffee side of
+both shops" in §2, with Coldharbour delivering "direct to each shop" in §3 —
+while the Tuesday records 96 coffees at Cotham and no drink of any kind at
+Gloucester Road. Session 1 resolves it: Cotham has the only machine, Gloucester
+Road has a drinks fridge, Coldharbour delivers to Cotham. §11 stays carried and
+still says "the shops", which session 2 owns.
+
+Two figures were dropped rather than restated, because both are sums of things
+the file now lists and the done condition forbids a derived figure: the
+headcount of 16, replaced by sixteen named people; and turnover of £940k,
+replaced by Marina's own description of the split. The Whitehall dairy delivery
+on Tuesday 16 June was left standing as instructed.
+
+### Surprising
+
+1. **The Gloucester Road fit.** Scoop prices were set from what Bristol charges
+   in 2026 and from a plain guess that the cheaper parade sells 20p under
+   Cotham. Multiplied out against a day written weeks ago by someone else, they
+   land £2.40 from its stated takings. Cotham's, priced from the same guess,
+   lands £400 out, and the residual is almost exactly the 18% that §11 says the
+   coffee side is. One shop's numbers were written from a price list and the
+   other's were not.
+2. **The count sheet was the only thing that knew about coconut.** A struck-out
+   line in the carried Tuesday named a flavour the range did not contain. A
+   whole category — in the book, on the cabinet plan, not core, no season — came
+   out of one crossed-out line.
+3. **A profile with no prices had also lost its recipes' ingredients.** The
+   carried batch sheets call for sea salt, lemon juice and water; the range
+   calls for vanilla, mint, caramel, coffee, ricotta, figs, rhubarb, pumpkin,
+   amaretti, panettone, marsala and elderflower. None of them appeared anywhere
+   in the previous version's buying sections. The gap that killed v1 was not one
+   missing table, it was the same absence in five places.

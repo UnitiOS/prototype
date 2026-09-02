@@ -2,106 +2,549 @@
 
 *Prepared as source material for an inventory system. Describes the business as it actually operates, including the parts that are not written down.*
 
----
+Nothing here is computed. Where a balance, a total or a variance could follow
+from what is written, working it out is the system's job and not this file's.
+Every figure is one somebody in the business would know or say.
 
-## 1. The business
+**This file is being rebuilt in four sessions.** Session 1 is written. Sessions
+2, 3 and 4 hold the material from the previous version, carried across word for
+word and marked unrevised; each will be rewritten against its own specification.
 
-**Sorella Gelato Ltd**, trading as **Sorella**. Registered in England, first batch sold May 2021, so five summers in.
-
-- **Production kitchen**: Unit 6, Feeder Road, St Philips, Bristol. A 210 m² arch unit sharing a wall with a print shop. Pasteuriser, two batch freezers, blast freezer, walk-in chiller, holding freezer, dry store, small office.
-- **Shop 1 — Cotham Hill.** Opened 2021. 24-flavour cabinet, seats eight, does coffee. The busier of the two, roughly 60/40.
-- **Shop 2 — Gloucester Road.** Opened March 2024. 16-flavour cabinet, takeaway only, no back-of-house to speak of — one chest freezer under the counter and a shelf.
-- **Wholesale**: 31 accounts on the book, 22 of them ordering in any given summer week. Cafés, two restaurants, a deli, a cinema, and one hotel that orders four times a year and is always a hassle.
-
-**Owner**: Marina Devlin, founder, in the kitchen three mornings a week and doing the invoicing on Sundays. **Head gelatiere**: Dan Farrugia, joined 2022, effectively runs production. **Shop manager (Cotham)**: Aoife Brennan. **Gloucester Road** has no manager — Aoife covers it, badly, because she is at Cotham.
-
-**Headcount, June 2026**: 16 people. Four in production (Dan, two full-time gelatieri, one part-time packer/driver), one dedicated driver on wholesale mornings, nine shop staff (three full-time, six students on variable hours), Marina, and a bookkeeper who comes in Wednesday afternoons.
-
-Turnover is around £940k, of which roughly a third is wholesale. The wholesale third is the reason the kitchen exists at the scale it does; the shops are where the margin is.
-
----
-
-## 2. What it makes and sells
-
-### Formats
-
-| Format | Description | Where it goes |
+| Session | What it holds | State |
 |---|---|---|
-| 5 L napoli pan (stainless) | Standard cabinet pan | Shops, wholesale cafés |
-| 5 L napoli pan (polycarb) | Lighter, used for sorbets and for accounts that don't return steel | Wholesale |
-| 500 ml retail tub | Printed lid, filled to about 460 g | Shops, deli accounts, four farm shops |
-| 125 ml mini tub | Events, kids' portions, school fairs | Shops, events, giveaways |
-| 1.5 L catering tub | Restaurant plating portions | The Hollow, Wapping Wharf Kitchen |
-| Gelato cake, 8" | Two layers plus a biscuit base, made to order | Shops, pre-order only |
-| Scoops | Single / double / triple, cone or cup | Shops only |
+| 1 | The frame and the master data — what exists before anything moves | Written |
+| 2 | How a product is made and sold — recipes, formats, yield, the coffee side | Carried, unrevised |
+| 3 | The rules with their dates; every way stock moves, and the document filled | Carried, unrevised |
+| 4 | The opening count on the adoption date, and the operational days | Carried, unrevised |
 
-Cones (waffle and wafer), cups, spoons, napkins and takeaway bags are all bought in. So is the coffee side of both shops — beans, oat and dairy milk, syrups, paper cups.
+---
+---
 
-### The range
+# Session 1 — the frame and the master data
 
-**Core, always on (14):** fior di latte, stracciatella, pistachio, hazelnut (gianduja in winter), dark chocolate, salted caramel, vanilla, coffee, mint choc chip, biscuit (crumbled digestive and honey), strawberry sorbet, lemon sorbet, mango sorbet, raspberry sorbet.
+## 1.1 The business
 
-**Seasonal rotation:** Dan runs two or three specials a week in summer, one a fortnight in winter. Ricotta and fig (Sept–Oct), pumpkin and amaretti (Oct–Nov), panettone and marsala (Dec), blood orange sorbet (Jan–Feb), rhubarb and custard (Mar–Apr), elderflower sorbet (May–Jun), local strawberry — a separate SKU from the year-round frozen-purée strawberry — (Jun–Jul), peach and basil (Jul–Aug).
+**Sorella Gelato Ltd**, trading as **Sorella**. Registered in England, first
+batch sold May 2021, so five summers in. A production kitchen and two shops in
+Bristol, and a wholesale round out of the kitchen.
 
-**How the shape of the business changes across the year:**
+### The premises
 
-- **May to September**: everything. Cabinet full at both shops, 12–16 production batches a day, wholesale five days a week, an overflow freezer rented offsite. Sorbets go from about 20% of volume to about 35%.
-- **October to November**: wholesale halves as the cafés stop taking gelato. Restaurant accounts hold up. Cake orders start.
-- **December**: cakes and panettone semifreddo carry the month. Gloucester Road cuts to Thursday–Sunday.
-- **January to February**: the thin part. Gloucester Road closes entirely for two weeks after New Year — this began in 2025 and Marina argues about it every autumn. Production drops to two or three days a week and the kitchen builds freezer stock of the stable core flavours.
-- **March to April**: Easter, restart, first big packaging order of the year.
+**Production kitchen — Unit 6, Feeder Road, St Philips, Bristol.** A 210 m² arch
+unit sharing a wall with a print shop. Pasteuriser, two batch freezers, blast
+freezer, walk-in chiller, holding freezer, dry store, small office.
+
+**Cotham Hill shop.** Opened 2021. A 24-flavour cabinet, seats eight, and the
+only coffee machine in the business. The busier of the two, roughly 60/40.
+
+**Gloucester Road shop.** Opened March 2024. A 16-flavour cabinet, takeaway
+only, no back-of-house to speak of — one chest freezer under the counter and a
+shelf. No coffee machine: a small drinks fridge with cans and bottled water, and
+that is the whole drinks offer.
+
+**The container.** A rented freezer container at a storage yard in Avonmouth,
+taken from May to September since 2023.
+
+**The van.** A refrigerated Citroën Relay, kept at the kitchen overnight.
+
+### The people
+
+| Name | Role | Responsible for |
+|---|---|---|
+| Marina Devlin | Owner and founder | Prices, credit terms, all supplier accounts, the wholesale invoicing on Sundays, the bank. In the kitchen three mornings a week. |
+| Dan Farrugia | Head gelatiere, joined 2022 | Effectively runs production. Sets the week's flavours and specials, orders from Terra Nostra, Severn and Marchetti, texts the milk order to Whitehall on Sunday night, writes the production sheet. |
+| Aoife Brennan | Shop manager, Cotham Hill | Cotham's rota, cash-up, cabinet plan, and the shop's own ordering — cones, cups, coffee, cash-and-carry runs. Also covers Gloucester Road, badly, because she is at Cotham. |
+| Tomas Nowicki | Gelatiere, full time | Pasteurising and churning. Runs production on Dan's days off. |
+| Rekha Pillai | Gelatiere, full time | Churning, variegates, cakes. |
+| Jordan Hale | Packer and relief driver, part time | Filling tubs and minis, labelling, loading the van. Drives the round when Steve is off. |
+| Steve Corrigan | Driver, wholesale mornings | The van run — wholesale drops, shop transfers, the container. Fills the van sheet and keeps the pan notebook. |
+| Hilary Wren | Bookkeeper, Wednesday afternoons | Matches delivery notes to invoices and keys the invoices into Xero. |
+| Yusuf Adeyemi | Counter, full time, Cotham Hill | Scooping, coffee, opening. |
+| Priya Shah | Counter, full time, Gloucester Road | Opens and closes Gloucester Road. The nearest thing that shop has to a manager, without the title or the pay. |
+| Callum Reid | Counter, student, variable hours | Cotham Hill, mostly weekends. |
+| Ffion Davies | Counter, student, variable hours | Cotham Hill. |
+| Marek Zieliński | Counter, student, variable hours | Both shops. |
+| Sophie Trent | Counter, student, variable hours | Gloucester Road. |
+| Amara Okonkwo | Counter, student, variable hours | Gloucester Road. |
+| Ben Lachlan | Counter, student, variable hours | Both shops, and the trailer at festivals. |
+
+Gloucester Road has no manager.
+
+### The trade
+
+Wholesale is cafés, two restaurants, a deli, a cinema, and one hotel that orders
+four times a year and is always a hassle. Twenty-two of the accounts order in any
+given summer week. All of them are listed in §1.9.
+
+Marina describes the business as roughly a third wholesale and the rest the two
+shops. The wholesale third is the reason the kitchen exists at the scale it does;
+the shops are where the margin is.
 
 ---
 
-## 3. What it buys, from whom, and in what
+## 1.2 The adoption date
 
-### Suppliers
+**Monday 15 June 2026.** That is the day Sorella starts recording in a system.
+Nothing before it is in the system, and nothing before it is recoverable except
+Marina's spreadsheet, the photographs of the production sheets on her phone, and
+Xero's record of what was paid.
 
-| Supplier | Supplies | Rhythm | Terms |
-|---|---|---|---|
-| **Whitehall Dairy** (Chew Valley) | Whole milk, whipping cream 38% | Mon / Wed / Fri, 06:30 | 30 days |
-| **Terra Nostra Ingredients** (importer, Watford) | Nut pastes, cocoa, chocolate, stabiliser bases, dextrose, glucose, inverted sugar, freeze-dried fruit | Fortnightly, pallet by courier | 30 days |
-| **Severn Catering Supplies** | Sugar, skimmed milk powder, eggs, cream cheese, biscuits, cleaning chemicals | Weekly, Thursday | 14 days |
-| **Avonside Packaging** | Tubs, lids, cups, spoons, napkins, bags, printed sleeves | Monthly, on order | Pro forma until 2024, now 30 days |
-| **Marchetti Cones** (via Terra Nostra) | Waffle and wafer cones | Every 6 weeks | With Terra Nostra |
-| **Kingsdown Fruit Farm** | Fresh strawberries, rhubarb, occasionally figs | Twice weekly, June–August only | Cash / bank transfer, informal |
-| **Coldharbour Roastery** (Bristol) | Coffee beans for the shops | Weekly, direct to each shop | Card on delivery |
-| **Bristol Ice & Dry Ice** | Dry ice for events and the offsite freezer runs | On call | Card |
+Marina chose a Monday because Sunday is when she does the invoicing, and she
+wanted the first week in the system to be a whole week.
 
-Water, gas and electricity aren't tracked against product at all.
+---
 
-### Pack sizes in, working units out
+## 1.3 Where stock can sit
+
+Every place a thing can be, inside the business and outside it. The outside ones
+are places too: a delivery is somewhere before it arrives, a pan handed to a café
+is somewhere afterwards, and so is a scoop, a bin bag and a school fair.
+
+### The production kitchen, Unit 6
+
+| Name | What it is |
+|---|---|
+| Dry store | Ambient shelving. Sugars, powders, cocoa, pastes, unopened chocolate, packaging overflow. |
+| Walk-in chiller | +2 to +4 °C. Milk, cream, aged base in buckets, fresh fruit, opened pastes. |
+| Ingredient freezer | −18 °C. Fruit purées, freeze-dried fruit, biscuit base. |
+| Blast freezer | −35 °C. Transit only, but in practice things sit in it for two days when the holding freezer is full. |
+| Holding freezer | −22 to −25 °C. All finished gelato, tubs, minis, finished cakes. |
+| Packaging mezzanine | Tubs, lids, cups, spoons, cones, bags. |
+| Office cupboard | Printed sleeves, promo items. |
+
+### Cotham Hill
+
+| Name | What it is |
+|---|---|
+| Cotham cabinet | Display cabinet, 24 wells, −14 to −16 °C. |
+| Cotham back freezer 1 | Chest freezer in the back corridor. |
+| Cotham back freezer 2 | Chest freezer in the back corridor. |
+| Cotham under-counter fridge | Milk for coffee, cream. |
+| Cotham shelf unit | Cones, cups, napkins, beans. |
+
+### Gloucester Road
+
+| Name | What it is |
+|---|---|
+| Gloucester Road cabinet | Display cabinet, 16 wells. |
+| Gloucester Road under-counter freezer | One chest freezer, holds about 14 pans. |
+| Gloucester Road shelves | Two shelves. That is all. |
+
+### Moving
+
+| Name | What it is |
+|---|---|
+| The van | The refrigerated Relay. Stock lives in it between 06:30 and about 14:00 every operating day, and sometimes overnight. |
+| The cool box | Marina's, for tastings and samples. Rides in her car. |
+| The trailer | A towed trailer freezer, out at two festivals a year and otherwise parked at the kitchen. |
+
+### Offsite
+
+| Name | What it is |
+|---|---|
+| The container | A rented freezer container at a storage yard in Avonmouth, taken from May to September since 2023. Overflow finished stock and spare pans. Someone drives out about twice a week. Stock that goes in during a June glut is routinely still there in September. |
+
+### Outside — where stock comes from
+
+| Name | What it is |
+|---|---|
+| Whitehall Dairy | The dairy at Chew Valley. Milk and cream are theirs until the driver puts them in the chiller. |
+| Terra Nostra Ingredients | The importer's warehouse at Watford, and the courier's pallet between the two. |
+| Severn Catering Supplies | The catering wholesaler at Avonmouth. |
+| Avonside Packaging | The packaging converter at Yate. |
+| Marchetti Cones | The cone maker in Italy. Cones travel on Terra Nostra's pallet and are never seen loose until they arrive. |
+| Kingsdown Fruit Farm | The farm at Wrington. Fruit is theirs until it is left at the roller door. |
+| Coldharbour Roastery | The roastery in Bristol. |
+| Bristol Ice & Dry Ice | The dry ice depot at Avonmouth. |
+| Bristol Cash & Carry | The cash and carry on Days Road, where the shop card is used. Stock is theirs until it is in the car. |
+
+### Outside — where stock goes
+
+| Name | What it is |
+|---|---|
+| The walk-in customer | Anyone who pays at either counter. Where a scoop, a tub, a cake, a coffee and a can go. |
+| The wholesale account | Each of the 31 accounts in §1.9 is a place. A pan is at Caffè Umberto until it comes back empty, or does not. |
+| Staff | Where the shift allowance goes, taken by whoever is on. What the allowance is is a rule, and is session 3. |
+| Comps | A cone remade or handed across the counter without payment. |
+| Donations | School fairs, raffles, the odd charity ask. |
+| Tastings | Prospects, the trade stand, markets. What Marina's cool box is going to. |
+| Marina's house | The pan she takes home most weeks. The business calls it that. |
+| The kitchen bin | Waste at Unit 6 — failed batches, spoiled ingredients, damaged packaging. |
+| The Cotham bin | Waste at Cotham Hill — cabinet expiry, dropped cones, broken sleeves. |
+| The Gloucester Road bin | Waste at Gloucester Road. |
+
+The three bins are separate places because there are three waste sheets. Nobody
+distinguishes them any other way.
+
+---
+
+## 1.4 The range
+
+Names only. What goes into any of them is session 2.
+
+### Core, always on
+
+| Flavour | Runs | Note |
+|---|---|---|
+| Fior di latte | All year | |
+| Stracciatella | All year | |
+| Pistachio | All year | |
+| Hazelnut | All year | Made as gianduja, hazelnut with chocolate, from November to February. Same well, same name on the cabinet card. |
+| Dark chocolate | All year | |
+| Salted caramel | All year | |
+| Vanilla | All year | |
+| Coffee | All year | |
+| Mint choc chip | All year | |
+| Biscuit | All year | Crumbled digestive and honey. |
+| Strawberry sorbet | All year | From frozen purée. A separate thing from the local strawberry below. |
+| Lemon sorbet | All year | |
+| Mango sorbet | All year | |
+| Raspberry sorbet | All year | |
+
+### Seasonal rotation
+
+| Flavour | Runs |
+|---|---|
+| Ricotta and fig | September to October |
+| Pumpkin and amaretti | October to November |
+| Panettone and marsala | December |
+| Blood orange sorbet | January to February |
+| Rhubarb and custard | March to April |
+| Elderflower sorbet | May to June |
+| Local strawberry | June to July |
+| Peach and basil | July to August |
+
+Local strawberry is a separate SKU from the year-round frozen-purée strawberry
+sorbet and has been since 2023. Both can be in the cabinet at once and have been.
+
+### In the book, made when Dan feels like it
+
+| Flavour | Runs |
+|---|---|
+| Coconut | On the cabinet plan all year, made perhaps monthly |
+| Amarena cherry | No season. Made when a wholesale account asks |
+| Pink grapefruit sorbet | No season |
+
+These three are on the cabinet plan and in the recipe book but are not on the
+core list, so a cabinet card exists for a flavour that may not have been made for
+six weeks. How often specials run at all is a rule, and is session 3.
+
+---
+
+## 1.5 The units the business counts in
 
 This mismatch is the single most persistent source of confusion in the business.
 
-| Item | Arrives as | Ordered in | Kitchen works in | Notes |
+### The units
+
+| Unit | What it means here |
+|---|---|
+| gram, kilogram | Weight. Every recipe, the pasteuriser scale, the bench scale. |
+| litre, millilitre | Volume. Pack sizes, pan and tub capacity, cordials and syrups. |
+| each | One item. Cones, cups, spoons, napkins, tubs, lids, cake boards. |
+| bag | Milk (10 L bag-in-box), skimmed milk powder (25 kg), cocoa (5 kg), Base 50 (2 kg), coffee beans (1 kg). Five unrelated things are "a bag". |
+| can | The 5 L jerry can cream arrives in. |
+| sack | 25 kg of caster sugar or dextrose. |
+| pail | 12.5 kg of glucose, 14 kg of inverted sugar, 3 kg of caramel variegate. Everyone says "bucket". |
+| bucket | Also the 25 L lidded bucket that aged base is drawn into. "Two buckets" in the chiller is base; "two buckets" in the dry store is glucose. |
+| carton | Ten 2 kg bags of Base 50. The only thing bought by the carton. |
+| tin | 3.5 kg pistachio paste, 5 kg hazelnut paste, 3 kg pumpkin purée. |
+| jar | 2.6 kg of amarena cherries. |
+| box | 10 kg of chocolate, 1 kg of amaretti, 1,000 spoons, 5 kg of rhubarb. |
+| case | The outer a supplier ships in. Never the same count twice: 500 tubs, 1,000 lids, 6 purée tubs, 4 cone sleeves, 24 cans. |
+| sleeve | 90 waffle cones, 120 wafer cones, 100 mini tubs. |
+| pack | 400 g of digestives, 500 napkins, 100 g of basil. |
+| tray | Kingsdown's word for a 2 kg punnet of strawberries or figs. |
+| punnet | The kitchen's word for the same object. |
+| flat | Six punnets on the layer they arrive stacked on. Nobody orders in flats. |
+| tub | A 500 ml retail tub, a 1 kg purée tub, a 1.5 L catering tub, a 2 kg ricotta tub, a 3 kg honey tub. The word alone never says which. |
+| pan | A 5 L napoli pan, steel or polycarbonate. |
+| well | One hole in a display cabinet. Twenty-four at Cotham, sixteen at Gloucester Road. |
+| scoop | One press of a till button. |
+| drum | 5 L or 10 L of cleaning chemical. |
+| roll | Blue roll, bin liners. |
+
+### Ordered in one unit, counted in another, worked in a third
+
+| Item | Ordered in | Counted in | Worked in | Note |
 |---|---|---|---|---|
-| Whole milk | 10 L bag-in-box | "bags" | grams (weighed into the pasteuriser) | Recipes are mass; a bag is volume. Dan's rule of thumb is 10.3 kg per bag, but he weighs. |
-| Cream 38% | 5 L jerry can | "cans" | grams | |
-| Sucrose (caster) | 25 kg sack | "sacks" | grams | |
-| Dextrose | 25 kg sack | "sacks" | grams | |
-| Glucose syrup DE38 | 12.5 kg pail | "buckets" | grams | Scooped warm; a pail is never emptied cleanly |
-| Inverted sugar | 14 kg pail | "buckets" | grams | |
-| Skimmed milk powder | 25 kg bag | "bags" | grams | |
-| Stabiliser base (Base 50) | 2 kg bag, 10 per carton | "cartons" | grams | 4 g per kg of mix; a bag lasts about a week in summer |
-| Pistachio paste | 3.5 kg tin | "tins" | grams | £58/kg. The most expensive thing in the building. |
-| Hazelnut paste | 5 kg tin | "tins" | grams | |
-| Cocoa 22/24 | 5 kg bag | "bags" | grams | |
-| Dark chocolate 70% callets | 10 kg box | "boxes" | grams | |
-| Fruit purée (mango, raspberry, passionfruit) | 1 kg tub, 6 per case | "cases" | grams | Ordering is in cases, stock is counted in tubs |
-| Fresh strawberries | 2 kg punnet, 6 punnets per flat | "trays" | kg | |
-| 500 ml tubs | 500 per case | "cases" | each | |
-| 500 ml lids | 1,000 per case | "cases" | each | Tubs and lids run out at different times, permanently |
-| Waffle cones | 90 per sleeve, 4 sleeves per case | "cases" | each | Breakage is not counted |
-| Napoli pans, steel | Bought 12 at a time | "pans" | pans | A reusable asset that behaves like stock |
+| Whole milk, kitchen | bags | bags | grams | Recipes are mass; a bag is volume. Dan's rule of thumb is 10.3 kg per bag, but he weighs. |
+| Cream 38% | cans | cans | grams | |
+| Caster sugar (sucrose) | sacks | sacks | grams | |
+| Dextrose | sacks | sacks | grams | |
+| Glucose syrup DE38 | buckets | pails | grams | Scooped warm; a pail is never emptied cleanly |
+| Inverted sugar | buckets | pails | grams | |
+| Skimmed milk powder | bags | bags | grams | |
+| Base 50 stabiliser | cartons | bags | grams | A bag lasts about a week in summer |
+| Pistachio paste | tins | tins | grams | The most expensive thing in the building |
+| Hazelnut paste | tins | tins | grams | |
+| Cocoa 22/24 | bags | bags | grams | |
+| Dark chocolate 70% callets | boxes | boxes | grams | |
+| Fruit purée | cases | tubs | grams | Ordering is in cases, stock is counted in tubs |
+| Fresh strawberries | trays | punnets | kg | |
+| Digestive biscuits | cases | packs | grams | |
+| 500 ml tubs | cases | cases | each | |
+| 500 ml lids | cases | cases | each | Tubs and lids run out at different times, permanently |
+| 125 ml mini tubs | cases | sleeves | each | |
+| Waffle cones | cases | sleeves | each | |
+| Coffee beans | kilos | bags at the shop | grams in the kitchen | Same bean, two places, two units |
+| Coffee-bar milk | cases | bottles | millilitres | |
+| Napoli pans, steel | twelves | pans | pans | A reusable asset that behaves like stock |
 
-**Constraints that bite:**
+### The same thing counted two ways
 
-- Printed 500 ml lids have a 10–12 week lead time and a 5,000 unit minimum. Marina orders once in February and once in July and has run out in August two years running.
-- Terra Nostra's minimum for free carriage is £400. Small top-up orders therefore don't happen; the kitchen waits.
-- Kingsdown will only deliver if the order is at least eight trays, which is more strawberries than a slow week needs.
+- **A pan.** Dan means a full 5 L napoli pan, because that is what comes off the
+  bench. Aoife means any pan in a cabinet well, whatever is left in it. Marina,
+  working out litres, means five litres. All three say "a pan".
+- **A bag of milk.** Marina orders and pays in bags. The box says 10 litres. Dan
+  works in grams and calls it 10.3 kg. Three numbers, one object.
+- **A batch.** Dan means one churn — what goes into a batch freezer at once.
+  Marina means one pasteuriser run. Hilary means one delivery, as in a batch of
+  cream. All three say "batch" in the same room.
+- **A tray of strawberries.** Kingsdown's tray is the 2 kg punnet. The flat of
+  six is only how they stack. Marina has twice ordered "eight trays" meaning
+  eight flats, and both times took the delivery anyway.
+- **A tin of pistachio.** Counted as one tin whether it is sealed or has 400 g
+  left in it.
+- **A case.** Tubs come 500 to a case and lids 1,000 to a case. "Four cases" of
+  each is not the same number of anything.
+- **A scoop.** The unit the till counts in. It is a press of a button, not a
+  weight; what leaves the well depends on who is holding the spade and how hard
+  the gelato is.
+- **A 500 ml tub.** Its name is a volume and it is filled to about 460 g, which
+  is a weight, and neither number is 500.
+- **The milk.** Two different bought items are called the milk: Whitehall's 10 L
+  bag-in-box in the kitchen chiller, and the 2 L bottles Aoife buys at the cash
+  and carry for the coffee machine.
 
 ---
+
+## 1.6 Everything the business buys
+
+Every bought item, once. Prices are per pack as it arrives, as at 15 June 2026.
+Water, gas and electricity aren't tracked against product at all and are not in
+this table.
+
+| Item | Counted in | Arrives as | Price per pack | Supplier |
+|---|---|---|---|---|
+| Whole milk, kitchen | bags | 10 L bag-in-box | £8.90 | Whitehall Dairy |
+| Whipping cream 38% | cans | 5 L jerry can | £14.60 | Whitehall Dairy |
+| Caster sugar (sucrose) | sacks | 25 kg sack | £24.50 | Severn Catering Supplies |
+| Dextrose | sacks | 25 kg sack | £41.00 | Terra Nostra Ingredients |
+| Glucose syrup DE38 | pails | 12.5 kg pail | £26.50 | Terra Nostra Ingredients |
+| Inverted sugar | pails | 14 kg pail | £38.50 | Terra Nostra Ingredients |
+| Skimmed milk powder | bags | 25 kg bag | £62.00 | Severn Catering Supplies |
+| Base 50 stabiliser | bags | carton of 10 × 2 kg | £276.00 | Terra Nostra Ingredients |
+| Sea salt, fine | tubs | 1 kg tub | £2.40 | Severn Catering Supplies |
+| Sicilian pistachio paste | tins | 3.5 kg tin | £203.00 | Terra Nostra Ingredients |
+| Hazelnut paste | tins | 5 kg tin | £142.50 | Terra Nostra Ingredients |
+| Cocoa 22/24 | bags | 5 kg bag | £41.00 | Terra Nostra Ingredients |
+| Dark chocolate 70% callets | boxes | 10 kg box | £96.00 | Terra Nostra Ingredients |
+| Vanilla bean paste | tubs | 1 kg tub | £118.00 | Terra Nostra Ingredients |
+| Salted caramel variegate | pails | 3 kg pail | £27.40 | Terra Nostra Ingredients |
+| Peppermint extract | bottles | 500 ml bottle | £16.80 | Terra Nostra Ingredients |
+| Amarena cherries in syrup | jars | 2.6 kg jar | £24.50 | Terra Nostra Ingredients |
+| Amaretti biscuits | boxes | 1 kg box | £13.60 | Terra Nostra Ingredients |
+| Panettone | each | case of 6 × 1 kg | £51.00 | Terra Nostra Ingredients |
+| Marsala | bottles | case of 6 × 750 ml | £48.00 | Terra Nostra Ingredients |
+| Freeze-dried raspberry pieces | tubs | 400 g tub | £29.50 | Terra Nostra Ingredients |
+| Fruit purée, strawberry | tubs | case of 6 × 1 kg | £32.60 | Terra Nostra Ingredients |
+| Fruit purée, raspberry | tubs | case of 6 × 1 kg | £38.40 | Terra Nostra Ingredients |
+| Fruit purée, mango | tubs | case of 6 × 1 kg | £34.20 | Terra Nostra Ingredients |
+| Fruit purée, passionfruit | tubs | case of 6 × 1 kg | £41.00 | Terra Nostra Ingredients |
+| Fruit purée, peach | tubs | case of 6 × 1 kg | £33.00 | Terra Nostra Ingredients |
+| Fruit purée, blood orange | tubs | case of 6 × 1 kg | £36.90 | Terra Nostra Ingredients |
+| Fruit purée, pink grapefruit | tubs | case of 6 × 1 kg | £35.40 | Terra Nostra Ingredients |
+| Coconut purée | tubs | case of 6 × 1 kg | £31.80 | Terra Nostra Ingredients |
+| Pumpkin purée | tins | 3 kg tin | £14.80 | Terra Nostra Ingredients |
+| Strawberries | trays | 2 kg tray | £12.80 | Kingsdown Fruit Farm |
+| Rhubarb | boxes | 5 kg box | £11.50 | Kingsdown Fruit Farm |
+| Figs | trays | 2 kg tray | £16.00 | Kingsdown Fruit Farm |
+| Lemons | kilos | 5 kg net bag | £9.20 | Severn Catering Supplies |
+| Lemon juice | bottles | 1 L bottle | £3.80 | Severn Catering Supplies |
+| Basil, fresh | packs | 100 g pack | £1.90 | Severn Catering Supplies |
+| Elderflower cordial | bottles | 1 L bottle | £6.20 | Severn Catering Supplies |
+| Ricotta | tubs | 2 kg tub | £13.20 | Severn Catering Supplies |
+| Cream cheese | tubs | 2 kg tub | £11.80 | Severn Catering Supplies |
+| Eggs, medium free range | trays | tray of 30 | £5.40 | Severn Catering Supplies |
+| Digestive biscuits | packs | case of 12 × 400 g | £8.64 | Severn Catering Supplies |
+| Honey, clear | tubs | 3 kg tub | £14.90 | Severn Catering Supplies |
+| Coffee beans, espresso blend | bags | 1 kg bag | £21.50 | Coldharbour Roastery |
+| Waffle cones | sleeves | case of 4 sleeves × 90 | £46.80 | Marchetti Cones |
+| Wafer cones | sleeves | case of 6 sleeves × 120 | £28.20 | Marchetti Cones |
+| 500 ml tub | cases | case of 500 | £61.00 | Avonside Packaging |
+| 500 ml lid, printed | cases | case of 1,000 | £148.00 | Avonside Packaging |
+| Printed sleeve, 500 ml | cases | case of 1,000 | £96.00 | Avonside Packaging |
+| 125 ml mini tub with lid | sleeves | case of 10 sleeves × 100 | £84.00 | Avonside Packaging |
+| 1.5 L catering tub with lid | cases | case of 50 | £39.50 | Avonside Packaging |
+| Gelato cup, two scoop | cases | case of 1,000 | £74.00 | Avonside Packaging |
+| Gelato cup, three scoop | cases | case of 1,000 | £92.00 | Avonside Packaging |
+| Gelato spoon | boxes | box of 1,000 | £11.40 | Avonside Packaging |
+| Tasting spoon | cases | case of 5,000 | £26.00 | Avonside Packaging |
+| Napkin, 2-ply | packs | case of 12 × 500 | £28.60 | Avonside Packaging |
+| Takeaway bag, paper handled | packs | case of 250 | £34.00 | Avonside Packaging |
+| Cake box, 8" | cases | case of 50 | £47.50 | Avonside Packaging |
+| Cake board, 8" | cases | case of 100 | £38.00 | Avonside Packaging |
+| Napoli pan, stainless 5 L | pans | single pan, bought twelve at a time | £38.00 | Terra Nostra Ingredients |
+| Napoli pan, polycarbonate 5 L | pans | case of 24 | £216.00 | Terra Nostra Ingredients |
+| Sanitiser, no-rinse | drums | 5 L drum | £18.40 | Severn Catering Supplies |
+| CIP alkaline detergent | drums | 10 L drum | £31.00 | Severn Catering Supplies |
+| Blue roll | rolls | case of 6 rolls | £14.20 | Severn Catering Supplies |
+| Nitrile gloves | boxes | case of 10 × 100 | £38.00 | Severn Catering Supplies |
+| Bin liners, heavy duty | rolls | case of 10 rolls × 25 | £22.50 | Severn Catering Supplies |
+| Dry ice pellets | tubs | 10 kg insulated tub | £42.00 | Bristol Ice & Dry Ice |
+| Whole milk, coffee bar | bottles | case of 6 × 2 L | £9.60 | Bristol Cash & Carry |
+| Oat milk, barista | cartons | case of 12 × 1 L | £16.80 | Bristol Cash & Carry |
+| Vanilla syrup | bottles | 1 L bottle | £6.40 | Bristol Cash & Carry |
+| Hazelnut syrup | bottles | 1 L bottle | £6.40 | Bristol Cash & Carry |
+| Caramel syrup | bottles | 1 L bottle | £6.40 | Bristol Cash & Carry |
+| Hot chocolate powder | tubs | 2 kg tub | £13.90 | Bristol Cash & Carry |
+| Paper cup, 8 oz | cases | case of 1,000 | £58.00 | Bristol Cash & Carry |
+| Paper cup, 12 oz | cases | case of 1,000 | £68.00 | Bristol Cash & Carry |
+| Paper cup lid | cases | case of 1,000 | £42.00 | Bristol Cash & Carry |
+| Wooden stirrer | boxes | box of 1,000 | £6.20 | Bristol Cash & Carry |
+| Canned soft drink | cases | case of 24 | £13.20 | Bristol Cash & Carry |
+| Bottled water, 500 ml | cases | case of 24 | £8.40 | Bristol Cash & Carry |
+
+**Prices that have moved:**
+
+- **Sicilian pistachio paste.** £203.00 a tin since February 2026, up from
+  £170.50. Dan calls it "about a fifth". It was £152.00 until September 2024.
+  Terra Nostra quote it at £58 a kilo on the price list and invoice it at £203.00
+  a tin. It is the most expensive thing in the building.
+- **Dark chocolate 70% callets.** £96.00 a box since January 2026, up from
+  £88.00.
+- **Whole milk.** £8.90 a bag since March 2026, up from £8.35. Whitehall write
+  to Marina every time and she has never queried one.
+- **500 ml lid, printed.** £148.00 a case on the July 2025 order, up from
+  £131.00 on the February 2025 order. The February 2026 order was placed at
+  £148.00 and Marina expects the next one to be higher.
+- **Kingsdown.** There is no price list. Marina and the farm agree a tray price
+  by text at the start of each season and it moves within the season without
+  either of them writing it down. £12.80 is what a tray cost in the week of
+  15 June 2026.
+
+---
+
+## 1.7 Everything the business sells
+
+| Product | Format | Cotham Hill | Gloucester Road | Wholesale |
+|---|---|---|---|---|
+| Single scoop | Cone or cup | £4.20 | £4.00 | — |
+| Double scoop | Cone or cup | £5.60 | £5.30 | — |
+| Triple scoop | Cone or cup | £6.80 | £6.50 | — |
+| Waffle cone instead of wafer | Supplement on any scoop | £0.50 | £0.50 | — |
+| 500 ml retail tub | Printed tub, printed lid, sleeve | £7.50 | £7.50 | £4.20 |
+| 125 ml mini tub | Tub and lid | £2.80 | £2.80 | £1.60 |
+| 1.5 L catering tub | Lidded tub, restaurant plating portions | — | — | £10.50 |
+| 5 L napoli pan | Stainless or polycarbonate | — | — | £28.50 |
+| Gelato cake, 8" | Boxed on a board, pre-order only | £38.00 | £38.00 | — |
+| Affogato | Espresso over one scoop | £4.80 | — | — |
+| Espresso | Cup or takeaway | £2.40 | — | — |
+| Americano | Cup or takeaway | £2.90 | — | — |
+| Cappuccino | Cup or takeaway | £3.40 | — | — |
+| Flat white | Cup or takeaway | £3.40 | — | — |
+| Latte | Cup or takeaway | £3.50 | — | — |
+| Mocha | Cup or takeaway | £3.80 | — | — |
+| Hot chocolate | Cup or takeaway | £3.40 | — | — |
+| Oat milk | Supplement on any drink | £0.40 | — | — |
+| Syrup shot | Supplement on any drink | £0.50 | — | — |
+| Canned soft drink | 330 ml can | £2.00 | £2.00 | — |
+| Bottled water | 500 ml bottle | £1.60 | £1.60 | — |
+
+**How the prices work:**
+
+- Every flavour is the same price. A special costs what fior di latte costs, at
+  the counter and on the pan.
+- A pan is £28.50 whatever is in it. Marina set that in 2022 and has not moved
+  it. Dan has said twice that pistachio should not cost a café the same as fior
+  di latte. It still does.
+- Gloucester Road's scoop prices were set 20p under Cotham's when it opened in
+  March 2024, because the parade it sits on is cheaper. The two tills carry the
+  same product names at different prices, and the till reports do not say which
+  shop a line came from unless someone filters them.
+- The 5 L pan is the same price in steel and in polycarbonate. Polycarbonate is
+  lighter, is used for sorbets, and goes to accounts that don't return steel.
+- Wholesale prices are the same for every account. There is no printed price
+  list; Marina quotes from memory and types the invoices on Sunday.
+- The 1.5 L catering tub goes to the two restaurants and nowhere else. The
+  500 ml tub goes to the deli, the four farm shops and the cinema, and
+  occasionally to a restaurant. The cinema also takes 125 ml minis. Everyone
+  else takes 5 L pans.
+- Coffee is Cotham Hill only. Gloucester Road has no machine.
+- The 125 ml mini is the kids' portion at the counter. It is also the format
+  that goes to events and school fairs, and what a giveaway is usually made
+  of.
+
+---
+
+## 1.8 The suppliers
+
+| Supplier | Where | What they bring | Rhythm | Lead time | Minimum order | Credit terms |
+|---|---|---|---|---|---|---|
+| **Whitehall Dairy** | Chew Valley | Whole milk, whipping cream 38% | Mon / Wed / Fri, 06:30 | Texted the night before, delivered on the next scheduled drop | None on the standing order; £45 for an extra drop | 30 days |
+| **Terra Nostra Ingredients** | Watford, importer | Nut pastes, cocoa, chocolate, stabiliser bases, dextrose, glucose, inverted sugar, freeze-dried fruit, purées, Italian dry goods, napoli pans | Fortnightly, pallet by courier | 5 working days | £150, and £400 for free carriage — £42 a pallet below that | 30 days |
+| **Severn Catering Supplies** | Avonmouth | Sugar, skimmed milk powder, eggs, cream cheese, biscuits, fresh produce, cleaning chemicals | Weekly, Thursday | Next day if ordered before 15:00 | £150 | 14 days |
+| **Avonside Packaging** | Yate | Tubs, lids, cups, spoons, napkins, bags, printed sleeves, cake boxes | Monthly, on order | 3 weeks on stock lines, 10–12 weeks on printed lids | £250, and 5,000 units on printed lids | Pro forma until 2024, now 30 days |
+| **Marchetti Cones** | Italy, ordered through Terra Nostra | Waffle and wafer cones | Every 6 weeks, on Terra Nostra's pallet | 6 weeks | 10 cases | With Terra Nostra |
+| **Kingsdown Fruit Farm** | Wrington | Fresh strawberries, rhubarb, occasionally figs | Twice weekly, June–August only | 2 days, in season only | 8 trays | Cash / bank transfer, informal |
+| **Coldharbour Roastery** | Bristol | Coffee beans, for the shop and for the coffee gelato | Weekly, direct to Cotham Hill | Order by Friday for Tuesday | 6 kg | Card on delivery |
+| **Bristol Ice & Dry Ice** | Avonmouth | Dry ice for events and the container runs | On call | Same day if ordered before 10:00 | 10 kg, one tub | Card |
+| **Bristol Cash & Carry** | Days Road | Coffee-bar milk, oat milk, syrups, hot chocolate, paper cups, lids, stirrers, cans, water | Whenever the shop runs short | None, it is collected | None | Card at the till, the shop's own |
+
+---
+
+## 1.9 The wholesale accounts
+
+Thirty-one on the book. Standard terms are 14 days. Two accounts are on thirty
+days, both agreed before the standard existed, and Marina has never got either
+of them off it.
+
+| Account | What it is | Where | Credit terms |
+|---|---|---|---|
+| Caffè Umberto | Café | Clifton | 14 days |
+| Bar Trentanove | Café and bar | Stokes Croft | 14 days |
+| Cleeve Coffee House | Café | Bishopston | 14 days |
+| Marlborough & Vine | Café | Kingsdown | 14 days |
+| The Blue Kettle | Café | Redland | 14 days |
+| Ashton Court Coffee | Café | Ashton | 14 days |
+| Sixpenny Coffee | Café | Southville | 7 days |
+| Rowan & Rye | Café | Bedminster | 14 days |
+| Trellick Coffee House | Café | Montpelier | 14 days |
+| The Chandlery Café | Café | Harbourside | 14 days |
+| Verdi Espresso Bar | Café | Old Market | 14 days |
+| Copper Kettle Tearooms | Tearoom | Henleaze | 14 days |
+| Nore Coffee | Café | St Werburgh's | 7 days |
+| Brandon Hill Coffee | Café | Park Street | 14 days |
+| Elm Tree Café | Café | Westbury-on-Trym | 14 days |
+| Saltford Riverside Café | Café | Saltford | 14 days |
+| The Paragon Café | Café | Clifton Village | 14 days |
+| Harbourmaster Coffee | Café | Portishead | 14 days |
+| Two Sisters Coffee | Café | Easton | Pro forma — was 14 days until two late payments in 2025 |
+| Fishponds Coffee Rooms | Café | Fishponds | 14 days |
+| The Old Bakehouse | Café and bakery | Chew Magna | 14 days |
+| Wells Road Coffee | Café | Totterdown | 7 days |
+| **The Hollow** | Restaurant | Old City | **30 days** — agreed 2021, never revised |
+| Wapping Wharf Kitchen | Restaurant | Wapping Wharf | 14 days |
+| Papavero Delicatessen | Deli | Whiteladies Road | 14 days |
+| **The Regent Picture House** | Cinema | Bishopston | **30 days** — agreed 2022 by their finance office, never revised |
+| Avon Gorge House Hotel | Hotel | Sion Hill | Pro forma — pays before delivery. Orders four times a year and is always a hassle |
+| Radford Mill Farm Shop | Farm shop | Timsbury | 14 days |
+| Yeo Bank Farm Shop | Farm shop | Congresbury | 14 days |
+| Blagdon Hill Farm Shop | Farm shop | Blagdon | 14 days |
+| Nailsea Farm Larder | Farm shop | Nailsea | 14 days |
+
+*End of session 1.*
+
+---
+---
+
+# Session 2 — how a product is made and sold
+
+**Not yet written.** Everything below is carried across word for word from the
+version at `44a32e6` and is unrevised. Section numbers inside it are the previous
+version's. Session 2 rewrites it against its own specification: a recipe for
+every flavour, which flavour is sold in which format, yield, and the coffee side.
 
 ## 4. How a product gets made
 
@@ -179,37 +622,44 @@ Made in 55 kg runs. Dan scales on the pasteuriser's own scale and rounds milk to
 A 12 kg mix comes out at roughly 15.5–17 L depending on overrun, which depends on the machine, the fat content and how long it is run. Machine 2 is known to run drier. Nobody logs overrun. Output is recorded as **pans and tubs filled**, and a part pan is written as ½ or ¾ by eye.
 
 ---
-
-## 5. Where stock sits
-
-**Production unit**
-
-- Dry store (ambient): sugars, powders, cocoa, pastes, unopened chocolate, packaging overflow
-- Walk-in chiller (+2 to +4°C): milk, cream, aged base in buckets, fresh fruit, opened pastes
-- Ingredient freezer (−18°C): fruit purées, freeze-dried fruit, biscuit base
-- Blast freezer (−35°C): transit only, but in practice things sit in it for two days when the holding freezer is full
-- Holding freezer (−22 to −25°C): all finished gelato, tubs, minis, finished cakes
-- Packaging mezzanine: tubs, lids, cups, spoons, cones, bags
-- Office cupboard: printed sleeves, promo items
-
-**Cotham Hill shop**
-
-- Display cabinet, 24 wells (−14 to −16°C)
-- Two chest freezers in the back corridor
-- Under-counter fridge: milk for coffee, cream
-- Shelf unit: cones, cups, napkins, beans
-
-**Gloucester Road shop**
-
-- Display cabinet, 16 wells
-- One under-counter chest freezer, holds about 14 pans
-- Two shelves. That is all.
-
-**The van** — a refrigerated Citroën Relay. Stock lives in it between 06:30 and about 14:00 every operating day, and sometimes overnight.
-
-**The container** — a rented freezer container at a storage yard in Avonmouth, taken from May to September since 2023. Overflow finished stock and spare pans. Someone drives out about twice a week. Stock that goes in during a June glut is routinely still there in September.
-
 ---
+
+# Session 3 — the rules, and how stock moves
+
+**Not yet written.** Everything below is carried across word for word from the
+version at `44a32e6` and is unrevised. Section numbers inside it are the previous
+version's. Session 3 rewrites it against its own specification: the rules with
+their numbers and the dates they last changed, and every way stock moves paired
+with the document filled, who fills it, when it is filled, and every field on
+that document.
+
+## Carried — how often specials run
+
+From §2 of the previous version. The flavours themselves are now in session 1;
+this sentence is a rule and belongs here.
+
+> Dan runs two or three specials a week in summer, one a fortnight in winter.
+
+## Carried — the shape of the business across the year
+
+**How the shape of the business changes across the year:**
+
+- **May to September**: everything. Cabinet full at both shops, 12–16 production batches a day, wholesale five days a week, an overflow freezer rented offsite. Sorbets go from about 20% of volume to about 35%.
+- **October to November**: wholesale halves as the cafés stop taking gelato. Restaurant accounts hold up. Cake orders start.
+- **December**: cakes and panettone semifreddo carry the month. Gloucester Road cuts to Thursday–Sunday.
+- **January to February**: the thin part. Gloucester Road closes entirely for two weeks after New Year — this began in 2025 and Marina argues about it every autumn. Production drops to two or three days a week and the kitchen builds freezer stock of the stable core flavours.
+- **March to April**: Easter, restart, first big packaging order of the year.
+
+## Carried — constraints that bite
+
+From §3 of the previous version. The lead times and minimums are also stated in
+session 1's supplier table; the ordering practice and the stockouts belong here.
+
+**Constraints that bite:**
+
+- Printed 500 ml lids have a 10–12 week lead time and a 5,000 unit minimum. Marina orders once in February and once in July and has run out in August two years running.
+- Terra Nostra's minimum for free carriage is £400. Small top-up orders therefore don't happen; the kitchen waits.
+- Kingsdown will only deliver if the order is at least eight trays, which is more strawberries than a slow week needs.
 
 ## 6. Every way stock moves
 
@@ -247,8 +697,6 @@ A 12 kg mix comes out at roughly 15.5–17 L depending on overrun, which depends
 | **Waste — packaging damage** | Crushed sleeve of cones, dropped case of tubs | Nothing | — |
 | **Owner's household** | Marina takes a pan home most weeks | Nothing, and it is a running joke | — |
 
----
-
 ## 7. Who writes what down, in what
 
 - **Production sheet** — a paper A4 clipboard sheet per day, on the wall by the blast freezer. Columns: batch no, flavour, mix kg, pans out, tubs out, freeze time, initials. Photographed by Dan and sent to Marina's WhatsApp at the end of each day. The photos are the archive. The paper goes in a box and is thrown out annually.
@@ -261,8 +709,6 @@ A 12 kg mix comes out at roughly 15.5–17 L depending on overrun, which depends
 - **Marina's spreadsheet** — one workbook, "Sorella Master 2026.xlsx", with tabs for weekly takings, wholesale invoices, and a costing tab last updated in November 2023.
 
 There is no stock system. There never has been.
-
----
 
 ## 8. The rules, with numbers
 
@@ -295,8 +741,6 @@ There is no stock system. There never has been.
 
 Reorder points for anything not in this table — cocoa, chocolate, purées, dextrose, cones, cups, spoons — are "Dan looks at the shelf on Sunday". There is no written level.
 
----
-
 ## 9. What Marina measures
 
 Weekly, on Sunday, from the till and the bank:
@@ -325,8 +769,6 @@ The costing tab that tells her a pistachio pan costs £14.80 to make was built i
 - Loading order in the van. The wholesale drops go first, so shop stock sits in the van until 13:30 and arrives soft.
 - Whether the container stock from July is still good in September.
 
----
-
 ## 11. What nobody measures
 
 Honestly, and these are the real ones:
@@ -350,6 +792,12 @@ Honestly, and these are the real ones:
 
 ---
 ---
+
+# Session 4 — the opening count and the operational days
+
+**Not yet written.** Everything below is carried across word for word from the
+version at `44a32e6` and is unrevised. Session 4 rewrites it against its own
+specification: the opening count on the adoption date, and the operational days.
 
 # Tuesday, 16 June 2026
 
