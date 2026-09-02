@@ -163,6 +163,37 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
   contested number is one derived slot whose definition moves, or two named slots
   that disagree, is the definition-change stage's material arriving early, and it
   is undecided. Raised 2 Sep · blocks: definition change
+- A count line in Sorella's opening count carries a confidence — weighed,
+  counted, eyeballed, or not counted — and the kernel has nowhere to put one.
+  `assertion`'s column list is closed and a confidence is not a business need in
+  the `ontology` sense either: it is a property of how a fact came to be known,
+  not of what the fact says. Whether it is a second assertion about the first, a
+  slot on the count class in the map, or something the log must refuse, is
+  undecided, and 152 of the profile's own count lines carry one. Raised 3 Sep ·
+  blocks: recording
+- An absent count line is evidence and cannot be told from an unlooked-for one.
+  Sorella's count sheet is blank ruled paper with no printed list of what should
+  be there, so a flavour that has run out simply has no row: the frozen-purée
+  strawberry sorbet is at nought on Tuesday night and Dan wrote nothing, while
+  coconut and basil were written and struck through, which is a different fact
+  arrived at by accident. A generated count form has a list and will therefore
+  record an absence the paper one could not, which changes what the count means
+  rather than digitising it. Raised 3 Sep · blocks: generation
+- Two pans went to wholesale accounts on Tuesday having sat in the van since
+  Saturday midday, and nothing on the delivery note, the label or the van sheet
+  distinguishes them from a pan that left the holding freezer that morning. The
+  14-day pan best-before reads the freeze date, which is unaffected. So a thing's
+  location history is the evidence and the thing carries none of it; whether the
+  log answers "where has this been" by walking movements or whether a movement
+  must name the thing rather than the flavour is the row-identity question
+  arriving from the business side. Raised 3 Sep · blocks: live use
+- The one rule that moved after Sorella's adoption date was written in the corner
+  of a cabinet-plan sheet at one shop and nowhere else. The definition-change
+  stage assumes a definition change is authored into the map; here the business's
+  own record of it is a scribble one person can read, and the person who executes
+  the rule was never told either number. Whether the map is where a rule change
+  becomes visible or only where it becomes computable is untried, and it decides
+  what the replay is a replay of. Raised 3 Sep · blocks: definition change
 
 ## T2 — wait for a user
 
@@ -503,11 +534,6 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
   apart by two sessions that could not see each other. The two wordings agree.
   Neither is removed because the file is append-only; a reader should know one
   claim is meant, not two. Raised 2 Sep · blocks: -
-- Sorella's Tuesday has 4.8 kg of strawberries unaccounted for: fourteen punnets
-  in, one binned mouldy, 2.6 used by the sorbet batch, and eight counted where
-  10.4 were expected. Nothing in the profile says whether that is deliberate
-  shrinkage or an arithmetic slip, and an unmarked discrepancy cannot be told
-  apart from a mistake. Raised 2 Sep · blocks: -
 - A supplier that is collected rather than delivered has no lead time and no
   minimum order. Session 1 of Sorella's profile states both as "None" for Bristol
   Cash & Carry, which supplies the whole coffee bar. Whether "None" is a value
@@ -528,28 +554,6 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
   Whether an old price enters the log as a dated fact or stays prose is
   undecided, and master data is the cheapest place the two time axes could be
   exercised on something other than a movement. Raised 2 Sep · blocks: interview
-- Cotham's takings on Sorella's carried Tuesday do not reconcile with its own
-  item list at session 1's prices, and Gloucester Road's do: 149/63/8 scoops plus
-  11 tubs and 14 minis come to £1,103.60 against a stated £1,106, while Cotham's
-  431 scoops would need a single near £3.38 to reach £2,418. The carried drinks
-  do fit — 96 coffees, 12 affogato and 41 cold drinks come to roughly the 18% of
-  Cotham's takings that §11 says the coffee side is. So one of the two figures
-  moves and it is not the price list. Raised 2 Sep · blocks: profile session 4
-- A 12 kg mix fills three napoli pans and a part, and the production sheet writes
-  five and six. Session 2 states what Dan expects per format — a pan filled level
-  weighs about 3.6 kg, and the carried yield line puts a 12 kg mix at 15.5–17 L,
-  which is three pans and a bit at five litres a pan. The carried Tuesday records
-  6, 5, 5, 4+9 tubs and 4+12 tubs against 12.0 kg each. Both numbers cannot
-  stand: either the pan is not what the profile says it is, or the day is. It is
-  stated in `§2.4` and not settled, because the day is session 4's.
-  Narrowed at the PM desk, 2 Sep: it is the day. The eight batches are 12.0 kg
-  each and claim between 15.0 L and 30.0 L of output, so they contradict one
-  another before any pan size is chosen. Fitting the six-pan batch inside even a
-  generous 80% overrun needs a pan under 3.27 L; fitting the three-pan batch
-  above the volume of the mix itself needs one over 3.63 L. No pan satisfies
-  both, so shrinking the pan is not available as a repair and session 4 rewrites
-  the production sheet's pan counts.
-  Raised 2 Sep · blocks: profile session 4
 - Water is named in four recipes and is deliberately not a bought item. `§1.6`
   excludes it in its own preamble — not tracked against product — and `§2.1`
   names it as the one thing a recipe calls for that the buying table does not

@@ -2530,3 +2530,270 @@ Two scripts, both in the scratchpad, both passing.
    objects; nothing else in the business does.
 
 Nothing here is proposed for `DECISIONS.md`. Seven questions went to `OPEN.md`.
+
+## 2026-09-03 · Sorella's profile, session 4: the opening count, Monday, and Tuesday repaired
+
+`business/sorella/profile.md`, session 4 rewritten in place. 2,102 lines in,
+2,744 out; the session 4 block is 770 lines against the 149 it replaced. The
+rebuild was planned as four sessions and is five: the status table at the head of
+the file now says so, and a session 5 heading holds Wednesday 17 June to Sunday
+21 June, unwritten.
+
+### What was written
+
+Three sections.
+
+- **4.1 The opening count, Monday 15 June 2026.** 152 count lines across
+  thirteen headings, every one carrying a confidence. Six sheets in five hands —
+  Dan the dry store and the chiller, Tomas the three freezers, Jordan the van,
+  the mezzanine and the office cupboard, Aoife Cotham Hill with Yusuf reading
+  the cabinet, Priya Gloucester Road alone. Six places were not counted and each
+  says why.
+- **4.2 Monday 15 June 2026.** A production day with no milk on it: the failed
+  dairy drop, Aoife's cash and carry run, one pasteuriser run instead of two, six
+  batches, both shops trading with no van, the cash-up, and the aged base from
+  Saturday poured away.
+- **4.3 Tuesday 16 June 2026**, repaired. Same shape as the carried day, with the
+  dairy delivery, the production sheet and Cotham's takings moved and everything
+  downstream of the production sheet moved with them.
+
+### The three errors, closed
+
+**The dairy day.** §1.8 and §3.4 both put the milk on Monday, Wednesday and
+Friday, and the carried Tuesday recorded a Whitehall delivery. The schedule is
+untouched. Monday's drop failed — Whitehall's Chew Valley round went out without
+Feeder Road on it — and turned up on Tuesday's round at 06:40 with **12 bags and
+8 cans**, the two numbers the rest of the day depends on. Whitehall's note is
+printed from the standing order, dated **Mon 15 June**, and was signed on
+**Tue 16 June** without anybody changing the date. Dan rang at 08:05 and nothing
+at Sorella records the call.
+
+**The pan counts.** Every one of the nine batches on Tuesday's sheet was
+rewritten against §2.4's fill: a pan holds about 3.6 kg, a 500 ml tub about
+460 g, a mini about 100 g, and a 12.0 kg mix is three pans and a part. The day
+went from 34 full pans and one half off eight fillable batches to **22 full pans
+and five parts**, with tubs and minis carrying the difference. Monday's six
+batches were written to the same rule from the start.
+
+**Cotham's takings.** £2,418 stated against an item list worth about £2,825.
+The list did not move and neither did §1.7. Takings are now **£2,892.10**, and
+the day states the supplements and comps that make it checkable: 118 waffle-cone
+supplements, 23 oat milk, 19 syrup shots, the 96 coffees broken out by drink,
+27 cans and 14 waters, and two comps rung on the comp key. Checked by script
+against §1.7's prices: **exact to the penny**. Monday's two shops were written
+the same way and both are exact — Cotham £2,078.60, Gloucester Road £826.70.
+
+**Gloucester Road's Tuesday was not touched** and its £2.40 stands. Its item
+list carries no cans, no water and no waffle supplements while every other
+till report in the file does, so the gap is now the only unreconciled till
+total in the profile and it is left standing deliberately.
+
+### What the opening count assumed, and why
+
+Written forwards, from the rhythm §1.8 and §3.4 already state, and never
+backwards from Tuesday night.
+
+- **Milk: 8 bags on Monday morning.** Whitehall come Monday, Wednesday and
+  Friday; a 55 kg white base run eats 36.9 kg, which is three bags and a bit at
+  Dan's 10.3 kg. Eight bags is Friday's drop with Friday's and Saturday's
+  production out of it and Sunday closed. It is also why a failed Monday drop
+  costs Dan a run rather than a day.
+- **Pistachio: 1 sealed tin and 1 open.** §3.4 reorders at 2 tins, and by
+  §1.5's counting rule an open tin is a tin. So Monday morning is the reorder
+  point, which is why Terra Nostra's fortnightly pallet was on the road.
+- **Base 50: 4 bags, one open.** The reorder level is 4, the order is a carton
+  of 10, and a carton came on Tuesday.
+- **Caster sugar: 4 sacks.** The reorder is 3, and Severn's drop that did not
+  arrive was carrying 4 more.
+- **Holding freezer: 56 full pans and 3 part pans**, which is a Monday-morning
+  low — Saturday's van run out of it, Sunday's trade out of the shops, nothing
+  made since Saturday. Tuesday takes 32 pans out of it before noon.
+- **Cotham: 16 pans in the back freezers and 9 pans' worth across 24 wells.**
+  Two days' trade with no delivery until Tuesday afternoon, which is what
+  Monday and Tuesday then are.
+- **Gloucester Road: 6 pans and 13 wells with something in them.** It runs out
+  of pistachio and stracciatella on Tuesday afternoon and Aoife drives two over,
+  which the carried day already recorded.
+- **The container was not counted** and nothing was assumed about it.
+
+The order sizes, the delivery days and the reorder points constrained this
+tightly enough that most of it had one answer.
+
+### What came out at Tuesday night, and by how much it missed
+
+Worked forward in a scratchpad script — the profile states observations and
+computes nothing. Of the lines Dan counted at 21:10:
+
+| Line | Forward | Counted | |
+|---|---|---|---|
+| Whole milk, bags | 9 | 9 | |
+| Cream, cans | 7 | 7 | |
+| Caster sugar, sacks | 2, one part | 2, one part | |
+| Dextrose, sacks | 3 sealed + 1 open | 3 sealed + 1 open | |
+| SMP, bags | 1, part | 1, part | |
+| Base 50, bags | 13 | 13 | |
+| Pistachio / hazelnut / cocoa / chocolate | as counted | as counted | |
+| Aged white base, buckets | 2 full + 6.5 kg | 2 full, 1 part | |
+| Mango / raspberry / passionfruit purée | 11 / 6 / 4 | 11 / 6 / 4 | |
+| 500 ml tub cases, lid cases, mini sleeves | 6 / 2 / 9 | 6 / 2 / 9 | |
+| Holding freezer, full pans, all 16 flavours | 63 | 63 | |
+| 1.5 L catering tubs | 9 | 9 | |
+| 8" cakes | 4 | 4 | |
+| **Strawberries, punnets** | **12** | **8** | **4 punnets, 8 kg** |
+| **500 ml tubs, assorted** | **123** | **118** | **5 tubs** |
+| **125 ml minis, assorted** | **68** | **64** | **4 minis** |
+
+**Three lines miss and everything else lands.** That was chosen, and the shape
+of the choice is the finding: the three that miss are the three where the
+business has no witness.
+
+- **The strawberries.** §3.2 says fruit arrives with *nothing* — Kingsdown text
+  Marina a number of trays and a price, and the text is the only record that
+  anything was left at the roller door. On Tuesday the text arrived at 19:40,
+  eleven and a half hours after the trays did. Two punnets in the chiller,
+  fourteen on the text, one binned mouldy, three trays hulled for batch 0842:
+  eight counted. The old `OPEN.md` line put this at 4.8 kg on the assumption
+  that the kitchen opened Tuesday with no strawberries. It did not — it opened
+  with two punnets — so the number is **8 kg**, and it is now deliberate rather
+  than unmarked.
+- **The tubs and the minis.** These are the only two lines on either count that
+  are a tally of more than a hundred loose objects, and each was counted once, by
+  one person, at 21:10, after a fourteen-hour day. Nine misses out of about two
+  hundred objects is what that is worth.
+
+Every line that reconciles is a line some document witnessed. That is the
+sentence this session exists to have produced, and it was not designed — it
+fell out of writing the opening position forwards and then working two days
+through it.
+
+### Every downstream number that moved with the pan counts
+
+- **Tuesday's production sheet**, all nine rows.
+- **Monday's production sheet**, which was written to the same rule and never
+  existed before.
+- **The holding freezer's opening count**, which had to hold 32 pans for
+  Tuesday morning that the day's own production could not supply: the van loads
+  at 06:30 and the first batch left the blast freezer at 13:05, so **nothing on
+  either van sheet or any delivery note was made that day**. That is a
+  consequence of the repair and it is stated on the page.
+- **Tuesday's evening count**, every flavour line.
+- **The part-pans line**, which is new. §2.4 says a part pan is written as ½ or
+  ¾ by eye; once every batch produces one, thirteen of them are standing on a
+  shelf by Tuesday night with nothing saying what is in them.
+- **Two pans that were not in the freezer at all.** Saturday's run left a fior
+  di latte and a mango sorbet in the van undelivered; they were counted in the
+  van at 06:05 on Monday, left there, and went out to Caffè Umberto and Bar
+  Trentanove on Tuesday morning. Sixteen of the eighteen wholesale pans came out
+  of the holding freezer and two did not.
+
+### The rule that changed, and why that one
+
+**Notice required on a cake order: 3 days → 48 hours, 16 June 2026.** Conflict 9
+in §3.4 was already sitting there — Marina wrote three days on 7 June, Aoife had
+been telling customers forty-eight hours since 2022 and had never been told
+otherwise. The first cake order after adoption came in on Aoife's number at
+14:20 on Tuesday with Marina standing at the counter. The order stood and Marina
+let the number stand with it.
+
+It is that one because it is the only conflict in the fifteen that a single
+ordinary event settles, and because it settles in the direction that makes the
+written rule wrong rather than the practice — which is the harder case for a
+system that will be handed the written one. What it said before survives in the
+row, in conflict 9, and nowhere in the business: Marina wrote nothing, and
+Aoife's record of the change is *"48 hrs — M agreed 16/6"* in the corner of the
+cabinet-plan sheet at one shop. Rekha, who builds the cakes, was never told
+either number.
+
+### Movements written down later than they happened
+
+Three are on the page with both days visible.
+
+- **Cotham's cabinet expiry**, three part pans binned at **21:05 on Monday
+  15 June**, written on the weekly waste sheet on **Thursday 18 June** from
+  memory as *"Mon — 3 pans"*, with no flavours and the *how much*, *why* and
+  *initials* columns blank.
+- **Whitehall's note**, dated **Mon 15 June**, handed over and signed on
+  **Tue 16 June**.
+- **Kingsdown's text**, 14 trays left at 08:15 and texted at 19:40 the same day.
+
+### Changes to sessions 1, 2 and 3
+
+**Sessions 1 and 2: nothing.** Checked by slicing both versions between headings
+and comparing line sets — zero lines differ.
+
+**Session 3: four edits, all in §3.4, all forced by the rule that moved.**
+
+1. The §3.4 preamble gains a paragraph saying one rule has moved since the
+   system started and pointing at §4.3.
+2. The cake-notice row: 3 days / 7 June 2026 → 48 hours / 16 June 2026, carrying
+   what it said before and how it settled.
+3. *Where two rules disagree*: "None of them is settled" → "Only one of them has
+   settled — number 9".
+4. Conflict 9 itself, restated as the one that settled, with the date and where
+   the old number now survives.
+
+The header's status table and its sentence also moved, from four sessions to
+five. That is bookkeeping.
+
+### What was run
+
+Four checks, in the scratchpad, all passing.
+
+- **Place coverage.** Parses `§1.3`'s tables, takes the 19 places that hold
+  Sorella's own stock (the 9 supplier origins and 10 outside destinations hold
+  none), and looks for each in `§4.1`. `19 / 19 present, 0 absent`.
+- **Confidence.** Every three-column row in `§4.1`: `152 count lines, 0 without
+  one of the four words`. 54 of them are *eyeballed* or *not counted*.
+- **Session immutability.** `git show 7869cd6` sliced between session headings:
+  sessions 1 and 2 zero lines changed, session 3 eighteen lines across the four
+  edits above and nothing else.
+- **Takings.** Every till total multiplied out against `§1.7`'s prices: Cotham
+  Monday and Tuesday and Gloucester Road Monday exact to the penny; Gloucester
+  Road Tuesday £2.40 over its own list, untouched and carried.
+- A fifth script worked the whole two days forward from the opening count and
+  produced the table above. It is a scratchpad tool and nothing it computes is in
+  the profile.
+
+### Surprising
+
+1. **The reorder points wrote the opening count.** The plan was to invent a
+   plausible Monday morning. In practice §3.4's four written levels — pistachio
+   at 2 tins, Base 50 at 4 bags, sugar at 3 sacks, hazelnut at 2 tins — plus a
+   fortnightly pallet already on the road on Tuesday fixed those four lines to
+   within one object, because a business that has just ordered is *at* its
+   reorder point. The freedom was much smaller than it looked.
+2. **The milk arithmetic closed on the first attempt.** Twelve bags in and nine
+   at 21:10 was given. Two 55 kg runs eat 73.8 kg, a bag is 10.3, so Tuesday
+   consumes seven bag-objects and Tuesday morning has to hold four. One 55 kg run
+   on Monday puts Monday morning at eight. Nothing was tuned; the recipe and the
+   rule of thumb determined it.
+3. **Nothing that went out on Tuesday's van was made on Tuesday.** The van loads
+   from 06:30 and the first batch cleared the blast freezer at 13:05. This is
+   true of the carried day too and nobody had noticed, because the carried
+   production sheet made enough pans to hide it. Once a batch is three pans, the
+   holding freezer's opening position becomes the only thing that can supply a
+   run — which is exactly the number a system is supposed to know and this
+   business does not.
+4. **Gloucester Road's count has no *weighed* on it and no *counted* on
+   anything holding gelato.** Priya had twenty minutes, no second person, and a
+   chest freezer that has to be unpacked to be counted, so she lifted the top
+   layer and said six, and wrote flavour names against the wells with no
+   fractions. By the ratio of hard lines to soft, Cotham's cabinet is lower still
+   (2 of 19) — but a cabinet well is a fraction anywhere, and Gloucester Road is
+   the only *place* where no container of stock was opened. §1.1 says that shop
+   has no manager. This is what that looks like on a Monday morning.
+5. **The habit lasted one day.** Marina asked for a confidence word on every
+   line on Monday and was at a wedding on Tuesday, and Dan's evening count
+   carries none. The adoption of a practice and the adoption of a system are
+   different events and the profile now contains both.
+6. **A count sheet cannot say that something has run out.** The frozen-purée
+   strawberry sorbet is at nought on Tuesday night and Dan simply wrote no line,
+   while coconut and basil were written and then struck through — a stronger fact,
+   arrived at by accident. §3.3 already said the sheet is a list of what is there.
+   Writing one made it clear that a generated form with a printed list will record
+   absences the paper never could, which changes what a count means rather than
+   digitising it.
+
+Nothing here is proposed for `DECISIONS.md`. Three `OPEN.md` lines were struck —
+the strawberries, Cotham's takings, and the production sheet's pan counts — and
+four were added.

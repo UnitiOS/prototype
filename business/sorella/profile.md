@@ -6,16 +6,19 @@ Nothing here is computed. Where a balance, a total or a variance could follow
 from what is written, working it out is the system's job and not this file's.
 Every figure is one somebody in the business would know or say.
 
-**This file is being rebuilt in four sessions.** Sessions 1, 2 and 3 are written.
-Session 4 holds the material from the previous version, carried across word for
-word and marked unrevised; it will be rewritten against its own specification.
+**This file is being rebuilt in five sessions.** It was planned as four. Session
+4 was to hold the opening count and every operational day, and one session
+cannot write seven days at the density that makes a day enterable, so the week
+is split: sessions 1 to 4 are written, and session 5 carries Wednesday to
+Sunday.
 
 | Session | What it holds | State |
 |---|---|---|
 | 1 | The frame and the master data — what exists before anything moves | Written |
 | 2 | How a product is made and sold — recipes, formats, yield, the coffee side | Written |
 | 3 | The rules with their dates; every way stock moves, and the document filled | Written |
-| 4 | The opening count on the adoption date, and the operational days | Carried, unrevised |
+| 4 | The opening count on the adoption date, Monday 15 June, and Tuesday 16 June | Written |
+| 5 | Wednesday 17 June to Sunday 21 June, and the week's close | Not yet written |
 
 ---
 ---
@@ -1582,6 +1585,10 @@ Every rule states its number and the day it last changed. A rule marked **7 June
 written version is not quite what has been happening the row says what it was
 before.
 
+One rule has moved since the system started: the notice required on a cake
+order, on **16 June 2026**, the second day. It is the only row below whose change
+happened while anybody was recording, and §4.3 says how it happened.
+
 ### Food safety and shelf life
 
 These are in the HACCP plan and are the only rules in the business that anybody
@@ -1608,7 +1615,7 @@ outside it has ever asked to see.
 | Refill a well when the pan in it is below | one third | Aoife | Practice since Cotham opened; **written down 7 June 2026**, unchanged |
 | Staff allowance | 1 scoop and 1 drink per shift | Marina | Original, 2021. **Wording changed 7 June 2026** to "one scoop and one drink, a coffee or a can" — Gloucester Road has no machine and Priya has always taken a can |
 | A remade or comped cone | free, and rung on the comp key | Aoife | Practice; **written down 7 June 2026**, unchanged |
-| Notice required on a cake order | 3 days | Marina | **7 June 2026** — Aoife has been telling customers 48 hours for two years and has not been told |
+| Notice required on a cake order | 48 hours | Marina | **16 June 2026** — was 3 days, which Marina wrote for the first time on 7 June 2026. Settled at the Cotham counter on the second day of the system: Aoife had been telling customers 48 hours since 2022 and had not been told otherwise, an order came in on the shorter notice, and Marina let it stand. Written by Aoife in the corner of the cabinet-plan sheet and nowhere else |
 | Flavours in a cake | 2, and no sorbet | Rekha | Practice since cakes started, 2022 |
 
 ### Wholesale
@@ -1683,8 +1690,9 @@ look.
 
 Eight of the rules above were written down for the first time on 7 June, and
 nobody read them against each other or against the ones that were already there.
-These are what a person would find if they did. None of them is settled, and none
-of them is a mistake anybody has noticed.
+These are what a person would find if they did. Only one of them has settled —
+number 9, nine days after it was written and one day after the system started —
+and none of them is a mistake anybody has noticed.
 
 1. **Four pans, and £120.** The minimum wholesale order is four pans and free
    delivery starts at £120, and a pan is £28.50. The two numbers were set five
@@ -1726,8 +1734,12 @@ of them is a mistake anybody has noticed.
    in a week when it plainly is or plainly is not, and neither has noticed that
    they are counting different things.
 9. **Three days' notice on a cake, and the forty-eight hours Aoife quotes.**
-   Marina wrote three days on 7 June. Aoife has been telling customers two days
-   since the cakes started and has not been told otherwise. Rekha builds them
+   Marina wrote three days on 7 June. Aoife had been telling customers two days
+   since the cakes started and had not been told otherwise. **This is the one
+   that settled**, on 16 June 2026, when an order came in on Aoife's number with
+   Marina standing at the counter — §4.3. The rule is forty-eight hours and the
+   three days survives in the row above and in this line and nowhere else in the
+   business. Rekha, who builds them, was never told either number and builds them
    either way.
 10. **One drink a shift, at a shop with no machine.** The allowance is a scoop
     and a drink. Cotham Hill has the only coffee machine; at Gloucester Road the
@@ -1951,45 +1963,583 @@ could not have held:
 ---
 ---
 
-# Session 4 — the opening count and the operational days
+# Session 4 — the opening count, and the first two days
 
-**Not yet written.** Everything below is carried across word for word from the
-version at `44a32e6` and is unrevised. Session 4 rewrites it against its own
-specification: the opening count on the adoption date, and the operational days.
+The day Sorella starts recording, the day before the day that was already
+written, and that day repaired.
 
-# Tuesday, 16 June 2026
+Nothing here is computed. Every number is one somebody wrote on a sheet, read
+off a till, or said out loud when asked. Where a count, a delivery note and a
+production sheet do not agree, all three are given as they stand.
 
-An ordinary early-summer trading day. Dry, 21°C. Both shops open, wholesale run day, six in production and on the road, seven across the two shops.
+## 4.1 The opening count, Monday 15 June 2026
 
-## Deliveries received
+Marina asked for a count because the system starts today and somebody told her a
+system needs a starting position. It is the first count anybody at Sorella has
+taken that was not the monthly count sheet, and it was taken the same way: blank
+ruled paper, written as things were found, no printed list of what should be
+there.
+
+Six sheets in five hands. Dan took the dry store and the walk-in chiller, Tomas
+the three freezers, Jordan the van, the packaging mezzanine and the office
+cupboard, Aoife took Cotham Hill with Yusuf reading the cabinet out to her, and
+Priya took Gloucester Road on her own. Marina walked round, wrote the notes at
+the foot, and rang Whitehall at five past eight when the milk had not come.
+
+### The four words
+
+Marina asked everybody to put a word beside every line saying how sure they
+were. There are four words on the whole count and nobody agreed them in advance:
+
+- **Weighed** — it went on the bench scale.
+- **Counted** — counted object by object.
+- **Eyeballed** — somebody looked at it and said a number.
+- **Not counted** — which is also an answer.
+
+Nobody has used a fifth. A part-used sack is *weighed* if Dan lifted it onto the
+scale and *eyeballed* if he did not, and the difference between those two lines
+is the whole of what this count knows about itself.
+
+### When it was taken
+
+The first line was written in the dry store at 05:55 and the last line at
+Gloucester Road at 12:00. The kitchen did not stop for it: the pasteuriser went
+on at 07:05 and the first batch was churned at 11:30, so the holding freezer was
+counted while base was ageing in a chiller Dan had already counted, and the
+packaging mezzanine was counted after Jordan had carried a sleeve of tubs down
+off it.
+
+**The first shelf and the last shelf were not true at the same moment.** Dan
+wrote a time against each of his two headings, Jordan wrote 06:05 against the
+van and 08:15 against the trolley he wheeled out of the blast freezer, Priya
+wrote 11:40 at the top of hers, and Tomas and Aoife wrote no times at all.
+
+### The production kitchen — the dry store
+
+Dan, 05:55 to 07:10. He put the bench scale on the floor and lifted the open
+sacks onto it, which nobody has ever done at a monthly count.
+
+| Item | Counted | Confidence |
+|---|---|---|
+| Caster sugar, 25 kg sack | 4, one of them open — 9.2 kg | Weighed |
+| Dextrose, 25 kg sack | 2, one open — 13.8 kg | Weighed |
+| Skimmed milk powder, 25 kg bag | 1, open — 12.4 kg | Weighed |
+| Glucose syrup DE38, 12.5 kg pail | 1, open. Not lifted; it is scooped warm and a good deal of it is up the sides | Eyeballed |
+| Inverted sugar, 14 kg pail | 2, one open | Counted |
+| Base 50 stabiliser, 2 kg bag | 4, one of them open with about a kilo in it | Counted |
+| Sicilian pistachio paste, 3.5 kg tin | 1 sealed, 1 open | Counted |
+| Hazelnut paste, 5 kg tin | 1 sealed, 1 open | Counted |
+| Cocoa 22/24, 5 kg bag | 1 sealed, 1 open — about 2 kg in it | Eyeballed |
+| Dark chocolate 70% callets, 10 kg box | 1 sealed, 1 open — about 6 kg | Eyeballed |
+| Vanilla bean paste, 1 kg tub | 2, one open | Counted |
+| Salted caramel variegate, 3 kg pail | 3, one open | Counted |
+| Peppermint extract, 500 ml bottle | 2, one part-used | Counted |
+| Amarena cherries in syrup, 2.6 kg jar | 4 | Counted |
+| Amaretti biscuits, 1 kg box | 2 | Counted |
+| Pumpkin purée, 3 kg tin | 2, both dated last October | Counted |
+| Marsala, 750 ml bottle | 1, part-used, from December | Counted |
+| Sea salt, fine, 1 kg tub | 3 | Counted |
+| Digestive biscuits, 400 g pack | 17 | Counted |
+| Honey, clear, 3 kg tub | 2, one open | Counted |
+| Ground cinnamon, 500 g tub | 1 | Counted |
+| Lemons, 5 kg net bag | 2 | Counted |
+| Lemon juice, bottled, 1 L bottle | 6 | Counted |
+| Elderflower cordial, 1 L bottle | 5 | Counted |
+| Coffee beans, espresso blend, 1 kg bag | 1, open — carried back from Cotham | Counted |
+| Sanitiser, no-rinse, 5 L drum | 2 | Counted |
+| CIP alkaline detergent, 10 L drum | 1, part-used | Counted |
+| Blue roll, roll | 9 | Counted |
+| Nitrile gloves, box of 100 | 6 | Counted |
+| Bin liners, roll of 25 | 4 | Counted |
+| Freezer label, roll of 500 | 2, one part-used | Eyeballed |
+
+No line was written for panettone, figs or rhubarb. Three seasonals are out of
+season, and nothing on the sheet says they are absent rather than unlooked-for.
+
+### The production kitchen — walk-in chiller
+
+Dan, 07:10 to 08:05, with the pasteuriser already running.
+
+| Item | Counted | Confidence |
+|---|---|---|
+| Whole milk, 10 L bag-in-box | 8, one of them open with about 4 kg left | Weighed |
+| Cream 38%, 5 L jerry can | 3, one open — about 2.6 kg | Weighed |
+| Aged white base, 25 L bucket | 1, part — about a third. Made Saturday afternoon | Eyeballed |
+| Sorbet syrup, stainless tub | 1 tub, about 8 kg | Eyeballed |
+| Coffee brew, lidded bucket | 1, about 2 L, steeped Friday night | Eyeballed |
+| Strawberries, 2 kg punnet | 2 | Counted |
+| Ricotta, 2 kg tub | 1 | Counted |
+| Cream cheese, 2 kg tub | 1 | Counted |
+| Eggs, medium free range, tray of 30 | 2 | Counted |
+| Opened purée, cling-filmed, 1 kg tub | 3 — mango part, raspberry part, blood orange part. None of the three was weighed | Eyeballed |
+| Basil, fresh, 100 g pack | A line was written and struck through. None found | Not counted |
+
+The bucket of aged base is the line Marina looked at twice. §3.4 gives the
+ageing window as 4 to 12 hours and it had stood since Saturday afternoon. Dan
+poured it away after the count and nothing was written on any waste sheet, so
+what survives of it is this line, which says only that it was there.
+
+### The production kitchen — ingredient freezer
+
+Tomas, 06:20 to 06:50.
+
+| Item | Counted | Confidence |
+|---|---|---|
+| Fruit purée, strawberry, 1 kg tub | 9 | Counted |
+| Fruit purée, raspberry, 1 kg tub | 12 | Counted |
+| Fruit purée, mango, 1 kg tub | 16 | Counted |
+| Fruit purée, passionfruit, 1 kg tub | 4 | Counted |
+| Fruit purée, peach, 1 kg tub | 6 | Counted |
+| Fruit purée, blood orange, 1 kg tub | 2 | Counted |
+| Fruit purée, pink grapefruit, 1 kg tub | 3 | Counted |
+| Coconut purée, 1 kg tub | 5 | Counted |
+| Freeze-dried raspberry pieces, 400 g tub | 2, one open | Counted |
+| Biscuit base, lidded tub | 1, about half | Eyeballed |
+| A box of about twenty 125 ml minis, nothing on the lids, frosted through | 1 box | Eyeballed |
+
+Tomas wrote the last line and left the box where it was. Nobody knows what
+flavour is in it or when it was filled, and nobody has binned it.
+
+### The production kitchen — blast freezer
+
+Tomas, 07:50. Jordan wheeled the trolley through into the holding freezer at
+08:15, after both freezers had been counted.
+
+| Item | Counted | Confidence |
+|---|---|---|
+| 5 L pan — 2 vanilla, 1 mango sorbet, 1 raspberry sorbet, on Saturday's trolley | 4 | Counted |
+
+The holding freezer was full on Saturday afternoon and the trolley never went
+through. §1.3 says things sit in the blast freezer for two days when that
+happens; this is the two days, and the only reason anybody wrote it down is that
+somebody was counting.
+
+### The production kitchen — holding freezer
+
+Tomas, 06:20 to 07:45, which is the longest single stretch of the count.
+
+| Item | Counted | Confidence |
+|---|---|---|
+| Fior di latte, 5 L pan | 6 | Counted |
+| Stracciatella, 5 L pan | 4 | Counted |
+| Pistachio, 5 L pan | 6 | Counted |
+| Hazelnut, 5 L pan | 3 | Counted |
+| Dark chocolate, 5 L pan | 4 | Counted |
+| Salted caramel, 5 L pan | 3 | Counted |
+| Vanilla, 5 L pan | 5 | Counted |
+| Coffee, 5 L pan | 3 | Counted |
+| Mint choc chip, 5 L pan | 2 | Counted |
+| Biscuit, 5 L pan | 3 | Counted |
+| Strawberry sorbet, 5 L pan | 2 | Counted |
+| Lemon sorbet, 5 L pan | 3 | Counted |
+| Mango sorbet, 5 L pan | 4 | Counted |
+| Raspberry sorbet, 5 L pan | 4 | Counted |
+| Elderflower sorbet, 5 L pan | 4 | Counted |
+| Part pans, assorted, on the top shelf | 3 | Counted |
+| 1.5 L catering tub, assorted | 13 | Counted |
+| 500 ml tub, assorted | 137 | Counted |
+| 125 ml mini, assorted | 66 | Counted |
+| 8" cake, finished and boxed, awaiting collection | 2 | Counted |
+
+Three things about this table are worth saying and Tomas said none of them.
+
+The **strawberry sorbet** line is the frozen-purée one. The Kingsdown flavour was
+not in the freezer at all on Monday morning; had it been, §2.3 says the two share
+one word on paper and nothing on this sheet would have separated them.
+
+The **part pans** line says three and does not say what is in them. §3.5 says
+Marina counts a part pan as a half when she works out litres and Aoife counts it
+as a pan when it is standing in a well. The line supports either.
+
+The **500 ml tubs** and the **125 ml minis** are the only two lines on the whole
+count that are a tally of more than a hundred loose objects, and Tomas counted
+each of them once.
+
+### The production kitchen — packaging mezzanine
+
+Jordan, 08:15 to 10:20.
+
+| Item | Counted | Confidence |
+|---|---|---|
+| 500 ml tub, case of 500 | 2, one broken into — about 300 left in it | Eyeballed |
+| 500 ml lid, printed, case of 1,000 | 1, broken into — **20 lids**, counted out on the bench | Counted |
+| 125 ml mini tub with lid, sleeve of 100 | 9, one open with about 40 in it | Counted |
+| 1.5 L catering tub with lid, case of 50 | 1, part — 22 | Counted |
+| Waffle cones, sleeve of 90 | 21 — five cases and a loose sleeve | Counted |
+| Wafer cones, sleeve of 120 | 14 | Counted |
+| Gelato cup, two scoop, case of 1,000 | 2 | Counted |
+| Gelato cup, three scoop, case of 1,000 | 1 | Counted |
+| Gelato spoon, box of 1,000 | 4 | Counted |
+| Tasting spoon, case of 5,000 | 1, open. Nobody has ever counted one out | Not counted |
+| Napkin, 2-ply, pack of 500 | 19 | Counted |
+| Takeaway bag, case of 250 | 2, one open | Counted |
+| Cake box, 8", case of 50 | 1, part — about 20 | Eyeballed |
+| Cake board, 8", case of 100 | 1, part — about 55 | Eyeballed |
+| Napoli pan, polycarbonate, new, case of 24 | 1 | Counted |
+
+Jordan counted the twenty lids by hand because twenty looked wrong to him in the
+middle of June. He wrote the number down, put the case back, and told nobody.
+§1.6 buys tubs 500 to a case and lids 1,000 to a case; §3.4 orders lids twice a
+year and names no quantity for tubs at all.
+
+### The production kitchen — office cupboard
+
+Jordan, 10:20 to 10:30.
+
+| Item | Counted | Confidence |
+|---|---|---|
+| Printed sleeve, 500 ml, case of 1,000 | 1, open — about 400 | Eyeballed |
+| Promo items — a box of postcards from 2023, two roller banners | 1 box, 2 banners | Counted |
+
+### Empty pans, by the fill bench
+
+| Item | Counted | Confidence |
+|---|---|---|
+| Napoli pan, stainless 5 L, empty | 34 | Counted |
+| Napoli pan, polycarbonate 5 L, empty | 12 | Counted |
+
+Jordan wrote these under a heading of his own — *by the bench* — which is not one
+of the places in §1.3. §3.2 already says empty pans have nowhere to live: they
+come back on the van, get washed, and stand in a stack beside the fill bench that
+the file has no name for. This is the first time anybody has counted them.
+
+### Cotham cabinet
+
+Aoife, 07:30 to 07:55, with Yusuf reading the wells out. Twenty-four wells,
+written as fractions of a pan by eye.
+
+| Well | Counted | Confidence |
+|---|---|---|
+| Fior di latte | ¾ pan | Eyeballed |
+| Pistachio | ½ | Eyeballed |
+| Stracciatella | ¾ | Eyeballed |
+| Hazelnut | ¼ | Eyeballed |
+| Dark chocolate | ½ | Eyeballed |
+| Salted caramel | ½ | Eyeballed |
+| Vanilla | ¾ | Eyeballed |
+| Coffee | ¼ | Eyeballed |
+| Mint choc chip | ½ | Eyeballed |
+| Biscuit | ½ | Eyeballed |
+| Lemon sorbet | ¾ | Eyeballed |
+| Mango sorbet | ½ | Eyeballed |
+| Raspberry sorbet | ¾ | Eyeballed |
+| Strawberry sorbet | ½ | Eyeballed |
+| Elderflower sorbet | ¼ | Eyeballed |
+| Local strawberry | ¾ | Eyeballed |
+| Amarena cherry | ¼ | Eyeballed |
+| Coconut | Well empty, cabinet card still in it | Counted |
+| Six wells | Empty, no card | Counted |
+
+Seventeen flavours in a cabinet whose minimum is twelve. Both strawberries are in
+it at once, which §1.4 says has been true since 2023, and Aoife's sheet separates
+them because the cabinet cards do. The kitchen's sheet does not: §2.3 says the
+two share one word on the production sheet, and the holding freezer line three
+tables up reads *strawberry sorbet* and means only one of them.
+
+### Cotham Hill — the back freezers, the under-counter fridge and the shelf unit
+
+Aoife, 07:55 to 08:40.
+
+| Item | Counted | Confidence |
+|---|---|---|
+| 5 L pan — **Cotham back freezer 1 and Cotham back freezer 2 counted as one line** | 16 | Counted |
+| 500 ml tub | 22 | Counted |
+| 125 ml mini | 19 | Counted |
+| 8" cake, boxed, awaiting collection | 2 | Counted |
+| Cotham under-counter fridge — whole milk, coffee bar, 2 L bottle | 5, one open | Counted |
+| Oat milk, barista, 1 L carton | 3 | Counted |
+| Canned soft drink | 31 | Counted |
+| Bottled water, 500 ml | 18 | Counted |
+| Cotham under-counter fridge — cream | A line was written and struck through. None found | Not counted |
+| Cotham shelf unit — waffle cones, sleeve of 90 | 3, one part — about 40 in it | Eyeballed |
+| Wafer cones, sleeve of 120 | 6, one part | Eyeballed |
+| Gelato cup, two scoop | About 600, in a part case | Eyeballed |
+| Gelato cup, three scoop | About 300 | Eyeballed |
+| Gelato spoon | 1 box, part-used | Eyeballed |
+| Tasting spoon | 1 case, open | Not counted |
+| Napkin, pack of 500 | 7 | Counted |
+| Takeaway bag | About 120 | Eyeballed |
+| Coffee beans, 1 kg bag | 4, one open | Counted |
+| Vanilla syrup, 1 L bottle | 1, part-used | Counted |
+| Hazelnut syrup, 1 L bottle | 1, part-used | Counted |
+| Caramel syrup, 1 L bottle | 2, one part-used | Counted |
+| Hot chocolate powder, 2 kg tub | 1, part-used | Eyeballed |
+| Paper cup, 8 oz | About 700 | Eyeballed |
+| Paper cup, 12 oz | About 500 | Eyeballed |
+| Paper cup lid | About 900 | Eyeballed |
+| Wooden stirrer | 1 box, part-used | Eyeballed |
+
+Aoife wrote **one line for both back freezers**, because that is how she thinks
+of them. §1.3 names two chest freezers in the corridor and §3.7 says no document
+has ever distinguished them; the first count Sorella ever took does not
+distinguish them either.
+
+§1.3 says the under-counter fridge holds milk for coffee and cream. There is no
+cream at Cotham Hill and there has not been for some time. Aoife wrote the line
+because it is on the list in her head, then struck it.
+
+### Gloucester Road
+
+Priya, on her own, 11:40 to 12:00. Twenty minutes before opening, and the shop
+opens at noon.
+
+| Item | Counted | Confidence |
+|---|---|---|
+| Gloucester Road cabinet, 16 wells | 13 wells with something in them, 3 empty. Flavour names written, no fractions | Eyeballed |
+| Gloucester Road under-counter freezer, 5 L pan | 6 | Eyeballed |
+| Gloucester Road under-counter freezer, 500 ml tub | 9 | Eyeballed |
+| Gloucester Road under-counter freezer, 125 ml mini | 12 | Eyeballed |
+| Gloucester Road shelves — waffle cones, sleeve of 90 | 2 | Counted |
+| Gloucester Road shelves — wafer cones, sleeve of 120 | 3 | Counted |
+| Gloucester Road shelves — canned soft drink | 1 case unopened and some loose | Eyeballed |
+| Gloucester Road shelves — bottled water | About 20 | Eyeballed |
+| Gloucester Road shelves — cups, spoons, napkins, bags | "A bit of everything." No numbers | Not counted |
+
+**This is the least reliable part of the count and everybody knows it.** Priya
+had twenty minutes, no second person, and a chest freezer that has to be
+unpacked to be counted, so she lifted the top layer and said six. She wrote
+flavour names against the wells and no fractions, so nothing says how much
+gelato is in Gloucester Road's cabinet — only which flavours are in it. Every
+line here is *eyeballed* or *not counted* and there is not a *counted* on the
+sheet except the two cone lines, which were sleeves standing on a shelf.
+
+§1.1 says Gloucester Road has no manager. This is what that looks like on a
+Monday morning.
+
+### The van
+
+Jordan, 06:05, before anything else.
+
+| Item | Counted | Confidence |
+|---|---|---|
+| 5 L pan — 1 fior di latte, 1 mango sorbet | 2 | Counted |
+| Dry ice, 10 kg insulated tub | 1, part-used, bought Saturday | Eyeballed |
+| Empty pans, unwashed, in the back | 9 | Counted |
+
+The two pans were loaded on Saturday morning and not dropped: The Old Bakehouse
+was shut and Steve did not go back. They have been in the van since Saturday
+midday. Nobody carried them in after the count and nobody wrote that they had
+been there for two days; §3.4's fourteen-day pan best-before reads the freeze
+date on the label and there is nothing anywhere that reads the two days in a van.
+
+### The trailer
+
+Jordan, 10:35. Parked at the kitchen and switched off since September.
+
+| Item | Counted | Confidence |
+|---|---|---|
+| Gelato cup, two scoop, case | 1, part | Counted |
+| 125 ml mini tub with lid, sleeve of 100 | 2 | Counted |
+
+No gelato. §3.2 says whatever did not sell at a festival is put away without
+counting; what came back from last September was packaging, and the packaging is
+still in the trailer rather than on the mezzanine.
+
+### The places that were not counted, and why
+
+| Place | Why |
+|---|---|
+| **The container, Avonmouth** | Nobody drives to a storage yard to take a count. It is a twenty-minute run each way with two people and a tub of dry ice, and it was not made. The whiteboard in the kitchen has four lines on it about what went out there, two of them half-wiped. Marina, asked for a number, said "forty-odd pans, maybe more." It is also the only unit in the business with no temperature log. |
+| **Marina's cool box** | At her house, in the boot. She says there is nothing in it. |
+| **The 31 wholesale accounts** | Every one of them is a place a pan can be. Nobody drove round. Steve was asked and read his notebook back standing at the van: **148 pans out and 106 back** so far this season. He has never added it up before and did it in about four minutes. Marina's estimate of what has gone missing over five years is unchanged: "sixty, maybe ninety." |
+| **The nine suppliers** | Stock at a supplier is theirs until somebody puts it down here — §1.3 says so of the milk, the fruit and the cash and carry. Nothing was counted there and nobody thought to. |
+| **The walk-in customer, comps, donations, tastings, staff, Marina's house, and the three bins** | Ten places stock goes to and never comes back from. There is nothing at any of them to count. |
+| **Aoife's car, the drinks fridge at Gloucester Road, and the sink at Cotham Hill** | Three things §3.7 says stock moves through that §1.3 does not name. Two of them held stock on Monday morning — the cash and carry run was in the car by half past ten, and Gloucester Road's cans were in the fridge and not on the shelf where Priya counted them. Neither was counted, because neither is a place. |
+
+### What Marina wrote at the foot
+
+Four sentences, in her hand, across the bottom of Dan's sheet.
+
+- "Started 5.55, finished 12.00 at Glos Rd."
+- "Kitchen was running from 7. Base counted before it was made."
+- "No milk. Rang WH 8.05, coming tomorrow."
+- "Glos Rd is a guess."
+
+There is no total anywhere on any of the six sheets, no line saying what was
+expected, and no line saying what was not found. §3.3 says the count sheet is a
+list of what is there and is used to decide what to make next week. This one was
+taken for a different reason and looks exactly the same.
+
+## 4.2 Monday, 15 June 2026
+
+The day the system starts, and an ordinary Monday. Warm and grey, 19 °C. Both
+shops open, the van does not run, five in production and eleven across the two
+shops through the day. The count above took the morning and the kitchen worked
+round it.
+
+### Deliveries received
 
 | Time | Supplier | Received |
 |---|---|---|
-| 06:40 | Whitehall Dairy | 12 × 10 L bag-in-box whole milk; 8 × 5 L jerry can cream 38%. Signed by Dan. |
-| 08:15 | Kingsdown Fruit Farm | 14 × 2 kg punnets of strawberries, left at the roller door. No note. |
+| 06:30 | Whitehall Dairy | **Did not arrive.** Dan rang at 08:05. Whitehall said the Chew Valley round had gone out without the Feeder Road drop on it, and that it would come on Tuesday's round. Nothing was left, there is no note, and nothing was written down at Sorella. |
+| 09:50 | Bristol Cash & Carry | Aoife drove over: 3 cases whole milk 2 L, 1 case oat milk, 2 cases 12 oz cups, 1 case cup lids, 1 box stirrers, 4 cases cans, 2 cases water. Paid on the shop's card. The receipt went into the envelope behind the Cotham till. |
+| 10:35 | — | Aoife dropped 2 cases of cans and 1 case of water at Gloucester Road on the way back, out of her own car. Nothing was written for it at either end. |
+
+§3.4 sets the milk standing order at Monday, Wednesday and Friday and has done
+since March 2024. The schedule did not move; the drop did.
+
+### Produced
+
+Pasteuriser runs: **07:05, 55 kg white base. 09:20, 30 kg sorbet syrup.**
+
+Written across the margin of the sheet in Dan's hand: *"no milk — 1 run only."*
+§3.4 puts twelve to sixteen batches on a summer production day. Monday did six.
+
+| Batch | Flavour | Mix into freezer | Output filled |
+|---|---|---|---|
+| 2026-0830 | Fior di latte | 12.0 kg | 3 × 5 L pan, 1 half pan |
+| 2026-0831 | Vanilla | 12.0 kg | 3 × 5 L pan, 2 × 500 ml tub |
+| 2026-0832 | Mint choc chip | 12.0 kg | 3 × 5 L pan, 1 quarter pan |
+| 2026-0833 | Coffee | 12.0 kg | 2 × 5 L pan, 10 × 500 ml tub |
+| 2026-0834 | Mango sorbet | 12.0 kg | 3 × 5 L pan, 1 half pan |
+| 2026-0835 | Raspberry sorbet | 12.0 kg | 3 × 5 L pan, 14 × 125 ml mini |
+
+Freeze times were written against three of the six. Initials went on at 17:40,
+all six rows at once, in Dan's hand, including the two rows Tomas filled.
+
+The coffee for 0833 came out of the bucket that was steeping in the chiller and
+was counted at 06:45 as "about 2 L". Nothing records it leaving the chiller and
+nothing records the bag of Cotham's beans it was made from arriving in the
+kitchen last week.
+
+Rekha made a run of biscuit base in the afternoon — ten packs of digestives and
+the honey — and put it in the ingredient freezer beside the half tub that was
+counted that morning. §3.2 says nothing is written for it, and nothing was.
+
+### The van
+
+**It did not go out.** §3.4's van run days are Tuesday, Thursday and Saturday
+from May to September. Neither shop received anything from the kitchen, and both
+traded all day off what was in them when Aoife and Priya counted at half past
+seven and twenty to twelve. The two pans loaded on Saturday stayed in the van.
+
+### Sold — till records
+
+**Cotham Hill**, 11:00–22:00, takings **£2,078.60**. Cash £412.35 counted against
+£414.35 on the till; the variance box says −2.00 and nothing else.
+
+- 191 single scoop, 104 double scoop, 15 triple scoop
+- Of those 310 scoop transactions, 71 were rung on the generic SCOOP button with
+  no flavour recorded
+- 84 waffle-cone supplements
+- 21 × 500 ml tub
+- 9 × 125 ml mini
+- 1 × 8" cake, collected
+- 8 affogato
+- 71 coffees: 11 espresso, 16 americano, 14 cappuccino, 12 flat white, 12 latte,
+  4 mocha, 2 hot chocolate
+- 17 oat milk supplements, 13 syrup shots
+- 19 cans, 9 bottles of water
+
+**Gloucester Road**, 12:00–21:00, takings **£826.70**. Cash £198.70, card
+£628.00, variance box 0.
+
+- 103 single scoop, 44 double scoop, 5 triple scoop
+- 49 of the 152 scoop transactions on the generic SCOOP button
+- 38 waffle-cone supplements
+- 8 × 500 ml tub
+- 11 × 125 ml mini
+- 14 cans, 7 bottles of water
+
+### Given away
+
+- Staff scoops: eleven people across the two shops and five in the kitchen. One
+  scoop and one drink a shift is the rule. There is no record of a single one of
+  them, and at Gloucester Road the drink was a can off the shelf Priya had
+  counted that morning.
+- 2 comped cones at Cotham Hill — a double dropped on the step and a wrong
+  flavour. Both rung on the comp key.
+- 1 comped cone at Gloucester Road, not rung. Sophie remade a cone for a child
+  and did not use the key.
+
+### Thrown out
+
+- The part bucket of aged white base, about a third of a 25 L bucket, made
+  Saturday afternoon. Dan poured it away at 08:20, after Marina had walked past
+  it and after it had been written on the count sheet. Nothing on any waste
+  sheet.
+- **Cotham cabinet at close, 21:05.** Three part pans past the three-day rule —
+  hazelnut about a quarter, coffee about a quarter, elderflower about a quarter.
+  Scraped out and binned by Yusuf.
+- Gloucester Road binned nothing, and nothing anywhere records that nothing was
+  binned.
+- A 2 L bottle of coffee-bar milk left out on the counter overnight on Sunday,
+  found warm at opening and poured down the sink. Not recorded, and §3.2 says
+  the sink is not a place.
+
+### One movement, two dates
+
+The three part pans binned at Cotham at 21:05 on **Monday 15 June** were written
+on the Cotham waste sheet on **Thursday 18 June**, when Aoife filled the week's
+sheet in from memory before Marina came over. The line reads *"Mon — 3 pans"*.
+It does not say which flavours, and the *how much*, *why* and *initials* columns
+are blank.
+
+Both days exist. Only the first is on the sheet, written as a weekday, and only
+because the sheet is headed with the week beginning. §3.2 gives cabinet expiry a
+lag of up to six days and says the sheet gets filled in from memory; this is
+three days, and it is the shortest lag that movement has had in a fortnight.
+
+### What the day left in the office tray
+
+Nothing. No delivery note arrived, the cash and carry receipt is in an envelope
+behind the Cotham till, the production sheet is on its clipboard until Dan
+photographs it at 17:45, and the count sheets are the only paper the day
+produced that anybody intends to keep. Hilary comes on Wednesday.
+
+## 4.3 Tuesday, 16 June 2026
+
+An ordinary early-summer trading day. Dry, 21 °C. Both shops open, wholesale run
+day, six in production and on the road, seven across the two shops.
+
+### Deliveries received
+
+| Time | Supplier | Received |
+|---|---|---|
+| 06:40 | Whitehall Dairy | 12 × 10 L bag-in-box whole milk; 8 × 5 L jerry can cream 38%. **This is Monday's drop, a day late.** Whitehall's note is printed from the standing order and dated **Mon 15 June**; it was handed over on **Tue 16 June** and Dan signed it without changing the date. |
+| 08:15 | Kingsdown Fruit Farm | 14 × 2 kg punnets of strawberries, left at the roller door before anybody was in. No note. Kingsdown texted Marina "14 trays" that evening at 19:40. |
 | 11:20 | Terra Nostra Ingredients | 4 × 3.5 kg tins pistachio paste; 2 × 5 kg tins hazelnut paste; 2 × 5 kg bags cocoa 22/24; 1 × carton Base 50 (10 × 2 kg); 2 × 25 kg sacks dextrose; 1 × 10 kg box dark chocolate 70%. One pistachio tin dented on the rim; accepted. |
 | 14:05 | Avonside Packaging | 4 cases 500 ml tubs (500 per case); 2 cases 500 ml lids (1,000 per case). The order was for 4 cases of lids; the driver's note was annotated "2 short" by the packer. |
 | — | Severn Catering Supplies | Did not arrive. The Thursday drop was moved and nobody told the kitchen. 4 × 25 kg sacks caster sugar and 2 × 25 kg bags SMP were on it. |
 
-## Produced
+Two of these five have a document with a date that is not the day the goods
+changed hands. Whitehall's note says Monday and arrived Tuesday. Kingsdown's
+text arrived at twenty to eight in the evening, eleven and a half hours after
+the trays were left at a roller door nobody was standing at, and it is the only
+record that anything came from Kingsdown at all.
 
-Pasteuriser runs: 07:10, 55 kg white base. 09:30, 55 kg white base. 11:00, 30 kg sorbet syrup.
+### Produced
+
+Pasteuriser runs: **07:10, 55 kg white base. 09:30, 55 kg white base. 11:00,
+30 kg sorbet syrup.**
 
 | Batch | Flavour | Mix into freezer | Output filled |
 |---|---|---|---|
-| 2026-0837 | Fior di latte | 12.0 kg | 6 × 5 L pan |
-| 2026-0838 | Pistachio | 12.0 kg | 4 × 5 L pan, 9 × 500 ml tub |
-| 2026-0839 | Stracciatella | 12.0 kg | 5 × 5 L pan |
-| 2026-0840 | Hazelnut | 12.0 kg | 4 × 5 L pan, 12 × 500 ml tub |
-| 2026-0841 | Dark chocolate | 12.0 kg | 5 × 5 L pan |
-| 2026-0842 | Strawberry sorbet (Kingsdown fruit) | 12.0 kg | 4 × 5 L pan, 1 half pan |
-| 2026-0843 | Lemon sorbet | 12.0 kg | 3 × 5 L pan, 18 × 125 ml mini |
+| 2026-0837 | Fior di latte | 12.0 kg | 3 × 5 L pan, 1 half pan |
+| 2026-0838 | Pistachio | 12.0 kg | 2 × 5 L pan, 9 × 500 ml tub, 6 × 125 ml mini |
+| 2026-0839 | Stracciatella | 12.0 kg | 3 × 5 L pan, 1 half pan |
+| 2026-0840 | Hazelnut | 12.0 kg | 2 × 5 L pan, 10 × 500 ml tub |
+| 2026-0841 | Dark chocolate | 12.0 kg | 3 × 5 L pan, 1 quarter pan |
+| 2026-0842 | Strawberry sorbet (Kingsdown fruit) | 12.0 kg | 3 × 5 L pan, 1 half pan |
+| 2026-0843 | Lemon sorbet | 12.0 kg | 3 × 5 L pan, 12 × 125 ml mini |
 | 2026-0844 | Salted caramel | 12.0 kg | Nothing. Came out grainy at extrusion. Whole batch binned. |
-| 2026-0845 | Elderflower sorbet (special) | 12.0 kg | 3 × 5 L pan |
+| 2026-0845 | Elderflower sorbet (special) | 12.0 kg | 3 × 5 L pan, 1 quarter pan |
 
-Also assembled: 2 × 8" gelato cakes for Saturday collection, built from pans already in the holding freezer (1 pistachio pan and 1 dark chocolate pan drawn down).
+Three trays of Kingsdown strawberries were hulled for 0842. The hulls went in
+the kitchen bin and were not weighed.
 
-## Wholesale delivered — van run 07:45 to 11:10
+Batch 0837 came out of the blast freezer at 13:05 and Steve had loaded the shop
+transfer at 13:15. **Nothing in the 13:30 load was made that morning.** The
+elderflower and the salted caramel on Cotham's van sheet came out of the holding
+freezer; the salted caramel batch that day was the one that was binned.
+
+Also assembled: 2 × 8" gelato cakes for Saturday collection, built from pans
+already in the holding freezer. Rekha drew down a pistachio pan and a dark
+chocolate pan and stood both back part-used. Written under the table on the
+production sheet as a sentence: *"2 cakes, Sat, pist + choc."* Which pans she
+took them off is on nothing.
+
+### Wholesale delivered — van run 07:45 to 11:10
 
 | Customer | Delivered | Empty pans collected |
 |---|---|---|
@@ -1999,72 +2549,143 @@ Also assembled: 2 × 8" gelato cakes for Saturday collection, built from pans al
 | Wapping Wharf Kitchen | 4 × 5 L pan (2 fior di latte, 1 coffee, 1 strawberry sorbet); 24 × 500 ml tub assorted | 3 |
 | Cleeve Coffee House, Bishopston | 3 × 5 L pan (1 mint choc chip, 1 dark chocolate, 1 biscuit) | 4, one of which was about a third full of mango sorbet — refused on delivery last Thursday. It came back to the kitchen. |
 
-## Transferred to the shops — van, 13:30
+**Two of the eighteen pans came out of the van and not out of the holding
+freezer.** The fior di latte that went to Caffè Umberto and the mango sorbet that
+went to Bar Trentanove were loaded on Saturday morning for a drop that did not
+happen, counted in the van at 06:05 on Monday, and left there. Steve wrote them
+on Tuesday's delivery notes with everything else. Nothing distinguishes them from
+a pan that came out of the holding freezer at half past six that morning.
 
-**Cotham Hill:** 9 × 5 L pan (fior di latte ×2, pistachio, stracciatella, hazelnut, dark chocolate, salted caramel, strawberry sorbet, elderflower sorbet); 14 × 500 ml tub; 2 cases waffle cones; 1 case cups. Van sheet signed by Aoife.
+The strawberry sorbet that went to Wapping Wharf is the frozen-purée one. It was
+loaded before batch 0842 existed, and both are written *strawberry sorbet* on the
+delivery note.
 
-**Gloucester Road:** 7 × 5 L pan (fior di latte, pistachio, dark chocolate, mint choc chip, biscuit, lemon sorbet, mango sorbet); 6 × 500 ml tub; 1 case waffle cones. Van sheet left on the counter, unsigned.
+### Transferred to the shops — van, 13:30
 
-**Aoife also drove 2 pans (pistachio, stracciatella) from Cotham to Gloucester Road at 16:40** when Gloucester Road ran out mid-afternoon. Nothing was written down.
+**Cotham Hill:** 9 × 5 L pan (fior di latte ×2, pistachio, stracciatella,
+hazelnut, dark chocolate, salted caramel, strawberry sorbet, elderflower sorbet);
+14 × 500 ml tub; 2 cases waffle cones; 1 case cups. Van sheet signed by Aoife.
 
-## Sold — till records
+**Gloucester Road:** 7 × 5 L pan (fior di latte, pistachio, dark chocolate, mint
+choc chip, biscuit, lemon sorbet, mango sorbet); 6 × 500 ml tub; 1 case waffle
+cones. Van sheet left on the counter, unsigned.
 
-**Cotham Hill**, 11:00–22:00, takings £2,418.
+**Aoife also drove 2 pans (pistachio, stracciatella) from Cotham to Gloucester
+Road at 16:40** when Gloucester Road ran dry mid-afternoon. Nothing was written
+down. Neither flavour was on Gloucester Road's van sheet that morning, and
+stracciatella has not been on one for a week.
+
+### Sold — till records
+
+**Cotham Hill**, 11:00–22:00, takings **£2,892.10**. Cash £561.90, card
+£2,330.20, variance box blank.
 
 - 268 single scoop, 141 double scoop, 22 triple scoop
-- Of those 431 scoop transactions, 96 were rung on the generic SCOOP button with no flavour recorded
+- Of those 431 scoop transactions, 96 were rung on the generic SCOOP button with
+  no flavour recorded
+- 118 waffle-cone supplements
 - 34 × 500 ml tub
 - 6 × 125 ml mini
 - 1 × 8" cake (walk-in, collected same day)
-- 96 coffees, 12 affogato, 41 cold drinks
+- 12 affogato
+- 96 coffees: 14 espresso, 21 americano, 19 cappuccino, 17 flat white, 15 latte,
+  6 mocha, 4 hot chocolate
+- 23 oat milk supplements, 19 syrup shots
+- 27 cans, 14 bottles of water
+- 2 comped cones, both rung on the comp key: a double dropped at the door and a
+  remake
 
-**Gloucester Road**, 12:00–21:00, takings £1,106.
+**Gloucester Road**, 12:00–21:00, takings **£1,106.00**. Cash £242.40, card
+£863.60.
 
 - 149 single scoop, 63 double scoop, 8 triple scoop
 - 71 rung on the generic SCOOP button
 - 11 × 500 ml tub
 - 14 × 125 ml mini
 
-## Given away
+### The cake order, and a rule that moved
 
-- 30 × 125 ml minis to the St Werburgh's primary school summer fair, collected from the kitchen at 12:00. Written on the kitchen waste sheet as "donation, school".
-- 1 × 5 L pan of pistachio taken out at 15:00 by Marina in a cool box, to a tasting at a hotel on the Downs. About a third was used. The pan came back at 18:30 and went into the Cotham cabinet.
-- Staff scoops: seven people on shift across the two shops, plus four in the kitchen. No record of any kind exists.
-- 4 comped cones at Gloucester Road (two dropped, one wrong flavour, one for a child who was upset). 2 were rung on the comp key.
+At 14:20 a customer rang Cotham Hill wanting an 8" cake for Thursday evening.
+Aoife said forty-eight hours, took the name, the two flavours and the collection
+time, and wrote it in the diary by the till.
+
+Marina was in the shop for an hour before driving to a wedding and heard her say
+it. She had written **three days** on the seventh of June, nine days earlier, and
+said so. Aoife said she has been telling customers two days since the cakes
+started in 2022 and nobody had ever told her otherwise. They had it out at the
+counter in front of Yusuf and two customers.
+
+The order stood, and **the rule is forty-eight hours from 16 June 2026.** Marina
+did not write it anywhere; Aoife wrote *"48 hrs — M agreed 16/6"* in the corner
+of the cabinet-plan sheet on the back wall, which is not a document anybody
+outside Cotham Hill reads. Rekha, who builds the cakes and had never been told
+either number, learned nothing.
+
+This is the first rule in the business to move since the system started, and
+conflict 9 in §3.4 is the one that settled. What it said before is in the row
+above it and nowhere else.
+
+### Given away
+
+- 30 × 125 ml minis to the St Werburgh's primary school summer fair, collected
+  from the kitchen at 12:00. Written on the kitchen waste sheet as "donation,
+  school".
+- 1 × 5 L pan of pistachio taken out at 15:00 by Marina in the cool box, to a
+  tasting at a hotel on the Downs. About a third was used. The pan came back at
+  18:30 and went into the Cotham cabinet, not back into the holding freezer.
+  Nothing records either leg.
+- 1 × 5 L pan of vanilla taken home by Marina on her way to the wedding. §3.2
+  says nothing is written for it and it is a running joke.
+- Staff scoops: seven people on shift across the two shops, plus four in the
+  kitchen. No record of any kind exists.
+- 4 comped cones at Gloucester Road (two dropped, one wrong flavour, one for a
+  child who was upset). 2 were rung on the comp key.
 - 1 × 500 ml tub given to the Avonside Packaging driver.
 
-## Thrown out
+### Thrown out
 
-- Batch 2026-0844, salted caramel: 12.0 kg of churned mix, binned. Noted in the margin of the production sheet as "0844 grainy — dumped".
-- 1 × 2 kg punnet of the Kingsdown strawberries, mouldy through, binned on arrival. Not recorded.
-- 1 × 1 kg tub raspberry purée, found open and freezer-burnt in the ingredient freezer, binned. Not recorded.
-- Cotham cabinet at close: 3 part pans past the 3-day rule — mango sorbet about half, fior di latte about a quarter, coffee about a third. Scraped out and binned. Written on the shop waste sheet as "3 pans".
-- Gloucester Road at close: 1 part pan of biscuit, about half, binned. Not written down; the closer mentioned it to Aoife the following morning.
-- A sleeve of waffle cones knocked off the shelf at Cotham, about 15 broken. Binned. Not recorded.
+- Batch 2026-0844, salted caramel: 12.0 kg of churned mix, binned. Noted in the
+  margin of the production sheet as "0844 grainy — dumped".
+- 1 × 2 kg punnet of the Kingsdown strawberries, mouldy through, binned on
+  arrival. Not recorded.
+- 1 × 1 kg tub raspberry purée, found open and freezer-burnt in the ingredient
+  freezer, binned. Not recorded.
+- Cotham cabinet at close: 3 part pans past the 3-day rule — mango sorbet about
+  half, fior di latte about a quarter, coffee about a third. Scraped out and
+  binned. Written on the shop waste sheet as "3 pans".
+- Gloucester Road at close: 1 part pan of biscuit, about half, binned. Not
+  written down; the closer mentioned it to Aoife the following morning.
+- A sleeve of waffle cones knocked off the shelf at Cotham, about 15 broken.
+  Binned. Not recorded.
 
-## Evening stock count — production unit, 21:10
+### Evening stock count — production unit, 21:10
 
-Taken by Dan alone. Marina was at a wedding. Holding freezer and part of the dry store only.
+Taken by Dan alone. Marina was at a wedding. Holding freezer and part of the dry
+store only.
+
+**Nobody wrote a confidence against anything.** Marina asked for the four words
+on Monday and was not there on Tuesday, and the habit lasted one day.
 
 **Holding freezer — finished stock**
 
 | Item | Counted |
 |---|---|
-| Fior di latte, 5 L pan | 7 |
-| Pistachio, 5 L pan | 5 |
-| Stracciatella, 5 L pan | 6 |
-| Hazelnut, 5 L pan | 4 |
-| Dark chocolate, 5 L pan | 6 |
+| Fior di latte, 5 L pan | 6 |
+| Pistachio, 5 L pan | 1 |
+| Stracciatella, 5 L pan | 5 |
+| Hazelnut, 5 L pan | 3 |
+| Dark chocolate, 5 L pan | 2 |
 | Salted caramel, 5 L pan | 2 |
-| Vanilla, 5 L pan | 3 |
-| Coffee, 5 L pan | 2 |
+| Vanilla, 5 L pan | 9 |
+| Coffee, 5 L pan | 4 |
 | Mint choc chip, 5 L pan | 3 |
 | Biscuit, 5 L pan | 1 |
-| Strawberry sorbet, 5 L pan | 5, plus 1 half |
+| Strawberry sorbet, 5 L pan | 3 |
 | Lemon sorbet, 5 L pan | 4 |
-| Mango sorbet, 5 L pan | 2, plus the third-full pan returned from Cleeve |
-| Raspberry sorbet, 5 L pan | 3 |
-| Elderflower sorbet, 5 L pan | 3 |
+| Mango sorbet, 5 L pan | 7, plus the third-full pan returned from Cleeve |
+| Raspberry sorbet, 5 L pan | 7 |
+| Elderflower sorbet, 5 L pan | 6 |
+| Part pans, assorted | 13 |
 | 1.5 L catering tub, assorted | 9 |
 | 500 ml tub, assorted | 118 |
 | 125 ml mini, assorted | 64 |
@@ -2096,7 +2717,28 @@ Taken by Dan alone. Marina was at a wedding. Holding freezer and part of the dry
 **Noted on the sheet by Dan:**
 
 - The container at Avonmouth was not opened today and nothing in it was counted.
-- Two pans (elderflower sorbet, fior di latte) were still in the van at 21:10. Dan saw them and did not add them to the sheet.
-- Neither shop cabinet nor either shop's back freezer was counted. Tuesday is not a count night.
-- A line reading "coconut — " was written and then struck through. Coconut is on the cabinet plan but none was found.
+- Two pans (elderflower sorbet, fior di latte) were still in the van at 21:10.
+  Dan saw them and did not add them to the sheet.
+- Neither shop cabinet nor either shop's back freezer was counted. Tuesday is not
+  a count night, and the last time either was counted was Monday morning.
+- A line reading "coconut — " was written and then struck through. Coconut is on
+  the cabinet plan but none was found.
 - Cones, cups, spoons and napkins were not counted.
+- The **strawberry sorbet** line above is the Kingsdown one. The frozen-purée
+  strawberry sorbet went out on the van that morning, there is none left, and
+  Dan did not write a line for it. A sheet that lists what is there says nothing
+  about a flavour that has run out.
+- The lids ran out at the bench at about ten o'clock. Eleven filled 500 ml tubs
+  stood on the bench without lids until the Avonside pallet came at 14:05, and
+  the note on that pallet says two cases short. Nothing was written about either.
+
+---
+---
+
+# Session 5 — Wednesday to Sunday
+
+**Not yet written.** Session 5 carries Wednesday 17 June to Sunday 21 June: the
+rest of the first week in the system, the Thursday and Saturday van runs, the
+Severn drop that did not come on Tuesday, Hilary's Wednesday afternoon in the
+office tray, and Marina's Sunday — the invoicing, the spreadsheet, and the
+milk text.
