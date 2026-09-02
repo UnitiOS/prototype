@@ -1210,19 +1210,19 @@ it carries more.
 |---|---|---|---|---|
 | Ingredients to the machine | Dry store, Walk-in chiller, Ingredient freezer → the pasteuriser or the bench | Tins opened, sacks scooped, a bag of milk lifted out and weighed, a pail of glucose warmed. | **Nothing.** No document in this business records an ingredient leaving a shelf. | — |
 | Pasteurising | Walk-in chiller, Dry store → Walk-in chiller, as base in buckets | A run to 85 °C and down to 4 °C, drawn into lidded buckets and stood in the chiller to age. | The run block at the head of the production sheet: time, kilos, what it is. Dan, or whoever is running the machine. | Written as the run goes on, mostly. |
-| Sorbet syrup boiled | Dry store → Blast freezer → Walk-in chiller | Boiled, chilled in a stainless tub in the blast freezer, then moved into the chiller. | The same run block. | As above. |
-| Custard run | Walk-in chiller, Dry store → Walk-in chiller | The one short run Dan does, and the only one that puts egg through the pasteuriser. The whites go in the kitchen bin. | The same run block. The whites are on nothing. | As above. |
+| Sorbet syrup boiled | Dry store → Blast freezer → Walk-in chiller | Boiled, chilled in a stainless tub in the blast freezer, then moved into the chiller. | The same run block, in the hand of whoever boiled it. | As above. |
+| Custard run | Walk-in chiller, Dry store → Walk-in chiller | The one short run Dan does, and the only one that puts egg through the pasteuriser. The whites go in the kitchen bin. | The same run block, Dan's. The whites are on nothing. | As above. |
 | Biscuit base made | Dry store → Ingredient freezer | Rekha crushes the digestives in the processor and works the honey in until it clumps. | Nothing. | — |
 | Coffee brew steeped | Cotham shelf unit → Walk-in chiller | A bag of the shop's beans is carried back to the kitchen by whoever is going that way, ground coarse, steeped overnight in a lidded bucket and strained through muslin. | Nothing, at either end. | — |
 | Rhubarb stewed | Walk-in chiller → Walk-in chiller | A box chopped and cooked down until it collapses, into a lidded tub. | Nothing. | — |
 | Churn and fill | Walk-in chiller, Dry store, Ingredient freezer → Blast freezer | Base and flavouring into the batch freezer, out onto the bench, into pans, tubs or minis, variegates in by hand, labelled. | The production sheet row. Batch number, flavour and mix kilos at the machine; pans out and tubs out at the bench. Dan, Tomas or Rekha. | The machine columns as it goes in; the bench columns after filling; the initials often at the end of the day, every row at once. |
 | Blast to hold | Blast freezer → Holding freezer | A trolley wheeled through once the core is down. When the holding freezer is full the trolley stays where it is for a day or two. | Nothing. The freeze-time column on the production sheet is the nearest thing to it, and is empty about half the time. | — |
 | Packaging to the bench | Packaging mezzanine, Office cupboard → the bench | A sleeve of tubs, a stack of lids, a wad of printed sleeves, a roll of blank labels. | Nothing. | — |
-| Cake built | Holding freezer, Ingredient freezer, Walk-in chiller, Packaging mezzanine → Holding freezer | Rekha takes what she needs off two or three pans, never emptying one, and puts them back part-used. Biscuit base, cream for the collar, a board and a box. | The cake order slip, and a note under the table on the production sheet saying how many were built. The pans she drew down are on no document at all. | The slip was filled days before; the note the same day. |
-| Failed batch binned | The bench → The kitchen bin | It comes out grainy, or it splits, and the whole thing goes. | The margin of the production sheet, in words. | Same day. |
+| Cake built | Holding freezer, Ingredient freezer, Walk-in chiller, Packaging mezzanine → Holding freezer | Rekha takes what she needs off two or three pans, never emptying one, and puts them back part-used. Biscuit base, cream for the collar, a board and a box. | The cake order slip, filled by Aoife at the counter, and a note under the table on the production sheet from Rekha saying how many were built. The pans she drew down are on no document at all. | The slip was filled days before; the note the same day. |
+| Failed batch binned | The bench → The kitchen bin | It comes out grainy, or it splits, and the whole thing goes. | The margin of the production sheet, in words, by whoever was at the machine. | Same day. |
 | Ingredient spoiled | Walk-in chiller, Dry store, Ingredient freezer → The kitchen bin | Mouldy fruit, a split purée, a tub found open and freezer-burnt, weevils in a sack once. | Nothing. | — |
 | Packaging damaged | Packaging mezzanine → The kitchen bin | A crushed sleeve of cones, a case of tubs off the mezzanine steps. | Nothing. | — |
-| Found old in a freezer | Holding freezer, Ingredient freezer → The kitchen bin | Turned up at the monthly count, or when somebody reaches past it. | Sometimes a line on the count sheet, sometimes nothing at all. | Same day when it happens at all. |
+| Found old in a freezer | Holding freezer, Ingredient freezer → The kitchen bin | Turned up at the monthly count, or when somebody reaches past it. | Sometimes a line on the count sheet in the hand of whoever found it, sometimes nothing at all. | Same day when it happens at all. |
 
 Between the chiller and the blast freezer everything in the building is inside a
 machine or on a bench, and §1.3 names neither. Aged base is the exception, and
@@ -1256,7 +1256,7 @@ only because it is drawn into buckets that stand somewhere with a name.
 | Milk poured away | Cotham under-counter fridge → the sink | Yusuf steams a full jug because it foams better and pours most of it away after a single latte. | Nothing, and §1.3 names no place for it to have gone. | — |
 | Can or bottle sold | Cotham under-counter fridge, Gloucester Road shelves → The walk-in customer | At Gloucester Road a case stands on the shelf and cans move into the drinks fridge as it empties; §1.3 names the shelves and not the fridge. | The till. | None. |
 | Beans back to the kitchen | Cotham shelf unit → Dry store | A bag goes back with whoever is driving that way. | Nothing at either end. | — |
-| Cabinet expiry | Cotham cabinet → The Cotham bin | Part pans scraped out at close on the third day, the second for a sorbet. | The Cotham waste sheet, used perhaps three times a week. | Up to six days. The sheet is weekly and gets filled in from memory. |
+| Cabinet expiry | Cotham cabinet → The Cotham bin | Part pans scraped out at close on the third day, the second for a sorbet. | The Cotham waste sheet, filled by whoever is closing, perhaps three times a week. | Up to six days. The sheet is weekly and gets filled in from memory. |
 | Cabinet expiry | Gloucester Road cabinet → The Gloucester Road bin | The same rule and the same close. | Gloucester Road's waste sheet, used a handful of times a year. Otherwise the closer mentions it to Aoife the next morning, or does not. | As above, when at all. |
 | Cones and sleeves broken | Cotham shelf unit → The Cotham bin; Gloucester Road shelves → The Gloucester Road bin | A dropped sleeve is ninety cones. | Nothing. | — |
 | Comp | Cotham cabinet, Gloucester Road cabinet → Comps | A dropped cone, a wrong flavour, a child in tears. | The till's comp key, used about half the time. | None when it is used. |
@@ -1266,7 +1266,7 @@ only because it is drawn into buckets that stand somewhere with a name.
 
 | Movement | Out of → into | What actually happens | The document, and who fills it | Lag |
 |---|---|---|---|---|
-| Donation | Holding freezer → Donations | Minis to a school fair, a cake to a raffle, four or five times a summer. Collected from the kitchen, usually. | Written on the kitchen waste sheet as "donation" when it leaves the kitchen. Nothing when it leaves a shop. | Up to six days; that sheet is weekly too. |
+| Donation | Holding freezer → Donations | Minis to a school fair, a cake to a raffle, four or five times a summer. Collected from the kitchen, usually. | Written on the kitchen waste sheet as "donation" by whoever handed it over, when it leaves the kitchen. Nothing when it leaves a shop. | Up to six days; that sheet is weekly too. |
 | Tasting out | Holding freezer → The cool box → Tastings | Marina takes a pan or a few minis to a prospect, a trade stand or a market, in the cool box in her car. | Nothing, unless she remembers to tell Dan. | — |
 | Tasting stock back | The cool box → Holding freezer, Cotham cabinet | What comes back goes into the nearest freezer, or straight into a well if it is still hard. | Nothing. | — |
 | Festival out | Holding freezer, Packaging mezzanine → The trailer | Twice a year. Loaded off a list Dan writes on the back of a production sheet. | The list, which nobody keeps. | — |
@@ -1457,9 +1457,14 @@ asks for it and nothing else in the building is ever asked for.
 
 ### The whiteboard
 
-On the kitchen wall by the office door. Not a form. What went to the container
-and roughly when, in somebody's handwriting, until the board is needed for
-something else.
+On the kitchen wall by the office door. Not a form, and there is no order to it
+beyond the order things get written in.
+
+1. **What went to the container** — flavours, in words and abbreviations, in the
+   handwriting of whoever drove.
+2. **Roughly when** — sometimes, and never a date.
+
+It stays up until the board is needed for something else.
 
 ### The till
 
@@ -1507,9 +1512,14 @@ Photographed to the kitchen WhatsApp, which is how Rekha learns of it.
 
 ### The milk text
 
-Dan to Whitehall, Sunday night: bags of milk and cans of cream for the week. No
-number, no copy, no reference. It is the only purchase order in the business that
-anybody outside the sender ever sees.
+Dan to Whitehall, Sunday night, from his own phone.
+
+1. **Bags of milk**.
+2. **Cans of cream**.
+
+No order number, no copy, no reference, and no date beyond the day it was sent.
+It is the only purchase order in the business that anybody outside the sender
+ever sees.
 
 ### The orders out
 
@@ -1550,8 +1560,20 @@ Emailed the same evening.
 
 ### The HACCP plan
 
-A lever-arch file in the office. Nobody fills it in. It is where the shelf-life,
-blast and temperature rules are written down, and it is what the EHO reads.
+A lever-arch file in the office. **Nobody fills any of it in**; it is the one
+document here that is read rather than written. What it holds, in the order the
+file is tabbed:
+
+1. **The shelf-life rules** — the cabinet life, the pan best-before, the tub
+   best-before.
+2. **The blast rule** and the pasteurising rule.
+3. **The temperature schedule** — twice daily, which is the one part of it that
+   has a form of its own.
+4. **The cleaning schedule**.
+5. **The last EHO report**.
+
+It is what the EHO reads, and it is the only reason the temperature log gets
+filled in.
 
 ## 3.4 The rules, with numbers
 

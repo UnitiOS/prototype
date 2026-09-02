@@ -2485,6 +2485,12 @@ Two scripts, both in the scratchpad, both passing.
   an out-of → into, a document and a lag; every one of the 51 rule rows carries a
   number and a year. It found 11 rules with no date and one row that was not a
   rule at all; all twelve were fixed before the final run.
+- A fourth checked the two clauses a table's shape cannot prove: that every
+  movement naming a document also names who fills it, and that every document
+  heading carries a field list. It found seven movements that named a document
+  and no hand, and three documents with no fields — the whiteboard, the milk text
+  and the HACCP file, all three of which do have fields once anybody asks. Fixed,
+  and the check now reports nought and nought.
 
 ### Surprising
 
