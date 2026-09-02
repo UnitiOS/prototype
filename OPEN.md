@@ -121,6 +121,48 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
   answer — episodes are the second writer into the kernel — removes the need for
   most such seals but not for a fact that belongs to the map itself. Found 2 Sep
   · blocks: report
+- Twenty-two of the fifty-five movements in Sorella's `§3.2` produce no document
+  of any kind, and two more produce only a text message or a card receipt. If the
+  system holds only what a document witnessed it cannot hold two fifths of the
+  ways stock moves; if it holds them anyway, somebody types an event no paper
+  saw, and the two clocks have nothing to separate. Which of the two a generated
+  form is for is untried, and it is not the same question as what a missing
+  quantity means. Raised 2 Sep · blocks: generation
+- The van sheet and the wholesale delivery notes are filled at loading or at the
+  first drop from memory, so the paper predates the movement. Every other
+  document in Sorella has a lag of nought to six days; these two have a negative
+  one, and they are what the whole wholesale side rests on. Whether a document
+  recording a movement that has not happened yet is a fact with `valid_from`
+  after `recorded_at`, an intent, or a forecast the log should refuse, is
+  undecided. Raised 2 Sep · blocks: live use
+- The only goods-in document in Sorella is the supplier's own, in nine shapes, of
+  which two are not documents — a text message and a till receipt. Whether the
+  map carries one goods-in class the nine collapse into, or whether the shape of
+  the paper is part of what the log records, is untried. It matters because the
+  quantity received is on the supplier's paper and nowhere else, so the only
+  witness to a receipt is a party outside the business. Raised 2 Sep · blocks: generation
+- Three things in Sorella move through places `§1.3` does not name: Aoife's car,
+  which carries the shop-to-shop transfer and the cash and carry run; Gloucester
+  Road's drinks fridge; and the sink at Cotham Hill, which takes more milk than
+  anything but the machine. The 1 Sep line models the outside of the business as
+  locations so direction comes free — a destination nobody would call a place is
+  the same problem one level in. Raised 2 Sep · blocks: interview
+- The two Cotham back freezers are two places in `§1.3` and one place to the
+  business: no document has ever named which of them a pan is in. A map that
+  carries both will carry a location nothing can ever distinguish, and a map that
+  merges them contradicts a profile written from the building. Raised 2 Sep · blocks: generation
+- Sorella's free-delivery rule names a threshold of £120 and no consequence, and
+  nobody in the business can say what is charged below it. The 21 Aug and 1 Sep
+  lines make a constraint a derived boolean producing a violation list; this is a
+  threshold whose violation has no action attached, which is a shape the four
+  target rules do not cover. Raised 2 Sep · blocks: derive
+- Nine numbers in Sorella's `§3.5` are each computed two ways by two people in
+  the building, both in use, neither wrong — litres produced, a pan, waste,
+  debtor days, the year-on-year comparison, labour percentage, the wholesale
+  share, the cost of a pistachio pan, and how many specials ran. Whether a
+  contested number is one derived slot whose definition moves, or two named slots
+  that disagree, is the definition-change stage's material arriving early, and it
+  is undecided. Raised 2 Sep · blocks: definition change
 
 ## T2 — wait for a user
 

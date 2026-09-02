@@ -6,16 +6,15 @@ Nothing here is computed. Where a balance, a total or a variance could follow
 from what is written, working it out is the system's job and not this file's.
 Every figure is one somebody in the business would know or say.
 
-**This file is being rebuilt in four sessions.** Sessions 1 and 2 are written.
-Sessions 3 and 4 hold the material from the previous version, carried across word
-for word and marked unrevised; each will be rewritten against its own
-specification.
+**This file is being rebuilt in four sessions.** Sessions 1, 2 and 3 are written.
+Session 4 holds the material from the previous version, carried across word for
+word and marked unrevised; it will be rewritten against its own specification.
 
 | Session | What it holds | State |
 |---|---|---|
 | 1 | The frame and the master data — what exists before anything moves | Written |
 | 2 | How a product is made and sold — recipes, formats, yield, the coffee side | Written |
-| 3 | The rules with their dates; every way stock moves, and the document filled | Carried, unrevised |
+| 3 | The rules with their dates; every way stock moves, and the document filled | Written |
 | 4 | The opening count on the adoption date, and the operational days | Carried, unrevised |
 
 ---
@@ -163,7 +162,7 @@ is somewhere afterwards, and so is a scoop, a bin bag and a school fair.
 
 | Name | What it is |
 |---|---|
-| The walk-in customer | Anyone who pays at either counter. Where a scoop, a tub, a cake, a coffee and a can go. |
+| The walk-in customer | Anyone who pays at a counter — either shop's, or the trailer's window at a festival. Where a scoop, a tub, a cake, a coffee and a can go. |
 | The wholesale account | Each of the 31 accounts in §1.9 is a place. A pan is at Caffè Umberto until it comes back empty, or does not. |
 | Staff | Where the shift allowance goes, taken by whoever is on. What the allowance is is a rule, and is session 3. |
 | Comps | A cone remade or handed across the counter without payment. |
@@ -1141,169 +1140,791 @@ shop, and §1.5 says that too.
 
 # Session 3 — the rules, and how stock moves
 
-**Not yet written.** Everything below is carried across word for word from the
-version at `44a32e6` and is unrevised. Section numbers inside it are the previous
-version's. Session 3 rewrites it against its own specification: the rules with
-their numbers and the dates they last changed, and every way stock moves paired
-with the document filled, who fills it, when it is filled, and every field on
-that document.
+What the business requires, and what anybody writes down.
 
-## Carried — how often specials run
+Marina wrote most of the rules below out longhand at the kitchen table on
+**Sunday 7 June 2026**, because the system starts a week on Monday and somebody
+asked her for them. Several had never been written anywhere. A few came out on
+paper slightly different from what everybody has been doing, and where that
+happened the rule carries 7 June 2026 as the day it last changed and says what it
+was before. The rest carry the day they actually moved.
 
-From §2 of the previous version. The flavours themselves are now in session 1;
-this sentence is a rule and belongs here.
+Nothing here is computed. A rule says what is required and a movement says what
+happens; whether a shelf is under its level, or an account over its terms,
+follows from the two and belongs to neither.
 
-> Dan runs two or three specials a week in summer, one a fortnight in winter.
+## 3.1 The shape of the year
 
-## Carried — the shape of the business across the year
+Every seasonal rule below hangs off this, and so does half of §3.2: the container
+only exists for five months of the year, Kingsdown only deliver for three, and
+the van runs three days a week for one half of the year and two for the other.
 
-**How the shape of the business changes across the year:**
+- **May to September.** Everything at once. Both cabinets full, twelve to sixteen
+  batches on a production day, wholesale five days a week, the container rented.
+  Sorbets go from about 20% of what is churned to about 35%.
+- **October to November.** Wholesale halves as the cafés stop taking gelato. The
+  two restaurants hold up. Cake orders start.
+- **December.** Cakes and the panettone flavour carry the month. Gloucester Road
+  opens Thursday to Sunday only.
+- **January to February.** The thin part. Gloucester Road closes for two weeks
+  after New Year. Production drops to two or three days a week and the kitchen
+  builds freezer stock of the stable core flavours.
+- **March to April.** Easter, the restart, and the first big packaging order of
+  the year.
 
-- **May to September**: everything. Cabinet full at both shops, 12–16 production batches a day, wholesale five days a week, an overflow freezer rented offsite. Sorbets go from about 20% of volume to about 35%.
-- **October to November**: wholesale halves as the cafés stop taking gelato. Restaurant accounts hold up. Cake orders start.
-- **December**: cakes and panettone semifreddo carry the month. Gloucester Road cuts to Thursday–Sunday.
-- **January to February**: the thin part. Gloucester Road closes entirely for two weeks after New Year — this began in 2025 and Marina argues about it every autumn. Production drops to two or three days a week and the kitchen builds freezer stock of the stable core flavours.
-- **March to April**: Easter, restart, first big packaging order of the year.
+## 3.2 Every way stock moves
 
-## Carried — constraints that bite
+Every movement below names where the thing came from and where it went, both
+drawn from the places in §1.3, then the document that gets filled in, who fills
+it, and how long after the thing happened. Where a movement is written down as it
+happens the lag column says so. Where nothing is written down at all the document
+column says that instead, and there are more of those than there are of the
+others.
 
-From §3 of the previous version. The lead times and minimums are also stated in
-session 1's supplier table; the ordering practice and the stockouts belong here.
+### Goods in
 
-**Constraints that bite:**
+| Movement | Out of → into | What actually happens | The document, and who fills it | Lag |
+|---|---|---|---|---|
+| Milk and cream delivered | Whitehall Dairy → Walk-in chiller | The driver has a key. Two mornings out of three he is in and out before anybody else arrives, and stacks the bags and cans himself. | Whitehall's own note, quantities printed on it from the standing order, left on the chiller shelf. Dan signs it on the mornings he is in; on the others nobody does. Nothing is ever checked against it. | The note is dated that morning. It reaches the office tray when somebody carries it up — the same day, or three days later. |
+| Pallet delivered | Terra Nostra Ingredients → Dry store, Ingredient freezer, Packaging mezzanine | A courier pallet at the roller door, fortnightly. Pastes and dry goods to the dry store, purées to the ingredient freezer, pans to the mezzanine. | Terra Nostra's printed note, two copies, signed at the door by whoever is nearest to it. | None on the signature; into the tray the same day. |
+| Cones delivered | Marchetti Cones → Packaging mezzanine | Cones ride on Terra Nostra's pallet and are never seen loose until they arrive. | They are lines on Terra Nostra's note. Nobody at Sorella has ever seen a document with Marchetti's name on it. | As Terra Nostra. |
+| Weekly drop | Severn Catering Supplies → Dry store, Walk-in chiller | Thursday. Sugar, powder, chemicals, biscuits and gloves to the dry store; ricotta, cream cheese, eggs, lemons and basil to the chiller. | The driver's hand-held, signed with a finger, and a printed docket he leaves behind. | None. |
+| Packaging delivered | Avonside Packaging → Packaging mezzanine, Office cupboard | Monthly, on order. Tubs, lids, cups, spoons, napkins, bags and cake boxes go up on the mezzanine; printed sleeves go in the office cupboard because they mark. | Avonside's note, signed. It has a blank line at the foot for shortages and the packer writes on it about half the time. | None. |
+| Fruit left at the door | Kingsdown Fruit Farm → Walk-in chiller | Trays left at the roller door, twice a week in season, usually before anybody is in. | **Nothing.** Kingsdown text Marina a number of trays and a price. The text is the only record that anything arrived. | The text comes that evening or the next morning. Marina pays by transfer on the Sunday. |
+| Beans delivered to the shop | Coldharbour Roastery → Cotham shelf unit | Weekly, straight to the counter at Cotham Hill. Paid by card at the door. | A note in the bag, and a card receipt. | The note goes in the drawer under the till and reaches the office when Aoife empties it, which can be a fortnight. |
+| Dry ice collected | Bristol Ice & Dry Ice → The van | Phoned before ten. Steve picks a tub up on his way out to Avonmouth and it stays in the van until the container run uses it. | A card receipt. | Into Steve's expenses envelope, and to Marina at the end of the month. |
+| Cash and carry run | Bristol Cash & Carry → Cotham shelf unit, Cotham under-counter fridge, Gloucester Road shelves | Aoife drives over when the shop runs short, pays on the shop's own card, and drops Gloucester Road's share off on the way back. | The till receipt. | Receipts live in an envelope behind the Cotham till and reach Hilary at the end of the month. |
 
-- Printed 500 ml lids have a 10–12 week lead time and a 5,000 unit minimum. Marina orders once in February and once in July and has run out in August two years running.
-- Terra Nostra's minimum for free carriage is £400. Small top-up orders therefore don't happen; the kitchen waits.
-- Kingsdown will only deliver if the order is at least eight trays, which is more strawberries than a slow week needs.
+Nothing has ever gone back to a supplier. A short delivery is argued on the phone
+and a bad one is binned; there is no return, no credit note anybody files, and no
+movement out of the business towards any of the nine.
 
-## 6. Every way stock moves
+Between the cash and carry and the shelf, that stock rides in Aoife's own car,
+which is not one of the places in §1.3. So does the shop-to-shop transfer further
+down. Marina's car is in that list, because the cool box is; Aoife's is not, and
+it carries more.
 
-| Movement | Physical reality | Recorded? | By whom |
+### Inside the kitchen
+
+| Movement | Out of → into | What actually happens | The document, and who fills it | Lag |
+|---|---|---|---|---|
+| Ingredients to the machine | Dry store, Walk-in chiller, Ingredient freezer → the pasteuriser or the bench | Tins opened, sacks scooped, a bag of milk lifted out and weighed, a pail of glucose warmed. | **Nothing.** No document in this business records an ingredient leaving a shelf. | — |
+| Pasteurising | Walk-in chiller, Dry store → Walk-in chiller, as base in buckets | A run to 85 °C and down to 4 °C, drawn into lidded buckets and stood in the chiller to age. | The run block at the head of the production sheet: time, kilos, what it is. Dan, or whoever is running the machine. | Written as the run goes on, mostly. |
+| Sorbet syrup boiled | Dry store → Blast freezer → Walk-in chiller | Boiled, chilled in a stainless tub in the blast freezer, then moved into the chiller. | The same run block. | As above. |
+| Custard run | Walk-in chiller, Dry store → Walk-in chiller | The one short run Dan does, and the only one that puts egg through the pasteuriser. The whites go in the kitchen bin. | The same run block. The whites are on nothing. | As above. |
+| Biscuit base made | Dry store → Ingredient freezer | Rekha crushes the digestives in the processor and works the honey in until it clumps. | Nothing. | — |
+| Coffee brew steeped | Cotham shelf unit → Walk-in chiller | A bag of the shop's beans is carried back to the kitchen by whoever is going that way, ground coarse, steeped overnight in a lidded bucket and strained through muslin. | Nothing, at either end. | — |
+| Rhubarb stewed | Walk-in chiller → Walk-in chiller | A box chopped and cooked down until it collapses, into a lidded tub. | Nothing. | — |
+| Churn and fill | Walk-in chiller, Dry store, Ingredient freezer → Blast freezer | Base and flavouring into the batch freezer, out onto the bench, into pans, tubs or minis, variegates in by hand, labelled. | The production sheet row. Batch number, flavour and mix kilos at the machine; pans out and tubs out at the bench. Dan, Tomas or Rekha. | The machine columns as it goes in; the bench columns after filling; the initials often at the end of the day, every row at once. |
+| Blast to hold | Blast freezer → Holding freezer | A trolley wheeled through once the core is down. When the holding freezer is full the trolley stays where it is for a day or two. | Nothing. The freeze-time column on the production sheet is the nearest thing to it, and is empty about half the time. | — |
+| Packaging to the bench | Packaging mezzanine, Office cupboard → the bench | A sleeve of tubs, a stack of lids, a wad of printed sleeves, a roll of blank labels. | Nothing. | — |
+| Cake built | Holding freezer, Ingredient freezer, Walk-in chiller, Packaging mezzanine → Holding freezer | Rekha takes what she needs off two or three pans, never emptying one, and puts them back part-used. Biscuit base, cream for the collar, a board and a box. | The cake order slip, and a note under the table on the production sheet saying how many were built. The pans she drew down are on no document at all. | The slip was filled days before; the note the same day. |
+| Failed batch binned | The bench → The kitchen bin | It comes out grainy, or it splits, and the whole thing goes. | The margin of the production sheet, in words. | Same day. |
+| Ingredient spoiled | Walk-in chiller, Dry store, Ingredient freezer → The kitchen bin | Mouldy fruit, a split purée, a tub found open and freezer-burnt, weevils in a sack once. | Nothing. | — |
+| Packaging damaged | Packaging mezzanine → The kitchen bin | A crushed sleeve of cones, a case of tubs off the mezzanine steps. | Nothing. | — |
+| Found old in a freezer | Holding freezer, Ingredient freezer → The kitchen bin | Turned up at the monthly count, or when somebody reaches past it. | Sometimes a line on the count sheet, sometimes nothing at all. | Same day when it happens at all. |
+
+Between the chiller and the blast freezer everything in the building is inside a
+machine or on a bench, and §1.3 names neither. Aged base is the exception, and
+only because it is drawn into buckets that stand somewhere with a name.
+
+### Out on the van
+
+| Movement | Out of → into | What actually happens | The document, and who fills it | Lag |
+|---|---|---|---|---|
+| Loading | Holding freezer, Packaging mezzanine → The van | Jordan loads from half past six. The wholesale drops go in last so they come out first, which is why the shops' pans sit in the van until half past one. | The delivery notes and the van sheet, written at loading by Steve — or at the first drop, from memory. | Negative, mostly. They are the only documents in the business routinely written before the thing they record. |
+| Wholesale drop | The van → The wholesale account | Pans, catering tubs or retail tubs carried in and a signature taken at the counter. | The duplicate delivery note. Steve fills it; the customer signs it. Top copy stays with them, second copy comes back to the office tray. | None on the note. The pan changes hands on the morning of the run and the invoice for it is typed the following Sunday evening: one event with two dates, up to six days apart. |
+| Empty pans back | The wholesale account → The van | Collected on a later drop, or not. | Steve's notebook in the van door pocket: date, customer, out, back. Never totalled. | None. |
+| Product back | The wholesale account → The van → Holding freezer or The kitchen bin | A refused or unsold pan, occasionally still part full. Back into the holding freezer or into the bin depending on how it looks. | Written across the bottom of the delivery note if the driver remembers. | Same day, when it is written at all. |
+| Transfer to Cotham Hill | Holding freezer, Packaging mezzanine → The van → Cotham back freezer 1, Cotham back freezer 2, Cotham shelf unit | Half past one. Aoife or whoever is senior checks it in, and pans go into whichever of the two chest freezers has room. | The triplicate van sheet. Steve wrote it; Aoife signs it about half the time. Top copy stays at the shop, second to the office, third stays in the book. Nothing anywhere says which of the two freezers a pan went into. | None on the sheet. |
+| Transfer to Gloucester Road | Holding freezer, Packaging mezzanine → The van → Gloucester Road under-counter freezer, Gloucester Road shelves | Dumped in the chest freezer mid-service by whoever can leave the counter. | The van sheet is usually left on the counter unsigned. Nobody counts it in. | — |
+| Cakes out to a shop | Holding freezer → The van → Cotham back freezer 1, Gloucester Road under-counter freezer | A boxed cake rides the ordinary transfer and waits for its collection. | A line on the van sheet, with the customer's name written beside it. | None. |
+| To the container | Holding freezer → The van → The container | Two people, a tub of dry ice and twenty minutes at the yard. May to September only. Somebody goes about twice a week. | Scrawled on the whiteboard in the kitchen. The board gets wiped when somebody needs the board. | Same day, and then gone. |
+| Back from the container | The container → The van → Holding freezer | Fetched when the kitchen runs short of something it made in June. | Nothing. | — |
+
+### Inside the shops
+
+| Movement | Out of → into | What actually happens | The document, and who fills it | Lag |
+|---|---|---|---|---|
+| Refill a well | Cotham back freezer 1, Cotham back freezer 2 → Cotham cabinet | A fresh pan swapped in when the one in the well is low; what is left of the old one is scraped into it or stood in the back freezer. | Nothing. | — |
+| Refill a well | Gloucester Road under-counter freezer → Gloucester Road cabinet | The same, from the one freezer there is. | Nothing. | — |
+| Shop to shop | Cotham cabinet, Cotham back freezer 1 → Gloucester Road cabinet | Aoife drives pans over in her own car when Gloucester Road runs dry mid-afternoon. Two or three times a week in summer. | **Nothing, ever.** | — |
+| Scoop sold | Cotham cabinet, Gloucester Road cabinet → The walk-in customer | A press of a spade into a well, into a cone or a cup. | The till. The flavour only when somebody uses a flavour button, and under pressure they use the generic SCOOP key. | None. |
+| Cone, cup, spoon, napkin, bag | Cotham shelf unit, Gloucester Road shelves → The walk-in customer | Taken off the shelf as the scoop is served, plus one or two tasting spoons before the customer chooses. | Nothing. The till line records the scoop and never the cone under it. | — |
+| Tub, mini or cake sold | Cotham back freezer 1, Cotham back freezer 2, Gloucester Road under-counter freezer → The walk-in customer | Handed over from the back freezer, in a bag if they ask. | The till, accurately: these have their own buttons and one price. | None. |
+| Drink sold | Cotham under-counter fridge, Cotham shelf unit → The walk-in customer | Beans, milk, a syrup, a ceramic cup off the shelf or a paper one with a lid. | The till records the drink. The beans and the milk behind it are on nothing. | None. |
+| Milk poured away | Cotham under-counter fridge → the sink | Yusuf steams a full jug because it foams better and pours most of it away after a single latte. | Nothing, and §1.3 names no place for it to have gone. | — |
+| Can or bottle sold | Cotham under-counter fridge, Gloucester Road shelves → The walk-in customer | At Gloucester Road a case stands on the shelf and cans move into the drinks fridge as it empties; §1.3 names the shelves and not the fridge. | The till. | None. |
+| Beans back to the kitchen | Cotham shelf unit → Dry store | A bag goes back with whoever is driving that way. | Nothing at either end. | — |
+| Cabinet expiry | Cotham cabinet → The Cotham bin | Part pans scraped out at close on the third day, the second for a sorbet. | The Cotham waste sheet, used perhaps three times a week. | Up to six days. The sheet is weekly and gets filled in from memory. |
+| Cabinet expiry | Gloucester Road cabinet → The Gloucester Road bin | The same rule and the same close. | Gloucester Road's waste sheet, used a handful of times a year. Otherwise the closer mentions it to Aoife the next morning, or does not. | As above, when at all. |
+| Cones and sleeves broken | Cotham shelf unit → The Cotham bin; Gloucester Road shelves → The Gloucester Road bin | A dropped sleeve is ninety cones. | Nothing. | — |
+| Comp | Cotham cabinet, Gloucester Road cabinet → Comps | A dropped cone, a wrong flavour, a child in tears. | The till's comp key, used about half the time. | None when it is used. |
+| Staff allowance | Cotham cabinet, Gloucester Road cabinet, Cotham under-counter fridge, Holding freezer → Staff | One scoop and one drink a shift, taken by whoever is on, in the kitchen as well as at the counters. | **Nothing.** | — |
+
+### Out of the business without a sale
+
+| Movement | Out of → into | What actually happens | The document, and who fills it | Lag |
+|---|---|---|---|---|
+| Donation | Holding freezer → Donations | Minis to a school fair, a cake to a raffle, four or five times a summer. Collected from the kitchen, usually. | Written on the kitchen waste sheet as "donation" when it leaves the kitchen. Nothing when it leaves a shop. | Up to six days; that sheet is weekly too. |
+| Tasting out | Holding freezer → The cool box → Tastings | Marina takes a pan or a few minis to a prospect, a trade stand or a market, in the cool box in her car. | Nothing, unless she remembers to tell Dan. | — |
+| Tasting stock back | The cool box → Holding freezer, Cotham cabinet | What comes back goes into the nearest freezer, or straight into a well if it is still hard. | Nothing. | — |
+| Festival out | Holding freezer, Packaging mezzanine → The trailer | Twice a year. Loaded off a list Dan writes on the back of a production sheet. | The list, which nobody keeps. | — |
+| Festival sale | The trailer → The walk-in customer | Scooped at the trailer window by Ben and whoever else is free. | A card reader and a cash tin. There is no product-level record of any kind. | The takings reach Marina's spreadsheet the following Sunday. |
+| Festival stock back | The trailer → Holding freezer | Whatever did not sell is put away without counting. | Nothing. | — |
+| Marina's pan | Holding freezer → Marina's house | Most weeks. | Nothing, and it is a running joke. | — |
+
+### What the movements leave out
+
+Walking the list above against §1.3 turns up five things that move and one place
+that does not.
+
+- **Every one of the 38 places is reached.** Each of the nine suppliers is a
+  source and none of them is ever a destination, which is what "nothing goes
+  back" means; each of the ten outside destinations is reached and none of them
+  is ever a source, except the wholesale account, which sends pans and the
+  occasional part-full one back.
+- **The container is the one place with no thermometer.** Every other freezer and
+  chiller in the business has a laminated temperature log on it. Nobody is at the
+  yard twice a day, so nobody reads the container's.
+- **Empty pans have nowhere to live.** They come back on the van, get washed and
+  stacked by the fill bench, and §1.3 names no place for them; the only pans it
+  names are the spares in the container.
+- **Three things move through places the file does not name:** Aoife's car,
+  Gloucester Road's drinks fridge, and the sink at Cotham Hill. The last of those
+  takes more milk than anything except the coffee machine itself.
+- **The two Cotham back freezers are two places to the file and one place to the
+  business.** No document has ever named which of them a pan is in, and nobody
+  has ever needed one to.
+
+## 3.3 Who writes what down, in what
+
+Eighteen of them, and under two of those headings a family rather than one
+form. For each the fields are listed **in the order they get
+filled in**, which is not always the order they are printed in, and the ones that
+are usually left blank say so. Between them they are the whole of what this
+business records. There is no stock system. There never has been.
+
+### The production sheet
+
+A4, on a clipboard on the wall by the blast freezer. One per production day.
+
+1. **Date** — top right, by the first person in.
+2. **Pasteuriser runs**, three ruled lines at the head: **time**, **kilos**,
+   **what it is**. Filled as each run goes on.
+3. Then a row per batch: **batch number**, from the running number in the book —
+4. **flavour** —
+5. **mix in, kg** — these three at the machine, as it is weighed in.
+6. **pans out** —
+7. **tubs out** — these two at the bench after filling. Minis go in the tubs-out
+   column with the word written beside the number, because there is no minis
+   column and nobody has ever asked for one.
+8. **freeze time** — when the trolley goes into the blast freezer. Empty about
+   half the time.
+9. **initials** — last, and often every row at once at the end of the day.
+10. **The margin** — anything that went wrong, in words, across the side of the
+    sheet. This is the only place a failed batch is ever recorded.
+11. **Under the table** — cakes built, written as a sentence rather than a row.
+
+Photographed by Dan at the end of the day and sent to Marina's WhatsApp. The
+photographs are the archive. The paper goes in a box under the office desk and
+the box is thrown out once a year.
+
+### The van sheet
+
+A triplicate book, in the van. One sheet per shop per run.
+
+1. **Date**, at loading.
+2. **Which shop**, circled at the top: Cotham or Glos Rd.
+3. **Lines** — flavour, format, quantity, one per line, written at loading or at
+   the first drop from memory. Packaging goes in the same column in words: "1
+   case cones".
+4. **Cake line**, with the customer's name beside it, when there is one.
+5. **Driver's initials**.
+6. **Signature and time**, at the drop. Aoife signs about half the time. The time
+   box is almost never filled in at either shop, and Gloucester Road's signature
+   line is usually empty.
+
+Top copy stays at the shop, second comes back to the office tray, third stays in
+the book.
+
+### The wholesale delivery note
+
+A duplicate book, in the van. One per account per drop.
+
+1. **Date**.
+2. **Account name**.
+3. **Lines** — flavour, format, quantity.
+4. **Empty pans collected**, a box at the foot, filled as they are carried out.
+5. **Anything coming back**, written across the bottom in words, when the driver
+   remembers.
+6. **Customer signature and printed name**.
+7. **Price**, and **line total** — two pre-printed columns that are never filled
+   in by anybody, because Marina prices the invoice from memory on the Sunday.
+
+Top copy to the customer, second copy back to the office tray for Sunday.
+
+### The pan notebook
+
+A pocket notebook in the van door pocket. Steve's. Nobody else has ever written
+in it.
+
+1. **Date**.
+2. **Customer**.
+3. **Out**.
+4. **Back**.
+
+Never totalled, never carried forward, never read by anybody but Steve.
+
+### The suppliers' delivery notes
+
+There is no goods-in book. The only document that records a delivery is the one
+the supplier brought with it, and Sorella's whole contribution to it is a
+signature and, occasionally, a word in the margin. There are nine shapes of it,
+and two of them are not documents at all.
+
+- **Whitehall Dairy** — printed note, quantities pre-filled from the standing
+  order, a signature line that is empty two mornings out of three. Left on the
+  chiller shelf.
+- **Terra Nostra Ingredients** — printed note, two copies, product codes and
+  quantities, a *received by* box. Signed at the door; the driver takes one copy.
+- **Marchetti Cones** — none. Cones are lines on Terra Nostra's note.
+- **Severn Catering Supplies** — a hand-held screen signed with a finger, and a
+  printed docket left behind.
+- **Avonside Packaging** — printed note, a signature line, and a blank line at
+  the foot where the packer writes shortages. Written on about half the time.
+- **Kingsdown Fruit Farm** — none. A text message to Marina: a number of trays
+  and a price. No date on it beyond the day it was sent.
+- **Coldharbour Roastery** — a note in the bag and a card receipt.
+- **Bristol Ice & Dry Ice** — a card receipt.
+- **Bristol Cash & Carry** — a till receipt.
+
+### The office tray and Xero
+
+A wire tray on the office desk. Everything above ends up in it eventually. Hilary
+works through it on Wednesday afternoons and keys each invoice into Xero:
+
+1. **Supplier**.
+2. **Invoice number**.
+3. **Invoice date**.
+4. **Net**, **VAT**, **gross**.
+5. **Nominal code**.
+
+**Only the money is keyed. The quantities never enter any system.** Hilary
+matches a delivery note to an invoice by eye and by total, and where a note is
+missing she keys the invoice anyway.
+
+### The waste sheets
+
+Three of them: one on the kitchen freezer door, one behind each counter. A sheet
+lasts a week.
+
+1. **Week ending**, written at the top on the Monday.
+2. **Date**.
+3. **What** — a flavour and usually a fraction: "mango, half".
+4. **How much** — a column that mostly repeats what is in *what*, or is blank.
+5. **Why** — mostly blank.
+6. **Initials** — mostly blank.
+
+The kitchen sheet is also where a donation gets written, in the *what* column,
+as "donation, school".
+
+### The count sheet
+
+A blank ruled sheet, monthly, at the kitchen. Whoever counts writes:
+
+1. **Date** and **who counted**.
+2. **Item** — written as it is found, not read off a list. There is no printed
+   list of what should be there, which is why a line can be written for something
+   and then struck through when it is not found.
+3. **Counted**.
+4. **Notes**, at the foot, in sentences.
+
+It is a list of what is there. It is used to decide what to make next week.
+
+### The temperature log
+
+A laminated sheet on each unit: walk-in chiller, blast freezer, holding freezer,
+ingredient freezer, both cabinets, both shops' back freezers, and the van. Not
+the container.
+
+1. **Date**.
+2. **AM reading**, **AM initials**.
+3. **PM reading**, **PM initials**.
+
+By far the most consistently completed document in the business, because the EHO
+asks for it and nothing else in the building is ever asked for.
+
+### The whiteboard
+
+On the kitchen wall by the office door. Not a form. What went to the container
+and roughly when, in somebody's handwriting, until the board is needed for
+something else.
+
+### The till
+
+Lightspeed, one at each shop. A sale line carries:
+
+1. **Product button** — a flavour, or the generic SCOOP key.
+2. **Quantity**.
+3. **Price**, from the button.
+4. **Time**.
+5. **Payment type**.
+
+Both shops run all day on one shared login, so no line says who rang it. The
+**comp key** is a button of its own and is used about half the time. The two
+tills carry the same product names at different prices and a report does not say
+which shop a line came from unless somebody filters it.
+
+At close, the **cash-up**: counted cash, card total, float, and a variance box
+that is filled in with a number and never with an explanation.
+
+### The cabinet plan
+
+A sheet on the back wall at Cotham Hill, written by Aoife on a Sunday.
+
+1. **Week beginning**.
+2. **Cotham, wells 1 to 24** — a flavour against each.
+3. **Gloucester Road, wells 1 to 16** — the same.
+
+It is not sent to the kitchen. Dan reads it when he is at Cotham, which is not
+every week.
+
+### The cake order
+
+A page in the diary by the Cotham till. Taken at the counter or on the phone.
+
+1. **Name**.
+2. **Phone**.
+3. **Collection date and time**.
+4. **Flavour one**, **flavour two**.
+5. **Message for the box**.
+6. **Which shop**.
+7. **Deposit** — a box that is almost always empty; most people pay on
+   collection.
+
+Photographed to the kitchen WhatsApp, which is how Rekha learns of it.
+
+### The milk text
+
+Dan to Whitehall, Sunday night: bags of milk and cans of cream for the week. No
+number, no copy, no reference. It is the only purchase order in the business that
+anybody outside the sender ever sees.
+
+### The orders out
+
+Nothing else the business orders is written down anywhere a second person can
+read.
+
+- **Terra Nostra** — Dan emails a list.
+- **Severn** — Dan telephones before three.
+- **Avonside** — Marina emails.
+- **Kingsdown** — Marina texts.
+- **Coldharbour** — Aoife emails by the Friday.
+- **Bristol Ice** — Steve telephones before ten.
+- **Bristol Cash & Carry** — nothing. Aoife walks the aisles.
+
+So nothing in the building states what was ordered, only what arrived. A short
+delivery is visible only if the supplier's own packer writes it on the note.
+
+### The wholesale invoice
+
+Typed by Marina in Xero on a Sunday evening, off the second copies in the tray.
+
+1. **Account**.
+2. **Invoice date** — the Sunday, not the day of the drop.
+3. **Lines**, keyed from the delivery note: flavour, format, quantity.
+4. **Price**, from memory. There is no printed price list.
+5. **Terms**, from the account.
+
+Emailed the same evening.
+
+### Marina's spreadsheet
+
+"Sorella Master 2026.xlsx", one workbook, three tabs.
+
+- **Weekly takings** — week, day, Cotham cash, Cotham card, Gloucester Road cash,
+  Gloucester Road card. Keyed on Sunday from the cash-up sheets.
+- **Wholesale invoices** — account, date, value, paid date.
+- **Costing** — last updated November 2023.
+
+### The HACCP plan
+
+A lever-arch file in the office. Nobody fills it in. It is where the shelf-life,
+blast and temperature rules are written down, and it is what the EHO reads.
+
+## 3.4 The rules, with numbers
+
+Every rule states its number and the day it last changed. A rule marked **7 June
+2026** is one Marina wrote out for the first time that Sunday, and where the
+written version is not quite what has been happening the row says what it was
+before.
+
+### Food safety and shelf life
+
+These are in the HACCP plan and are the only rules in the business that anybody
+outside it has ever asked to see.
+
+| Rule | The number | Set by | Last changed |
 |---|---|---|---|
-| **Goods in — dairy** | Driver leaves it in the chiller before anyone is in, two days out of three | Delivery note left in a tray. Quantity never checked against the note. | Nobody checks; bookkeeper keys the invoice Wednesday |
-| **Goods in — Terra Nostra** | Pallet, signed for | Note signed and filed | Whoever signs |
-| **Goods in — packaging** | Signed | Note signed; short-shipments annotated on the note about half the time | Whoever signs |
-| **Goods in — Kingsdown** | Trays left at the door | Nothing. Marina pays against a texted number. | — |
-| **Ingredient issue to production** | Tins opened, sacks scooped | **Not recorded at all.** Consumption is assumed to equal recipe × batches. | — |
-| **Pasteurising (WIP created)** | 55 kg into buckets | The run is noted on the production sheet, but base buckets are not stock in anyone's mind | Dan |
-| **Churn (finished goods created)** | 12 kg mix → pans and tubs | Production sheet: date, batch no, flavour, mix kg, pans/tubs out | Dan or the gelatiere on shift |
-| **Blast to hold** | Trolley moved | Not recorded | — |
-| **Transfer to shop** | Loaded into the van with the wholesale run | Triplicate van sheet. Driver fills it, often after loading, sometimes from memory at the first drop. | Driver |
-| **Receipt at Cotham** | Aoife or a senior checks it in | Signs the van sheet; queries discrepancies about half the time | Aoife |
-| **Receipt at Gloucester Road** | Dumped in the chest freezer mid-service | Sheet usually unsigned. Nobody counts. | — |
-| **Transfer to the container** | Two people, dry ice, 20 minutes | Scrawled on a whiteboard in the kitchen. The whiteboard gets wiped. | Whoever went |
-| **Transfer back from the container** | As needed | Not recorded | — |
-| **Shop-to-shop transfer** | Aoife carries pans in her car when Gloucester Road runs dry | **Never recorded.** Happens two or three times a week in summer. | — |
-| **Wholesale delivery** | Pans handed over, signature taken | Duplicate delivery note; invoiced weekly from the driver's copies | Driver, then Marina on Sunday |
-| **Wholesale return — empty pans** | Collected on the next drop | Tally in a notebook in the van | Driver |
-| **Wholesale return — product** | Rejected or unsold pans come back, occasionally still part-full | Noted on the delivery note if the driver remembers. Product goes back in the holding freezer or the bin depending on how it looks. | Driver |
-| **Retail sale** | Scooped | Till (Lightspeed) records the transaction. Flavour is captured only when staff use a flavour button; under pressure they use a generic SCOOP key. | Till |
-| **Retail sale of tubs/cakes** | Rung through | Till, accurately | Till |
-| **Coffee sale** | Rung through | Till records the drink; the milk and beans behind it are never linked to stock | Till |
-| **Staff consumption** | One scoop and one drink per shift, allowed | **Nothing.** | — |
-| **Samples to prospects** | A pan or a cool box goes out with Marina | Nothing, unless she remembers to tell Dan | — |
-| **Comps and remakes** | Dropped cone, wrong order | Till has a comp key. Used maybe half the time. | Shop staff |
-| **Donations** | Minis to school fairs, a cake to a raffle, four or five times a summer | Written on the kitchen waste sheet as "donation" if it leaves the kitchen; not if it leaves a shop | Variable |
-| **Events / markets** | A trailer freezer goes to two festivals a year | Loaded from a list; unsold stock comes back and is put away without counting | — |
-| **Waste — failed batch** | Dumped | Written on the production sheet in the margin | Dan |
-| **Waste — cabinet expiry** | Part pans binned at close on day 3 | A shop waste sheet exists at both shops. Cotham uses it perhaps three times a week; Gloucester Road's has 11 entries this year. | Shop staff |
-| **Waste — freezer burn / found old** | Discovered during a count | Sometimes written on the count sheet, sometimes just binned | Whoever finds it |
-| **Waste — ingredient spoilage** | Mouldy fruit, split purée, weevils in a flour sack once | Nothing | — |
-| **Waste — packaging damage** | Crushed sleeve of cones, dropped case of tubs | Nothing | — |
-| **Owner's household** | Marina takes a pan home most weeks | Nothing, and it is a running joke | — |
+| Longest a mix may stand between pasteurising and frozen | 24 hours | The HACCP plan | Original, 2021 |
+| Base ageing window | 4 to 12 hours | Dan | 2022 — was 4 to 8 hours, widened so that base made in the afternoon could be churned the next morning |
+| Blast until the core is below −18 °C | 90 minutes, target | The HACCP plan | Original, 2021 |
+| Holding freezer, maximum age for finished gelato | 21 days | Marina | **Aug 2024** — was 28. Cut after a wholesale complaint about the texture of a 26-day pan |
+| Cabinet life once opened, gelato | 3 days | The HACCP plan | Original, 2021 |
+| Cabinet life once opened, sorbet | 2 days | Marina | **Mar 2025** — was 3. Sorbets were going icy in the well and drawing complaints |
+| Wholesale pan best-before, from the freeze date | 14 days | Marina | **Jan 2025** — was 30. A café served a stale pan and blamed Sorella publicly |
+| Retail tub best-before, written on the sleeve at fill | 6 months | Marina | Original, 2021 |
+| Temperature read and initialled | twice daily, every unit | The HACCP plan | Original, 2021 |
+| What goes on a pan or catering tub label | 3 things: flavour, batch number, freeze date | The HACCP plan | Original, 2021 |
 
-## 7. Who writes what down, in what
+### The cabinet and the counter
 
-- **Production sheet** — a paper A4 clipboard sheet per day, on the wall by the blast freezer. Columns: batch no, flavour, mix kg, pans out, tubs out, freeze time, initials. Photographed by Dan and sent to Marina's WhatsApp at the end of each day. The photos are the archive. The paper goes in a box and is thrown out annually.
-- **Van sheet** — triplicate book. Top copy stays with the customer or the shop, second comes back to the office, third stays in the book.
-- **Delivery notes in** — a wire tray in the office. The bookkeeper matches them to invoices on Wednesdays and keys the invoice into Xero. **Only the money is keyed. The quantities never enter any system.**
-- **Till** — Lightspeed at both shops. Product-level sales data exists; flavour-level data is partial.
-- **Waste sheets** — one on the kitchen freezer door, one behind each counter. Weekly, not daily.
-- **Temperature log** — a laminated sheet per freezer, twice daily, initialled. Required by the HACCP plan and by far the most consistently completed document in the business, because the EHO asks for it.
-- **Pan notebook** — in the van door pocket. Out and back, by customer. Never totalled.
-- **Marina's spreadsheet** — one workbook, "Sorella Master 2026.xlsx", with tabs for weekly takings, wholesale invoices, and a costing tab last updated in November 2023.
+| Rule | The number | Set by | Last changed |
+|---|---|---|---|
+| Minimum flavours in a cabinet | 12 | Marina | **Nov 2025** — was 16 at Cotham. Cut to reduce end-of-day waste; Aoife still disputes it |
+| Refill a well when the pan in it is below | one third | Aoife | Practice since Cotham opened; **written down 7 June 2026**, unchanged |
+| Staff allowance | 1 scoop and 1 drink per shift | Marina | Original, 2021. **Wording changed 7 June 2026** to "one scoop and one drink, a coffee or a can" — Gloucester Road has no machine and Priya has always taken a can |
+| A remade or comped cone | free, and rung on the comp key | Aoife | Practice; **written down 7 June 2026**, unchanged |
+| Notice required on a cake order | 3 days | Marina | **7 June 2026** — Aoife has been telling customers 48 hours for two years and has not been told |
+| Flavours in a cake | 2, and no sorbet | Rekha | Practice since cakes started, 2022 |
 
-There is no stock system. There never has been.
+### Wholesale
 
-## 8. The rules, with numbers
+| Rule | The number | Set by | Last changed |
+|---|---|---|---|
+| Minimum wholesale order | 4 pans | Marina | Original, 2021 |
+| Free delivery above | £120 | Marina | **Apr 2026** — was £80. Fuel and van servicing |
+| Credit terms, standard | 14 days | Marina | **7 June 2026** — the rule as she had always stated it was "14 days, two legacy accounts on 30", and the book has carried more exceptions than that for years |
+| Credit terms, the exceptions | 3 cafés at 7 days, 2 accounts pro forma, 2 legacy accounts at 30 days | Marina | **7 June 2026**, first written down |
+| An account goes to pro forma after | 2 missed payments | Marina | 2025, the first time it was applied |
+| Chase an unpaid invoice at | 21 days | Marina | Practice since 2022; **written down 7 June 2026**, unchanged |
+| Write an invoice off at | 120 days | Marina | Practice since 2022. Three so far |
+| Price of a 5 L pan, whatever is in it | £28.50 | Marina | 2022, and Marina has not moved it since |
+| Van run days | Tue / Thu / Sat May to September; Wed / Sat October to April | Marina | Seasonal, reviewed each spring. The pattern has not moved since 2023 |
 
-| Rule | Value | Last changed |
-|---|---|---|
-| Mix must be frozen within 24 h of pasteurising | 24 h | Original, 2021 |
-| Base ageing window | 4–12 h | Extended from 4–8 h in 2022 to allow overnight |
-| Blast to core −18°C | within 90 min | Original |
-| Holding freezer max age for finished gelato | 21 days | **Aug 2024** — was 28. Cut after a wholesale complaint about texture on a 26-day pan |
-| Cabinet life once opened, gelato | 3 days | Original, in the HACCP plan |
-| Cabinet life once opened, sorbet | 2 days | **Mar 2025** — was 3; sorbets were going icy and drawing complaints |
-| Wholesale pan best-before from freeze date | 14 days | **Jan 2025** — was 30. A café served a stale pan and blamed Sorella publicly |
-| 500 ml retail tub BBE printed | 6 months | Original |
-| Minimum flavours in a cabinet | 12 | **Nov 2025** — was 16 at Cotham. Cut to reduce end-of-day waste; Aoife still disputes it |
-| Wholesale minimum order | 4 pans | Original |
-| Free delivery threshold | £120 | **Apr 2026** — was £80. Fuel and van servicing |
-| Wholesale credit terms | 14 days | Two legacy accounts still on 30 |
-| Milk standing order | Mon / Wed / Fri | **Mar 2024** — was Tue / Fri, after running dry over a bank holiday |
-| Milk quantity | Set weekly by Dan, texted to the dairy on Sunday night | Practice since 2022 |
-| Pistachio paste reorder point | Reorder at 2 tins, order 10 | **Feb 2026** — was reorder at 2, order 6. Changed after a 19% price rise, to buy ahead |
-| Hazelnut paste reorder point | Reorder at 2 tins, order 6 | 2023 |
-| Sucrose reorder point | Reorder at 3 sacks, order 10 | 2022 |
-| Base 50 reorder point | Reorder at 4 bags, order 1 carton | 2023 |
-| 500 ml tubs and lids | Two orders a year, February and July, 10,000 lids each | 2024, after the 2023 August stockout |
-| Staff allowance | One scoop and one drink per shift | Original |
-| Max specials per week | 3 in summer, 1 in winter | **May 2025** — was unlimited; Dan was making five and half were binned |
-| Cabinet refill trigger | Pan below one-third at the well | Practice, never written down |
-| Van run days | Tue / Thu / Sat May–Sept; Wed / Sat Oct–Apr | Seasonal, annual |
-| Container freezer rental | May–Sept | Since 2023 |
+### Ordering, and the levels things are reordered at
 
-Reorder points for anything not in this table — cocoa, chocolate, purées, dextrose, cones, cups, spoons — are "Dan looks at the shelf on Sunday". There is no written level.
+| Rule | The number | Set by | Last changed |
+|---|---|---|---|
+| How Dan picks a level | about a fortnight's use at the summer rate | Dan | Practice; **written down 7 June 2026**, the first time anybody asked him how he chooses a number |
+| Pistachio paste | reorder at 2 tins, order 10 | Dan | **Feb 2026** — was reorder at 2, order 6. Changed after the price rise, to buy ahead |
+| Hazelnut paste | reorder at 2 tins, order 6 | Dan | 2023 |
+| Caster sugar | reorder at 3 sacks, order 10 | Dan | 2022 |
+| Base 50 stabiliser | reorder at 4 bags, order 1 carton | Dan | 2023 |
+| Printed lids | 2 orders a year, February and July, 10,000 lids each time | Marina | 2024, after the August 2023 stockout |
+| Milk standing order days | Mon / Wed / Fri | Marina | **Mar 2024** — was Tue / Fri, after the kitchen ran dry over a bank holiday |
+| Milk quantity | no standing quantity — set weekly and texted Sunday night | Dan | Practice since 2022 |
+| An extra dairy drop | £45 | Whitehall Dairy | Their charge, unchanged since the account opened in 2021 |
+| Terra Nostra order value | £150 minimum, £400 for free carriage, £42 a pallet below it | Terra Nostra Ingredients | Their terms, unchanged since 2023 |
+| Kingsdown minimum | 8 trays | Kingsdown Fruit Farm | Their rule, agreed by text at the start of each season. 8 trays every season since 2022 |
+| Severn cut-off for next-day | 15:00 | Severn Catering Supplies | Their terms, unchanged since the account opened in 2021 |
+| Coldharbour | 6 kg minimum, order Friday for Tuesday | Coldharbour Roastery | Their terms, unchanged since Cotham opened in 2021 |
+| Avonside | £250 minimum, 5,000 units on printed lines, 10 to 12 weeks | Avonside Packaging | Their terms, unchanged since 2024, when the account came off pro forma |
 
-## 9. What Marina measures
+**The observed rates these levels are set against.** Dan quotes two and there are
+no others: a bag of Base 50 lasts about a week in summer, and a tin of pistachio
+paste does about five batches. Neither is written on anything. He churns
+pistachio three or four times in a summer week and would tell you so, and has
+never put that number beside either of the other two.
 
-Weekly, on Sunday, from the till and the bank:
+**Everything else has no level.** Cocoa, chocolate, dextrose, glucose, inverted
+sugar, skimmed milk powder, every purée, the seasonal ingredients, cones, cups,
+spoons, napkins, bags, labels, gloves, blue roll, bin liners, sanitiser and dry
+ice are reordered when Dan looks at the shelf on a Sunday, or when Aoife notices
+a gap. There is no written level for any of them and no rule that says when to
+look.
 
-- Takings per shop, this week against the same week last year
-- Wholesale invoiced value, and debtor days (she chases at 21 days, writes off at 120 — three times so far)
-- Labour as a percentage of sales, target 32%, actual usually 34–37%
-- Litres produced, taken from the production sheets by counting pans and multiplying by five
-- Cash in the bank against the VAT and PAYE due dates
+### Production
+
+| Rule | The number | Set by | Last changed |
+|---|---|---|---|
+| Specials a week, maximum | 3 in summer, 1 in winter | Marina | **May 2025** — was unlimited. Dan was making five and half of them were binned |
+| Specials actually run | 2 or 3 a week in summer, 1 a fortnight in winter | Dan | Practice, and not a rule. What Dan has done since the maximum was set in May 2025 |
+| The week's flavours and specials | set once a week, on a Sunday | Dan | Practice since 2022 |
+| The cabinet plan | set weekly, on a Sunday, for both shops | Aoife | Practice since Gloucester Road opened, March 2024 |
+| What next week's production is decided from | 2 documents: the monthly count sheet and the cabinet plan | Dan | Practice since 2022 |
+| Which machine a flavour goes in | whichever of the 2 is free | Dan | Practice, unchanged since 2021, and Dan says the two machines are not the same machine |
+| Container rental | May to September | Marina | Since 2023 |
+| Gloucester Road, December hours | Thursday to Sunday | Marina | 2024 |
+| Gloucester Road, New Year closure | 2 weeks | Marina | 2025, and Marina argues about it every autumn |
+
+### Money
+
+| Rule | The number | Set by | Last changed |
+|---|---|---|---|
+| Labour as a share of sales, target | 32% | Marina | Set 2022. It runs at 34 to 37% and has not been under target in a year |
+| Premium charged for a special | none | Marina | Original, 2021 |
+| Gloucester Road scoop prices against Cotham's | 20p under | Marina | March 2024, when it opened |
+
+### Where two rules disagree
+
+Eight of the rules above were written down for the first time on 7 June, and
+nobody read them against each other or against the ones that were already there.
+These are what a person would find if they did. None of them is settled, and none
+of them is a mistake anybody has noticed.
+
+1. **Four pans, and £120.** The minimum wholesale order is four pans and free
+   delivery starts at £120, and a pan is £28.50. The two numbers were set five
+   years apart. Steve has never charged anybody for a delivery, and nobody in the
+   business can say what the charge below the threshold would be — the rule names
+   a threshold and no consequence.
+2. **Twenty-one days, and the container.** Finished gelato may be held for 21
+   days. The container is rented from May to September and §1.3 says stock that
+   goes in during a June glut is routinely still there in September. Nobody has
+   ever said whether the 21 days apply to a freezer at a yard in Avonmouth. The
+   stock that sits longest is the stock the rule would condemn.
+3. **Twenty-one days in the freezer, fourteen on the pan.** A pan carries one
+   date — the freeze date — and two rules read it. A pan two and a half weeks old
+   is inside the holding rule and outside the wholesale rule, and nothing on the
+   label, the van sheet or the delivery note says which rule anybody is applying.
+4. **Twelve flavours, two cabinets.** The minimum is 12 flavours. Cotham has 24
+   wells and Gloucester Road has 16. The rule was cut from 16 to 12 in November
+   2025 for Cotham's sake, and nobody has said what a minimum of twelve means in
+   a cabinet of sixteen.
+5. **Ninety minutes into the blast, and two days in it.** The rule is 90 minutes
+   to core. §1.3 says things sit in the blast freezer for two days when the
+   holding freezer is full. The 90 minutes is a minimum nobody breaks and there
+   is no maximum, so both statements are true at once and neither is written
+   anywhere the other can be seen.
+6. **Kingsdown's season, and the flavours made from Kingsdown fruit.** Kingsdown
+   deliver twice weekly, June to August only. Rhubarb and custard runs March to
+   April and ricotta and fig runs September to October, and both are made from
+   Kingsdown produce. Marina texts and the farm drop a box in when they are
+   coming into town, which is not a delivery in the sense the supplier table
+   means, and there is no minimum on it and no price agreed in advance.
+7. **A fortnight's use, and a bag a week.** Dan says he sets a level at about a
+   fortnight's use. The level for Base 50 is four bags, and Dan also says a bag
+   lasts about a week in summer. He has never said the two sentences on the same
+   day.
+8. **The specials maximum, and what a special is.** Three a week in summer. Dan
+   counts a seasonal flavour as a special, because it comes off the core list and
+   he has to make room for it; Aoife does not, because it is on the cabinet plan
+   for two months. So Dan and Aoife disagree about whether the rule is being kept
+   in a week when it plainly is or plainly is not, and neither has noticed that
+   they are counting different things.
+9. **Three days' notice on a cake, and the forty-eight hours Aoife quotes.**
+   Marina wrote three days on 7 June. Aoife has been telling customers two days
+   since the cakes started and has not been told otherwise. Rekha builds them
+   either way.
+10. **One drink a shift, at a shop with no machine.** The allowance is a scoop
+    and a drink. Cotham Hill has the only coffee machine; at Gloucester Road the
+    drink is a can out of the drinks fridge, which nobody has ever priced against
+    a coffee, and which sits in a fridge §1.3 does not name.
+11. **Ten thousand lids, and no number for tubs.** The rule orders lids twice a
+    year by the ten thousand. Lids come a thousand to a case and tubs five
+    hundred, every filled tub takes one of each, and the rule names no quantity
+    for tubs at all. §1.5 says they run out at different times, permanently. The
+    lids have run out in August two years running anyway.
+12. **The three-day cabinet clock, and a pan that changes shops.** A pan opened
+    at Cotham and driven to Gloucester Road the next afternoon has been open for
+    two days and has arrived somewhere that has no idea of it. Nothing records
+    the transfer, so nothing records the day the pan was opened either.
+13. **The credit-terms rule, before 7 June.** The rule Marina had always stated
+    was 14 days with two legacy accounts on 30. The book carries three cafés on
+    seven days and two accounts on pro forma as well, and has done for at least a
+    year. The rule was not wrong about the two legacy accounts; it was silent
+    about five other exceptions, and the silence is what is being recorded here,
+    because after 7 June there is nowhere else it survives.
+14. **Twenty-one days from the chasing side.** Marina chases an unpaid invoice at
+    21 days. She counts from the invoice date, which is the Sunday she typed it.
+    Two of the cafés count from the delivery, which is up to six days earlier, and
+    have said so on the phone. Neither of them is wrong.
+15. **Wholesale five days a week, on a van that runs three.** §3.1 says wholesale
+    runs five days a week from May to September. The van goes out Tuesday,
+    Thursday and Saturday in those months. Both sentences have been said in the
+    kitchen for years. A café that runs out on a Wednesday waits, and everybody
+    knows that, and the two rules have never been written on the same piece of
+    paper before this one.
+
+## 3.5 What Marina measures
+
+Weekly, on a Sunday, from the till and the bank:
+
+- **Takings per shop**, this week against the same week last year.
+- **Wholesale invoiced value**, and how old the oldest unpaid invoice is.
+- **Labour as a share of sales**, against the 32% target.
+- **Litres produced**, off the production sheets.
+- **Cash in the bank** against the VAT and PAYE dates.
 
 Monthly:
 
-- Gross margin at the business level, from Xero. Not per product.
-- A guess at waste in pounds, from the waste sheets, which she knows is low
+- **Gross margin at the business level**, out of Xero. Never per product.
+- **A guess at waste in pounds**, off the waste sheets, which she knows is low.
 
-The costing tab that tells her a pistachio pan costs £14.80 to make was built in November 2023. Pistachio paste has gone up twice since. She knows this and hasn't redone it.
+She has done all of this every Sunday for four years and it takes her most of the
+evening. The costing tab that tells her a pistachio pan costs £14.80 to make was
+built in November 2023, and pistachio paste has gone up twice since. She knows
+that and has not redone it.
 
-## 10. What the staff argue about
+### The numbers two people work out differently
 
-- Whether Gloucester Road's cabinet runs warm. It does — it has been 2–3° above Cotham's for a year — but the service call is £340 and it hasn't been made.
-- The generic SCOOP button. Aoife wants it removed; the students say they can't find pistachio in a 24-button grid with eleven people waiting.
-- Whether specials are worth it. Dan says they bring people back. Aoife says she bins half of them.
-- Who let the pistachio run out. Twice in 2025, and each time Dan says he told Marina and Marina says he told her on a Thursday, when Terra Nostra's cut-off is Tuesday.
-- Pans. The drivers say the cafés don't return them; the cafés say the drivers don't ask for them.
-- Whether shop-to-shop transfers should stop. Marina has asked twice. They continue, because the alternative is Gloucester Road with an empty cabinet on a Saturday.
-- Loading order in the van. The wholesale drops go first, so shop stock sits in the van until 13:30 and arrives soft.
-- Whether the container stock from July is still good in September.
+Every one of these is a single number with two methods behind it, and in every
+case both people are in the building and neither knows the other is doing it
+another way.
 
-## 11. What nobody measures
+- **Litres produced.** Marina counts pans on the production sheets and multiplies
+  by five, and a part pan counts as a half. Dan counts kilos into the machine off
+  the same sheet, because that is the column he wrote. The two numbers come off
+  one document.
+- **A pan.** Dan means a full 5 L pan off the bench. Aoife means any pan standing
+  in a well, whatever is left in it. Marina means five litres. "How many pans went
+  out this week" has three right answers.
+- **Waste.** Marina totals what is written on the three waste sheets, in pounds,
+  at retail. Aoife says half the specials get binned and is counting pans out of
+  wells against pans she put in. Dan counts what is in the margin of his own
+  sheets, which is failed batches and nothing else. Three methods, three numbers,
+  and the only one that reaches the spreadsheet is the one Marina already knows is
+  too low.
+- **Debtor days.** Marina counts from the invoice date. Two of the cafés count
+  from the delivery. The gap is up to six days, and it is the same gap as between
+  the van sheet and the invoice.
+- **This week against the same week last year.** Gloucester Road was shut for two
+  weeks after New Year in 2025 and again in 2026, so for two weeks of the year the
+  comparison is against nothing, and the spreadsheet shows it as a collapse and
+  then as a recovery.
+- **Labour as a share of sales.** Marina takes wages against takings as rung on
+  the till. The accountant takes wages against net sales, VAT out. The target is
+  32% and the two methods do not answer the same question about it.
+- **How much of the business is wholesale.** Marina says roughly a third, from
+  invoiced value. Dan would say more than half, counting pans off the bench,
+  because a wholesale pan is five litres and a shop sells in scoops. Both of them
+  say "the wholesale side is about —" and finish the sentence differently.
+- **What a pistachio pan costs.** Marina's costing tab says £14.80. Dan says a tin
+  of pistachio does about five batches, and he knows what a tin costs because he
+  orders it. Neither of them has ever put the two figures on the same page.
+- **How many specials ran this week.** Dan counts seasonals in. Aoife counts them
+  out. The rule has a number and its denominator is disputed.
 
-Honestly, and these are the real ones:
+## 3.6 What the staff argue about
 
-1. **Ingredient consumption.** Nothing connects a batch to the tin it came out of. Dry store stock is discovered to be low when someone reaches for it. There is no theoretical usage to compare anything to.
-2. **Yield.** Overrun is not recorded, so litres out per kilo in is unknown and varies. Every litre figure Marina quotes is pans × 5, which assumes every pan is full and every part pan is half.
-3. **Flavour-level retail sales.** Somewhere between a quarter and a half of scoops go through the generic button. Nobody knows which flavours sell at which shop, which is exactly the number that would decide the cabinet mix.
-4. **Cabinet waste.** The 3-day rule is followed reasonably well and the binning is barely ever written down. This is likely the largest single loss in the business and its size is not known within a factor of two.
-5. **Staff consumption.** Sixteen people, an allowance nobody polices, no record. Aoife thinks it is twice the allowance in practice.
-6. **Stock in the van.** Between loading and the last drop there is no record of what is aboard, and pans occasionally stay overnight.
-7. **Stock in the container.** Counted when it is emptied in late September, and not before.
-8. **Aged base in the chiller.** Up to 110 kg of finished mix, the most perishable thing in the building, in nobody's ledger.
-9. **Pans.** No register, no serial numbers. £38 each. Marina's estimate of what has gone missing over five years is "sixty, maybe ninety". It has never been checked, because checking would mean counting what is sitting at 31 customers.
-10. **Consumables.** Cones, cups, spoons, napkins, bags. Ordered when the shelf looks empty. Breakage on cones is real — a dropped sleeve is 90 cones — and is never recorded.
-11. **The coffee side of the shops, entirely.** Beans, milk, syrups and cups are bought locally on the shop's own card and expensed. No stock, no recipe, no yield, no waste. It is roughly 18% of Cotham's takings.
-12. **Batch traceability outward.** Batch numbers are on every label and on the production sheet. Which batch went to which wholesale customer is not recorded anywhere. A recall would mean phoning 31 accounts and asking them to bin everything.
-13. **Purée and paste part-tubs.** An opened 3.5 kg pistachio tin is counted as "a tin" whether it is full or has 400 g left.
-14. **Cost of a special.** Never costed, ever. Priced the same as everything else.
-15. **Temperature excursions.** Logged twice daily on paper, filed, never read. The Gloucester Road cabinet's drift is known anecdotally, not from the log that records it.
-16. **Shrinkage of any kind, at any location.** There is no count that closes, so there is no variance to look at. The monthly freezer count is a list of what is there, and it is used to decide what to make next week — not to check anything.
+- **Whether Gloucester Road's cabinet runs warm.** It does — it has been two or
+  three degrees above Cotham's for a year — but the service call is £340 and it
+  has not been made. The temperature log on the door has recorded the drift twice
+  a day for a year and nobody has read it back.
+- **The generic SCOOP button.** Aoife wants it taken off. The students say they
+  cannot find pistachio in a grid of 24 with eleven people waiting.
+- **Whether specials are worth it.** Dan says they bring people back. Aoife says
+  she bins half of them. They are not counting the same flavours as specials, so
+  they are not disagreeing about the same number.
+- **Who let the pistachio run out.** Twice in 2025. Dan says he told Marina;
+  Marina says he told her on a Thursday, and Terra Nostra's cut-off for the
+  fortnightly pallet is a Tuesday. The reorder level was changed in February 2026
+  and the argument has not come back yet.
+- **Pans.** The drivers say the cafés do not give them back. The cafés say the
+  drivers do not ask. The notebook in the door pocket has the answer in it and has
+  never been added up.
+- **Whether shop-to-shop transfers should stop.** Marina has asked twice. They
+  continue, because the alternative is Gloucester Road with an empty cabinet on a
+  Saturday.
+- **Loading order in the van.** The wholesale drops go in last so they come out
+  first, so the shops' stock sits in the van until half past one and arrives soft.
+  Steve says he is not doing it the other way round.
+- **Whether the container stock from July is still good in September.** Nobody
+  has applied the 21-day rule to it and nobody will say out loud that it does not
+  apply.
+- **Whether a pan of pistachio should cost a café the same as a pan of fior di
+  latte.** Dan has said twice that it should not. It still does.
+- **Elderflower on the printed sleeve.** Dan has asked twice. The sleeve list has
+  not changed since it was drawn up, and changing it means a printed line at
+  10 to 12 weeks and a 5,000 unit minimum.
+- **The milk at the coffee machine.** Yusuf says a 2 L bottle does eight lattes.
+  Aoife says she goes through more milk than that and cannot say why. Neither of
+  them counts what goes down the sink, and it is the largest single thing the
+  shop throws away.
+- **Whether Priya should be the manager of Gloucester Road.** She opens it, closes
+  it, and is the only person who signs anything there, and she has neither the
+  title nor the pay. The van sheet is unsigned at that shop partly because nobody
+  has told anybody it is her job to sign it.
+
+## 3.7 What nobody measures
+
+The carried version of this list had sixteen items on it and was written when the
+file held no prices, no suppliers and no recipes. Every one of the sixteen is
+below, each with what is now true of it. **Not one is struck.** Three have lost
+half of the reason they were true, and losing half a reason is worth writing down
+because the half that remains is the load-bearing one: these are gaps in what the
+business records, not gaps in what this file happened to say.
+
+1. **Ingredient consumption.** Stands, halved. Nothing connects a batch to the
+   tin it came out of, and §3.2 says why: no document in the business records an
+   ingredient leaving a shelf. What has changed is the other half of the old
+   reason — "there is no theoretical usage to compare anything to" is no longer
+   true, because §2.2 and §2.3 now state what a batch eats. There is something to
+   compare against now. There is still nothing to compare.
+2. **Yield.** Stands. Overrun is not recorded and nobody logs it, so litres out
+   per kilo in is unknown and varies with the machine. Every litre figure Marina
+   quotes is pans times five.
+3. **Flavour-level retail sales.** Stands. Somewhere between a quarter and a half
+   of scoops go through the generic button, and that is exactly the number that
+   would decide the cabinet mix.
+4. **Cabinet waste.** Stands. The three-day rule is followed reasonably well and
+   the binning is barely written down. Likely the largest single loss in the
+   business, and its size is not known within a factor of two.
+5. **Staff consumption.** Stands. Sixteen people, an allowance nobody polices, no
+   record, and now a written rule that means a different thing at each shop.
+6. **Stock in the van.** Stands, and is worse than it looked. Between loading and
+   the last drop there is no record of what is aboard; the van sheet and the
+   delivery notes are written before the drops, not after them, and pans stay
+   overnight.
+7. **Stock in the container.** Stands. Counted when it is emptied in late
+   September and not before, and it is the only unit in the business with no
+   temperature log.
+8. **Aged base in the chiller.** Stands. The most perishable thing in the
+   building, made in runs that are on a sheet, drawn down in amounts that are on
+   nothing, and in nobody's ledger.
+9. **Pans.** Stands, and is sharper than it was. Each of the 31 accounts is a
+   place a pan can be, Steve's notebook is the only record that a pan went
+   anywhere, and it has never been added up. Marina's estimate of what has gone
+   missing over five years is "sixty, maybe ninety".
+10. **Consumables.** Stands, halved. Cones, cups, spoons, napkins and bags now
+    have a price and a pack size in §1.6, so what one costs is knowable. Nothing
+    records one leaving a shelf or a shelf unit, breakage is never written down,
+    and a dropped sleeve is ninety cones.
+11. **The coffee side of the shops.** Stands, and one clause of it is struck. It
+    is no longer true that there is no recipe: §2.7 states what goes into each of
+    the eight drinks. But that is Yusuf talking, not a page, and no stock, no
+    yield and no waste is recorded behind any of it — including the milk down the
+    sink, which is the largest part of it. It is roughly 18% of Cotham's takings.
+12. **Batch traceability outward.** Stands. Batch numbers are on every label and
+    on the production sheet. Which batch went to which account is on nothing; the
+    delivery note carries a flavour and never a batch number. A recall means
+    telephoning 31 accounts.
+13. **Purée and paste part-tubs.** Stands. An opened tin is counted as a tin
+    whether it is full or nearly empty, and §1.5 says the same in the same words.
+14. **Cost of a special.** Stands, and its reason has changed entirely. It was
+    true because nothing in the business held a price or a recipe. Both exist now
+    — §1.6 prices every bought item and §2.3 gives most flavours a page — so a
+    special could be costed by anybody who sat down for an hour. Nobody has, and
+    nobody has been asked to. This is the only item on the list that the business
+    could close by itself tomorrow.
+15. **Temperature excursions.** Stands. Logged twice daily on paper, filed, never
+    read. Gloucester Road's cabinet drift is known anecdotally and not from the
+    log that has been recording it for a year.
+16. **Shrinkage of any kind, at any location.** Stands, and it is the sum of all
+    the others. There is no count that closes, so there is no variance to look at.
+    The monthly count is a list of what is there and it is used to decide what to
+    make next week, not to check anything against anything.
+
+Five more that this file's own sections turned up, and that the carried list
+could not have held:
+
+17. **Which of the two Cotham back freezers anything is in.** Two places, one
+    behaviour, no document that distinguishes them.
+18. **What was ordered.** Every order out of this business is an email, a
+    telephone call or a text from one person's phone. Nothing in the building
+    states what was asked for, so a short delivery is invisible unless the
+    supplier's own packer writes it on their own note.
+19. **What is in a pan when it goes back on a cake.** Rekha never empties a pan
+    on cakes; she takes what she needs off two or three and puts them back. The
+    pans she drew down appear on no document.
+20. **The milk at Cotham Hill, in both directions.** Two bought items are called
+    the milk, the one behind the coffee is on nothing, and most of what is steamed
+    goes down a drain that is not a place.
+21. **Whether a pan standing at a café is stock.** §2.6 asks it and the business
+    has never had to answer it. It is worth a line here because it is the one gap
+    on this list that is not a missing record but a missing decision: nobody
+    could write the record until somebody decides what a pan out on loan is.
 
 ---
 ---

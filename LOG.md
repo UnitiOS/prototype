@@ -2309,3 +2309,218 @@ stabiliser/emulsifier* — the two names the carried pages already use.
 
 Nothing here is proposed for `DECISIONS.md`. Nothing was built and nothing
 failed; the six questions this raised are questions, and they are in `OPEN.md`.
+
+## 2026-09-02 · Sorella's profile, session 3: the rules, and how stock moves
+
+`business/sorella/profile.md`, session 3 rewritten in place. 1,459 lines in,
+2,079 out; the session 3 block is 785 lines against the 169 it replaced. Session
+4 is byte-identical to `d1a42f1` from its heading to the end of the file, checked
+by script rather than by eye.
+
+### What was written
+
+Seven sections, `## 3.1` to `## 3.7`, renumbered from the carried `## 6` to
+`## 11` for the reason sessions 1 and 2 renumbered. The mapping is 6 → 3.2,
+7 → 3.3, 8 → 3.4, 9 → 3.5, 10 → 3.6, 11 → 3.7; the three carried loose blocks
+became `## 3.1` (the shape of the year), a row in `§3.4` (how often specials run)
+and rows in `§3.4`'s ordering table (constraints that bite).
+
+- **3.1 The shape of the year.** The carried five bullets, reflowed, with the
+  carried percentages left as they were.
+- **3.2 Every way stock moves.** 55 movements in five tables, each stating out
+  of → into against the places in `§1.3`, what physically happens, the document
+  and who fills it, and the lag. The carried table had about a dozen movements,
+  three columns and no lag.
+- **3.3 Who writes what down, in what.** Eighteen headings, each with its fields
+  in the order they are filled and which of them are usually left blank.
+- **3.4 The rules, with numbers.** 51 rules in six tables, each with its number,
+  who set it and the day it last changed, then fifteen numbered conflicts.
+- **3.5 What Marina measures.** The carried weekly and monthly lists, then nine
+  numbers that two people in the building work out differently.
+- **3.6 What the staff argue about.** The carried eight, plus four the new
+  material created.
+- **3.7 What nobody measures.** The carried sixteen, each re-examined, plus five
+  new ones.
+
+### What was carried
+
+Nothing was carried byte for byte. Every sentence of the carried block was
+rewritten, which the item asked for — the three carried blocks and `§6` to `§11`
+were all in scope. What was carried is the **content**: every movement in the
+old `§6`, every document in the old `§7`, every rule and every date in the old
+`§8`, every measure in `§9`, every argument in `§10` and all sixteen items of
+`§11` are present, with their numbers unchanged. The old `§8` dates are
+reproduced exactly: Aug 2024, Mar 2025, Jan 2025, Nov 2025, Apr 2026, Mar 2024,
+Feb 2026, May 2025, and the undated originals.
+
+### What was invented
+
+- **Sunday 7 June 2026**, the day Marina wrote the rules out longhand because the
+  system starts a week later. Eight rules carry it. It is the device the item
+  asked for — a rule that changed has a before and an after, and the file is now
+  the only place the before survives. Three of the eight came out different from
+  practice: the cake-order notice (three days written, forty-eight hours quoted
+  at the counter for two years), the staff allowance (reworded to admit that
+  Gloucester Road has no coffee machine), and the credit terms.
+- **Twenty-seven rules** the business must have had and had never stated: the
+  label's three fields, the cake rules, the pro-forma trigger, the write-off day,
+  the six suppliers' own terms as rules rather than as a table, the cabinet plan's
+  rhythm, what next week's production is decided from, and the Gloucester Road
+  seasonal hours.
+- **Eleven documents** the carried `§7` did not name: the wholesale delivery note
+  as distinct from the van sheet, the suppliers' nine note shapes, the cabinet
+  plan, the cake order, the milk text, the orders out, the wholesale invoice, the
+  cash-up and the HACCP file.
+- **The lag on every movement.** Nothing in the previous version carried one.
+- **Dan's level-setting method** — "about a fortnight's use at the summer rate" —
+  and the two observed rates he quotes. This is the fourth rule shape and it is
+  the one I was most careful not to manufacture; see below.
+
+### The four rule shapes
+
+All four were found in rules the business already had. None was invented to fill
+a shape, so nothing goes to `OPEN.md` under that clause.
+
+- **Sums over rows** — the minimum wholesale order (4 pans on one order), free
+  delivery above £120 (money on one order), chase at 21 days and write off at 120
+  (what one account owes across its invoices), and every reorder point, whose
+  left-hand side is what is on a shelf.
+- **A ratio of two derived quantities** — labour as a share of sales, target 32%,
+  running at 34 to 37%. It is also one of the nine numbers with two methods
+  behind it: Marina takes takings as rung, the accountant takes net sales.
+- **A threshold producing an exception** — the reorder points, the minimum of 12
+  flavours in a cabinet, and the refill trigger at one third of a pan.
+- **A rate over a window feeding a threshold** — Dan's stated method for picking
+  a level, with the two rates he quotes: a bag of Base 50 lasts about a week in
+  summer, and a tin of pistachio does about five batches. He also says he churns
+  pistachio three or four times in a summer week. The file states all four
+  figures and never multiplies any of them together, which is conflict 7.
+
+### Every conflict found, and what was done with it
+
+Fifteen are stated in `§3.4` under *Where two rules disagree*. **None was
+resolved in the file**; every one is left standing with both numbers visible,
+which is the behaviour session 2 established with the pan and the yield. The two
+the item named specifically:
+
+- **Free delivery against the four-pan minimum.** Four pans, £120, £28.50 a pan.
+  Stated as conflict 1, with the finding that goes further than the arithmetic:
+  the rule names a threshold and **no consequence**. Nobody in the business can
+  say what is charged below £120, and Steve has never charged anybody.
+- **Credit terms against the 31-account table.** The carried rule said "14 days,
+  two legacy accounts still on 30" and `§1.9` carries three cafés on seven days
+  and two on pro forma as well. `§1.9` was already correct — session 2 fixed its
+  prose — so the **rule** was rewritten, not the table, and it is the only rule
+  whose 7 June wording is a correction of a rule rather than of a practice. The
+  old wording is preserved in conflict 13, because after 7 June there is nowhere
+  else it survives.
+
+The other thirteen, in short: 21 days in the holding freezer against a container
+rented for five months; 21 days against the 14-day pan best-before, both reading
+one date on one label; a minimum of 12 flavours applied to a 24-well cabinet and
+a 16-well one; 90 minutes into the blast against `§1.3` saying things sit in it
+for two days; Kingsdown delivering June to August against two flavours made from
+Kingsdown produce in March and in September; a fortnight's cover against a bag a
+week; the specials maximum against a disputed definition of a special; three
+days' notice on a cake against Aoife's forty-eight hours; one drink a shift at a
+shop with no machine; ten thousand lids and no number for tubs; the three-day
+cabinet clock against a pan that changes shops unrecorded; debtor days counted
+from the invoice by Marina and from the delivery by two cafés; and wholesale
+"five days a week" on a van that runs three.
+
+### Changes to sessions 1 and 2
+
+Three, and only the third is content.
+
+1. The header sentence — "Sessions 1 and 2 are written" → "Sessions 1, 2 and 3".
+2. The status table's session 3 row — *Carried, unrevised* → *Written*.
+3. **`§1.3`, the walk-in customer.** Was "Anyone who pays at either counter"; now
+   "Anyone who pays at a counter — either shop's, or the trailer's window at a
+   festival." Forced: the trailer is one of the 38 places and the gelato that
+   leaves it is sold, so the festival sale needed a destination and the only
+   candidate said *counter*. One clause, no new place, `§1.3` still holds 38.
+
+Nothing else in sessions 1 or 2 was touched. `git diff` was filtered by line
+number to prove it.
+
+### The §11 items, one by one
+
+**Not one of the sixteen is struck.** Three lost half of the reason they were
+true and every one of the sixteen still stands, which is itself the finding: the
+carried list was true because of what the business does not record, not because
+the file was thin. The three that changed:
+
+- **1, ingredient consumption.** "There is no theoretical usage to compare
+  anything to" is now false — `§2.2` and `§2.3` state what a batch eats. Nothing
+  still records an ingredient leaving a shelf, so the item stands on its other
+  half.
+- **10, consumables.** Now priced and packed in `§1.6`, so what one costs is
+  knowable; nothing records one leaving a shelf, so the item stands.
+- **11, the coffee side.** One clause is struck outright: it is no longer true
+  that there is no recipe, because `§2.7` states all eight drinks. That is a
+  barista talking rather than a page, and no stock, yield or waste is recorded
+  behind any of it, so the item stands.
+- **14, cost of a special**, keeps its wording and changes its reason entirely.
+  It was true because nothing held a price or a recipe. Both exist now, so it is
+  the only item on the list the business could close by itself tomorrow, and the
+  only one whose gap is habit rather than absence.
+
+Five were added — which of the two Cotham back freezers anything is in, what was
+ordered, what is left in a pan after a cake is built off it, the milk at Cotham
+in both directions, and whether a pan standing at a café is stock at all. The
+last is marked as the one gap on the list that is a missing decision rather than
+a missing record.
+
+### What was run
+
+Two scripts, both in the scratchpad, both passing.
+
+- **Place coverage.** Parses the `§1.3` tables for place names, parses `§3.2`,
+  and reports any name that does not appear. `places named in 1.3 : 38`,
+  `not named in 3.2 : 0`.
+- **Session 4 immutability.** `git show d1a42f1:business/sorella/profile.md`,
+  sliced from the `# Session 4` heading to the end and compared byte for byte
+  with the same slice of the working file. 8,097 bytes each, identical.
+- A third checked table completeness: every one of the 55 movement rows carries
+  an out-of → into, a document and a lag; every one of the 51 rule rows carries a
+  number and a year. It found 11 rules with no date and one row that was not a
+  rule at all; all twelve were fixed before the final run.
+
+### Surprising
+
+1. **Twenty-two of the fifty-five movements produce no record of any kind.** Not
+   "recorded badly" — no paper, no screen, no text. Two more produce only a text
+   message or a card receipt. So if the system can only hold what a document
+   witnessed, it cannot hold two fifths of the ways stock moves in this business,
+   and the number is a property of the business rather than of the profile.
+2. **The van sheet and the delivery notes are written before the events they
+   record.** Steve fills them at loading, or at the first drop from memory. Every
+   other document in the building has a lag between nought and six days; these
+   two have a negative one, and they are the documents the whole wholesale side
+   rests on.
+3. **The only goods-in document in the business is written by the supplier.**
+   The session brief named a goods-in book. There is none, and there never has
+   been: what exists is nine different suppliers' own notes, of which two are not
+   documents at all — Kingsdown's is a text message and the cash and carry's is a
+   till receipt. Sorella's entire contribution to a delivery record is a
+   signature and, about half the time, a word in the margin.
+4. **Nothing has ever gone back to a supplier.** Found by asking whether each of
+   the nine supplier places is ever a destination as well as a source. None is. A
+   short delivery is argued on the telephone and a bad one is binned, which means
+   the graph will carry nine places with one-way traffic and no return path — and
+   that is correct, not an omission.
+5. **The container has no thermometer.** Every other freezer and chiller carries
+   a laminated log read twice a day, because the EHO asks for it. Nobody is at the
+   yard twice a day. The one place with no temperature record is the one holding
+   the oldest stock in the business.
+6. **Three things move through places `§1.3` does not name** — Aoife's car,
+   Gloucester Road's drinks fridge, and the sink at Cotham Hill. Marina's car is
+   in the list only because the cool box is. Aoife's carries the shop-to-shop
+   transfer and the whole cash and carry run, and the sink takes more milk than
+   anything except the machine itself.
+7. **The two Cotham back freezers are two places to the file and one to the
+   business.** No document has ever named which of them a pan is in, and nobody
+   has ever needed one to. `§1.3` distinguishes them because there are two
+   objects; nothing else in the business does.
+
+Nothing here is proposed for `DECISIONS.md`. Seven questions went to `OPEN.md`.
