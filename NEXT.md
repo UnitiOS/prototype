@@ -5,352 +5,47 @@ If the done condition cannot be written as a command, the item is not ready.
 
 Adding a sixth item means removing one.
 
----
-
-- [x] Postgres running, three tables, deny triggers on UPDATE/DELETE
-      done when: `psql -f kernel/001_schema.sql` succeeds and an UPDATE on
-      assertion raises an exception
-
-- [x] Minimal `perform()`, ~100 lines, no elaborate validation
-      done when: one script writes 1 intent + 3 assertions and exits clean
-
-- [x] `resolve_single()` with both time parameters
-      done when: `pytest tests/test_bitemporal.py` is green (the 4-row table)
-
-- [x] Seed 200 synthetic assertions, build one projection by replay
-      done when: `make replay` produces an identical table twice in a row
-      also: relax `value_exactly_one` to allow zero values when revokes IS NOT
-      NULL, and cover a pure retraction in the tests
-      also: add a retro-dated row (valid_from 1 Dec 2025, recorded 10 Mar 2026)
-      so the fixture separates max valid_from from max recorded_at
-
-- [x] Pure retractions must not win: add the candidate-must-carry-a-value
-      clause to resolve.py, drop the xfail, and put pure retractions into
-      seed_200.py
-      done when: `pytest tests` is green with no xfail and `make replay` is
-      still identical twice in a row
-      also: break ties on recorded_at before seq — seq is insertion order, so
-      a backfilled import wins the tie today. Move the index with it.
-
-- [x] Adversarial pass over the kernel rules: every clause guarded, every
-      unguarded behaviour written down
-      done when: removing any single clause from resolve_single's WHERE or
-      ORDER BY makes at least one test fail, the append-only guards run under
-      pytest, and anything found but not fixed is a line in OPEN.md
-
-- [x] One README that points instead of copying
-      done when: someone who has never seen the repo can clone it, get
-      `pytest tests` green, and say why as_of exists — from README.md and the
-      files it points at, without reading LOG.md
-
-- [x] `perform()` takes `recorded_at`, so a backdated row goes through the
-      write gate instead of around it
-      done when: `grep -rn "INSERT INTO assertion" tests scripts` returns
-      nothing, `pytest tests` is green, and `make replay` is still identical
-      twice in a row
-
-- [x] `make check` — one command that runs pytest and replays twice
-      done when: `make check` exits 0 on a clean clone and fails if either the
-      tests fail or the two projections differ
-
-- [x] README points at the eight stages and the current one
-      done when: README.md names all eight stages and which is active, still
-      without restating a rule that lives in another file
-
-- [x] Rewrite README for named stages and the component list
-      done when: `grep -rniE "stage [0-9]|eight stages" README.md` returns
-      nothing, all seven stage names and all seven component names from
-      CLAUDE.md appear in README.md, `kernel` is the only component the file
-      calls built, and `make check` exits 0 on a clean clone following only
-      README.md
-
-- [x] Directory tree named after the components in CLAUDE.md
-      move only: `kernel/` -> `components/kernel/`, `tests/*.py` ->
-      `tests/kernel/`. `scripts/`, `build/` and the root files stay where they
-      are. Fix the paths that break — Makefile, docker-compose mount, sys.path
-      inserts, README — and nothing else.
-      done when: no `.py` or `.sql` file sits at the repo root or directly
-      under `tests/`, every directory under `components/` is a name that
-      appears in CLAUDE.md's component table, `make check` exits 0 on a clean
-      clone, `build/projection_a.txt` is still **5334 bytes**, and
-      `git show --stat -M HEAD` lists the moved files as renames rather than
-      delete-plus-add
-
-- [x] LinkML probe: does the map's escape hatch survive the generators
-      done when: a throwaway schema — two classes, one slot with an explicit
-      `slot_uri`, one slot `required: true`, one slot carrying `annotations`
-      — runs clean through `gen-sqltables`, `gen-shacl`, `gen-erdiagram` and
-      `gen-owl`; the SHACL output carries a `minCount` for the required slot;
-      the `slot_uri` appears verbatim in the OWL output; and the annotation is
-      still readable through `SchemaView` after a YAML round-trip. Findings go
-      to LOG.md, the schema is deleted, and `linkml` is **not** added to the
-      Makefile's venv target — it is a probe, not a dependency yet.
-
-- [x] `ontology`: which version applies at (valid_at, as_of)
-      `components/ontology/resolve.py`. Pure — a directory of sealed files in,
-      one version out. No database, no LinkML runtime; read the annotations as
-      plain YAML.
-      done when: `tests/ontology/` proves from fixture files alone that a
-      version sealed after `as_of` is invisible; that among versions valid at
-      `valid_at` the one sealed last wins; that a retroactive version beats the
-      one it supersedes at the same `valid_at`; that an `as_of` before the first
-      seal returns nothing rather than raising; and `make check` exits 0
-
-- [x] `perform()` takes ontology_version instead of hardcoding it
-      the constant at `components/kernel/perform.py:22` is the last `# TODO`
-      standing between the kernel and a real map.
-      done when: `ONTOLOGY_VERSION` is gone, the parameter is required rather
-      than defaulted, every existing caller passes `"v0"` explicitly, the write
-      gate still rejects what it rejected before, `make check` exits 0 with 20
-      passed, and `build/projection_a.txt` is still 5334 bytes
-
-- [x] `seal`: a draft becomes a version
-      `components/seal/seal.py`. Validate the draft as LinkML and exit non-zero
-      writing nothing if it is not. Assign the next version number, stamp
-      `valid_from` and `sealed_at` into the schema's annotations, mint one
-      predicate entity per `slot_uri`, then call `perform()` **once** with every
-      stated fact — one seal is one intent.
-      done when: sealing a fixture draft twice leaves `business/v1.yaml` and
-      `business/v2.yaml`; every assertion from one seal shares one `recorded_at`
-      and it equals that version's `sealed_at`; a `slot_uri` present in both
-      versions yields one predicate entity, not two; facts carry the version's
-      `valid_from`, not the seal instant; an invalid draft leaves the database
-      and `business/` untouched; and `make check` exits 0
-
-- [x] T1: does `required: true` beside `identifier: true` give a `minCount`
-      done when: LOG.md records what `gen-shacl` does, and if the answer is no,
-      a line is appended to OPEN.md naming what enforces it instead
-
-- [x] `valid_from` is required, not defaulted
-      `components/seal/seal.py` falls back to the seal instant when a draft
-      carries no `valid_from`. Remove the fallback: refuse the draft, exit
-      non-zero, write nothing — the same shape as the `slot_uri` refusal a
-      hundred lines above it.
-      done when: a draft with no `valid_from` leaves `business/` and the
-      database untouched and exits non-zero; every fixture that leaned on the
-      fallback now states its own `valid_from`; no default is reintroduced
-      anywhere in the file; and `make check` exits 0
-
-- [x] README describes what is built now
-      it still calls `kernel` the only component built. `ontology` and `seal`
-      exist, `business/` exists, and CLAUDE.md's component table has eight rows.
-      done when: README.md names `kernel`, `ontology` and `seal` as built and no
-      other component as built, every directory under `components/` is
-      mentioned, and `make check` exits 0 on a clean clone following only
-      README.md
-
-- [x] Two leaks that destroy evidence, and one instant the CLI cannot set
-      `make check` wipes the working database twice: `schema` runs
-      `001_schema.sql`, which drops and recreates, and `replay` reseeds on top.
-      A real seal's assertions do not survive one run. `seal` never writes the
-      transcript the 26 Aug decision requires. And `seal()` accepts `sealed_at`
-      while its CLI does not, so a dated episode cannot be run from the command
-      line.
-      done when: `make check` run twice against a database holding a sealed
-      version leaves that seal's assertion count unchanged both times; a draft
-      whose `annotations.transcript` is missing, or names a file that does not
-      exist, exits non-zero leaving the target directory and the three table
-      counts untouched; a draft whose top-level `annotations` nests any mapping
-      other than `facts` is refused the same way; the named transcript sits
-      beside its version after a successful seal;
-      `--sealed-at 2026-01-15T09:00:00Z` stamps that instant into both the
-      version's `sealed_at` and every assertion's `recorded_at`; and
-      `make check` exits 0
-
-- [x] Empty the map store, and stop a test depending on what it holds
-      `business/v1.yaml` and `v2.yaml` are fixture drafts sealed for real. Left
-      there, the first role-played interview lands as v3 superseding a business
-      nobody described. They cannot simply be deleted:
-      `test_business_holds_the_two_sealed_versions` reads `business/` and
-      asserts v2 supersedes v1, so the production map store is doing a fixture's
-      job. What that test is really worth checking is that `resolve` can read
-      what `seal` wrote — which two seals into a temp directory check better,
-      and without the dependency.
-      The working log has to be emptied in the same breath: it still holds the
-      200 synthetic tutoring assertions and the seals made while validating, so
-      "every predicate in the log has a home in the map" would be measured
-      against a business nobody is describing. Both stores are cleared or
-      neither is.
-      done when: `business/` holds no `v*.yaml`; no test reads `business/`;
-      a test still covers `seal` writing two versions and `resolve` picking the
-      later one across both `valid_at` and `as_of`; the working database named
-      by the default DSN reports zero rows in all three tables; and `make check`
-      exits 0
-
-- [x] Keep the first session's evidence, then empty both stores again
-      done: eceada6 committed the four files, cc747f7 removed them, both stores
-      empty, `make check` exits 0 at 41 passed and 5334 bytes twice.
-
-- [x] The business profile, one page, frozen before the map is written
-      done: `business/profile.md`, 286 lines. Marlow Gelato, single branch,
-      north London, adopting the system 2025-09-01. Nine stock movements of
-      which three are never recorded; two readings of "the vanilla"; shrinkage
-      computed two ways that differ by two to four points every month. Frozen
-      when `business/draft.yaml` is created.
-
-- [x] `seal` writes `value_ref` from the slot's `range`
-      done: ffb08eb, verified 4e4b457. 44 passed, `make check` exits 0. The
-      kernel needed nothing — `perform()` had accepted refs since the first
-      hundred lines; it was seven lines of `seal` calling `str()` on everything.
-      Two gaps found and left as OPEN lines rather than fixed here: two slots
-      sharing a `slot_uri` with different ranges, and an `any_of` slot of all
-      classes reading as a literal. The second blocks the map.
-
-- [x] Competency questions, frozen before any history is curated
-      done: `business/questions.md`, six questions, Q6 expected to fail.
-
-- [x] `seal` carries `confidence` on a fact
-      done: d5601e7. 47 passed, three tests added. `FACT_OPTIONAL` holds the one
-      name; the key check went from equality to two subset tests, so the set is
-      widened by exactly one rather than opened. No default, and the kernel
-      needed nothing.
-
-- [x] The inventory map v1 draft, written and rendered, not sealed
-      done: 94a01b1. 18 classes, 45 slots, 127 facts, `gen-owl` and
-      `gen-erdiagram` both exit 0. Its done condition was wrong, not its
-      execution — see the next item.
-
-- [x] The draft's facts reach the master data the profile states
-      done: b3b4f7b, verified here clause by clause rather than from LOG.
-      Facts 127 → 176, subjects 40 → 48, slots carrying facts 10 → 19, empty
-      slots 35 → 26. Five §8 locations with their temperatures, three bases,
-      Marta and Dan, sixteen rotation flags with the right six false, one
-      `flavour_base`, and no forbidden individual anywhere. The 26 slots that
-      stay empty each need an event that has not happened or an instance the
-      profile refuses to name, and the note pairs every one with its section.
-      `make check` ok, 47 passed. `gen-owl` exits 0 only with a UTF-8 stdout —
-      see OPEN.
-
-- [x] §10's rules, and keys for the things the business identifies
-      done: 5d86fd7, verified clause by clause. Classes 18 → 19, slots 45 → 49,
-      facts 176 → 194, subjects 48 → 57. All six §10 rules verbatim, the
-      five-litre one with a threshold and no unit. `unique_keys` on the three
-      classes §4 identifies, their slots required; `Pan` and the five movement
-      classes keyless and optional. `base_ingredients` declared and empty.
-      Nothing enforces, nothing computes. No duplicate (subject, predicate)
-      pair anywhere, and every class-ranged fact is a URI. Two consequences
-      nobody asked for went to OPEN: `Unit` widened to six, and multivalued
-      slots have no supersession story.
-
-- [x] Seal v1, and look at what landed
-      done: 346274d, counts re-checked here straight against Postgres rather
-      than from LOG: 1 intent, 107 entities, 301 assertions, one `recorded_at`
-      of 2025-08-31T21:00Z, one `valid_from` of 2025-09-01, 194 stated over 57
-      subjects, 42 refs, 6 low and 13 high. Every other clause passed. The "194
-      over 57" clause was mine and it was wrong — it counted the draft's facts
-      and was then read back against a table that also registers a URI per
-      entity. Three things went to OPEN and one to DECISIONS: §10's rules are
-      sealed in two places, the map is not valid until the balances are, and
-      coverage measures nothing.
-
-- [x] `generator`: one projection table and one form from v1 alone
-      done: f25c4eb, re-run here rather than read from LOG. `--verify` clean on
-      both tables; the working log still reads 1 / 107 / 301, so nothing was
-      written to it. Material: 19 rows, 8 columns, 73 blank. Pan: 19 rows, 7
-      columns, 114 blank, and every one of those rows is a material — the
-      finding, not a bug. `make check` 57 passed. The fourth clause was mine and
-      it was loose: it said "the log" without saying which, and the write path
-      was exercised against the check database instead, which is the better
-      reading. Three OPEN lines came out of running it that no amount of
-      arguing had produced.
+A finished item is removed once `LOG.md` carries what was run. The record of
+what was done is `LOG.md` and git, never this file. This file had grown to
+thirty finished items and two live ones, which is a log wearing a to-do list's
+name.
 
 ---
 
-- [x] Render the eight document forms from sealed v1 and look
-      done: 71c916d, re-checked here against Postgres and by re-running rather
-      than read from LOG. All eight rendered, none failed. `make check` 57
-      passed, replay identical twice at 5334 bytes; working log unchanged at
-      1 / 107 / 301. Four OPEN lines. Two of the four predictions made at this
-      desk were wrong and that was the value: of 26 pickers exactly **one** is
-      empty, and `count_of` offers nineteen materials rather than nothing — so
-      the defect is a picker confidently offering the wrong set, not a picker
-      that is bare. `PanMoved`, `PanPulled`, `ThrownOut` and `TastingGiven` are
-      byte-identical apart from the class name. And direction turns out to be
-      in the map already as the `movement_out_of` / `movement_into` pair; what
-      is missing is that the outside of the business has no location, which
-      profile §7 does state.
-
-- [x] Which LinkML features survive the seal, and which of them can compute
-      done: ed3e6dd. All five survive the seal and read back. `equals_expression`
-      computes over an assembled row; `rules` raise `NotImplementedError` for any
-      rule at all; `infer_all_slot_values` is a no-op on our rows; `sum` is
-      absent from a six-name function table while `len` and `max` are present.
-      The split holds: within a row is LinkML's, across rows is ours.
-      done when: a throwaway map under `business/trial/`, never sealed into the
-      working log, declares one class carrying `equals_expression`, a `rules`
-      block with preconditions and postconditions, `unit` with a `ucum_code`,
-      `unique_keys` and `designates_type`; `seal` either accepts it or the
-      refusal is recorded verbatim; whatever is accepted is read back from the
-      sealed file through `SchemaView` and each of the five is asserted present
-      or absent by a test under `tests/`; one script evaluates the
-      `equals_expression` slot over a row the generator assembled at a stated
-      pair of clocks, with `use_expressions=True`, and prints both the row and
-      the computed value; one script tries to express a sum across many
-      instances in LinkML alone and records the exact error rather than working
-      around it; `LOG.md` carries one table listing every metamodel feature
-      tried as usable, unusable or untried, with one line each on what it would
-      serve; `make check` still exits 0 at 57 passed; and the working log named
-      by the default DSN still reports 1 / 107 / 301
-
-- [x] Prove or break the `derive` idea with a throwaway
-      done: c4dce98, reproduced at this desk by re-running both seals and the
-      script rather than read from LOG. It held. Same `valid_at`, two `as_of`
-      five weeks apart, two different correct tables: alpha at place_one nets 6
-      read on 6 March and 3 read on 11 April, and the script asserts the
-      difference equals the late movement's own quantity taken from the log.
-      The script holds two words about the map, `Holding` and `aggregate`;
-      `Movement` and its four slots are read from the sealed file at run time.
-      292 lines, `make check` 64 passed, working log untouched at 1 / 107 / 301.
-      The only break was spelling: LinkML reads a mapping under an annotation
-      tag as `Annotation`'s own constructor arguments, so the declaration needs
-      a `value:` wrapper.
-      Not the component — one script under `scripts/`, and nothing under
-      `components/` is created or changed. The claim under test is the whole
-      design in miniature: a computation **declared in a sealed map**, executed
-      against the log at a stated pair of clocks, gives the right number, and
-      gives a *different* right number when the same question is asked at a
-      later `as_of` because one movement was recorded late. If it breaks, the
-      break is the finding; do not build around it.
-      done when: a throwaway map under `business/trial2/` declares a movement
-      class, a place class, and two derived quantities as
-      `annotations.aggregate` carrying `over`, `sum` and named `by` dimensions,
-      plus a third slot whose `equals_expression` subtracts one from the other;
-      `seal` accepts it against the check database and the `aggregate`
-      annotation reads back through `SchemaView` on the induced slot; the map's
-      stated facts include hand-written class-membership assertions, at least
-      four movements across two places, and one movement whose `recorded_at` is
-      later than the rest; one script prints the derived quantity for every
-      (thing, place) pair at a stated `valid_at`; run at two `as_of` values it
-      prints two tables that differ, and the script itself asserts that the
-      difference equals the late movement's quantity rather than leaving it to
-      the eye; one movement carries no quantity fact at all and whatever the
-      script does with it is printed, not decided; `LOG.md` records the
-      declaration verbatim, both tables, and the script's line count; `make
-      check` still exits 0 with the 64 existing tests passing; and the working
-      log named by the default DSN still reports 1 / 107 / 301
-
-- [ ] Sorella's profile gains what a graph needs, without being rewritten
-      `business/sorella/profile.md` — 496 lines, written in a clean directory
-      with no access to this repo, and it is the business now. Marlow is
-      retired. The arithmetic largely survives checking at this desk: 110 kg of
-      base wants 7.2 bags of milk against 12 in and 9 counted; Base 50 burns
-      0.67 kg of a 2 kg bag against 13 counted. What it lacks is not detail but
-      **reach** — a graph built from it today has movements starting from
-      nothing, sixteen flavours that cannot consume anything, and no price
-      anywhere.
-      Append to the same file in the same voice; keep every word already there.
-      done when: `business/sorella/profile.md` states the opening stock of every
-      location at the start of Monday 15 June 2026; a recipe for each of the
-      sixteen flavours that has none; which flavour is sold in which of the
-      seven formats; the twenty-six unnamed wholesale accounts, including which
-      two are on thirty-day terms; a purchase price and pack size for every
-      bought item and a sell price for every product including scoops at both
-      shops; a lead time and minimum order for every supplier; how many pans
-      exist and what is known of where they are; and Monday 15 June through
-      Sunday 21 June at Tuesday's level of detail. Tuesday's dairy delivery is
-      corrected — 16 June 2026 is a Tuesday and milk comes Monday, Wednesday and
-      Friday, so the day moves, not the schedule. Nothing is computed anywhere
-      in the file and no balance is ever stated as what should have been on hand
+- [ ] Sorella's profile, session 3: the rules, and how stock moves
+      Session 2 landed at `d1a42f1` — 1,459 lines, 25 flavours with a page or a
+      stated reason for having none, and the immutability check run here rather
+      than read from LOG: sessions 3 and 4 are byte-identical to `9320fea` from
+      the `# Session 3` heading to the end of the file. The file can now add and
+      subtract. What it still cannot do is say what the business requires, or
+      what anyone fills in.
+      This session is where the 1 Sep reversal lands. The target artefacts are
+      written before the graph is, and a document with no field list gives
+      claim A nothing to fail against. It is also where the four rule shapes
+      settled on 29 Aug get their material, and the annotation vocabulary may
+      only grow against a rule the profile already states.
+      §1.3 now names 38 places. The carried §6 was written when the file named
+      five. Every place that nothing moves into or out of is a place the graph
+      will carry and the log will never touch.
+      done when: every place named in `§1.3` is named by at least one movement
+      as a source or a destination; every movement states the document filled,
+      who fills it, and the gap between the day it happens and the day it is
+      written down, or states that there is none; every document named states
+      every field on it in the order it is filled; every rule states its number
+      and the date it last changed; the rules include at least one that sums
+      over rows, one that is a ratio of two derived quantities, one that is a
+      threshold producing an exception, and one that is a rate over a window
+      feeding a threshold; the carried `§11` is re-examined item by item against
+      sessions 1 and 2, each item either surviving with a reason or struck with
+      one; the carried rules that sessions 1 and 2 made checkable are checked
+      and every conflict stated, the free-delivery threshold against the four
+      pan minimum and the credit-terms rule against the 31-account table among
+      them; the file states no quantity on hand, no count and no event; it
+      states no total, subtotal or derived figure; everything from the
+      `# Session 4` heading to the end of the file is byte-identical to
+      `d1a42f1`; every change to sessions 1 and 2 is a correction forced by a
+      conflict and is listed in `LOG.md`; and `git show --stat HEAD` lists no
+      file outside `business/sorella/profile.md`, `LOG.md` and `OPEN.md`
 
 - [ ] `make check` fails if the generator knows what a business is
       The claim milestone one rests on is that the graph carries the logic, and
@@ -363,8 +58,8 @@ Adding a sixth item means removing one.
       strips comments and docstrings, and reports any remaining occurrence of a
       business term drawn from a list it holds in one place; it exits 0 against
       the tree as it stands and non-zero when a term is planted into a live
-      code path; `make check` runs it and still exits 0 at 57 passed; and the
-      working log named by the default DSN still reports 1 / 107 / 301
+      code path; `make check` runs it and the 64 tests that exist still pass;
+      and the working log named by the default DSN still reports 1 / 107 / 301
 
 ---
 

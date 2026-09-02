@@ -500,6 +500,13 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
   6, 5, 5, 4+9 tubs and 4+12 tubs against 12.0 kg each. Both numbers cannot
   stand: either the pan is not what the profile says it is, or the day is. It is
   stated in `§2.4` and not settled, because the day is session 4's.
+  Narrowed at the PM desk, 2 Sep: it is the day. The eight batches are 12.0 kg
+  each and claim between 15.0 L and 30.0 L of output, so they contradict one
+  another before any pan size is chosen. Fitting the six-pan batch inside even a
+  generous 80% overrun needs a pan under 3.27 L; fitting the three-pan batch
+  above the volume of the mix itself needs one over 3.63 L. No pan satisfies
+  both, so shrinking the pan is not available as a repair and session 4 rewrites
+  the production sheet's pan counts.
   Raised 2 Sep · blocks: profile session 4
 - Water is named in four recipes and is deliberately not a bought item. `§1.6`
   excludes it in its own preamble — not tracked against product — and `§2.1`

@@ -1294,3 +1294,25 @@ reasoning lives in `../archived/`. They are closed, which means not re-discussed
              and a third has already been withdrawn. The existing rule covers
              reopening a decision; this one covers making one. If nothing is
              being built and nothing has failed, the honest entry is no entry.
+2026-09-02 · The blind-author guard is withdrawn: whoever writes the business
+             profile may read this whole repo. It existed to stop an input
+             tuned to make the system pass, and what it produced instead was a
+             profile blind to its own reach — 496 lines with no opening stock,
+             no purchase or sell price, and no date on which the business
+             adopts a system, which `seal` refuses a draft without. Every
+             failure such a profile causes lands in the missing-information
+             basket of the 1 Sep rule, which teaches nothing about the system:
+             the same wasted lap as v1, one level up. The costs are not
+             symmetric. A tuned input costs one claim its credibility; an
+             incomplete one costs the milestone and a rewrite, and that has now
+             been paid twice. The risk was never access — it is writing for the
+             map instead of writing the business — so it is held as a rule on
+             content rather than on reading: every number must be one a person
+             in the business would know or say, nothing in the file is
+             computed, and no distinction appears that the business does not
+             itself make. This supersedes the 27 Aug line separating the
+             brief's author from the skill's, and the 2 Sep line recording that
+             Sorella's profile was written with no sight of this repo. What
+             does not move is the competency questions: they are the
+             instrument, not the material, and they are still written after the
+             profile is frozen, by someone who did not write it.
