@@ -325,16 +325,6 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
   marked as one, or whether the rows are simply ignored by a reader, is
   undecided. Raised 3 Sep · blocks: report
 
-- The gap between a map's `valid_from` and its `sealed_at` is eighty days here,
-  and the 31 Aug three-hour hole scales with it. Sorella's v1 takes effect on
-  15 June 2026 and was sealed on 3 September, so `resolve_version` returns `None`
-  for every `as_of` before the seal — including the whole of milestone one's own
-  week, read at the clocks it happened at. `submit()` is unaffected because it
-  takes the version off the file it was handed, but any reader asking what the
-  map said on 16 June as known on 16 June gets nothing. The 31 Aug line raised
-  this as three hours and harmless; it is now a quarter of a year, and it covers
-  the only operational day the PoC has. Found 4 Sep resolving the sealed store ·
-  blocks: report
 - One log holds two businesses and cannot say which. Marlow's seal and Sorella's
   differ in `intent.id` and `occurred_at` and in nothing else — same actor, same
   agent, same `action_name`, same note `sealed draft.yaml as v1` — and every
@@ -373,7 +363,55 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
   not about one tool. Found 4 Sep rendering `BoughtItem` and `ProductPrice` ·
   blocks: generator
 
+- The generator's row rule is a guess and the log now contradicts it. Every one
+  of the ten filled classes renders 197 rows and every one of the 41 pickers
+  offers 197, because `entity_class` is a column of fifteen classes and all 197
+  entities carry one, so the rule *subject of at least one of this table's
+  columns* admits everything to everything. Before the master data went in the
+  same tables had 0 rows and the same pickers offered nothing, so filling the log
+  made every projection in the system worse. The map names the slot to read —
+  `designates_type: true` on `entity_class`. Found 4 Sep entering 197
+  master-data rows · blocks: generation
+- Two modules are named `resolve.py` and every reader of a balance needs both.
+  `components/kernel/resolve.py` carries `resolve_single` and
+  `components/ontology/resolve.py` carries `resolve_version`; with both
+  directories on `sys.path` the second import gets the first module and raises
+  `ImportError: cannot import name 'resolve_single' from 'resolve'`.
+  `generate.py` is unaffected because it imports only the kernel's, which is also
+  why nothing has caught this in three weeks. A balance needs the map resolver
+  and the fact resolver in one process, so `report` hits it on its first line.
+  Whether the files are renamed, whether the components become packages, or
+  whether the 1 Sep line's unnamed joint inside `generate.py` is extracted and
+  owns both, is undecided. Found 4 Sep writing a throwaway balance ·
+  blocks: report
+- A count line has no confidence and the kernel has one. `assertion.confidence`
+  is a column and `submit()` has no field for it; `StockCountLine` has ten slots
+  and not one of them is *Weighed / Counted / Eyeballed / Not counted*. `§4.1`
+  gives those four words a section of their own and says the difference between
+  two such lines is the whole of what a count knows about itself, so entering
+  Monday's count without them records the numbers and throws away that. Whether
+  the four words are a slot on the line, an enum, or the `confidence` column the
+  kernel already has reached through a form field, is undecided — and the second
+  and third are different answers to whether a confidence is a fact about the
+  world or about the claim. Found 4 Sep reading `§4.1` for master data ·
+  blocks: live use
+
 ## T2 — wait for a user
+
+- The business has no name for the place empty pans stand in. `§4.1` counts 34
+  steel and 12 polycarbonate pans under a heading Jordan invented — *by the
+  bench* — and says it is not one of `§1.3`'s places; `§3.2` says the file has no
+  name for it. It is reached by the wash-and-stack leg of every pan that comes
+  back on the van, so it is not a place the map can leave out for long. Only
+  Sorella can say what it is called. Found 4 Sep entering the two empty-pan lines
+  · blocks: live use
+- One bought item is counted in two units in two places and the map holds one.
+  `§1.5` says of coffee beans: kilos, bags at the shop, grams in the kitchen,
+  same bean, two places, two units. `item_counted_in` is single-valued and now
+  holds `bag`. Whether the second reading is a second `BoughtItem`, a
+  per-location unit, or something the business would say is one thing, is a
+  question for Sorella and not for this desk. Found 4 Sep entering
+  `sorella:item_coffee_beans_espresso_blend` · blocks: live use
 
 - Would anybody pick a movement's kind off a list of fifty-three? The map makes
   `movement_kind` a picker over `§3.2`'s own rows, which is what lets the log say

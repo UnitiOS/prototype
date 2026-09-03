@@ -1618,3 +1618,55 @@ reasoning lives in `../archived/`. They are closed, which means not re-discussed
              enforced today by nobody typing into that form. Whether the filter
              reads the annotations, reads the absence of `entity_class`, or is a
              key the map states, is open; that there must be one is not.
+2026-09-04 · A URI namespace per identifier slot, forced by a case in the
+             profile rather than chosen for tidiness. Entities are minted
+             `sorella:loc_…`, `sorella:unit_…`, `sorella:person_…`,
+             `sorella:flavour_…`, `sorella:item_…` and `sorella:product_…`,
+             because *Canned soft drink* is a `BoughtItem` in `§1.6` and a
+             `SoldProduct` in `§1.7` — the same object bought and sold — and
+             each class identifies on its own slot, so one URI cannot carry
+             both. Renaming one would put a word in the log the business does
+             not use; giving one entity two class facts would lose the
+             distinction the map draws. A supplier and a freezer share
+             `location_name`, therefore share a namespace, and therefore may not
+             share a name, which is what the identifier already said. The cost
+             is that a URI now names a class as well as an entity, duplicating
+             a fact the log holds properly.
+2026-09-04 · Master data is valid from the adoption date and recorded today.
+             All 197 entities carry `valid_from 2026-06-15T00:00:00Z` —
+             `§1.2`'s Monday, and the map's own — with `recorded_at` left to
+             `now()`. The master data is true from the day the business started
+             recording and known from the day it was typed, which is the only
+             honest thing two axes can do about eighty days of backfill.
+             Back-dating `recorded_at` would assert that the log knew in June.
+2026-09-04 · `resolve_version` returning `None` before a map's `sealed_at` is
+             correct, and the 4 Sep line raising it is closed rather than
+             fixed. Measured over six clock pairs against `business/sorella`:
+             the hole is only on the diagonal. `valid_at` in June with `as_of`
+             in June returns `None`; `valid_at` in June with `as_of` today
+             returns v1, and that second pair is what a balance, a report and a
+             shrinkage figure all ask. The honest reading of the `None` is that
+             on 16 June this business had not been described yet, and anything
+             making that pair return v1 would be a lie about when the map was
+             written. Established by argument and then run end to end: a
+             three-column balance computed off the sealed file at a June
+             `valid_at`, reading the two `aggregate` annotations and the
+             `equals_expression` off whatever file the resolver handed back.
+             The eighty days cost milestone one nothing.
+2026-09-04 · The generator's row rule reads the class fact. Today the rule is
+             *the subject of at least one fact under one of this table's
+             columns*, which the generator's own docstring admits is a guess;
+             now that `entity_class` is a column of fifteen classes and all 197
+             entities carry one, that rule puts every entity in every one of
+             those fifteen tables and in all 41 pickers. Before the master data
+             went in, the same tables had 0 rows and the same pickers offered
+             nothing, so filling the log made every projection in the system
+             worse. The rule the log can now support is *the entity whose
+             `entity_class` says this class*, and the map names the slot to read
+             with `designates_type: true`, so reading it stays domain-blind.
+             This is a decision rather than a repair because it changes what a
+             projection is — from a guess to a read — and because it makes the
+             1 Sep class-membership line load-bearing rather than tidy. The
+             2 Sep admission of `designates_type` was granted on the ground that
+             it names which slot carries the type; this is the first thing that
+             reads it.
