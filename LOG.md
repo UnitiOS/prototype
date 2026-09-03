@@ -3911,3 +3911,505 @@ what the clause means. No two clauses conflicted.
   tub as one bill or as two things that happen at the same moment decides
   whether a filling form asks one question or two. Raised 3 Sep ·
   blocks: interview
+
+## 2026-09-03 — Sorella's map, session 3 of 4: every way stock moves, and the eighteen documents
+
+`business/sorella/draft.yaml`, extended. Sections `§3.2` and `§3.3` of the
+profile frozen at `ada1d9e`. **Still no fact in this file.** The fifty-three
+ways stock moves, the batches, the counts and the movements themselves are rows
+a generated form will write.
+
+### What a movement's quantity is of, and whether the map can name gelato in a pan
+
+It can name it, and it names it the way the business does, which is not as a
+thing. Session 2 left three candidate shapes — a class of its own, a movement's
+two ends, or something a count declares — and the documents decide between them
+without an argument. The van sheet writes **flavour, format, quantity** as three
+cells on a line; the wholesale delivery note writes the same three; the count
+sheet writes `Fior di latte, 5 L pan | 6`, which is the first two cells with a
+comma between them and a number beside it. No document in this business has ever
+written "pistachio in a napoli pan" as one word, and `§2.5` refuses to write the
+flavour-and-format pairs out at all, so a class whose rows are those pairs would
+mint twenty-five by seven facts nobody has stated. So a movement's quantity is
+of one of two things: an `Ingredient`, which covers everything bought and the
+six things made in a run and water; or a `Flavour` **in** a `SoldProduct`, which
+is the third candidate generalised from a count to every movement. Two slots,
+declared per line, and the pair never becomes an entity. The return was not
+designed: `movement_format` ranges over `SoldProduct`, which is the class
+carrying `product_fill_quantity`, so the join from a count of pans to a recipe
+in kilograms — about 3.3 for a pan, 0.460 for a tub, 0.100 for a mini — is a
+slot that was already there. The cost is named rather than absorbed and it is
+paid in the balance: a line the business writes without a flavour is in no
+group. Its own count sheet has assorted catering tubs, assorted minis, part pans
+on the top shelf and a finished cake, and not one of them says what is in it.
+
+### The balance, and whether the aggregate annotation can carry a sign
+
+**It cannot, and it does not need to.** Direction is carried by which slot the
+`by` names, and the sign by a subtraction that is LinkML's own — which is the
+1 Sep split between the two derivation problems arriving unchanged.
+
+The map declares four aggregates and no net:
+
+    ingredient_in    over StockMovement, sum movement_quantity,
+                     by {ingredient_on_hand: movement_ingredient,
+                         ingredient_where:   movement_into}
+    ingredient_out   ... by {ingredient_on_hand: movement_ingredient,
+                             ingredient_where:   movement_out_of}
+    gelato_in        ... by {gelato_flavour: movement_flavour,
+                             gelato_format:  movement_format,
+                             gelato_where:   movement_into}
+    gelato_out       ... by {gelato_flavour: movement_flavour,
+                             gelato_format:  movement_format,
+                             gelato_where:   movement_out_of}
+
+One movement row is a departure from its origin and an arrival at its
+destination at the same time, because the two aggregates are the same sum over
+the same class grouped two different ways. Nothing anywhere says that goods
+received add and waste subtracts.
+
+What was run to find out: `trial_sign.py`, 167 lines, written **outside the
+repo** in the scratchpad and expected to be deleted. It reads the four
+declarations straight out of `business/sorella/draft.yaml` with `SchemaView` —
+the map is never sealed, no database is touched, `read_map` refuses a draft and
+was not used — and runs them over eight synthetic movements handed over the way
+the generator hands a row over: every cell a `str`, because `value_literal` is
+text, and `None` where the business writes nothing. The grouping rule is
+`scripts/trial_derive.py`'s, unchanged in behaviour: a row silent under a
+dimension is in no group, a row silent under the summed slot adds nothing.
+
+    IngredientOnHand   over StockMovement, sum movement_quantity, cast to decimal
+      ingredient_on_hand  ingredient_where  ingredient_in  ingredient_out  (net)
+      caster_sugar        dry_store         0              5               -5   [silent: m3]
+      caster_sugar        the_bench         5              0                5   [silent: m3]
+      dextrose            dry_store         6              0                6
+      dextrose            terra_nostra      0              6               -6
+
+    GelatoOnHand   over StockMovement, sum movement_quantity, cast to decimal
+      gelato_flavour  gelato_format  gelato_where     gelato_in  gelato_out  (net)
+      pistachio       napoli_pan     bar_trentanove   2          0            2
+      pistachio       napoli_pan     blast_freezer    3          3            0
+      pistachio       napoli_pan     holding_freezer  3          2            1
+      pistachio       napoli_pan     the_bench        0          3           -3
+      pistachio       napoli_pan     the_van          2          2            0
+
+    movements counted once as an arrival and once as a departure: m4 m5 m6 m7
+    one class with four dimensions: 0 group(s) over 8 movements
+    equals_expression '{a_in} - {a_out}' with 0 and 5 -> Decimal('-5')
+    equals_expression '{a_in} - {a_out}' with 3 and 2 -> Decimal('1')
+    equals_expression '{a_in} - {a_out}' with 2 and 2 -> Decimal('0')
+
+Four of the eight movements are counted twice, once in each direction. Three of
+the nine rows are negative and every one of them is right: the caster sugar
+scooped out of the dry store never arrived there in this window, the pistachio
+left the bench it was never delivered to, and Terra Nostra's own dextrose is
+down six — the supplier's world drawn down without anyone declaring that it
+should be, which is the 1 Sep line's double-entry argument turning up
+uninvited.
+
+**The smallest thing that could carry the sign is one `equals_expression` slot,
+and this session's vocabulary forbids it.** It was measured on a throwaway
+schema rather than assumed: `'{a_in} - {a_out}'` returns `Decimal('-5')`, not a
+string and not an error. So the map ships with two of the balance's three
+columns, and both derived classes say so in their own descriptions. Nothing was
+invented to escape it and no second annotation shape was written.
+
+### Why there are two balance classes and not one
+
+Measured, not preferred. A single class dimensioned by ingredient, flavour,
+format and place produced **0 groups over 8 movements**: every movement is
+silent under two of the four dimensions, and a row silent under a dimension is
+in no group. Two classes with disjoint dimension sets give the right rows, and
+the null rule stops being a detail of a throwaway script and becomes the filter
+— an ingredient movement is not in the gelato balance because it names no
+flavour, and a pan movement is not in the ingredient balance because it names
+no ingredient. Neither class carries `entity_class`: nobody ever asserts a row
+of one.
+
+### Every `§3.2` and `§3.3` subsection, consumed or left
+
+| Subsection | Where it went |
+|---|---|
+| `§3.2` preamble | `movement_out_of`, `movement_into`, `kind_document`, `kind_lag`. The preamble is the mechanism: every movement names where the thing came from and where it went, both drawn from `§1.3` |
+| `§3.2` Goods in (9) | `MovementKind` rows; the movements are `StockMovement` out of a `Supplier` into an internal place. **No `GoodsReceived` class** — see below |
+| `§3.2` Inside the kitchen (15) | `StockMovement`. Churn and fill also mints a `Batch`; its pans-out and tubs-out are movements naming it |
+| `§3.2` Out on the van (9) | `StockMovement`. Empty pans back is a movement of a `BoughtItem`, the napoli pan, not of gelato |
+| `§3.2` Inside the shops (15) | `StockMovement`. A scoop sale is `movement_format` = single scoop with `movement_flavour` empty when the generic key was used |
+| `§3.2` Out of the business without a sale (7) | `StockMovement` into `Comps`, `Donations`, `Tastings`, `Staff`, the owner's house and the three bins — all already `Location` rows from session 1 |
+| `§3.2` What the movements leave out | **Left, deliberately.** All five are already OPEN lines: the container's missing thermometer, empty pans with nowhere to live, three places the file does not name, and the two Cotham back freezers nobody can tell apart. The map does not repair any of them |
+| `§3.3` preamble | Nothing to model. "There is no stock system. There never has been" |
+| `§3.3` the production sheet | `Batch` + its output movements. The margin is `batch_note` |
+| `§3.3` the van sheet | `StockMovement` lines |
+| `§3.3` the wholesale delivery note | `StockMovement` lines; the empty-pans box is a second movement |
+| `§3.3` the pan notebook | `StockMovement` of a `BoughtItem` between the van and an account, out and back |
+| `§3.3` the suppliers' delivery notes | `StockMovement`; the nine shapes are `kind_document` on nine `MovementKind` rows |
+| `§3.3` the waste sheets | `StockMovement` into a bin. The sheet itself has no page class |
+| `§3.3` the count sheet | `StockCount` + `StockCountLine` |
+| `§3.3` the till | `StockMovement` for the stock lines only |
+| `§3.3` the office tray and Xero, the cake order, the milk text, the orders out, the wholesale invoice, Marina's spreadsheet, the HACCP plan | **Left.** Money, intention and rules. The HACCP plan's rules are `§3.4` and belong to session 4 |
+| `§3.3` the temperature log, the whiteboard, the cabinet plan | **Left, and they are the three stock documents with no home at all.** See the table below |
+| `§3.1`, `§3.4` to `§3.7` | Outside this session. `§3.1` is context, `§3.4` and `§3.5` are session 4's, `§3.6` and `§3.7` belong to no session |
+
+### The eighteen documents: can the map produce it
+
+Three yes. Five that are a no by one or two fields, whose stock lines all have a
+home. Three that are stock and genuinely absent. Seven that are not stock
+documents at all.
+
+| # | Document | Can the map produce it | What is missing |
+|---|---|---|---|
+| 1 | The production sheet | **No** | The pasteuriser run block at the head wants a **time of day**, and the only `time` in the map is `batch_frozen_at` on a `Batch`. The run itself is a movement of base and is producible; its clock is not. The batch rows, the freeze time, the initials, the margin and the cakes-built sentence all have a home, but the sheet is a header and its lines and so is at least two forms |
+| 2 | The van sheet | **No** | The **signature** at the drop is a second person and `written_by` is one; the **time box** is a time of day; and the cake line's **customer name** has no home, because a retail customer is one `Location` and not a person. Every stock line is producible |
+| 3 | The wholesale delivery note | **No** | The **customer's signature and printed name**. The price and line-total columns are never filled by anybody, so their absence costs nothing |
+| 4 | The pan notebook | **Yes** | Two movements a line, out and back, of a napoli pan between the van and an account. It is never totalled anyway |
+| 5 | The suppliers' delivery notes | **Yes** | One shape for nine. The **shape of the paper** is not recorded and the supplier's product codes are not either — but the business records neither, and the quantity is on a party's paper and nowhere else, which is already an OPEN line |
+| 6 | The office tray and Xero | **No** | Invoice number, invoice date, net, VAT, gross, nominal code. `§3.3` says only the money is keyed and the quantities never enter any system, so it is not a stock document |
+| 7 | The waste sheets | **No** | The **week-ending header**: the map gave the count sheet a page and the waste sheet none, so its lines are free-standing movements. And "mango, half" is a fraction written as a word, which `movement_quantity` cannot hold. The *why* column is covered — `movement_kind` is the reason, and the column is mostly blank |
+| 8 | The count sheet | **Yes** | Nothing, and it is the one document where the map holds **more** than the paper: `count_line_where` is a place the sheet has no column for, and `count_line_written_as` keeps the cell as written beside what it resolves to |
+| 9 | The temperature log | **No** | A twice-daily **reading** of a place. `location_temperature` is how cold a place is kept, a standing fact; there is no class for an observation of a place over time. It is the most consistently completed document in the business |
+| 10 | The whiteboard | **No** | Nothing on it is a date — "roughly when, and never a date" — and nothing on it is a quantity. `happened_on` is a date and `movement_quantity` a decimal. The container runs are visible only as movements with both empty |
+| 11 | The till | **No** | The money side entire: **price on the line**, **payment type**, **time of day**, and the whole **cash-up** with its unexplained variance box. The sale lines are producible, including the generic SCOOP key as a movement with no flavour and the comp key as a movement into `Comps` |
+| 12 | The cabinet plan | **No** | A **well** is a `Unit` in `§1.5` and not a place in `§1.3`, so "wells 1 to 24, a flavour against each" has nowhere to land; and a plan for next week is an intention, which nothing in the map holds |
+| 13 | The cake order | **No** | A named **customer with a phone number**, a **message for the box**, a **deposit**, and a **collection time**. And a cake takes two flavours where a movement carries one `movement_flavour`, so a movement of a cake cannot say what is in it |
+| 14 | The milk text | **No** | An **order**. Nothing in the map states what was asked for, only what arrived |
+| 15 | The orders out | **No** | The same, six more times. `§3.3` states the consequence itself: a short delivery is visible only if the supplier's own packer writes it on the note |
+| 16 | The wholesale invoice | **No** | An invoice is a **second document about a movement**, and the map has movements rather than documents. The drop is Tuesday and the invoice is dated the Sunday, so one event has two dates up to six days apart; `happened_on` holds one of them and the kernel's `recorded_at` holds when the system learned it, and there is nowhere for the third |
+| 17 | Marina's spreadsheet | **No** | Takings, payments and a costing tab last touched in 2023. The map holds two prices and no money |
+| 18 | The HACCP plan | **No** | The shelf-life rules, the blast rule and the pasteurising rule are `§3.4` and are session 4's. Nobody fills any of it in |
+
+### What `§3` threw, and where the map has somewhere to put each
+
+| Problem | Somewhere to put it? |
+|---|---|
+| A scoop has no weight and two thirds of retail sales are counted in it | **No, and it is a limit on milestone one rather than a modelling gap.** `movement_format` reaches the scoop rows and `product_fill_quantity` on them is empty because nobody has ever weighed one. A closing balance at either shop cannot be computed from what the business records, and no input would change that, because no number exists to be found |
+| Every count and van sheet is in whole pans and part pans, and a part pan is a half or three quarters by eye | **Half.** `movement_quantity` is a decimal and holds 0.5; nothing converts the *word*. The waste sheet writes "mango, half" in the *what* column and the how-much column beside it is blank |
+| A page's lines do not sum to its basis, and nothing enforces it | **Unchanged from session 2 and now load-bearing.** `line_stage: at_fill` marks what goes in on top of the 12.00 kg, and a `Batch`'s `batch_mix_quantity` is the mix in. Anything that totals a batch must add the at-fill lines to the basis; nothing in the map tells it to |
+| Whether a pan at a cafe is stock, a loan or nobody's | **A place for it, not an answer.** The pan is a `BoughtItem` and the account is a `Location`, so `IngredientOnHand` will show pans standing at Caffe Umberto. Whether that is stock is `§2.6`'s question and is already an OPEN line |
+| `line_unit` is grams while `item_counted_in` is bags, sacks and tins, and movements name a third | **Confirmed, and the third unit is now real.** `movement_unit` exists precisely because `§3.2`'s ingredients to the machine is grams off a bench scale while the same item is counted in bags. One map now names three units for one thing and converts between none of them |
+| `§2.6`'s packaging bill cannot be joined to `§1.7`'s price list | **Still not, and session 3 does not touch it.** Those pages sit in the map with nothing pointing at them |
+
+### Counts
+
+- **7 classes added** — `MovementKind`, `StockMovement`, `Batch`, `StockCount`,
+  `StockCountLine`, `IngredientOnHand`, `GelatoOnHand`. **21 in total.**
+- **41 slots added.** **99 in total**, every one carrying an explicit
+  `slot_uri`. Sessions 1 and 2's 58 are all still present; **none was renamed,
+  none re-ranged, none re-homed**, and no existing class's induced slot list
+  changed — checked with `class_induced_slots` against `HEAD`, not by reading.
+- **22 relationship slots added.** **35 in total.**
+- **2 identifiers added** — `kind_name`, `batch_number`. **10 in total.**
+  `StockMovement`, `StockCount`, `StockCountLine` and both balance classes have
+  none, for the 30 Aug reason: the business identifies none of them.
+- **4 aggregate annotations added**, the first in any Sorella map.
+- **0 `is_a` edges added.** The hierarchy is unchanged and **still one level
+  deep**.
+- **0 enums added, 0 `unique_keys` added, 0 `equals_expression`.**
+
+### The mermaid render, added and changed classes only
+
+Seven files differ from session 2's and **no existing file changed** — checked
+with `diff -rq` between a render of `HEAD`'s draft and a render of this one, 14
+files against 21. Whitespace is collapsed and the `click` lines dropped, as
+session 2 did.
+
+```mermaid
+ classDiagram
+    class MovementKind
+      MovementKind : entity_class
+      MovementKind : kind_document
+      MovementKind : kind_happens
+      MovementKind : kind_lag
+      MovementKind : kind_name
+```
+```mermaid
+ classDiagram
+    class StockMovement
+      StockMovement : entity_class
+      StockMovement : happened_on
+      StockMovement : movement_batch
+        StockMovement --> "0..1" Batch : movement_batch
+      StockMovement : movement_flavour
+        StockMovement --> "0..1" Flavour : movement_flavour
+      StockMovement : movement_format
+        StockMovement --> "0..1" SoldProduct : movement_format
+      StockMovement : movement_ingredient
+        StockMovement --> "0..1" Ingredient : movement_ingredient
+      StockMovement : movement_into
+        StockMovement --> "0..1" Location : movement_into
+      StockMovement : movement_kind
+        StockMovement --> "0..1" MovementKind : movement_kind
+      StockMovement : movement_note
+      StockMovement : movement_out_of
+        StockMovement --> "0..1" Location : movement_out_of
+      StockMovement : movement_quantity
+      StockMovement : movement_unit
+        StockMovement --> "0..1" Unit : movement_unit
+      StockMovement : written_by
+        StockMovement --> "0..1" Person : written_by
+```
+```mermaid
+ classDiagram
+    class Batch
+      Batch : batch_flavour
+        Batch --> "0..1" Flavour : batch_flavour
+      Batch : batch_frozen_at
+      Batch : batch_mix_quantity
+      Batch : batch_mix_unit
+        Batch --> "0..1" Unit : batch_mix_unit
+      Batch : batch_note
+      Batch : batch_number
+      Batch : entity_class
+      Batch : happened_on
+      Batch : written_by
+        Batch --> "0..1" Person : written_by
+```
+```mermaid
+ classDiagram
+    class StockCount
+      StockCount : count_note
+      StockCount : entity_class
+      StockCount : happened_on
+      StockCount : written_by
+        StockCount --> "0..1" Person : written_by
+```
+```mermaid
+ classDiagram
+    class StockCountLine
+      StockCountLine : count_line_flavour
+        StockCountLine --> "0..1" Flavour : count_line_flavour
+      StockCountLine : count_line_format
+        StockCountLine --> "0..1" SoldProduct : count_line_format
+      StockCountLine : count_line_ingredient
+        StockCountLine --> "0..1" Ingredient : count_line_ingredient
+      StockCountLine : count_line_note
+      StockCountLine : count_line_quantity
+      StockCountLine : count_line_unit
+        StockCountLine --> "0..1" Unit : count_line_unit
+      StockCountLine : count_line_where
+        StockCountLine --> "0..1" Location : count_line_where
+      StockCountLine : count_line_written_as
+      StockCountLine : entity_class
+      StockCountLine : line_count
+        StockCountLine --> "0..1" StockCount : line_count
+```
+```mermaid
+ classDiagram
+    class IngredientOnHand
+      IngredientOnHand : ingredient_in
+      IngredientOnHand : ingredient_on_hand
+        IngredientOnHand --> "0..1" Ingredient : ingredient_on_hand
+      IngredientOnHand : ingredient_out
+      IngredientOnHand : ingredient_where
+        IngredientOnHand --> "0..1" Location : ingredient_where
+```
+```mermaid
+ classDiagram
+    class GelatoOnHand
+      GelatoOnHand : gelato_flavour
+        GelatoOnHand --> "0..1" Flavour : gelato_flavour
+      GelatoOnHand : gelato_format
+        GelatoOnHand --> "0..1" SoldProduct : gelato_format
+      GelatoOnHand : gelato_in
+      GelatoOnHand : gelato_out
+      GelatoOnHand : gelato_where
+        GelatoOnHand --> "0..1" Location : gelato_where
+```
+
+Mermaid draws no aggregate annotation. `IngredientOnHand` and `GelatoOnHand`
+render as five plain slots each, so the review picture cannot show that two of
+them are computed and three are dimensions of a group — the same blindness that
+hides a `unique_keys`, one class further on.
+
+### Surprising
+
+1. **The four-dimension balance produced nothing at all.** One class dimensioned
+   by ingredient, flavour, format and place gave **0 groups over 8 movements**.
+   The rule that did it — a row silent under a dimension is in no group — looked
+   like an implementation detail of a 292-line throwaway on 2 Sep. It is not: it
+   decides how many balance classes a business needs, and it decided this one
+   before any preference could.
+2. **Fifty-five rows are fifty-three kinds, and the two duplicates are v1's
+   failure for the third time.** *Refill a well* and *cabinet expiry* are each
+   written twice, once per shop, differing only in which places they name — and
+   the places are on the movement. Naming a kind per shop is exactly what
+   folding location into a pan slot name was in v1, and what naming a slot after
+   a price column would have been in session 1. The map has now refused the same
+   shape three times in three sessions and it arrived looking different each
+   time.
+3. **`GoodsReceived` disappeared without an argument.** The 1 Sep line kept it
+   separate from the merged movement class because it added a slot. In this map
+   it does not: a delivery's origin is a supplier, a supplier is a place, and the
+   form is the same form. The "outside is locations" decision was sold on
+   direction becoming free; what it also bought was one class instead of two,
+   and nobody predicted that.
+4. **The supplier's own balance goes negative and nothing asked it to.**
+   `IngredientOnHand` shows Terra Nostra at −6 dextrose. That is double-entry
+   turning up uninvited: model the outside as places and the outside gets drawn
+   down. It is correct, it is useless, and it will appear in every generated
+   table until something filters it.
+5. **Fifteen of the eighteen documents are a no, and eight of the fifteen are
+   not stock documents at all.** The business's paper is mostly money,
+   temperature and intention. That is not the map failing to reach; it is what
+   walking a real business's whole record looks like, and it would not have been
+   visible from the map's side.
+6. **The map records something the paper cannot, twice.** `count_line_where` is
+   a place the count sheet has no column for, and a generated count form has a
+   list where the paper is blank ruled. Both change what a count means rather
+   than digitising it, and only one of them was already an OPEN line.
+
+### What was run
+
+| Command | Exit |
+|---|---|
+| `PYTHONIOENCODING=utf-8 gen-owl --no-use-native-uris business/sorella/draft.yaml > build/sorella_draft.ttl` | 0 — 110,105 bytes, 0 `rdfs:domain`, 1 `owl:hasKey`. `range: time` survives |
+| `PYTHONIOENCODING=utf-8 gen-mermaid-class-diagram -d "$TEMP/sorella_mmd3" business/sorella/draft.yaml` | 0 — 21 files, one per class, none for the enum |
+| the same over `git show HEAD:business/sorella/draft.yaml`, then `diff -rq` | 0 — 14 files against 21; **7 added, 0 changed** |
+| `grep -c any_of business/sorella/draft.yaml` | 1 — no match |
+| `grep -c facts business/sorella/draft.yaml` | 1 — no match. No `annotations.facts` block |
+| `grep -c equals_expression business/sorella/draft.yaml` | 1 — no match. The forbidden word is absent from the map and was measured outside it |
+| `python -c "open(...,'rb').read().decode('ascii')"` | 0 — the draft is pure ASCII, so the U+2212 trap still cannot fire |
+| `SchemaView` introspection | 21 classes, 99 slots, 1 enum, 35 relationship slots, 4 aggregates, 10 identifiers, 0 slots without a `slot_uri` |
+| `SchemaView` diff against `HEAD` | 0 of 14 classes missing, 0 of 58 slots missing, 0 re-ranged, 0 classes whose induced slots changed; 7 classes and 41 slots added |
+| `trial_sign.py` in the scratchpad, against the draft, no database | 0 — output above |
+| `make check` | 0 — **64 tests passed**, replay byte-identical twice, 5,334 bytes both times |
+| `git diff --stat HEAD -- business/sorella/profile.md` | 0 — empty. The profile is untouched |
+| `git status --porcelain` | ` M business/sorella/draft.yaml` and nothing else. Nothing under `business/` outside `business/sorella/` added, moved or deleted |
+
+`make check` collected 64 and passed 64. This session writes no code and adds no
+test. `seal` was not run and the map was never sealed; the trial reads the draft
+with `SchemaView`, which is what session 1 and session 2 also did.
+
+**No two clauses of the done condition conflicted.** One reads oddly and did
+not: the vocabulary forbids `equals_expression` while the item asks whether the
+aggregate can carry a sign. It cannot, and the thing that can is the forbidden
+one — so the answer to the question is the reason the map is one slot short, and
+both halves are reported rather than one being satisfied quietly.
+
+### Proposed `DECISIONS.md` entries
+
+1. Gelato in a pan is two cells on a line and not a thing. A movement's quantity
+   is of an `Ingredient`, or of a `Flavour` in a `SoldProduct` — two slots
+   declared per line, and the pair never becomes an entity. The business decides
+   this rather than modelling taste: the van sheet and the wholesale delivery
+   note write flavour, format and quantity as three cells, the count sheet
+   writes "Fior di latte, 5 L pan" as one cell with a comma in it, and `§2.5`
+   refuses to write the flavour-and-format pairs out at all, so a class of those
+   pairs would mint twenty-five by seven facts nobody has stated. The unforeseen
+   return is that `movement_format`'s range is `SoldProduct`, which already
+   carries `product_fill_quantity`, so the join from a count of pans to a recipe
+   in kilograms was a slot that existed. The cost is named: a line written
+   without a flavour — assorted minis, assorted catering tubs, part pans, a
+   finished cake — is in no group of a balance grouped by flavour, and that is a
+   thing the business does not record rather than one the map cannot express.
+2. One movement class, and `GoodsReceived` does not survive into Sorella. The
+   1 Sep line merged four byte-identical movement classes and kept
+   `GoodsReceived` separate because it added a slot; in this map it adds none. A
+   delivery's origin is a supplier, a supplier `is_a Location`, and the form is
+   the same form. So "the outside of the business is locations" bought two
+   things and only one was predicted: direction became free, and the movement
+   classes became one.
+3. `§3.2`'s fifty-five rows are fifty-three `MovementKind` rows, and the kind of
+   a movement is a field on the movement rather than a class per kind. Two names
+   are written twice — refill a well, cabinet expiry — once per shop, and the
+   only difference between the two rows is which places they name, which the
+   movement's own origin and destination already say. Folding the shop into the
+   kind's name is v1's pan-slot failure and session 1's price-column refusal for
+   the third time. The kind carries only what is constant per kind and never
+   retyped per movement: what actually happens, the document and who fills it,
+   and the lag — twenty-two of the fifty-five saying "Nothing" in that column,
+   which is the value rather than an absence.
+4. The aggregate annotation cannot carry a sign and does not need one. Measured
+   over the four declarations read out of the unsealed draft: the same sum over
+   the same class, grouped once by `movement_into` and once by
+   `movement_out_of`, puts one movement row in the arrival group of its
+   destination and the departure group of its origin — four of eight synthetic
+   movements counted twice. Direction is which slot the `by` names; the sign is
+   a subtraction, and `equals_expression '{a_in} - {a_out}'` returns
+   `Decimal('-5')` for 0 minus 5. That is the 1 Sep two-problem split arriving
+   unchanged. This session's vocabulary forbids `equals_expression`, so the map
+   ships with `ingredient_in`, `ingredient_out`, `gelato_in`, `gelato_out` and
+   no net, and both derived classes say so in their own descriptions.
+5. Two balance classes and not one, decided by measurement. A single class
+   dimensioned by ingredient, flavour, format and place produced **0 groups over
+   8 movements**, because every movement is silent under two of the four
+   dimensions and a row silent under a dimension is in no group. Two classes
+   with disjoint dimension sets give the right rows and the null rule becomes
+   the filter rather than something imposed on top of it. Neither carries
+   `entity_class`: nobody ever asserts a row of one.
+6. A count line is its own entity, and the 30 Aug rule that a quantity hangs on
+   the thing rather than on the count is superseded for counts the way 1 Sep
+   superseded it for movements. This is stated rather than done quietly, because
+   30 Aug's decisive reason was Q6: two honest counts of one freezer must
+   compete on one (subject, predicate) so the read rule breaks the tie and the
+   overwrite is visible. With a count line as its own entity nothing competes
+   and the two counts stand side by side — which is what the 2 Sep OPEN line
+   asks for and is a change in what Q6 tests.
+
+### Proposed `OPEN.md` lines
+
+- `[T3]` The production sheet's pasteuriser run block wants a time of day on a
+  movement and the map has one only on a `Batch`. `§3.3` gives the block three
+  ruled lines — time, kilos, what it is — and the run itself is a
+  `StockMovement` of base whose kilos and ingredient have homes. So one document
+  is a no by one field, and the same field would answer the van sheet's time box
+  and the till's time. Whether a movement carries a clock time, whether
+  `happened_on` becomes a datetime, or whether a time of day is something the
+  log holds only as `recorded_at`, is undecided. Raised 3 Sep · blocks: generation
+- `[T3]` A document's signature is a second person and `written_by` is one. The
+  van sheet is written by the driver and signed by the shop, the wholesale
+  delivery note by the driver and signed by the customer, and Whitehall's note
+  is signed by Dan on the mornings he is in. Two of `§3.3`'s eighteen documents
+  are a no for this reason alone. Whether a second person slot, a `Person` on
+  the movement's destination, or nothing, is undecided. Raised 3 Sep ·
+  blocks: generation
+- `[T3]` The map gave the count sheet a page and the waste sheet none. A waste
+  sheet is a weekly page with a week-ending header written on the Monday and its
+  lines are free-standing `StockMovement`s, so nothing joins the three lines
+  written from memory on one Friday, and the header has nowhere to go. `§3.3`
+  describes three such sheets. Whether every document with a header and lines
+  needs a page class, or only the ones something totals, is undecided. Raised
+  3 Sep · blocks: generation
+- `[T3]` `happened_on` and the kernel's `valid_from` say the same thing twice.
+  Every one of `§3.3`'s eighteen documents starts with a date a person fills in,
+  so the map carries a slot for it; the kernel already carries `valid_from` for
+  the same instant and `submit()` does not join them. The van sheet is the case
+  that decides, because it is written at loading or at the first drop from
+  memory and so its date can precede what it records. Whether a document's date
+  slot is how a form sets `valid_from`, or a fact standing beside it, is
+  undecided. Raised 3 Sep · blocks: recording
+- `[T3]` A movement of a cake cannot say what is in it. `§2.3`'s cake takes
+  1.4 L of one flavour and 1.1 L of a second, read out on the phone per cake,
+  and `movement_flavour` is one slot. `§4`'s count sheet has two finished cakes
+  standing in the holding freezer and the cake order carries two flavour fields.
+  Whether a cake is a movement with two flavour slots, a thing minted at the
+  bench, or a line the balance is allowed to lose, is undecided. Raised 3 Sep ·
+  blocks: generation
+- `[T3]` Three of `§3.3`'s documents are about stock and have no home at all:
+  the temperature log, which is a twice-daily reading of a place where
+  `location_temperature` is a standing fact; the whiteboard, where nothing is a
+  date and nothing is a quantity; and the cabinet plan, where a well is a `Unit`
+  and not a place and a plan is an intention. The first is the most consistently
+  completed document in the business. Whether an observation of a place over
+  time is a class, and whether an intention belongs in a log of what happened,
+  are two different questions and neither is decided. Raised 3 Sep ·
+  blocks: generation
+- `[T3]` An invoice is a second document about a movement, and the map has
+  movements rather than documents. A wholesale drop happens on the Tuesday and
+  Marina types its invoice on the Sunday from the second copy in the tray, so
+  one event carries two dates up to six days apart; `happened_on` holds one and
+  `recorded_at` holds when the system learned it, and the third has nowhere to
+  go. This is the same shape as the delivery note corrected across a later van
+  sheet, which is already an OPEN line, seen from the money side. Raised 3 Sep ·
+  blocks: report
+- `[T2]` Would anybody pick a movement's kind off a list of fifty-three? The map
+  makes `movement_kind` a picker over `§3.2`'s own rows, which is what lets the
+  log say which of the ways stock moved rather than leaving it on
+  `intent.action_name`. Whether Steve at a counter, or Dan at the machine, would
+  choose from fifty-three rather than reach for the nearest, is a thing only
+  they can say, and the alternative — a form per kind — is the failure the 1 Sep
+  rule exists to prevent. Raised 3 Sep · blocks: interview
+
+Two questions were triaged `[T1]` and tried rather than written down: whether
+the aggregate annotation can carry a sign, and whether one balance class can
+carry four dimensions. Both are answered above, in twenty minutes and one
+throwaway script.
