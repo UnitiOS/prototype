@@ -1358,3 +1358,147 @@ reasoning lives in `../archived/`. They are closed, which means not re-discussed
              later stage needs a closing count past Tuesday, the business has to
              be asked for one, which is a change to the profile and therefore an
              item in `NEXT.md`.
+
+2026-09-03 · The generator guard is deferred, on this repo's own rule. The item
+             asked for a script failing `make check` when a business term
+             reaches a live code path under `components/`, and it recorded its
+             own baseline as already clean: every match today sits in a
+             docstring, a comment or a usage example. So it is a check written
+             for a failure that has not happened, which the 3 Sep profile line
+             forbids in the same words — a check enters the suite only when an
+             error it would have caught has already been found. It returns once
+             the generator has run against Sorella and something has leaked.
+             The risk accepted meanwhile is named rather than absorbed: a
+             generator carrying the business logic is the "passing by cheating"
+             failure, and until the guard exists nothing detects it but reading.
+2026-09-03 · Sorella's competency questions are not written in this lap, and
+             what that costs is the 29 Aug instrument. The question being asked
+             of the new profile is whether it yields a better map than v1, and
+             that already has an instrument: v1's gaps were enumerated on 1 Sep
+             — no supplier named, no recipe stated, no pan minted, no opening
+             stock, no price, no adoption date, four movement classes rendering
+             byte-identical — written before Sorella existed and therefore not
+             tunable to the map that answers it. Four of those are yes or no
+             against a rendered form. What it cannot say is whether the map is
+             right, only that it is not empty. Competency questions are the
+             instrument for the first, and the 29 Aug rule freezes them before
+             the map is drawn precisely so they cannot be questions the map
+             already answers. Drawing the map first means any written afterwards
+             are written by someone who can see it — so the "is the map good"
+             test is not run in this lap, and is not faked in it either.
+2026-09-03 · Detailed validation of the map is `gen-mermaid-class-diagram`;
+             WebVOWL stays for a quick glance at the whole shape, knowing the
+             shape it shows is poorer than the map. `gen-owl` writes no
+             `rdfs:domain` at all — 0 occurrences in the 38,655 bytes of
+             session 1's map, the second map to measure the same thing, which
+             settles the 30 Aug line as a property of the generator rather than
+             of v1 — and VOWL draws a property as an edge only when it carries
+             both a domain and a range, so v1's 16 relationships all rendered
+             out of one generic node. A reviewer who does not know that asks for
+             edges that were never missing. Two further hazards hold only for a
+             draft: `gen-owl` renders a whole `annotations.facts` block as one
+             string literal on the ontology node, 12,176 characters for v1, and
+             it exits 1 leaving a zero-byte file when stdout is cp1252 and the
+             text carries U+2212, of which the profile has nine. The split is
+             not symmetrical and the asymmetry is the point: mermaid is eleven
+             pictures with no whole-schema render, so it can validate a class
+             and cannot show a shape, while WebVOWL can only show a shape and
+             cannot be trusted about it. Nothing in the repo does both.
+2026-09-03 · `Unit` is the unit stock is counted, ordered or worked in, and
+             nothing else. All 24 units in `§1.5` are quantity or packaging
+             words and not one is a duration or a percentage, so v1's dropdown
+             offering "week" for litres came from `§10`'s thresholds being
+             poured into the same class after the fact rather than from the
+             units section being too wide. Session 4 puts a threshold's unit in
+             slot-level `unit` metadata under the 30 Aug line or in a class it
+             declares — and if it is a class, it is not this one.
+2026-09-03 · `§1.7`'s three price columns become a `ProductPrice` class
+             carrying the column as a value, not three slots named after the
+             columns. A slot named `product_price_cotham_hill` puts an
+             individual into the vocabulary, so opening a third shop would need
+             a new map version for what is a new row — the writer joint the
+             1 Sep master-data line closed, reopened by a naming habit. The cost
+             is named rather than absorbed: `price_at` is a string, so the three
+             columns are labels rather than places, and nothing stops a fourth
+             spelling.
+2026-09-03 · A supplier and a wholesale account are `is_a Location`, not
+             classes that reference one. They inherit `location_name` as their
+             identifier, so the nine suppliers `§1.3` lists and the nine `§1.8`
+             lists cannot become two sets of rows, and LinkML refuses a second
+             identifier on a subclass, so the map is unable to drift into having
+             one. This is the 1 Sep "the outside is locations" line carried into
+             structure rather than only into movements.
+2026-09-03 · `§1.1`'s premises are `InternalLocation` rows with
+             `location_within` self-referential, rather than a `Site` class. Two
+             of the things `§1.1` calls premises — the van and the container —
+             are already rows in `§1.3`, so a Site class would have made them
+             two things at once; and a Site carrying a name and a description
+             alone renders the same form as a plain `Location`, which the 1 Sep
+             rule says is one class with a field.
+2026-09-03 · A recipe's many ingredients are held as a collection with its own
+             subject: `Recipe` is the page and `RecipeLine` is one line carrying
+             its ingredient, its quantity and its stage. This closes the 31 Aug
+             multivalued question by elimination rather than preference — the
+             kernel is closed, so the (subject, predicate) pair cannot stop
+             being the unit of supersession, and refusing multivalued slots
+             means refusing recipes. Nothing in the map is multivalued and
+             nothing was added to the kernel. Four costs are named rather than
+             absorbed: a line has no name and cannot have a `unique_keys`
+             either, because salted caramel puts one variegate on one page
+             twice at two stages; a page and its lines are two forms where the
+             profile shows one table; nothing says how many lines a page should
+             have, so a half-entered page is a page; and walking a recipe is two
+             hops, paid twice over because white base is itself a page.
+2026-09-03 · A page is not an output, and what is made names its page rather
+             than the reverse. The obvious shape — a recipe that names what it
+             produces — is wrong for this business, and `§2.3` says why: the
+             fruit sorbet page serves strawberry, raspberry, mango, the peach
+             half of peach and basil, and a passionfruit that is not in the
+             range at all, because Dan writes the fruit in the margin and leaves
+             the page alone. So `made_recipe` sits on `Ingredient` and on
+             `Flavour`, `product_recipe` on `SoldProduct`, and every one of them
+             is single-valued, which is the moment the multivalued question
+             stopped being hard. The return was not foreseen: the hazelnut card
+             is made on the gianduja page from November to February and on the
+             hazelnut page the rest of the year, and that is one slot moving on
+             the valid-time axis rather than a second flavour nobody sells.
+2026-09-03 · `Ingredient` is the common superclass of everything a recipe line
+             can name, and its plain case is water. `BoughtItem is_a
+             Ingredient`, and `item_name`, `item_counted_in`, `item_worked_in`
+             and `item_note` move up to the parent — the 30 Aug line applied, a
+             slot whose range must cover two classes gets a common superclass
+             rather than a boolean constraint. So the bill of materials has no
+             dangling line: water is a row, not an absence. `Flavour` is
+             deliberately not an `Ingredient`, and the cake settles that rather
+             than an argument — its lines are 1.4 L of one flavour and 1.1 L of
+             a second, chosen on the phone per cake, so no line could have named
+             a flavour even if the class allowed it.
+2026-09-03 · `line_stage` is an enum with two values, `in_the_mix` and
+             `at_fill`, and it is where the at-fill half of a batch attaches.
+             `§2.3` draws the line itself and states why: a page is per 12.00 kg
+             into the batch freezer, and anything folded, drizzled or rippled in
+             by hand goes in after the machine and on top of it. The consequence
+             is stated with the mechanism rather than after it — **a page's
+             lines do not sum to its basis, by design** — so anything that
+             totals a batch must add the at-fill lines to the basis rather than
+             expect them inside it, and nothing in the map enforces that. The
+             map has a place for the problem; it does not make consumption
+             balance.
+2026-09-03 · The map carries no gross-or-net basis for a quantity, and that is
+             a refusal rather than an omission. `§2.4` has a pan reading 3.6 kg
+             on the scale as it stood and about 3.3 kg of gelato in it, and no
+             document in the business records which was meant. The business
+             draws no such distinction anywhere, so a slot for it would be one
+             the map invented, which is the 2 Sep profile rule failing in the
+             other direction. The fact is recorded in `line_quantity`'s own
+             description so a reader of the map meets it.
+2026-09-03 · `unique_keys` enters the map on `ProductPrice` and nowhere else,
+             on `price_product` + `price_at`, because it is the only class where
+             a composite key is true. `RecipeLine` was the other candidate and
+             is refused one: `(line_recipe, line_ingredient, line_stage)` looks
+             right and is false, because the cake carries two lines with no
+             ingredient at all. It renders as one `owl:hasKey` triple in 63,986
+             bytes and mermaid does not draw it, so the review render cannot
+             show a composite key — which matters, because `ProductPrice` and
+             `RecipeLine` are the two classes with no identifier and a reviewer
+             looking at pictures cannot tell them apart.

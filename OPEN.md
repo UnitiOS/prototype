@@ -195,7 +195,91 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
   becomes visible or only where it becomes computable is untried, and it decides
   what the replay is a replay of. Raised 3 Sep · blocks: definition change
 
+- `price_at` is a string naming one of `§1.7`'s three price columns, and two of
+  the three are shops that are also `InternalLocation` rows while the third,
+  wholesale, is not a place at all and never can be — the price is one figure
+  for all 31 accounts. So a price cannot be joined to where it was charged
+  except by matching a label. Whether a price point is a location, a class of
+  its own, or a label that stays a label is undecided, and it is the same shape
+  as v1's folded pan-slot names one level out. Raised 3 Sep · blocks: generation
+- The map holds three units for a bought item and nothing that converts between
+  them. `§1.5` gives ordered, counted and worked units for 22 items and `§1.6`
+  gives the pack as one phrase, with the packs nesting two deep — a case of six
+  tubs of one kilogram, a carton of ten bags of two. The only factor stated
+  anywhere is Dan's 10.3 kg per bag, and `§1.5` says he weighs anyway.
+  Sharpened 3 Sep by session 2: `line_unit` is grams on almost every page while
+  `item_counted_in` is bags, sacks and tins, so a page and a count now name two
+  different units for one thing inside one map, and the question is load-bearing
+  rather than latent. Whether the business is asked for factors, or the map
+  decomposes a pack, or a balance is only ever computable in the counted unit,
+  is undecided. Raised 3 Sep · blocks: derive
+- `location_within` is self-referential and nothing bounds it. LinkML states no
+  acyclicity, the kernel states none, and a generated form's picker will offer
+  every `InternalLocation` including the one being edited — so a shop can be put
+  inside its own cabinet and every reader that walks the chain hangs. Whether a
+  cycle is a violation the way negative stock is, a refusal the form makes, or a
+  shape nobody will ever produce, is undecided. Raised 3 Sep · blocks: generation
+- A flavour's season is prose the business restates each year. `flavour_runs`
+  holds "September to October", "June to July", "No season" and "On the cabinet
+  plan all year, made perhaps monthly", which is what `§1.4` writes and what a
+  cabinet plan is read off. Nothing turns it into dates, so "which flavours
+  should be on in July" is not a query, and the three no-season flavours have a
+  cabinet card and may not have been made for six weeks. Whether a season is a
+  pair of dates, a recurring rule, or prose a person reads, is undecided.
+  Raised 3 Sep · blocks: generation
+- Gelato in a pan is not a thing the map can name, and milestone one's closing
+  balance runs straight through it. A batch makes gelato of a flavour, the
+  gelato fills pans, tubs and minis, and the pans sit in the holding freezer for
+  up to 21 days — but the map has `Flavour` for the cabinet card and
+  `SoldProduct` for the price line and nothing that is "pistachio in a 5 L
+  napoli pan". `product_fill_quantity` says a pan holds about 3.3 kg and
+  `made_recipe` says how the pistachio was made, and no slot joins them. Whether
+  that is a class, a movement's two ends in `§3.2`, or something a count
+  declares, is undecided. Raised 3 Sep · blocks: generation
+- A page's lines do not sum to its basis and nothing says so. Every batch sheet
+  is per 12.00 kg into the machine and `line_stage: at_fill` marks what goes in
+  on top of it, so a reader that totals a page's lines and expects 12.00 kg is
+  wrong on eight of the twenty-two sheets. The stage is on the line and the
+  basis is on the page, and joining them is arithmetic across rows, which is the
+  aggregate shape the 1 Sep line puts outside this map. Whether a page should
+  state its own output, whether the at-fill total is a derived slot, or whether
+  nothing should ever total a page, is undecided. Raised 3 Sep · blocks: derive
+- Scaling a page to a run is prose arithmetic. The white base page is per
+  10.00 kg of mix and `recipe_note` says it is made in 55 kg runs; the biscuit
+  base page is per run and the run is ten packs of digestives while the line
+  says 4.00 kg. So the factor between what a page states and what a session of
+  work actually consumes lives in a sentence, and `§2.1` adds that a 55 kg run
+  does four batches and leaves about half a bucket that goes into the next
+  morning topped up. Whether a run size is a slot, a fact per run, or prose, is
+  undecided. Raised 3 Sep · blocks: derive
+- `§2.6`'s packaging bill cannot be joined to `§1.7`'s price list, and the map
+  holds both. Five of `§2.6`'s fourteen rows are formats and eight are drinks or
+  cans matching a price line one for one, so `product_recipe` reaches them; the
+  rest are conditions across several lines — any scoop sale, tub or cake taken
+  away, any drink taken away — and a scoop's own bill depends on cone or cup,
+  which `§1.7` prices as one product either way. So the till knows a thing the
+  price list does not carry, and those pages sit in the map with nothing
+  pointing at them. Whether the join is a second class, a rule on the form, or a
+  distinction the business has to be asked to make, is undecided. Raised 3 Sep ·
+  blocks: generation
+
 ## T2 — wait for a user
+
+- Would Dan's book ever carry a line with no quantity? The map allows one — an
+  ingredient, no number, a note — because `§2.3` says three flavours are made by
+  feel and gives Dan's own answers: honey until it tastes right, a good glug of
+  marsala, most of a 100 g pack of basil that he smells and decides about. He
+  says he will not write a quantity for the basil. Whether he would write the
+  line at all, or whether an unwritten page is simply absent, is a thing only he
+  can say, and the two produce different consumption. Raised 3 Sep ·
+  blocks: interview
+- What one filled 500 ml tub takes is two answers in the profile and the map
+  holds them apart. `§2.4` says about 460 g of gelato and `§2.6` says one tub,
+  one printed lid, one printed sleeve; the packaging is a `Recipe` and the
+  gelato is `product_fill_quantity`, because which flavour goes in is decided at
+  the bench and cannot be a line. Whether the business thinks of a filled tub as
+  one bill or as two things that happen at the same moment decides whether a
+  filling form asks one question or two. Raised 3 Sep · blocks: interview
 
 - Are LLMs good interviewers and bad authors? The old corpus concluded this from
   a simulation, never from a real session with a real person. Now load-bearing:
