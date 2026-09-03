@@ -634,3 +634,39 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
   rules read off a label and neither reads off a location. Whether the log should
   hold the two days in the van at all, when no document in the business names
   them, is undecided. Raised 3 Sep · blocks: interview
+- Two wholesale accounts never take the unit the minimum is written in. `§3.4`
+  sets a minimum wholesale order of 4 pans; on Thursday 18 June, Papavero
+  Delicatessen took eighteen 500 ml tubs and The Regent Picture House took sixty
+  minis, and neither took a pan. `§1.7` says the deli and the cinema take tubs
+  and minis and everyone else takes pans, so the rule counts a thing eight of
+  the thirty-one accounts have never ordered. The earlier line on this rule asks
+  whether the minimum counts pans or units; this is the case where no
+  translation between the two exists, because the account has no pan line at
+  all. Found 3 Sep by the check script reading `§3.4` against all three van
+  days — the earlier line was written from Tuesday alone. Raised 3 Sep ·
+  blocks: interview
+- A day's till report and a day's takings are two different documents and only
+  one of them leaves the shop. Gloucester Road's Tuesday item list carries no
+  cans, no water and no waffle-cone supplements and does not account for its own
+  takings, while every other item list in the profile does add up exactly
+  against `§1.7`. The lines stay in the till; what reaches Marina is the
+  cash-up, which is four numbers. So a generated form that asks a shop to enter
+  its day has to choose which of the two it is asking for, and only one of them
+  is a thing this business currently produces. Raised 3 Sep · blocks: generation
+- The check script that guards the profile is a second reader of the same
+  material the map will read, and it holds business knowledge the map does not:
+  which recipe name is which bought item, which `§1.6` item is consumed by which
+  sentence, and what a batch's at-fill additions are. That is legitimate in
+  `scripts/`, but it means two files now encode Sorella's aliases and the map
+  will be the third. Whether the map should be the one place those aliases live,
+  and the checker read them from it once a map exists, is untried and cheap to
+  try once generation has been through a lap. Raised 3 Sep · blocks: generation
+- Every check in the suite that finds a violation needs the profile to say the
+  violation is there, and the way it says so is a phrase the script looks for —
+  an account named in `§3.4`'s conflicts, the words "a day late" on a delivery,
+  "does not account for" beside a till total. That is a convention held in one
+  script and stated nowhere the profile's author can see it. Whether a frozen
+  document needs a machine-readable way to mark a known exception, or whether a
+  phrase a person would write anyway is the right mechanism, is undecided, and
+  the same question arrives again the first time a generated form has to record
+  a rule being broken on purpose. Raised 3 Sep · blocks: -

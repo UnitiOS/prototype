@@ -2995,3 +2995,177 @@ profile states no balance anywhere, and this number appears nowhere in it.
 Nothing here is proposed for `DECISIONS.md`. The pan weight is a fact about a
 business, not a decision about the system, and the three `§2.4` edits are
 repairs to a description rather than choices.
+
+## 2026-09-03 · Sorella's profile, session 6: checked by a script, repaired, frozen
+
+`scripts/check_profile.py`, 14 checks, run by `make check-profile`. The profile
+goes from 3,171 to 3,202 lines: two repairs and a freeze note in the header.
+**This is the last session that touches the profile.** Two findings were
+repaired locally and four questions went to `OPEN.md`.
+
+Six sessions of prose were each checked by the session that wrote the prose,
+and the two real errors that got through were both found by cross-reading — a
+`§2.4` fill weight against a `§4.3` production sheet, and a `§3.4` rule against
+a `§4.3` day. Nobody reading top to bottom finds either. So the output of this
+session is code: every check run by hand across the rebuild is now permanent
+and re-runnable, and the file is frozen behind it.
+
+### The fourteen checks, and why each one is in the bound
+
+The bound was: a check goes in only if it would have caught an error already
+found, or if a done condition from sessions 1 to 5 already named it. Nothing is
+here because it might be useful.
+
+| Check | Reports | Why it is in |
+|---|---|---|
+| mass balance | 42 production rows, 41 fillable, 0 over | Caught three of Tuesday's batches putting out more than went in. Reads `§2.4`'s fill weights and `§2.3`'s at-fill additions out of the file rather than holding them |
+| till totals | 14 totals, 13 with cash and card, 4 with an item list | Caught Cotham's Tuesday £400 under its own item list in session 4 |
+| rules against days | 20 wholesale drops, 6 under the 4-pan minimum; 3 van runs; 3 dairy drops | Caught the wholesale minimum, in thirty seconds, after four sessions missed it. Reads the minimum, the van days and the milk days out of `§3.4` |
+| weekdays | 45 dates written with a day name | Named by this item's done condition |
+| recipe ingredients | 96 rows, 72 in `§1.6`, 24 stated exceptions | Session 2's done condition |
+| items consumed | 80 bought items, 30 by a recipe, 44 elsewhere, 6 stated not consumed | Sessions 1 and 2. An item nothing consumes can only ever rise, which is the oldest failure in this repo |
+| places reached | 38 places in `§1.3`, 0 not in `§3.2` | Session 3's done condition; session 3 ran it by hand |
+| rules numbered and dated | 51 rules | Session 3's; its own run found 11 rules with no date |
+| count confidence | 152 count lines | Session 4's; its own run reported 152 / 0 |
+| documents have fields | 18 documents in `§3.3` | Session 3's; its own run found 3 with no fields |
+| flavours have a page | 25 flavours, 19 with a page, 6 routed or stated | Session 2's done condition |
+| products priced | 21 products, 32 product-places | Session 1's done condition |
+| suppliers | 9 suppliers | Session 1's done condition |
+| no computed balance | 11 phrases looked for | The file's own preamble, and the rule session 1 dropped two figures under |
+
+Three checks read a number out of one section and apply it to another rather
+than carrying their own copy: mass balance takes the pan, tub, mini and
+catering-tub fills out of `§2.4`; rules-against-days takes the four-pan
+minimum, the van run days and the milk standing-order days out of `§3.4`'s own
+rows. Move a number in the profile and the check moves with it, which is the
+only way a check on a document stays true to it.
+
+**The flagging rule.** A violation is not a failure — a rule nobody enforces is
+a fact about this business — but an unflagged one is. So three checks pass a
+discrepancy only where the profile says it is there: an under-minimum drop
+needs the account named in `§3.4`'s conflicts, an off-schedule dairy drop needs
+the words *a day late*, and a short till list needs *does not account for*
+beside it. That convention lives in one script and nowhere the profile's author
+can see it, which is one of the `OPEN.md` lines.
+
+### What the first full run found
+
+Two things, both of the cross-reading kind, and both already partly known
+without anybody having written them into the file.
+
+1. **Six wholesale drops are under the four-pan minimum, not three.** The
+   `OPEN.md` line from session 5 names Tuesday's three — Bar Trentanove, Cleeve
+   and The Hollow — because session 5 read the rule against Tuesday. Reading it
+   against all three van days adds The Hollow again on the Saturday, and two
+   accounts that took **no pan at all**: Papavero Delicatessen took eighteen
+   500 ml tubs on the Thursday and The Regent Picture House took sixty minis.
+   `§1.7` already says the deli and the cinema take tubs and minis and everyone
+   else takes pans, so the rule counts a unit eight of the thirty-one accounts
+   have never ordered. That is a different quarrel with the same rule from
+   conflict 1, which is about a threshold with no consequence.
+2. **Gloucester Road's Tuesday item list does not account for its takings.**
+   Worth £1,103.60 at `§1.7`'s prices against £1,106.00 stated. Known since
+   session 1 and left standing deliberately by session 4; what was missing is
+   that the profile never said so, so a reader met an item list that silently
+   fails to add up. The list carries no cans, no water and no waffle-cone
+   supplements while every other list in the file does.
+
+The other twelve checks passed on the first run, which is the second finding
+and the more useful one: five sessions of hand-checking really had closed what
+they said they closed.
+
+### Repaired, and sent to OPEN.md
+
+**Repaired, both local.**
+
+- A sixteenth numbered conflict in `§3.4`, *Four pans, and the accounts that do
+  not take pans*, naming all six drops and the two accounts with no pan line.
+  It is a paragraph in a list that already holds fifteen of them — no new
+  section, no new day, no new item, no new supplier.
+- A paragraph after Gloucester Road's Tuesday item list saying it does not
+  account for its own takings and what it is missing. It states no difference:
+  the file's rule is that nothing here is computed, so it names the absent
+  lines and leaves the subtraction to the reader, or to the script.
+
+**Four went to `OPEN.md`**, each because it is a question the map has to answer
+rather than a sentence the profile can add.
+
+- The two accounts that never take pans. The existing line asks whether the
+  minimum counts pans or units; this is the case where no translation between
+  the two exists, because the account has no pan line at all.
+- A till report and a cash-up are two documents and only one leaves the shop.
+  A generated form has to choose which of the two it is asking a shop for, and
+  only one of them is a thing this business currently produces.
+- The checker now holds Sorella's aliases — which recipe name is which bought
+  item, which `§1.6` item is consumed by which sentence — and the map will be
+  the third file to hold them.
+- The flagging convention: a known exception is marked by a phrase a script
+  looks for, agreed nowhere.
+
+Nothing is proposed for `DECISIONS.md`. The two repairs are corrections to a
+description, and the checks are evidence rather than choices.
+
+### Proving the script can fail
+
+Fourteen errors, planted one at a time into a copy and reverted after each: a
+pan count changed from three to five, the single-scoop price moved 10p, the
+wholesale minimum moved from four pans to six, `Tuesday, 16 June` rewritten as
+`Wednesday`, peppermint extract renamed to spearmint, a bought item with no
+consumer added to `§1.6`, a place in `§1.3` renamed, a year struck off a rule,
+a confidence word blanked, the pan notebook's four fields deleted, a flavour
+added to `§1.4` with nothing in `§2.3`, an espresso price blanked, a supplier's
+lead time blanked, and the sentence *"The holding freezer should have been at
+sixty-three pans."*
+
+**Thirteen of the fourteen were caught on the first attempt. One was not**, and
+it was worth the exercise on its own: the weekday check's pattern required
+`Tuesday 16 June` and the file's two most important day headings are written
+`## 4.3 Tuesday, 16 June 2026`, with a comma. Both were invisible to it. Fixed;
+the count went from 43 dates checked to 45, and the two that were added are
+Monday and Tuesday, the only two days entered end to end. A check suite that
+has only ever seen a passing file had a hole in exactly the place the file is
+most load-bearing.
+
+### What was run
+
+- `make check-profile` — 14 checks, 0 failed, exit 0.
+- `make check` — schema, **64 tests passed**, replay byte-identical twice,
+  exit 0.
+- The plant sweep above, in the scratchpad, restoring the file after each.
+
+The freeze note in the header names this session's commit. It is written in a
+second commit, because a file cannot state the hash of the commit that contains
+it; that second commit touches `business/sorella/profile.md` and nothing else.
+
+### Surprising
+
+1. **The script found the same class of error the desk did, and more of it.**
+   The wholesale minimum was found by hand in session 5 by reading one rule
+   against one day. The same read against all three van days doubles it, and
+   the two extra cases are the interesting ones — accounts that cannot break
+   the rule and cannot keep it either, because they do not order in its unit.
+   Hand-checking found the error; only the script found its shape.
+2. **Twelve of fourteen checks passed on the first run.** Given that every
+   session overstated a count it reported about itself, the expectation was a
+   page of failures. What those overstatements were is now clear: they were
+   miscounts in `LOG.md` about the profile, not errors in the profile. Session
+   1 said `§1.3` holds 27 places and it holds 38 — the file was right and the
+   log was wrong, and that is the direction this went every time.
+3. **The check that caught nothing is the one that had a hole.** Weekdays was
+   the cheapest check in the suite and the only one that would have failed to
+   catch its own planted error. Being cheap is not being safe.
+4. **Reading a rule's own number out of the file changed what the check is.**
+   The first draft of rules-against-days held `4` as a constant. Reading it out
+   of `§3.4` instead turned a check of the days into a check of the pair, and
+   the planted six-pan minimum then produced eleven violations across three
+   days in one run — which is what a rule change would actually do to this
+   business, and is a preview of the definition-change stage on paper.
+5. **`§1.6`'s consumers cannot be derived, only declared.** Thirty of the
+   eighty bought items resolve to a recipe table by name. The other fifty are
+   consumed by a sentence — a napkin, a tasting spoon, the milk behind a latte,
+   the six cleaning chemicals that are stated to belong to no batch — and no
+   parse finds them. The script holds the fifty as an item paired with the
+   phrase that consumes it, and checks the phrase is still there: it fails if
+   the sentence is deleted and passes if it is reworded around the phrase. That
+   is the weakest check in the suite and it is still the one that would have
+   caught map v1's oldest failure.

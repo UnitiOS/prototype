@@ -14,7 +14,7 @@ DC  := docker compose
 CHECK_DB := uniti_check
 export UNITI_DSN := postgresql://uniti:uniti@localhost:5433/$(CHECK_DB)
 
-.PHONY: check venv schema test replay
+.PHONY: check venv schema test replay check-profile
 
 # The one command: environment, schema, tests, and a replay that must come out
 # byte-identical twice. Exits non-zero if the tests fail or the two differ.
@@ -46,6 +46,12 @@ schema:
 
 test: venv
 	$(PY) -m pytest tests -q
+
+# Cross-read the business profile: hold every section against every other one.
+# It is not part of `check` — `check` builds and exercises the system, and this
+# reads a description of a business. It needs no database and no schema.
+check-profile: venv
+	$(PY) scripts/check_profile.py
 
 # Reset, seed 200 assertions, then rebuild the same projection twice and
 # check the two are byte-identical. A projection is derived, never stored.

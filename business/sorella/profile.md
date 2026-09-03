@@ -20,6 +20,13 @@ carries Wednesday to Sunday. All five are written and the file is finished.
 | 4 | The opening count on the adoption date, Monday 15 June, and Tuesday 16 June | Written |
 | 5 | Wednesday 17 June to Sunday 21 June, and the week's close | Written |
 
+**Frozen 3 September 2026, at commit `PENDING`.** A sixth session checked the
+file with `scripts/check_profile.py` rather than by reading it, repaired what
+that found, and closed it. The script holds fourteen checks and every one of
+them is a pair of sections held against each other; `make check-profile` runs
+them. After this the file does not change without a `NEXT.md` item saying why,
+and any change has to leave the script green.
+
 ---
 ---
 
@@ -1785,6 +1792,20 @@ and none of them is a mistake anybody has noticed.
     kitchen for years. A café that runs out on a Wednesday waits, and everybody
     knows that, and the two rules have never been written on the same piece of
     paper before this one.
+16. **Four pans, and the accounts that do not take pans.** The minimum
+    wholesale order is four pans, and every run day in the week of 15 June has
+    drops under it. Bar Trentanove took three pans on the Tuesday and Cleeve
+    Coffee House took three. The Hollow took two pans and four catering tubs on
+    the Tuesday and the same again on the Saturday. Papavero Delicatessen took
+    500 ml tubs on the Thursday and The Regent Picture House took minis, and
+    neither of them took a pan at all — §1.7 already says the deli and the
+    cinema take tubs and minis and that everyone else takes pans, so for those
+    two the rule counts a thing they have never once ordered. The Regent's
+    terms were agreed in 2022, a year after Marina set the minimum. Steve loads
+    what the account asked for, and nobody has ever held a drop back for being
+    short of it. This is the same rule as conflict 1 and a different quarrel
+    with it: there the minimum has a threshold and no consequence, here it has
+    a unit that eight of the thirty-one accounts do not order in.
 
 ## 3.5 What Marina measures
 
@@ -2617,6 +2638,16 @@ stracciatella has not been on one for a week.
 - 71 rung on the generic SCOOP button
 - 11 × 500 ml tub
 - 14 × 125 ml mini
+
+**Gloucester Road's list does not account for its own takings.** It carries no
+cans, no water and no waffle-cone supplements, and the shop sold all three that
+day: Priya counted a case of cans and about twenty bottles of water on the
+Monday morning, and Aoife dropped two more cases of cans and a case of water at
+the door on the Monday. Every other till report in this file carries those
+lines. Nobody has ever read a Gloucester Road item list against the day's own
+total, and nobody would: the lines stay in the till and what leaves the shop is
+the cash-up, which is cash, card, float and a variance box, and that is what
+Marina keys on a Sunday.
 
 ### The cake order, and a rule that moved
 
