@@ -3507,3 +3507,407 @@ per enum. Nothing else broke. Session 2 can use enums with that known.
   no-season flavours have a cabinet card and may not have been made for six
   weeks. Whether a season is a pair of dates, a recurring rule, or prose a
   person reads, is undecided. Raised 3 Sep · blocks: generation
+
+## 2026-09-03 — Sorella's map, session 2 of 4: how a product gets made
+
+`business/sorella/draft.yaml`, extended. Sections `§2.1` to `§2.7` of the
+profile frozen at `ada1d9e`, read as vocabulary and nothing else. **Still no
+fact in this file.** The twenty-one batch sheets, their ingredient lines, the
+six runs, the fourteen packaging bills and the eight drinks are rows a
+generated form will write.
+
+### How a recipe's many ingredients are held, and what that costs
+
+The 31 Aug line left three options and two were already shut, so this is
+elimination and not preference: **a collection gets its own subject.** `Recipe`
+is the page — a heading, a basis, and a note — and `RecipeLine` is one line
+under it with its own identity, carrying `line_recipe`, `line_ingredient`,
+`line_quantity`, `line_unit` and `line_stage`. Nothing is multivalued anywhere
+in the map; every assertion stays one subject, one predicate, one value, and
+supersession still works on that pair, because superseding pistachio's paste
+weight touches one line and not the page. That is the same shape a bill of
+materials has always had, and the price of it is paid in four places. **First,
+a line has no name.** It is identified by nothing, like `ProductPrice`, so the
+form that writes one has to mint a URI and a user cannot refer to a line except
+through its page and its ingredient — and it cannot even have a `unique_keys`
+of those two, because salted caramel puts the same variegate on the page twice
+at two stages and the cake puts two lines on the page with no ingredient at all.
+**Second, a page and its lines are two forms**, so entering the pistachio sheet
+is one submission for the page and three more for the lines, where the profile
+shows it as one table. **Third, nothing holds the page together**: a page whose
+lines were half entered is a page, and no count anywhere says how many lines it
+should have. **Fourth, walking a recipe is two hops rather than one** — from a
+flavour to its page and from the page to its lines — and every reader that
+totals a batch pays that twice over, because white base is itself a page.
+Against those four: it holds, it needed nothing added to the kernel, and it is
+the only one of the three options that was ever available.
+
+### Every subsection, consumed or left
+
+| Subsection | Where it went |
+|---|---|
+| `§2.1` The flow | **Left in full.** The six steps — weigh and pasteurise, age, flavour and churn, fill, blast, hold — are stock moving between `§1.3`'s places, and `§3.2` is called "every way stock moves". Modelling them here is reaching into session 3 |
+| `§2.1` The two machines | **Left as a class, and it needs none.** Machine 1 and machine 2 are places a thing can be inside the kitchen and `InternalLocation` already holds them; that `§1.3` does not list them is a gap in the profile, not in the map. Their 12 kg reaches the map as `recipe_basis_quantity` on every batch sheet. What has nowhere to go is "machine 2 comes out drier", which is a rate over batches |
+| `§2.1` The one thing a recipe calls for that nobody buys | `Ingredient`, the plain case. Water is a row: named on four pages, off the mains, not bought and not made |
+| `§2.2` all six runs | `Ingredient` rows carrying `made_recipe`; the tables are `Recipe` + `RecipeLine`; the prose under each table is `recipe_note` |
+| `§2.2` the stabiliser under two names | `line_named_as` — the words the page uses, kept beside the resolved ingredient rather than instead of it |
+| `§2.3` made on white base / on water / on a run of its own / on syrup | `Recipe` + `RecipeLine`. The at-fill half is `line_stage: at_fill` |
+| `§2.3` gianduja | A second `Recipe`, and `made_recipe` on the hazelnut `Flavour` moves between the two pages on the valid-time clock. This is the best thing in the session and it cost nothing |
+| `§2.3` the three with no page | `RecipeLine` with an ingredient, no `line_quantity`, and a `line_note`. The map has the shape; whether Dan's book ever carries such a line is a fact |
+| `§2.3` the cake | `Recipe` + `RecipeLine`, with two lines that carry an amount and **no ingredient** — 1.4 L of one flavour and 1.1 L of a second, read out on the phone per cake |
+| `§2.3` What no page accounts for | **Left on purpose.** Sanitiser, CIP detergent, blue roll, gloves, bin liners, dry ice and the water are bought, used, and associated with a batch by nobody. Giving them a line would state a link the business does not make |
+| `§2.4` the table | `SoldProduct` — `product_filled_to`, `product_fill_quantity`, `product_fill_unit`, `product_expected_per_batch` |
+| `§2.4` Yield | **Left.** 15.5–17 L off a 12 kg mix depending on overrun that nobody logs. A range, and a comparison |
+| `§2.4` The scoop | **Left, and the hole is visible.** `product_fill_quantity` exists on the scoop rows and is empty, because nobody has ever weighed one |
+| `§2.4` What is expected and what is recorded | **Left.** A comparison, and the brief puts comparisons in session 4 |
+| `§2.5` | `SoldProduct` — `product_which_flavours` and `product_flavour_decided_by`, both prose |
+| `§2.6` the table | Fourteen `Recipe` rows with their lines. `product_recipe` joins the ones that match a price-list line |
+| `§2.6` The pan | **Left.** Whether a pan at a café is stock, a loan or nobody's is `§3.2`'s, and it is already an OPEN line |
+| `§2.6` The label, The tubs and the lids | `RecipeLine` — one blank label, one tub, one printed lid, one printed sleeve. The prose about roll counts and case sizes is `§1.5`'s and is already in the map |
+| `§2.7` the table | Eight `Recipe` rows; `product_recipe` on `SoldProduct` joins them one for one |
+| `§2.7` the pump, the jug, the 2 L bottle | **Left.** "A 2 L bottle does eight lattes" against Aoife saying she goes through more, and milk poured against milk steamed, are a loss rate over a period |
+
+Two things were reached for and put back: a `Machine` class, and a join table
+between `Flavour` and format for `§2.5` — `§2.5` never writes the pairs out,
+only sentences, so enumerating them would have invented twenty-five by seven
+facts nobody has stated.
+
+### Counts
+
+- **3 classes added** — `Ingredient`, `Recipe`, `RecipeLine`. **14 in total.**
+- **20 slots added.** **58 in total**, every one carrying an explicit
+  `slot_uri`. Session 1's 38 are all still present; none was renamed and none
+  was re-ranged.
+- **7 relationship slots added** — `made_recipe` → `Recipe` (on `Ingredient`
+  and on `Flavour`), `recipe_basis_unit` → `Unit`, `line_recipe` → `Recipe`,
+  `line_ingredient` → `Ingredient`, `line_unit` → `Unit`, `product_recipe` →
+  `Recipe`, `product_fill_unit` → `Unit`. **13 in total.**
+- **1 `is_a` edge added** — `BoughtItem is_a Ingredient`. The hierarchy is now
+  four subclasses under two parents and is **still one level deep**.
+- **1 enum added** — `RecipeStage`, two permissible values.
+- **1 `unique_keys` added** — `ProductPrice`, on `price_product` + `price_at`.
+- **0 identifiers added net**: `Recipe` has one (`recipe_name`), `RecipeLine`
+  and `ProductPrice` have none, `Ingredient` uses `item_name`, and `BoughtItem`
+  inherits it rather than declaring a second — the same LinkML refusal that
+  made a `Supplier` be identified by `location_name` in session 1.
+
+### What session 1 had to give up
+
+Nothing was renamed and nothing was re-ranged. Four slots were **re-homed** —
+moved from `BoughtItem` up to the new `Ingredient` — and three descriptions
+were widened to match:
+
+| Slot | What changed | Why |
+|---|---|---|
+| `item_name` | `BoughtItem` → `Ingredient`; description widened | A recipe line names bought things, made things and water with one slot, and the 30 Aug line says a shared range gets a common superclass. `item_name` is `Ingredient`'s identifier and `BoughtItem` inherits it |
+| `item_counted_in` | `BoughtItem` → `Ingredient`; description widened | A made thing is counted too — aged base in 25 L buckets, and `§2.2` says nobody has ever counted it |
+| `item_worked_in` | `BoughtItem` → `Ingredient` | Same reason; a page works in grams whatever the thing was bought in |
+| `item_note` | `BoughtItem` → `Ingredient`; description widened | Water's note is that it comes off the mains and is not tracked against product, which is the same slot doing the same job |
+
+`BoughtItem` still induces all nine of the slots it had in session 1 — checked
+with `class_induced_slots`, not by reading. `Flavour` gained `made_recipe`,
+`SoldProduct` gained seven, `ProductPrice` gained its `unique_keys`, and the
+schema `description` was rewritten to name both sessions.
+
+### The mermaid render, added and changed classes only
+
+Six of the fourteen files differ from session 1's. `ProductPrice.md` is byte
+for byte what session 1 pasted even though the class changed, because mermaid
+does not draw a `unique_keys`; it is not repeated here.
+
+```mermaid
+ classDiagram
+    class Ingredient
+      Ingredient <|-- BoughtItem
+      Ingredient : entity_class
+      Ingredient : item_counted_in
+        Ingredient --> "0..1" Unit : item_counted_in
+      Ingredient : item_name
+      Ingredient : item_note
+      Ingredient : item_worked_in
+        Ingredient --> "0..1" Unit : item_worked_in
+      Ingredient : made_recipe
+        Ingredient --> "0..1" Recipe : made_recipe
+```
+```mermaid
+ classDiagram
+    class BoughtItem
+      Ingredient <|-- BoughtItem
+      BoughtItem : entity_class
+      BoughtItem : item_arrives_as
+      BoughtItem : item_counted_in
+        BoughtItem --> "0..1" Unit : item_counted_in
+      BoughtItem : item_name
+      BoughtItem : item_note
+      BoughtItem : item_ordered_in
+        BoughtItem --> "0..1" Unit : item_ordered_in
+      BoughtItem : item_pack_price
+      BoughtItem : item_supplier
+        BoughtItem --> "0..1" Supplier : item_supplier
+      BoughtItem : item_worked_in
+        BoughtItem --> "0..1" Unit : item_worked_in
+      BoughtItem : made_recipe
+        BoughtItem --> "0..1" Recipe : made_recipe
+```
+```mermaid
+ classDiagram
+    class Recipe
+      Recipe : entity_class
+      Recipe : recipe_basis
+      Recipe : recipe_basis_quantity
+      Recipe : recipe_basis_unit
+        Recipe --> "0..1" Unit : recipe_basis_unit
+      Recipe : recipe_name
+      Recipe : recipe_note
+```
+```mermaid
+ classDiagram
+    class RecipeLine
+      RecipeLine : entity_class
+      RecipeLine : line_ingredient
+        RecipeLine --> "0..1" Ingredient : line_ingredient
+      RecipeLine : line_named_as
+      RecipeLine : line_note
+      RecipeLine : line_quantity
+      RecipeLine : line_recipe
+        RecipeLine --> "0..1" Recipe : line_recipe
+      RecipeLine : line_stage
+        RecipeLine --> "0..1" RecipeStage : line_stage
+      RecipeLine : line_unit
+        RecipeLine --> "0..1" Unit : line_unit
+```
+```mermaid
+ classDiagram
+    class Flavour
+      Flavour : entity_class
+      Flavour : flavour_listing
+      Flavour : flavour_name
+      Flavour : flavour_note
+      Flavour : flavour_runs
+      Flavour : made_recipe
+        Flavour --> "0..1" Recipe : made_recipe
+```
+```mermaid
+ classDiagram
+    class SoldProduct
+      SoldProduct : entity_class
+      SoldProduct : product_expected_per_batch
+      SoldProduct : product_fill_quantity
+      SoldProduct : product_fill_unit
+        SoldProduct --> "0..1" Unit : product_fill_unit
+      SoldProduct : product_filled_to
+      SoldProduct : product_flavour_decided_by
+      SoldProduct : product_format
+      SoldProduct : product_name
+      SoldProduct : product_recipe
+        SoldProduct --> "0..1" Recipe : product_recipe
+      SoldProduct : product_which_flavours
+```
+
+`RecipeLine.md` carries `click RecipeStage href "../RecipeStage"` and no
+`RecipeStage.md` is written — fourteen files for fourteen classes. That is
+session 1's measured enum cost arriving exactly as predicted, one dead link.
+
+### The nine measured problems: where the map has somewhere to put each
+
+| Problem | Somewhere to put it? |
+|---|---|
+| A batch's inputs exceed the batch | **Yes.** `recipe_basis` states the page is per mix in, and `line_stage: at_fill` marks the 0.85 chocolate, the 0.40 caramel, the 1.10 biscuit base and the 1.60 rhubarb as on top of the 12 kg. A place, not an answer: a page's lines deliberately do not sum to its basis, so whatever totals a batch has to know that, and nothing in the map tells it |
+| Three flavours with a recipe and no quantities | **Yes.** A line with an ingredient, an empty `line_quantity` and a `line_note`. Whether the business would ever write such a line is a T2 |
+| Water named in four recipes and not bought | **Yes, completely.** A plain `Ingredient` row. The bill of materials has no dangling line: it has a line pointing at a thing that is neither bought nor made, which is what water is |
+| A pan holds about 3.3 kg and no document carries it | **Half.** `product_fill_quantity` holds the 3.3 and `product_filled_to` holds the sentence it came out of. Nothing converts "½ pan" or "¾ pan", which is what every count and every van sheet is written in, and nothing in `§2` states a factor for a fraction read by eye |
+| No quantity says whether it is gross or net | **No, and deliberately not.** The business draws no such distinction anywhere, so a slot for it would be a distinction the map invented. `line_quantity`'s description records that the pan's 3.6 kg and 3.3 kg differ by the pan and that nothing recorded which was meant |
+| A scoop has no weight | **The column, not the number.** `product_fill_quantity` sits on the scoop rows and is empty. This is the one place where the map being right makes the gap more visible rather than less |
+| Passionfruit purée with no flavour made of it | **No.** It runs on the fruit sorbet page and only a `Flavour` or an `Ingredient` can point at a page, and passionfruit is neither. So the page exists, the purée exists, and nothing joins them. An unused material still looks exactly like a correct one |
+| `§1.6`'s consumers must be declared, not derived | **Mostly yes, and further than expected.** The 30 that resolve to a recipe table are `RecipeLine`s, and `line_named_as` carries the alias so the page can go on saying "stabiliser base". `§2.6` and `§2.7` turn out to give lines to most of the other 50 as well — the napkin, the tasting spoon, the milk behind a latte are all rows in a table. What is left with no consumer is `§2.3`'s own list: sanitiser, CIP detergent, blue roll, gloves, bin liners and dry ice, which the profile says nobody associates with a batch |
+| Three units for a bought item and nothing converts | **No, and this session sharpens it.** `line_unit` is grams on almost every page while `item_counted_in` is bags, sacks and tins, so a page and a count now name two different units for the same thing inside one map, and the only factor anywhere is Dan's 10.3 kg per bag. Unchanged from session 1's OPEN line except that it is now load-bearing rather than latent |
+
+### Surprising
+
+1. **Gianduja is the two clocks paying for themselves in a map with no facts
+   in it.** `made_recipe` is single-valued, and from November to February the
+   hazelnut cabinet card is made on a different page — chocolate in, no salt —
+   while the production sheet says "hazelnut" either way. A system with one
+   clock has to choose between a second flavour nobody sells and a page that
+   lies for four months. Here it is one slot whose value changes on the
+   valid-time axis, and the map needed nothing added for it. This was not
+   designed; it fell out of pointing `made_recipe` from the made thing to the
+   page instead of the other way round.
+2. **Which way the recipe pointer faces was decided by the business, not by
+   modelling taste.** The obvious shape is a page that names its output. It is
+   wrong here, and the fruit sorbet page proves it: one page serves strawberry,
+   raspberry, mango, the peach half of peach and basil, and a passionfruit that
+   is not in the range at all, because Dan writes the fruit in the margin. A
+   page does not know what it makes. Turning the arrow round made every pointer
+   in `§2` single-valued at once — `made_recipe`, `product_recipe` — and that
+   was the moment the multivalued question stopped being hard.
+3. **The cake settled whether a `Flavour` is an `Ingredient`, and the answer is
+   no.** Two hours could have gone into whether the cabinet-card entry and the
+   substance in the pan are one class. The cake ends it in one sentence: its
+   lines are "1.4 L of one flavour" and "1.1 L of a second", and which two is
+   read out on the phone per cake. So even with `Flavour is_a Ingredient` the
+   line could not have named one. A line with an amount and no ingredient is
+   the only honest shape, and `Flavour` keeps `flavour_name`.
+4. **`§2.6` is not a bill of materials for `§1.7`'s product list, and it cannot
+   be made into one.** Five of its rows are formats and eight are drinks or
+   cans that match a price line one for one. The rest are conditions across
+   several lines — any scoop sale, tub or cake taken away, any drink taken
+   away — and worse, a scoop's own bill depends on cone or cup, which `§1.7`
+   prices as one product either way. So the till knows something the price list
+   does not carry, and the map can hold both tables and not the join.
+5. **`unique_keys` survives `gen-owl` as `owl:hasKey` and is invisible to
+   mermaid.** One line, `owl:hasKey ( sorella:price_product sorella:price_at )`,
+   in 63,986 bytes. `ProductPrice.md` renders identically to session 1's. So the
+   review render cannot show a composite key at all, which matters because
+   `ProductPrice` and `RecipeLine` are the two classes in this map with no
+   identifier and a reviewer looking at pictures cannot tell them apart.
+6. **The enum's OWL is a `owl:unionOf` of two `owl:Class` nodes, not a
+   datatype.** Eleven `RecipeStage` triples, and `line_stage`'s range renders as
+   a union of `RecipeStage#in_the_mix` and `RecipeStage#at_fill`. Session 1
+   measured that `induced_slot` puts the enum outside `all_classes()` and
+   confirmed it again here; what is new is that the OWL disagrees with that and
+   calls both values classes. Nothing reads the OWL, so nothing breaks, but a
+   reviewer in WebVOWL will see two nodes where the map has two words.
+7. **The `PYTHONIOENCODING` trap did not fire again, and this is the last
+   session where it could not have.** The draft still holds no facts and no
+   temperatures. `§2` carries −35 °C and −18 °C in its prose and none of it
+   reached a description; the exposure moves to whichever session writes
+   location facts, unchanged.
+
+### What was run
+
+| Command | Exit |
+|---|---|
+| `PYTHONIOENCODING=utf-8 gen-owl --no-use-native-uris business/sorella/draft.yaml > build/sorella_draft.ttl` | 0 — 63,986 bytes, 0 `rdfs:domain`, 1 `owl:hasKey`, 11 `RecipeStage` triples |
+| `PYTHONIOENCODING=utf-8 gen-mermaid-class-diagram -d "$TEMP/sorella_mmd2" business/sorella/draft.yaml` | 0 — 14 files, one per class, none for the enum |
+| `grep -c any_of business/sorella/draft.yaml` | 1 on the first run — the word was in `Ingredient`'s own description explaining why it exists. Reworded to "a boolean range constraint"; **0, exit 1** after |
+| `grep -c facts business/sorella/draft.yaml` | 1 — no match. No `annotations.facts` block |
+| `make check` | 0 — **64 tests passed**, replay byte-identical twice, 5,334 bytes both times |
+| `SchemaView` introspection | 14 classes, 58 slots, 1 enum, 13 relationship slots, 0 slots without a `slot_uri`, 0 `any_of` |
+| `SchemaView` diff against `a06de07` | 0 of session 1's 38 slots missing, 0 of its 11 classes missing, 20 slots and 3 classes added |
+| `class_induced_slots('BoughtItem')` | all 9 of session 1's `BoughtItem` slots still induced, plus `made_recipe` |
+| `git diff --stat HEAD -- business/sorella/profile.md` | 0 — empty. The profile is untouched |
+| `git status --porcelain` | ` M business/sorella/draft.yaml` and the pre-existing ` M DECISIONS.md`, ` M NEXT.md`. Nothing under `business/` outside `business/sorella/` added, moved or deleted |
+
+`make check` collected 64 and passed 64. This session writes no code and adds
+no test.
+
+One clause needed reading twice rather than conflicting. The done condition
+says `business/sorella/profile.md` is unchanged; it differs from `ada1d9e` by
+one line, which `6ae7579` wrote to replace `PENDING` with the freeze commit's
+own hash before this session began. Against `HEAD` the diff is empty, which is
+what the clause means. No two clauses conflicted.
+
+### Proposed `DECISIONS.md` entries
+
+1. A recipe's many ingredients are held as a collection with its own subject:
+   `Recipe` is the page and `RecipeLine` is one line carrying its ingredient,
+   its quantity and its stage. The 31 Aug multivalued question is closed by
+   elimination — the kernel is closed so the (subject, predicate) pair cannot
+   stop being the unit of supersession, and refusing multivalued slots means
+   refusing recipes. Nothing in the map is multivalued and nothing was added to
+   the kernel. The four costs are named rather than absorbed: a line has no
+   name and cannot have a `unique_keys` either, because salted caramel puts one
+   variegate on one page twice; a page and its lines are two forms where the
+   profile shows one table; nothing says how many lines a page should have; and
+   walking a recipe is two hops, paid twice over because white base is itself a
+   page.
+2. A page is not an output, and what is made names its page rather than the
+   reverse. The obvious shape — a recipe that names what it produces — is wrong
+   for this business and `§2.3` says why: the fruit sorbet page serves
+   strawberry, raspberry, mango, the peach half of peach and basil, and a
+   passionfruit that is not in the range, because Dan writes the fruit in the
+   margin and leaves the page alone. So `made_recipe` sits on `Ingredient` and
+   on `Flavour` and `product_recipe` on `SoldProduct`, and every one of them is
+   single-valued. The return was not foreseen: the hazelnut card is made on the
+   gianduja page from November to February and on the hazelnut page the rest of
+   the year, and that is one slot moving on the valid-time axis rather than a
+   second flavour nobody sells.
+3. `Ingredient` is the common superclass of everything a recipe line can name,
+   and its plain case is water. `BoughtItem is_a Ingredient`, and `item_name`,
+   `item_counted_in`, `item_worked_in` and `item_note` move up to the parent.
+   This is the 30 Aug line applied — a slot whose range must cover two classes
+   gets a common superclass rather than a boolean constraint — and it means the
+   bill of materials has no dangling line: water is a row, not an absence.
+   `Flavour` is deliberately **not** an `Ingredient`, and the cake settles it
+   rather than an argument: its lines are 1.4 L of one flavour and 1.1 L of a
+   second, chosen on the phone per cake, so no line could have named a flavour
+   even if the class allowed it.
+4. `line_stage` is an enum with two values, `in_the_mix` and `at_fill`, and it
+   is where the at-fill half of a batch attaches. `§2.3` draws the line itself
+   and states why — a page is per 12.00 kg into the batch freezer, and anything
+   folded, drizzled or rippled in by hand goes in after the machine and is on
+   top of it. The consequence has to be stated with the mechanism: **a page's
+   lines do not sum to its basis, by design**, so anything that totals a batch
+   must add the at-fill lines to the basis rather than expect them inside it,
+   and nothing in the map enforces that. The map has a place for the problem;
+   it does not make consumption balance.
+5. The map carries no gross-or-net basis for a quantity, and that is a refusal
+   rather than an omission. `§2.4` has a pan reading 3.6 kg on the scale as it
+   stood and about 3.3 kg of gelato in it, and no document in the business
+   records which was meant — the business draws no such distinction anywhere,
+   so a slot for it would be one the map invented, which the 2 Sep profile rule
+   forbids in the other direction and which is the same failure. The fact is
+   recorded in `line_quantity`'s own description so that a reader of the map
+   meets it.
+6. `unique_keys` enters the map on `ProductPrice` and nowhere else, because it
+   is the only class where a composite key is true. It renders as one
+   `owl:hasKey` triple and mermaid does not draw it. `RecipeLine` was the other
+   candidate and is refused a key: `(line_recipe, line_ingredient, line_stage)`
+   looks right and is false, because the cake carries two lines with no
+   ingredient at all.
+
+### Proposed `OPEN.md` lines
+
+- `[T3]` `§2.6`'s packaging bill cannot be joined to `§1.7`'s price list, and
+  the map holds both. Five of `§2.6`'s fourteen rows are formats and eight are
+  drinks or cans matching a price line one for one, so `product_recipe` reaches
+  them; the rest are conditions across several lines — any scoop sale, tub or
+  cake taken away, any drink taken away — and a scoop's own bill depends on
+  cone or cup, which `§1.7` prices as one product either way. So the till knows
+  a thing the price list does not carry, and those pages sit in the map with
+  nothing pointing at them. Whether the join is a second class, a rule on the
+  form, or a distinction the business has to be asked to make, is undecided.
+  Raised 3 Sep · blocks: generation
+- `[T3]` A page's lines do not sum to its basis and nothing says so. Every
+  batch sheet is per 12.00 kg into the machine and `line_stage: at_fill` marks
+  what goes in on top of it, so a reader that totals a page's lines and expects
+  12.00 kg is wrong on eight of the twenty-two sheets. The stage is on the line
+  and the basis is on the page, and joining them is arithmetic across rows,
+  which is the aggregate shape the 1 Sep line puts outside this map. Whether a
+  page should state its own output, whether the at-fill total is a derived
+  slot, or whether nothing should ever total a page, is undecided. Raised 3 Sep
+  · blocks: derive
+- `[T3]` Scaling a page to a run is prose arithmetic. The white base page is
+  per 10.00 kg of mix and `recipe_note` says it is made in 55 kg runs; the
+  biscuit base page is per run and the run is ten packs of digestives while the
+  line says 4.00 kg. So the factor between what a page states and what a
+  session of work actually consumes lives in a sentence, and `§2.1` adds that a
+  55 kg run does four batches and leaves about half a bucket that goes into the
+  next morning topped up. Whether a run size is a slot, a fact per run, or
+  prose, is undecided. Raised 3 Sep · blocks: derive
+- `[T3]` Gelato in a pan is not a thing the map can name. A batch makes gelato
+  of a flavour, the gelato fills pans, tubs and minis, and the pans sit in the
+  holding freezer for up to 21 days — but the map has `Flavour` for the card
+  and `SoldProduct` for the price line and nothing that is "pistachio in a 5 L
+  napoli pan". `product_fill_quantity` says a pan holds about 3.3 kg and
+  `made_recipe` says how the pistachio was made, and no slot joins them.
+  Whether that is a class, a movement's two ends in `§3.2`, or something a
+  count declares, is undecided, and milestone one's closing balance runs
+  straight through it. Raised 3 Sep · blocks: generation
+- `[T2]` Would Dan's book ever carry a line with no quantity? The map allows
+  one — an ingredient, no number, a note — because `§2.3` says three flavours
+  are made by feel and gives Dan's own answers: honey until it tastes right, a
+  good glug of marsala, most of a 100 g pack of basil that he smells and
+  decides about. He says he will not write a quantity for the basil. Whether he
+  would write the line at all, or whether an unwritten page is simply absent,
+  is a thing only he can say, and the two produce different consumption.
+  Raised 3 Sep · blocks: interview
+- `[T2]` What one filled 500 ml tub takes is two answers in the profile and the
+  map holds them apart. `§2.4` says about 460 g of gelato and `§2.6` says one
+  tub, one printed lid, one printed sleeve; the packaging is a `Recipe` and the
+  gelato is `product_fill_quantity`, because which flavour goes in is decided
+  at the bench and cannot be a line. Whether the business thinks of a filled
+  tub as one bill or as two things that happen at the same moment decides
+  whether a filling form asks one question or two. Raised 3 Sep ·
+  blocks: interview

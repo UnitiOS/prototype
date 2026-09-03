@@ -3,14 +3,19 @@ name: sorella_gelato
 title: Sorella Gelato inventory
 description: >-
   What Sorella Gelato Ltd holds, where it can sit, what it counts in, what it
-  buys and what it sells. Drawn from sections 1.1 to 1.9 of
-  business/sorella/profile.md, frozen at ada1d9e.
+  buys and what it sells, what it makes and what each made or filled thing
+  takes.
 
-  This is session one of four and it states vocabulary only. Not one fact is
-  here: the eighty bought items, the nine suppliers, the twenty-five
-  flavours and the thirty-one wholesale accounts are rows a generated form
-  writes, and submit() states the class membership. How a product is made,
-  how stock moves, and the rules with their numbers are sessions two to four.
+  Sessions one and two of four, drawn from sections 1.1 to 2.7 of
+  business/sorella/profile.md, frozen at ada1d9e. Session one stated the nouns
+  and where they can be; session two states how a product is made and what a
+  filled unit eats.
+
+  It states vocabulary only. Not one fact is here: the eighty bought items, the
+  nine suppliers, the twenty-five flavours, the thirty-one wholesale accounts
+  and the twenty-one batch sheets with their ingredient lines are rows a
+  generated form writes, and submit() states the class membership. How stock
+  moves and the rules with their numbers are sessions three and four.
 
 prefixes:
   linkml: https://w3id.org/linkml/
@@ -129,22 +134,90 @@ classes:
       - flavour_runs
       - flavour_listing
       - flavour_note
+      - made_recipe
+
+  Ingredient:
+    description: >-
+      One thing a recipe line can name. This class is the plain case - a thing
+      the kitchen uses that it neither buys nor sells - and section 2.1 names
+      exactly one of those: water, which is in the dark chocolate sheet, the
+      sorbet syrup, the coffee brew, the stewed rhubarb and whatever Dan tops
+      the fresh-fruit sorbet up with, and which section 1.6 excludes from the
+      buying table in its own preamble.
+
+      Its other plain rows are the six things section 2.2 makes in a run and
+      draws from many times - white base, sorbet syrup, biscuit base, the
+      coffee brew, the custard base and the stewed rhubarb - which are made
+      rather than bought and so carry a page rather than a supplier.
+
+      It exists because a recipe line has to be able to name a bought thing and
+      a made thing with one slot, and the 30 Aug line says two classes sharing
+      a slot get a common superclass rather than a boolean range constraint.
+    slots:
+      - entity_class
+      - item_name
+      - item_counted_in
+      - item_worked_in
+      - item_note
+      - made_recipe
 
   BoughtItem:
+    is_a: Ingredient
     description: >-
       One thing the business buys, once. Eighty of them, from dairy and
       nut pastes to bin liners and dry ice. Water, gas and electricity are not
       tracked against product and are not here.
     slots:
-      - entity_class
-      - item_name
-      - item_counted_in
       - item_ordered_in
-      - item_worked_in
       - item_arrives_as
       - item_pack_price
       - item_supplier
-      - item_note
+
+  Recipe:
+    description: >-
+      One written page, and the collection its lines belong to. Section 2.2's
+      six runs, section 2.3's twenty-two batch sheets, section 2.6's fourteen
+      rows of what a filled or sold unit takes, and section 2.7's eight drinks
+      are all one shape: a heading, a basis, and lines under it.
+
+      It is a page and not an output, because the two are not the same thing
+      here. One page serves four flavours and a fifth thing that is not a
+      flavour at all - section 2.3's fruit sorbet page, where Dan writes the
+      puree's name in the margin and leaves the rest alone - so what a page
+      makes is decided by whoever is using it. What is made therefore names its
+      page and not the other way round: made_recipe on Ingredient and on
+      Flavour, product_recipe on SoldProduct.
+    slots:
+      - entity_class
+      - recipe_name
+      - recipe_basis
+      - recipe_basis_quantity
+      - recipe_basis_unit
+      - recipe_note
+
+  RecipeLine:
+    description: >-
+      One line under one page: what goes in, how much of it, and whether it
+      goes in before the machine or by hand afterwards. A collection with its
+      own subject, which is what a bill of materials has always been, and what
+      lets a page hold many ingredients while an assertion stays one subject,
+      one predicate, one value.
+
+      A line may carry no quantity. Section 2.3's three flavours with no page
+      are made by feel - honey until it tastes right, a good glug of marsala,
+      most of a 100 g pack of basil - and a line with an ingredient, no number
+      and a note is what the business actually has. A line may also carry no
+      ingredient: the cake takes 1.4 L of one flavour and 1.1 L of a second,
+      and which two is decided on the phone per cake rather than on the page.
+    slots:
+      - entity_class
+      - line_recipe
+      - line_ingredient
+      - line_named_as
+      - line_quantity
+      - line_unit
+      - line_stage
+      - line_note
 
   SoldProduct:
     description: >-
@@ -155,6 +228,13 @@ classes:
       - entity_class
       - product_name
       - product_format
+      - product_recipe
+      - product_filled_to
+      - product_fill_quantity
+      - product_fill_unit
+      - product_expected_per_batch
+      - product_which_flavours
+      - product_flavour_decided_by
 
   ProductPrice:
     description: >-
@@ -169,6 +249,16 @@ classes:
       - price_product
       - price_at
       - price_amount
+    unique_keys:
+      product_and_column:
+        description: >-
+          A price is identified by its product and its column and by no single
+          slot, which is why this class has no identifier. Two prices for one
+          product in one column are the same cell and compete; the same product
+          at two columns does not.
+        unique_key_slots:
+          - price_product
+          - price_at
 
 slots:
 
@@ -368,6 +458,11 @@ slots:
       called the milk in conversation and are written apart here because they
       have two suppliers, two units and two places.
 
+      It identifies an ingredient of any kind: the eighty things section 1.6
+      buys, the six things section 2.2 makes in a run, and water. What a
+      recipe page calls the thing is a separate slot, because section 2.2 says
+      one 2 kg bag of Base 50 is written two ways in the book.
+
   item_counted_in:
     slot_uri: sorella:item_counted_in
     range: Unit
@@ -375,6 +470,10 @@ slots:
       What a count of it is written in. Every bought item has one. It is a
       thing a fact points at rather than a unit fixed on this slot, because
       items disagree: milk is in bags, sugar in sacks, cones in sleeves.
+
+      A made thing has one too - aged base is counted in the 25 L buckets it is
+      drawn into, and section 2.2 says it is the largest single quantity of
+      value in the building at 6 a.m. and that nobody has ever counted it.
 
   item_ordered_in:
     slot_uri: sorella:item_ordered_in
@@ -424,6 +523,12 @@ slots:
       is volume and a recipe is mass, that a pail is never emptied cleanly,
       that tubs and lids run out at different times permanently.
 
+      For a thing that is not bought it carries what the business says about
+      the thing itself instead: that water comes off the mains through the
+      filter on the wall by the pasteuriser and is not tracked against product,
+      or that a run of biscuit base lasts three or four batches and a couple of
+      cakes.
+
   product_name:
     slot_uri: sorella:product_name
     identifier: true
@@ -460,6 +565,244 @@ slots:
       symbol: GBP
       descriptive_name: pounds
     description: What it costs there.
+
+  made_recipe:
+    slot_uri: sorella:made_recipe
+    range: Recipe
+    description: >-
+      Which page this is made on. On an Ingredient it is section 2.2's six
+      runs; on a Flavour it is section 2.3's batch sheet.
+
+      Single-valued, and pointing this way round rather than from the page,
+      because one page serves several things - the fruit sorbet page is used
+      for strawberry, raspberry, mango, the peach half of peach and basil, and
+      a passionfruit that is not in the range at all - while each thing is made
+      on one page at a time. At a time is what matters: from November to
+      February the hazelnut card carries gianduja, which is a different page
+      with chocolate in it and no salt, so this slot's value moves with the
+      season and the valid-time clock is what carries it.
+
+      Empty for a bought thing, empty for water, and empty for the three
+      seasonals section 2.3 says have never been written down.
+
+  recipe_name:
+    slot_uri: sorella:recipe_name
+    identifier: true
+    range: string
+    description: >-
+      The heading on the page, and what identifies it - White base, Pistachio,
+      Gianduja, Fruit sorbet, 5 L napoli pan, Any scoop sale, Latte. For
+      section 2.6 it is the phrase in that table's Unit column, which is
+      sometimes a format and sometimes a condition on a sale.
+
+  recipe_basis:
+    slot_uri: sorella:recipe_basis
+    range: string
+    description: >-
+      What the page's quantities are per, in the words the page uses - per
+      12.00 kg into the batch freezer, per 10.00 kg of mix, per 30.00 kg of a
+      run, per run which is ten packs of digestives, per bucket, per box, per
+      unit filled or sold.
+
+      Section 2.3 states its own basis and it is the mix in, not the output: a
+      page is what is weighed in before the machine runs, and anything folded,
+      drizzled or rippled in by hand at fill is listed under the table because
+      it goes in afterwards and is on top of the 12 kg. That is why a line
+      carries a stage.
+
+  recipe_basis_quantity:
+    slot_uri: sorella:recipe_basis_quantity
+    range: decimal
+    description: >-
+      The number in the basis, where there is one. Twelve for a batch sheet,
+      ten for the white base page, thirty for a sorbet syrup run, one for a
+      bucket, a box or a filled unit.
+
+  recipe_basis_unit:
+    slot_uri: sorella:recipe_basis_unit
+    range: Unit
+    description: >-
+      What that number is in. A thing a fact points at rather than a unit fixed
+      here, because the pages disagree: most are kilograms, the biscuit base is
+      a run, the coffee brew is a bucket, the stewed rhubarb is a box and a
+      packaging bill is one each.
+
+  recipe_note:
+    slot_uri: sorella:recipe_note
+    range: string
+    description: >-
+      Everything the page says that is not a line - the method, how it is kept,
+      how big a run is, and what Dan or Rekha says about it. It carries that the
+      white base is made in 55 kg runs and scaled on the pasteuriser's own scale
+      with the milk rounded to the nearest 100 g, that the fruit sorbet page is
+      used for any straight puree swap with the name written in the margin, and
+      that a run of biscuit base is the only page in the book that starts from a
+      count of packs.
+
+  line_recipe:
+    slot_uri: sorella:line_recipe
+    range: Recipe
+    description: Which page this line is under.
+
+  line_ingredient:
+    slot_uri: sorella:line_ingredient
+    range: Ingredient
+    description: >-
+      What goes in. A bought thing or a made thing or water, which is why the
+      range is the superclass and not BoughtItem.
+
+      It can be empty, and section 2.3's cake is why: it takes 1.4 L of one
+      flavour and 1.1 L of a second and which two is read out on the phone per
+      cake, so the page names an amount and no ingredient.
+
+  line_named_as:
+    slot_uri: sorella:line_named_as
+    range: string
+    description: >-
+      The words the page uses, where they are not the ingredient's name.
+      Section 2.2 says the stabiliser is one bag under two names - Base 50
+      stabiliser/emulsifier on the dairy pages and stabiliser base on the water
+      and sorbet pages, both meaning the 2 kg bag of Base 50 in the dry store.
+      The fruit sorbet page writes Puree and Dan writes the fruit in the margin;
+      the lemon page writes lemon juice from about a 5 kg bag of lemons.
+
+      Kept beside the resolved ingredient rather than instead of it, so that the
+      page can go on saying what it has always said while a count still reaches
+      one thing.
+
+  line_quantity:
+    slot_uri: sorella:line_quantity
+    range: decimal
+    description: >-
+      How much, where the page says. It can be empty, and section 2.3's three
+      flavours with no page are why: honey goes into the ricotta and fig until
+      it tastes right, the marsala is a good glug, and the basil is most of a
+      100 g pack that Dan smells and decides about. He will not write a number
+      for the basil and says so.
+
+      Nothing here says whether a quantity is gross or net. Section 2.4 has a
+      pan reading 3.6 kg on the scale as it stood and about 3.3 kg of gelato in
+      it, and no document in the business records which was meant. The business
+      makes no such distinction, so the map does not invent one.
+
+  line_unit:
+    slot_uri: sorella:line_unit
+    range: Unit
+    description: >-
+      What the quantity is in. Kilograms on almost every batch sheet, grams and
+      millilitres on the drinks, and each on a packaging line - one tub, one
+      printed lid, one printed sleeve.
+
+  line_stage:
+    slot_uri: sorella:line_stage
+    range: RecipeStage
+    description: >-
+      Whether the line is inside the basis or on top of it. Section 2.3 draws
+      this line itself and the stracciatella page is its pattern: 12.00 kg of
+      base in the machine and 0.85 kg of chocolate after it.
+
+      Empty on a page where nothing is churned - a run, a packaging bill, a
+      drink.
+
+  line_note:
+    slot_uri: sorella:line_note
+    range: string
+    description: >-
+      What the page says about this line. It carries the conditions section 2.6
+      writes into its own cells - a paper handled bag if the customer asks or if
+      there is more than one thing, a wooden stirrer if they take sugar, one or
+      two tasting spoons and six on a Saturday with a family - and what section
+      2.3 says about a line it cannot number.
+
+  product_recipe:
+    slot_uri: sorella:product_recipe
+    range: Recipe
+    description: >-
+      Which page says what one of these takes. Section 2.6 for a filled unit,
+      section 2.7 for a drink.
+
+      Single-valued, and section 2.6 does not fit it everywhere: five of its
+      rows are formats and eight more are drinks or cans that match a price-list
+      line one for one, but the rest are conditions across several lines at once
+      - any scoop sale, tub or cake taken away, any drink taken away - and a
+      scoop's own bill depends on whether the customer took a cone or a cup,
+      which section 1.7 prices as one product either way. Those pages exist as
+      Recipe rows with nothing pointing at them.
+
+  product_filled_to:
+    slot_uri: sorella:product_filled_to
+    range: string
+    description: >-
+      Section 2.4's Filled to column, in its own words - level with the rim by
+      eye, about 460 g so the lid domes, about 100 g. Empty for a scoop, which
+      section 2.4 says has no weight and never has had one.
+
+  product_fill_quantity:
+    slot_uri: sorella:product_fill_quantity
+    range: decimal
+    description: >-
+      The number inside that sentence, which is what joins a count of pans to a
+      recipe in kilograms. About 3.3 for a napoli pan, from three pans weighed
+      on one morning in June 2026 because a hotel asked; about 0.460 for a
+      500 ml retail tub, about 0.100 for a mini and about 1.15 for a catering
+      tub.
+
+      Every one of them is approximate and the business says so. A part pan is
+      written as a half or three quarters by eye and nothing converts it.
+
+  product_fill_unit:
+    slot_uri: sorella:product_fill_unit
+    range: Unit
+    description: What that fill is measured in.
+
+  product_expected_per_batch:
+    slot_uri: sorella:product_expected_per_batch
+    range: string
+    description: >-
+      Section 2.4's third column, in its own words - three pans and a part pan,
+      twenty-six tubs, about a hundred and fifteen minis, ten tubs. Prose and
+      not a number, because two of the four are written as an approximation and
+      one of them is written as a count plus a fraction nobody measures.
+
+      What is expected against what is recorded is a comparison and is not here.
+
+  product_which_flavours:
+    slot_uri: sorella:product_which_flavours
+    range: string
+    description: >-
+      Section 2.5's second column, in its own words - any of the twenty-five,
+      the fourteen core only, whatever was the tail of a batch, no sorbet
+      because it sets too hard to cut. A sentence and not a list of flavours,
+      because section 2.5 never writes the pairs out and inventing them would
+      state a distinction the business does not make.
+
+  product_flavour_decided_by:
+    slot_uri: sorella:product_flavour_decided_by
+    range: string
+    description: >-
+      Section 2.5's third column - who or what decides. The printed sleeve, the
+      customer then Yusuf, Steve at loading off the pan notebook, nobody, and
+      Rekha, who refused stracciatella in a catering tub because the shards tear
+      a plating portion.
+
+enums:
+
+  RecipeStage:
+    description: >-
+      Where on a batch sheet a line sits, in section 2.3's own division. The
+      section states both values and states why they differ, and there is no
+      third.
+    permissible_values:
+      in_the_mix:
+        description: >-
+          Weighed into the batch freezer before it runs, inside the 12.00 kg the
+          page is written per.
+      at_fill:
+        description: >-
+          Folded, drizzled or rippled in by hand during filling, after the
+          machine and on top of the 12.00 kg. Section 2.1 names the five -
+          stracciatella chocolate, caramel ripple, biscuit, cherries, amaretti -
+          and says they are not in the machine.
 
 annotations:
   valid_from: '2026-06-15T00:00:00Z'
