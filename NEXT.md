@@ -11,62 +11,64 @@ thirty finished items and two live ones, which is a log wearing a to-do list's
 name.
 
 The profile is frozen — `business/sorella/profile.md`, `ada1d9e`, six sessions,
-gated by `make check-profile`. The map is drawn from it across four sessions,
-one item in this file at a time, ordered so that stopping after the third still
-leaves a map milestone one can use. Nothing is sealed until the last of them.
+gated by `make check-profile`.
 
 Session 1 is done — `a06de07`, 11 classes, 38 slots, `§1.1` to `§1.9`.
 Session 2 is done — `e3e012c`, 3 classes and 20 slots added, `§2.1` to `§2.7`.
+Session 3 is done — `bf55836`, 7 classes and 41 slots added, `§3.2` and `§3.3`,
+and 4 aggregates. It was to have left a map milestone one could run on and did
+not, for one reason: this file forbade `equals_expression`, so the balance
+ships with `in` and `out` and no net. That was a constraint written here, not
+something discovered, and the third column is one slot.
+
+`§3.4`'s fifty-one rules and `§3.5`'s contested measures are **not in this
+map**, and that is now deliberate. Nothing in them touches arrivals minus
+departures, so milestone one does not need them — and adding them later is a
+definition change, which is stage 7, which has never had a real change to
+replay. Sealing before them gives it one.
 
 ---
 
-- [ ] Map session 3 of 4 — every way stock moves, and the eighteen documents
-      `§3.2` and `§3.3`. This is the session that has to leave a map milestone
-      one can run on, so it carries the balance as well as the movements.
-      **Two things have to come out of it, and the first is inherited.**
-      Session 2 ended by raising that gelato in a pan is not a thing the map can
-      name: a batch makes gelato of a flavour, the gelato fills pans, tubs and
-      minis, the pans sit in the holding freezer for up to 21 days, and the map
-      has `Flavour` for the cabinet card and `SoldProduct` for the price line
-      and nothing that is "pistachio in a 5 L napoli pan". A movement's quantity
-      is of something, and that something has no name yet. Milestone one's
-      closing balance runs straight through it.
-      **The second is the balance itself.** Stock on hand is arrivals minus
-      departures, which is arithmetic across rows, which the 1 Sep line puts in
-      the aggregate annotation and the 2 Sep line shapes as one annotation whose
-      tag names the computation and whose `value:` carries `over`, `sum` and
-      `by`. Whether that shape can carry a sign — a movement subtracts at its
-      origin and adds at its destination, and it is one row — is not known, and
-      finding out is the session's job rather than something to work around.
-      **`§3.3` is where the 1 Sep reversal gets executed.** The eighteen
-      documents are the target artefacts the reversal asked for, and they were
-      written as a description of the business rather than designed against a
-      map, so they cannot be tuned to the map that answers them. The session
-      says of each one whether the map can produce it.
-      Vocabulary widens by one: **aggregate annotations**. Still forbidden:
-      facts, `any_of`, LinkML class `rules`, `equals_expression`.
-      v1's failures here are on record and none of them is to be repeated: four
-      movement classes that rendered byte-identical forms, location folded into
-      pan slot names, and nothing anywhere saying that goods received add and
-      waste subtracts. The first is answered by the 1 Sep rule that a class
-      earns its existence by changing the shape of its form; the third by the
-      1 Sep rule that the outside of the business is locations, so direction
-      falls out of an origin and a destination instead of being declared.
-      done when: `business/sorella/draft.yaml` is the only file changed besides
-      `LOG.md`; it still holds no `annotations.facts` block; sessions 1 and 2's
-      14 classes and 58 slots are all still present, and any renamed, re-ranged
-      or re-homed are listed in `LOG.md` with the reason; with
-      `PYTHONIOENCODING=utf-8` set, `gen-owl` over it exits 0 and
-      `gen-mermaid-class-diagram -d` into a directory outside the repo exits 0;
-      searching it for `any_of` finds nothing; `make check` exits 0 with its 64
-      tests still passing; `business/sorella/profile.md` is unchanged; nothing
-      under `business/` outside `business/sorella/` is added, moved or deleted;
-      and `LOG.md` names every `§3.2` and `§3.3` subsection consumed and every
-      one left with the reason, carries the mermaid render of the classes this
-      session added or changed and no others, states in one paragraph what a
-      movement's quantity is of and whether the map can now name gelato in a
-      pan, and lists all eighteen of `§3.3`'s documents with a yes or a no
-      against each for whether the map can produce it
+- [ ] Close the map: the net column, the seal, and the first generated forms
+      Four steps in order, and the last one is the point.
+      **One.** A net on each balance class — `ingredient_on_hand_net` and
+      `gelato_on_hand_net`, each an `equals_expression` over the two aggregates
+      that are already there. Session 3 measured what it returns rather than
+      assuming: `'{a_in} - {a_out}'` over 0 and 5 gives `Decimal('-5')`, not a
+      string and not an error. `equals_expression` is permitted from here.
+      **Two.** The provenance note `annotations.transcript` has to name. `seal`
+      requires the annotation and requires the file it names to exist, and the
+      draft has carried only `valid_from` since session 1. It goes in
+      `business/sorella/`.
+      **Three.** The seal, once, with `--into business/sorella/`. The default is
+      `business/`, which still holds Marlow's retired v1 — sealing there lands
+      Sorella as a v2 superseding a business retired on 2 Sep, which is the
+      28 Aug failure repeating. If `seal` refuses the draft, the refusal is the
+      result and is reported rather than worked around.
+      **Four.** The generator, pointed at the sealed map, and the forms it
+      renders held against v1's gaps. That list was written on 1 Sep, before
+      Sorella existed, so it cannot have been tuned to the map that answers it:
+      no supplier was nameable, nothing consumed anything so material stock
+      could only rise, no pan was minted so `PanMoved` and `PanPulled` were
+      forms about a thing that did not exist, there was no opening stock and no
+      price and no adoption date, and four movement classes rendered
+      byte-identical forms.
+      One trap in reading that comparison, and it decides whether the answer
+      means anything: **an empty dropdown is not v1's failure repeating.**
+      Master data enters through forms under the 1 Sep line, so a freshly sealed
+      map has no supplier rows yet and a picker over `Supplier` will be empty.
+      v1's defect was that no class existed to pick over at all. The question is
+      whether the form offers a picker over a class that exists and can be
+      filled, not whether anything is in it today.
+      done when: the net slot exists on both balance classes and `gen-owl` over
+      the draft exits 0; `business/sorella/` holds a sealed version file and the
+      transcript its annotation names; `seal` was run once with
+      `--into business/sorella/` and nothing under `business/` outside
+      `business/sorella/` was added, moved or deleted; the generator was run
+      against the sealed map and `LOG.md` carries what it rendered, or carries
+      the refusal and what caused it; `LOG.md` answers each of v1's five gaps
+      with a yes or a no and the evidence for it; `make check` exits 0 with its
+      64 tests still passing; and `business/sorella/profile.md` is unchanged
 
 ---
 

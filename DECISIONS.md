@@ -1502,3 +1502,75 @@ reasoning lives in `../archived/`. They are closed, which means not re-discussed
              show a composite key — which matters, because `ProductPrice` and
              `RecipeLine` are the two classes with no identifier and a reviewer
              looking at pictures cannot tell them apart.
+2026-09-03 · Gelato in a pan is two cells on a line and not a thing. A
+             movement's quantity is of an `Ingredient`, or of a `Flavour` in a
+             `SoldProduct` — two slots declared per line, and the pair never
+             becomes an entity. The business decides this rather than modelling
+             taste: the van sheet and the wholesale delivery note write flavour,
+             format and quantity as three cells, the count sheet writes "Fior di
+             latte, 5 L pan" as one cell with a comma in it, and `§2.5` refuses
+             to write the flavour-and-format pairs out at all, so a class of
+             those pairs would mint twenty-five by seven facts nobody has
+             stated. The unforeseen return is that `movement_format` ranges over
+             `SoldProduct`, which already carries `product_fill_quantity`, so
+             the join from a count of pans to a recipe in kilograms was a slot
+             that existed. The cost is named: a line written without a flavour —
+             assorted minis, assorted catering tubs, part pans, a finished cake
+             — is in no group of a balance grouped by flavour, and that is a
+             thing the business does not record rather than one the map cannot
+             express.
+2026-09-03 · One movement class, and `GoodsReceived` does not survive into
+             Sorella. The 1 Sep line merged four byte-identical movement classes
+             and kept `GoodsReceived` separate because it added a slot; in this
+             map it adds none. A delivery's origin is a supplier, a supplier
+             `is_a Location`, and the form is the same form. So "the outside of
+             the business is locations" bought two things and only one was
+             predicted: direction became free, and the movement classes became
+             one.
+2026-09-03 · `§3.2`'s fifty-five rows are fifty-three `MovementKind` rows, and
+             the kind of a movement is a field on the movement rather than a
+             class per kind. Two names are written twice — refill a well,
+             cabinet expiry — once per shop, and the only difference between the
+             two rows is which places they name, which the movement's own origin
+             and destination already say. Folding the shop into the kind's name
+             is v1's pan-slot failure and session 1's price-column refusal for
+             the third time, arriving looking different each time. The kind
+             carries only what is constant per kind and never retyped per
+             movement: what actually happens, the document and who fills it, and
+             the lag — twenty-two of the fifty-five saying "Nothing" in that
+             column, which is the value rather than an absence.
+2026-09-03 · The aggregate annotation cannot carry a sign and does not need
+             one. Measured over four declarations read out of the unsealed
+             draft with `SchemaView`: the same sum over the same class, grouped
+             once by `movement_into` and once by `movement_out_of`, puts one
+             movement row in the arrival group of its destination and the
+             departure group of its origin — four of eight synthetic movements
+             counted twice. Direction is which slot the `by` names; the sign is
+             a subtraction, and `equals_expression '{a_in} - {a_out}'` returns
+             `Decimal('-5')` for 0 minus 5. That is the 1 Sep two-problem split
+             arriving unchanged. Session 3's vocabulary forbade
+             `equals_expression`, so the map ships `ingredient_in`,
+             `ingredient_out`, `gelato_in`, `gelato_out` and no net, and both
+             derived classes say so in their own descriptions. The map is two of
+             the balance's three columns and the third is one slot.
+2026-09-03 · Two balance classes and not one, decided by measurement rather
+             than preference. A single class dimensioned by ingredient, flavour,
+             format and place produced 0 groups over 8 movements, because every
+             movement is silent under two of the four dimensions and a row
+             silent under a dimension is in no group. Two classes with disjoint
+             dimension sets give the right rows, and the null rule stops being
+             an implementation detail of a throwaway script and becomes the
+             filter: an ingredient movement is not in the gelato balance because
+             it names no flavour. Neither class carries `entity_class` — nobody
+             ever asserts a row of one.
+2026-09-03 · A count line is its own entity, which supersedes the 30 Aug rule
+             that a quantity hangs on the thing rather than on the count, for
+             counts, the way 1 Sep superseded it for movements. This is stated
+             rather than done quietly because 30 Aug's decisive reason was Q6:
+             two honest counts of one freezer must compete on one (subject,
+             predicate) so the read rule breaks the tie and the overwrite is
+             visible. With a count line as its own entity nothing competes and
+             the two counts stand side by side — which is what the 2 Sep OPEN
+             line asks for, and which changes what Q6 tests. Q6 is not withdrawn
+             and is not weakened; it now has to be restated against a shape
+             where supersession is not the mechanism that reconciles two counts.

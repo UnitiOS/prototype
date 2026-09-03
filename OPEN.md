@@ -263,7 +263,77 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
   distinction the business has to be asked to make, is undecided. Raised 3 Sep ·
   blocks: generation
 
+- The production sheet's pasteuriser run block wants a time of day on a movement
+  and the map has one only on a `Batch`. `§3.3` gives the block three ruled lines
+  — time, kilos, what it is — and the run itself is a `StockMovement` of base
+  whose kilos and ingredient have homes. So one document is a no by one field,
+  and the same field would answer the van sheet's time box and the till's time.
+  Whether a movement carries a clock time, whether `happened_on` becomes a
+  datetime, or whether a time of day is something the log holds only as
+  `recorded_at`, is undecided. Raised 3 Sep · blocks: generation
+- A document's signature is a second person and `written_by` is one. The van
+  sheet is written by the driver and signed by the shop, the wholesale delivery
+  note by the driver and signed by the customer, and Whitehall's note is signed
+  by Dan on the mornings he is in. Two of `§3.3`'s eighteen documents are a no
+  for this reason alone. Whether a second person slot, a `Person` on the
+  movement's destination, or nothing, is undecided. Raised 3 Sep ·
+  blocks: generation
+- The map gave the count sheet a page and the waste sheet none. A waste sheet is
+  a weekly page with a week-ending header written on the Monday and its lines are
+  free-standing `StockMovement`s, so nothing joins the three lines written from
+  memory on one Friday, and the header has nowhere to go. `§3.3` describes three
+  such sheets. Whether every document with a header and lines needs a page class,
+  or only the ones something totals, is undecided. Raised 3 Sep ·
+  blocks: generation
+- `happened_on` and the kernel's `valid_from` say the same thing twice. Every one
+  of `§3.3`'s eighteen documents starts with a date a person fills in, so the map
+  carries a slot for it; the kernel already carries `valid_from` for the same
+  instant and `submit()` does not join them. The van sheet is the case that
+  decides, because it is written at loading or at the first drop from memory and
+  so its date can precede what it records. Whether a document's date slot is how
+  a form sets `valid_from`, or a fact standing beside it, is undecided. Raised
+  3 Sep · blocks: recording
+- A movement of a cake cannot say what is in it. `§2.3`'s cake takes 1.4 L of one
+  flavour and 1.1 L of a second, read out on the phone per cake, and
+  `movement_flavour` is one slot. `§4`'s count sheet has two finished cakes
+  standing in the holding freezer and the cake order carries two flavour fields.
+  Whether a cake is a movement with two flavour slots, a thing minted at the
+  bench, or a line the balance is allowed to lose, is undecided. Raised 3 Sep ·
+  blocks: generation
+- Three of `§3.3`'s documents are about stock and have no home at all: the
+  temperature log, which is a twice-daily reading of a place where
+  `location_temperature` is a standing fact; the whiteboard, where nothing is a
+  date and nothing is a quantity; and the cabinet plan, where a well is a `Unit`
+  and not a place and a plan is an intention. The first is the most consistently
+  completed document in the business. Whether an observation of a place over time
+  is a class, and whether an intention belongs in a log of what happened, are two
+  different questions and neither is decided. Raised 3 Sep · blocks: generation
+- An invoice is a second document about a movement, and the map has movements
+  rather than documents. A wholesale drop happens on the Tuesday and Marina types
+  its invoice on the Sunday from the second copy in the tray, so one event
+  carries two dates up to six days apart; `happened_on` holds one and
+  `recorded_at` holds when the system learned it, and the third has nowhere to
+  go. This is the same shape as the delivery note corrected across a later van
+  sheet, which is already an OPEN line, seen from the money side. Raised 3 Sep ·
+  blocks: report
+- The supplier's own balance goes negative and nothing asked it to.
+  `IngredientOnHand` shows Terra Nostra at −6 dextrose over eight synthetic
+  movements, because modelling the outside as places draws the outside down —
+  double-entry arriving uninvited from the 1 Sep decision. It is correct, it is
+  useless, and it will appear in every generated table until something filters
+  it. Whether a balance is scoped to internal places, whether an outside place is
+  marked as one, or whether the rows are simply ignored by a reader, is
+  undecided. Raised 3 Sep · blocks: report
+
 ## T2 — wait for a user
+
+- Would anybody pick a movement's kind off a list of fifty-three? The map makes
+  `movement_kind` a picker over `§3.2`'s own rows, which is what lets the log say
+  which of the ways stock moved rather than leaving it on `intent.action_name`.
+  Whether Steve at a counter, or Dan at the machine, would choose from fifty-three
+  rather than reach for the nearest, is a thing only they can say, and the
+  alternative — a form per kind — is the failure the 1 Sep rule exists to
+  prevent. Raised 3 Sep · blocks: interview
 
 - Would Dan's book ever carry a line with no quantity? The map allows one — an
   ingredient, no number, a note — because `§2.3` says three flavours are made by
