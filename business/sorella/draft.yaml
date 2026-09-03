@@ -1,0 +1,465 @@
+id: https://uniti.example/sorella
+name: sorella_gelato
+title: Sorella Gelato inventory
+description: >-
+  What Sorella Gelato Ltd holds, where it can sit, what it counts in, what it
+  buys and what it sells. Drawn from sections 1.1 to 1.9 of
+  business/sorella/profile.md, frozen at ada1d9e.
+
+  This is session one of four and it states vocabulary only. Not one fact is
+  here: the eighty bought items, the nine suppliers, the twenty-five
+  flavours and the thirty-one wholesale accounts are rows a generated form
+  writes, and submit() states the class membership. How a product is made,
+  how stock moves, and the rules with their numbers are sessions two to four.
+
+prefixes:
+  linkml: https://w3id.org/linkml/
+  sorella: https://uniti.example/sorella/
+default_prefix: sorella
+imports:
+  - linkml:types
+default_range: string
+
+classes:
+
+  Business:
+    description: >-
+      The company itself. One row. It is registered in England, it has traded
+      since its first batch was sold, and it trades under a shorter name than
+      the one it is registered under.
+    slots:
+      - entity_class
+      - business_legal_name
+      - business_trading_name
+      - business_registered_in
+      - business_trading_since
+
+  Location:
+    description: >-
+      One place a thing can be. Section 1.3 divides its list in two and says
+      the outside ones are places too: a delivery is somewhere before it
+      arrives, a pan handed to a cafe is somewhere afterwards, and so is a
+      scoop, a bin bag and a school fair. This class is the plain case - a
+      name and what it is - which is what the outside destinations are. Where
+      stock goes when it leaves and is not sold to an account: the walk-in
+      customer, staff, comps, donations, tastings, the owner's house, and the
+      three bins, which are three places because there are three waste sheets
+      and nobody distinguishes them any other way.
+    slots:
+      - entity_class
+      - location_name
+      - location_description
+
+  InternalLocation:
+    is_a: Location
+    description: >-
+      A place inside the business: the seven in the production kitchen, the
+      five at one shop and the three at the other, the van, the cool box, the
+      trailer, and the rented container. These are the ones that are kept at a
+      temperature and the ones that sit within a premises. The premises
+      themselves are of this class too - the kitchen and the two shops are
+      places inside the business that other places are within.
+    slots:
+      - location_within
+      - location_temperature
+
+  Supplier:
+    is_a: Location
+    description: >-
+      One company the business buys from, and a place before it is anything
+      else: milk and cream are the dairy's until the driver puts them in the
+      chiller, and stock at the cash and carry is theirs until it is in the
+      car. There are nine. One of them is ordered through another and one of
+      them is collected rather than delivered.
+    slots:
+      - outside_where
+      - supplier_brings
+      - supplier_rhythm
+      - supplier_lead_time
+      - supplier_minimum_order
+      - credit_terms
+
+  WholesaleAccount:
+    is_a: Location
+    description: >-
+      One account on the wholesale book, and a place: a pan is at a cafe until
+      it comes back empty, or does not. Thirty-one of them - cafes, a tearoom,
+      two restaurants, a deli, a cinema, a hotel and four farm shops.
+    slots:
+      - account_kind
+      - outside_where
+      - credit_terms
+
+  Person:
+    description: >-
+      Someone who works in the business. Sixteen are named: the owner, the
+      head gelatiere, a shop manager, two gelatieres, a packer, a driver, a
+      bookkeeper and eight counter staff. One shop has no manager.
+    slots:
+      - entity_class
+      - person_name
+      - person_role
+      - person_responsible_for
+
+  Unit:
+    description: >-
+      What a quantity is counted in. Section 1.5 calls the mismatch between
+      them the single most persistent source of confusion in the business:
+      five unrelated things are a bag, a case is never the same count twice,
+      and a tray and a punnet are one object under two words.
+
+      This class is the unit stock is counted, ordered or worked in, and
+      nothing else. A duration, a percentage or a number of days in a rule is
+      not one of these and does not belong here, so that a dropdown offering a
+      material's unit never offers a week.
+    slots:
+      - entity_class
+      - unit_name
+      - unit_meaning
+
+  Flavour:
+    description: >-
+      One entry in the range. Twenty-five: fourteen always on, eight on a
+      seasonal rotation, and three in the book and made when the head
+      gelatiere feels like it. Two of them are made from strawberries and have
+      been separate entries since 2023.
+    slots:
+      - entity_class
+      - flavour_name
+      - flavour_runs
+      - flavour_listing
+      - flavour_note
+
+  BoughtItem:
+    description: >-
+      One thing the business buys, once. Eighty of them, from dairy and
+      nut pastes to bin liners and dry ice. Water, gas and electricity are not
+      tracked against product and are not here.
+    slots:
+      - entity_class
+      - item_name
+      - item_counted_in
+      - item_ordered_in
+      - item_worked_in
+      - item_arrives_as
+      - item_pack_price
+      - item_supplier
+      - item_note
+
+  SoldProduct:
+    description: >-
+      One line on what the business sells - a scoop, a tub, a pan, a cake, a
+      coffee, a can - and the three supplements that are sold on top of
+      another line rather than on their own.
+    slots:
+      - entity_class
+      - product_name
+      - product_format
+
+  ProductPrice:
+    description: >-
+      What one product costs at one of the three places the business prices
+      in. Section 1.7 is a grid of three price columns and a dash where a
+      product is not sold there; this is one cell of it. A separate class
+      because a price is per product and per column, and naming the columns as
+      slots would put two shop names into the vocabulary, so that opening a
+      third shop would need a new map version rather than a new row.
+    slots:
+      - entity_class
+      - price_product
+      - price_at
+      - price_amount
+
+slots:
+
+  entity_class:
+    slot_uri: sorella:entity_class
+    designates_type: true
+    range: string
+    description: >-
+      Which class this entity is an instance of. Stated as a fact with both
+      clocks, never guessed from which columns happen to be filled.
+
+  business_legal_name:
+    slot_uri: sorella:business_legal_name
+    identifier: true
+    range: string
+    description: The name it is registered under, which is what identifies it.
+
+  business_trading_name:
+    slot_uri: sorella:business_trading_name
+    range: string
+    description: The shorter name it trades as and puts on the shopfront.
+
+  business_registered_in:
+    slot_uri: sorella:business_registered_in
+    range: string
+    description: Where it is registered.
+
+  business_trading_since:
+    slot_uri: sorella:business_trading_since
+    range: string
+    description: >-
+      When it first sold, stated the way the business states it, which is a
+      month and a year rather than a date.
+
+  location_name:
+    slot_uri: sorella:location_name
+    identifier: true
+    range: string
+    description: >-
+      What the staff call this place, and what identifies it. Two chest
+      freezers in one corridor have two names and no document has ever said
+      which of them a pan is in.
+
+  location_description:
+    slot_uri: sorella:location_description
+    range: string
+    description: >-
+      What it is, in the words section 1.3 uses. For a freezer that is what
+      goes in it, for an outside place it is usually where ownership passes.
+
+  location_within:
+    slot_uri: sorella:location_within
+    range: InternalLocation
+    description: >-
+      Which premises this place is part of. Section 1.3 lists its places under
+      the kitchen, one shop and the other. The van, the cool box, the trailer
+      and the rented container are inside the business and within nothing.
+
+  location_temperature:
+    slot_uri: sorella:location_temperature
+    range: string
+    description: >-
+      How cold it is kept, stated the way the business states it, which is a
+      range of two numbers for the freezers, one number for the blast freezer,
+      and the word ambient for the dry store. Most places have no stated
+      temperature at all.
+
+  outside_where:
+    slot_uri: sorella:outside_where
+    range: string
+    description: >-
+      The town, district or country it is in, as the Where column of sections
+      1.8 and 1.9 writes it. Coarser than an address and that is all anybody
+      says.
+
+  credit_terms:
+    slot_uri: sorella:credit_terms
+    range: string
+    description: >-
+      What was agreed about paying, in the sentence the business uses. Some
+      are a number of days, some are pro forma, some are a card at the till,
+      and two of them carry the reason they are what they are.
+
+  supplier_brings:
+    slot_uri: sorella:supplier_brings
+    range: string
+    description: >-
+      What this supplier brings, as section 1.8 writes it: one phrase per
+      supplier rather than a list of items, because that is how the business
+      says it and because the items already name their own supplier.
+
+  supplier_rhythm:
+    slot_uri: sorella:supplier_rhythm
+    range: string
+    description: >-
+      How often they come, and on which days. One of them comes whenever the
+      shop runs short, because it is collected rather than delivered.
+
+  supplier_lead_time:
+    slot_uri: sorella:supplier_lead_time
+    range: string
+    description: >-
+      How long between ordering and arriving, in the sentence the business
+      uses. Not a number of days: one is next day if ordered before a stated
+      time, one is three weeks on stock lines and ten to twelve on printed
+      ones, and one is None because it is collected.
+
+  supplier_minimum_order:
+    slot_uri: sorella:supplier_minimum_order
+    range: string
+    description: >-
+      The smallest order they will take, in the sentence the business uses.
+      Some are money, some are cases or trays or kilograms, one carries a
+      second threshold for free carriage, and one is None.
+
+  account_kind:
+    slot_uri: sorella:account_kind
+    range: string
+    description: >-
+      What kind of business the account is, in the word section 1.9 uses -
+      cafe, tearoom, restaurant, deli, cinema, hotel, farm shop. A cafe and a
+      bar and a cafe and a bakery are each written as one phrase.
+
+  person_name:
+    slot_uri: sorella:person_name
+    identifier: true
+    range: string
+    description: What the business calls this person.
+
+  person_role:
+    slot_uri: sorella:person_role
+    range: string
+    description: >-
+      Their job, as the Role column writes it. It carries the hours and
+      sometimes the shop as part of the same phrase, because that is how the
+      business states it and it makes no separate distinction.
+
+  person_responsible_for:
+    slot_uri: sorella:person_responsible_for
+    range: string
+    description: >-
+      What they are responsible for, in the business's own sentence. It is
+      prose and includes what somebody does badly.
+
+  unit_name:
+    slot_uri: sorella:unit_name
+    identifier: true
+    range: string
+    description: >-
+      The word - gram, litre, each, bag, pail, bucket, case, sleeve, tray,
+      punnet, pan, well, scoop. The word alone often does not say how much.
+
+  unit_meaning:
+    slot_uri: sorella:unit_meaning
+    range: string
+    description: >-
+      What the word means in this business, which is the only thing that
+      disambiguates it. Two buckets in the chiller is aged base and two
+      buckets in the dry store is glucose.
+
+  flavour_name:
+    slot_uri: sorella:flavour_name
+    identifier: true
+    range: string
+    description: What it is called on the cabinet card.
+
+  flavour_runs:
+    slot_uri: sorella:flavour_runs
+    range: string
+    description: >-
+      When it runs, as the Runs column writes it - all year, a pair of months,
+      no season at all, or made perhaps monthly.
+
+  flavour_listing:
+    slot_uri: sorella:flavour_listing
+    range: string
+    description: >-
+      Which of section 1.4's three lists it is on: core and always on, the
+      seasonal rotation, or in the book and made when the head gelatiere feels
+      like it. The third list is why a cabinet card can exist for a flavour
+      nobody has made for six weeks.
+
+  flavour_note:
+    slot_uri: sorella:flavour_note
+    range: string
+    description: >-
+      What section 1.4's Note column says - that one flavour is made as a
+      different thing for four months of the year under the same name, or that
+      two entries are made from the same fruit and are deliberately separate.
+
+  item_name:
+    slot_uri: sorella:item_name
+    identifier: true
+    range: string
+    description: >-
+      What the business calls it, and what identifies it. Two items are both
+      called the milk in conversation and are written apart here because they
+      have two suppliers, two units and two places.
+
+  item_counted_in:
+    slot_uri: sorella:item_counted_in
+    range: Unit
+    description: >-
+      What a count of it is written in. Every bought item has one. It is a
+      thing a fact points at rather than a unit fixed on this slot, because
+      items disagree: milk is in bags, sugar in sacks, cones in sleeves.
+
+  item_ordered_in:
+    slot_uri: sorella:item_ordered_in
+    range: Unit
+    description: >-
+      What an order for it is written in, where that differs from what a count
+      is written in. Purees are ordered in cases and counted in tubs; stabiliser
+      is ordered in cartons and counted in bags.
+
+  item_worked_in:
+    slot_uri: sorella:item_worked_in
+    range: Unit
+    description: >-
+      What the kitchen works in when it uses the thing, where that differs
+      again. Recipes are mass, so almost everything that reaches a bench is
+      worked in grams whatever it was bought in.
+
+  item_arrives_as:
+    slot_uri: sorella:item_arrives_as
+    range: string
+    description: >-
+      The pack as it arrives, in the phrase the buying table uses - a 10 L
+      bag-in-box, a 25 kg sack, a case of 6 tubs of 1 kg, a case of 4 sleeves
+      of 90. It is one phrase and not a number and a unit, because the packs
+      nest two deep and the business writes them as one thing.
+
+  item_pack_price:
+    slot_uri: sorella:item_pack_price
+    range: decimal
+    unit:
+      symbol: GBP
+      descriptive_name: pounds
+    description: >-
+      What one pack costs as it arrives. One supplier quotes a price per
+      kilogram and invoices a price per tin, and the invoice is what this is.
+
+  item_supplier:
+    slot_uri: sorella:item_supplier
+    range: Supplier
+    description: Who it is bought from.
+
+  item_note:
+    slot_uri: sorella:item_note
+    range: string
+    description: >-
+      What section 1.5's Note column says about this item's units - that a bag
+      is volume and a recipe is mass, that a pail is never emptied cleanly,
+      that tubs and lids run out at different times permanently.
+
+  product_name:
+    slot_uri: sorella:product_name
+    identifier: true
+    range: string
+    description: What it is called on the price list.
+
+  product_format:
+    slot_uri: sorella:product_format
+    range: string
+    description: >-
+      What it is sold as, in the phrase section 1.7 uses - a cone or a cup, a
+      printed tub with a printed lid and a sleeve, boxed on a board and
+      pre-order only, a supplement on any drink.
+
+  price_product:
+    slot_uri: sorella:price_product
+    range: SoldProduct
+    description: Which product this price is for.
+
+  price_at:
+    slot_uri: sorella:price_at
+    range: string
+    description: >-
+      Which of section 1.7's three price columns this is - the busier shop's
+      counter, the other shop's counter, or wholesale. The two counters carry
+      the same product names at different prices and the tills do not say
+      which shop a line came from; wholesale is one price for all thirty-one
+      accounts and there is no printed list.
+
+  price_amount:
+    slot_uri: sorella:price_amount
+    range: decimal
+    unit:
+      symbol: GBP
+      descriptive_name: pounds
+    description: What it costs there.
+
+annotations:
+  valid_from: '2026-06-15T00:00:00Z'

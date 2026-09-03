@@ -3169,3 +3169,341 @@ it; that second commit touches `business/sorella/profile.md` and nothing else.
    the sentence is deleted and passes if it is reworded around the phrase. That
    is the weakest check in the suite and it is still the one that would have
    caught map v1's oldest failure.
+
+---
+
+## 2026-09-03 — Sorella's map, session 1 of 4: the nouns, and where they can be
+
+`business/sorella/draft.yaml`. Sections `§1.1` to `§1.9` of the profile frozen
+at `ada1d9e`, read as vocabulary and nothing else. **No fact is in this file.**
+The 80 bought items, the 9 suppliers, the 25 flavours and the 31 wholesale
+accounts are rows a generated form will write, per the 1 Sep line that gives
+`submit()` the class-membership assertion. v1 held 127 facts inside its draft;
+that arrangement is over.
+
+### Every subsection, consumed or left
+
+| Subsection | Where it went |
+|---|---|
+| `§1.1` opening | `Business` — legal name (identifier), trading name, registered in, trading since |
+| `§1.1` The premises | `InternalLocation`. The kitchen and the two shops are places other places are `location_within`. **Left:** the 210 m², the equipment list, the seats, the 60/40 split between the shops — prose with no column, and the cabinet well counts are already inside `§1.3`'s own descriptions |
+| `§1.1` The people | `Person` — three slots for the table's three columns |
+| `§1.1` The trade | **Left in full.** The wholesale-versus-shops third is Marina's estimate and "twenty-two of the accounts order in any given summer week" is a rate over a period; both are `§3.5`-shaped contested numbers. What the book is made of falls out of `account_kind` without being stated |
+| `§1.2` | `annotations.valid_from: '2026-06-15T00:00:00Z'`. **Left:** why Marina picked a Monday |
+| `§1.3` kitchen, Cotham, Gloucester Road, Moving, Offsite | `InternalLocation` |
+| `§1.3` Outside — where stock comes from | `Supplier is_a Location` |
+| `§1.3` Outside — where stock goes | `WholesaleAccount is_a Location` for the account row; plain `Location` for the other nine — the walk-in customer, staff, comps, donations, tastings, Marina's house and the three bins |
+| `§1.4` all three lists | `Flavour` — name, runs, listing, note |
+| `§1.5` The units | `Unit` — name and meaning |
+| `§1.5` Ordered / counted / worked | `item_ordered_in`, `item_counted_in`, `item_worked_in`, all ranging `Unit`, plus `item_note` for that table's Note column |
+| `§1.5` The same thing counted two ways | **Mostly left.** The milk bullet is why two items are written apart; the tin bullet is why a count is in tins. The other seven — a pan, a batch, a tray, a case, a scoop, a 500 ml tub, and the two readings of a bag — are either session 2 and 3 material or the conversion gap below |
+| `§1.6` table | `BoughtItem` — 8 slots for the table's 5 columns plus `§1.5`'s three |
+| `§1.6` Prices that have moved | **Left.** Four dated prices and one price with no list at all. They are facts with a valid time, which is exactly what the two clocks are for, and this draft holds no facts |
+| `§1.7` table | `SoldProduct` for the Product and Format columns, `ProductPrice` for the three price columns |
+| `§1.7` How the prices work | **Left in full.** Eight bullets, and every one of them is a rule — a pan is one price whatever is in it, wholesale is one price for all 31 accounts, the catering tub goes to two restaurants and nowhere else. `§3.4` is session 3 and 4's, and modelling these here would be reaching forward |
+| `§1.8` | `Supplier` — six slots for the table's six columns after the name |
+| `§1.9` | `WholesaleAccount` — three slots for the table's three columns after the name |
+
+Nothing was modelled that needed a later session to make sense of it. Two
+things were reached for and put back: a direction on a movement, which needs
+`§3.2`, and which format goes to which account, which needs `§1.7`'s prose read
+as a rule.
+
+### Counts
+
+- **11 classes** — `Business`, `Location`, `InternalLocation`, `Supplier`,
+  `WholesaleAccount`, `Person`, `Unit`, `Flavour`, `BoughtItem`, `SoldProduct`,
+  `ProductPrice`. Three of them are `is_a Location`; that is the whole
+  hierarchy, one level deep, per the 29 Aug flatness line.
+- **38 slots**, every one carrying an explicit `slot_uri` under the `sorella:`
+  prefix.
+- **6 relationships** — `location_within` → `InternalLocation`
+  (self-referential), `item_counted_in`, `item_ordered_in`, `item_worked_in` →
+  `Unit`, `item_supplier` → `Supplier`, `price_product` → `SoldProduct`.
+- **2 slots carry a fixed unit** — `item_pack_price` and `price_amount`, both
+  `symbol: GBP`. Every other quantity's unit varies per item and is a
+  `value_ref` to `Unit`, which is the 30 Aug split applied without a decision
+  being needed.
+- **Identifiers: 10 of 11 classes have one.** `business_legal_name`,
+  `location_name` (inherited by all three subclasses), `person_name`,
+  `unit_name`, `flavour_name`, `item_name`, `product_name`. `ProductPrice` has
+  none — see the note on `unique_keys` below.
+- `entity_class` with `designates_type: true` is induced on all 11.
+
+### The mermaid render
+
+`gen-mermaid-class-diagram` writes one Markdown file per class, not one
+picture. All eleven, with the `click` lines and blank lines stripped:
+
+```mermaid
+ classDiagram
+    class Business
+      Business : business_legal_name
+      Business : business_registered_in
+      Business : business_trading_name
+      Business : business_trading_since
+      Business : entity_class
+```
+```mermaid
+ classDiagram
+    class Location
+      Location <|-- InternalLocation
+      Location <|-- Supplier
+      Location <|-- WholesaleAccount
+      Location : entity_class
+      Location : location_description
+      Location : location_name
+```
+```mermaid
+ classDiagram
+    class InternalLocation
+      Location <|-- InternalLocation
+      InternalLocation : entity_class
+      InternalLocation : location_description
+      InternalLocation : location_name
+      InternalLocation : location_temperature
+      InternalLocation : location_within
+        InternalLocation --> "0..1" InternalLocation : location_within
+```
+```mermaid
+ classDiagram
+    class Supplier
+      Location <|-- Supplier
+      Supplier : credit_terms
+      Supplier : entity_class
+      Supplier : location_description
+      Supplier : location_name
+      Supplier : outside_where
+      Supplier : supplier_brings
+      Supplier : supplier_lead_time
+      Supplier : supplier_minimum_order
+      Supplier : supplier_rhythm
+```
+```mermaid
+ classDiagram
+    class WholesaleAccount
+      Location <|-- WholesaleAccount
+      WholesaleAccount : account_kind
+      WholesaleAccount : credit_terms
+      WholesaleAccount : entity_class
+      WholesaleAccount : location_description
+      WholesaleAccount : location_name
+      WholesaleAccount : outside_where
+```
+```mermaid
+ classDiagram
+    class Person
+      Person : entity_class
+      Person : person_name
+      Person : person_responsible_for
+      Person : person_role
+```
+```mermaid
+ classDiagram
+    class Unit
+      Unit : entity_class
+      Unit : unit_meaning
+      Unit : unit_name
+```
+```mermaid
+ classDiagram
+    class Flavour
+      Flavour : entity_class
+      Flavour : flavour_listing
+      Flavour : flavour_name
+      Flavour : flavour_note
+      Flavour : flavour_runs
+```
+```mermaid
+ classDiagram
+    class BoughtItem
+      BoughtItem : entity_class
+      BoughtItem : item_arrives_as
+      BoughtItem : item_counted_in
+        BoughtItem --> "0..1" Unit : item_counted_in
+      BoughtItem : item_name
+      BoughtItem : item_note
+      BoughtItem : item_ordered_in
+        BoughtItem --> "0..1" Unit : item_ordered_in
+      BoughtItem : item_pack_price
+      BoughtItem : item_supplier
+        BoughtItem --> "0..1" Supplier : item_supplier
+      BoughtItem : item_worked_in
+        BoughtItem --> "0..1" Unit : item_worked_in
+```
+```mermaid
+ classDiagram
+    class SoldProduct
+      SoldProduct : entity_class
+      SoldProduct : product_format
+      SoldProduct : product_name
+```
+```mermaid
+ classDiagram
+    class ProductPrice
+      ProductPrice : entity_class
+      ProductPrice : price_amount
+      ProductPrice : price_at
+      ProductPrice : price_product
+        ProductPrice --> "0..1" SoldProduct : price_product
+```
+
+### What was run
+
+| Command | Exit |
+|---|---|
+| `PYTHONIOENCODING=utf-8 gen-owl --no-use-native-uris business/sorella/draft.yaml > build/sorella_draft.ttl` | 0 — 38,655 bytes |
+| `PYTHONIOENCODING=utf-8 gen-mermaid-class-diagram -d build/sorella_mmd business/sorella/draft.yaml` | 0 — 11 files |
+| `grep -n any_of business/sorella/draft.yaml` | 1 — no match |
+| `grep -n facts business/sorella/draft.yaml` | 1 — no match |
+| `make check` | 0 — **64 tests passed**, replay byte-identical twice |
+| `git diff --stat ada1d9e -- business/sorella/profile.md` | 0 — empty, the profile is untouched |
+| `git status --porcelain` | `?? business/sorella/draft.yaml` and the pre-existing ` M NEXT.md`. Nothing under `business/` outside `business/sorella/` added, moved or deleted |
+| `SchemaView` introspection of the draft | 11 classes, 38 slots, 0 slots without a `slot_uri`, 0 `any_of` |
+| enum probe (T1, below): `gen-owl` and `gen-mermaid-class-diagram` over a scratchpad copy | 0 and 0 |
+
+`make check` collected 64 and passed 64. The 64 that existed still pass and no
+test was added — this session writes no code.
+
+### Surprising
+
+1. **`§1.8` and `§1.9` stopped being tables the moment suppliers and accounts
+   became `Location` subclasses.** They are not two more masters; they are more
+   columns on rows `§1.3` had already listed. The nine suppliers appear twice in
+   the profile and exactly once in the map, and there is no `supplier_name`
+   slot at all — a `Supplier` is identified by `location_name`, because LinkML
+   refuses a second identifier on a subclass. A modelling question turned into
+   something the tool decides, and it decides it the right way.
+2. **The `Unit` trap cannot arise from `§1.5`.** All 24 units in `§1.5` are
+   things stock is counted, ordered or worked in. Not one is a day, a week or a
+   percent. v1's defect — a dropdown offering "week" for litres — was not
+   `§1.5` being too wide; it was `§10`'s thresholds being poured into the same
+   class afterwards. So the split decided here is not a division of `§1.5`, it
+   is a fence around it, and session 4 has to put a threshold's unit somewhere
+   else or state why not.
+3. **Two of the things `§1.1` calls premises are already `§1.3` rows.**
+   The van and the container sit in `§1.3`'s Moving and Offsite tables, so a
+   `Site` class would have made two of its instances two things at once. That,
+   and the fact that a Site carrying only a name and a description renders the
+   same form as a plain `Location`, is what killed it — the 1 Sep rule reached
+   the same answer as the profile's own filing.
+4. **`gen-mermaid-class-diagram` is eleven pictures, not one.** `-d` is
+   required, there is no whole-schema render, and each file shows one class with
+   its immediate neighbours. It is a findability view, which the 27 Aug
+   readability line cares about — but nothing produced here shows the shape of
+   the map as a whole. The 29 Aug line naming three viewers for three jobs is
+   short one job.
+5. **`gen-owl` writes zero `rdfs:domain` on this map too.** 0 occurrences in
+   38,655 bytes. Second map, same result, which settles that the 30 Aug OPEN
+   line is a property of the generator and not of v1.
+6. **The `PYTHONIOENCODING` trap did not fire, and could not have.** `gen-owl`
+   died on v1 because `§8`'s temperatures carry U+2212 and the *facts* copied
+   them. This draft holds no facts and no temperature, so its only non-ASCII
+   would have been in a description. The variable was set as instructed; the
+   measured danger lives one session away, in whichever session writes the
+   location facts.
+
+### Two things left out of the draft on purpose
+
+- **`unique_keys`.** The session brief lists the permitted vocabulary as
+  "classes, slots, ranges, `is_a`, identifiers, units", and `unique_keys` is not
+  in it, so none was written. `ProductPrice` is the one class that wants one —
+  a price is identified by its product and its column and by no single slot,
+  which is exactly the composite the 30 Aug line made `unique_keys` for. As it
+  stands two prices for one product in one column do not compete. Reported
+  rather than fixed: widening the session's vocabulary is a `NEXT.md` change.
+- **`annotations.transcript`.** `seal` requires it and requires the file it
+  names to exist, and the done condition says `draft.yaml` must be the only file
+  added. So the draft carries `valid_from` and nothing else, and the seal after
+  session 4 will refuse it until a provenance note is written beside it. Not a
+  conflict inside this session's done condition — a dependency the sealing
+  session inherits.
+
+No two clauses of the done condition conflicted.
+
+### T1, tried rather than argued: does an enum range survive?
+
+Three slots carry a closed vocabulary the profile states in full —
+`flavour_listing` (three lists), `account_kind` (seven kinds), `price_at` (three
+columns) — and all three are `range: string`, because an enum is outside this
+session's stated vocabulary. Whether that costs anything was worth ten minutes.
+
+A scratchpad copy of the draft with `flavour_listing` ranged over a
+`FlavourListing` enum: `gen-owl` exits 0 and writes 14 `FlavourListing` triples;
+`gen-mermaid-class-diagram` exits 0; `induced_slot('flavour_listing').range` is
+`'FlavourListing'`, which is **not** in `all_classes()` and **is** in
+`all_enums()` — so `seal`'s class test sees a non-class and the value lands in
+`value_literal`, which is correct and is what `seal`'s own docstring already
+says. One defect found: mermaid draws the enum as an association to a
+`FlavourListing` node and emits `click FlavourListing href "../FlavourListing"`,
+and no `FlavourListing.md` is written, so the review render carries a dead link
+per enum. Nothing else broke. Session 2 can use enums with that known.
+
+### Proposed `DECISIONS.md` entries
+
+1. `Unit` is the unit stock is counted, ordered or worked in, and nothing else.
+   All 24 units in `§1.5` are quantity or packaging words and not one of them is
+   a duration or a percentage; v1's dropdown offering "week" for litres came
+   from `§10`'s thresholds being added to the same class after the fact, not
+   from the units section being too wide. A threshold's own unit is either
+   slot-level `unit` metadata under the 30 Aug line or a class session 4
+   declares — and if it is a class, it is not this one.
+2. `§1.7`'s three price columns become a `ProductPrice` class carrying the
+   column as a value, not three slots named after the columns. A slot named
+   `product_price_cotham_hill` puts an individual into the vocabulary, so
+   opening a third shop would need a new map version for what is a new row —
+   the writer joint the 1 Sep master-data line closed, reopened by a naming
+   habit. The cost is named rather than absorbed: `price_at` is a string, so the
+   three columns are labels rather than places, and nothing stops a fourth
+   spelling.
+3. A supplier and a wholesale account are `is_a Location`, not classes that
+   reference one. They inherit `location_name` as their identifier, so the nine
+   suppliers `§1.3` lists and the nine `§1.8` lists cannot become two sets of
+   rows — and LinkML refuses a second identifier on a subclass, so the map is
+   unable to drift into having one. This is the 1 Sep "the outside is
+   locations" line carried into structure rather than only into movements.
+4. `§1.1`'s premises are `InternalLocation` rows and `location_within` is
+   self-referential, rather than a `Site` class. Two of the things `§1.1` calls
+   premises — the van and the container — are already rows in `§1.3`, so a Site
+   class would have made them two things at once; and a Site carrying a name and
+   a description alone renders the same form as a plain `Location`, which the
+   1 Sep rule says is one class with a field.
+5. `entity_class`, `designates_type: true`, is on every class in the map from
+   session one. The 2 Sep line admitted the feature and Claim C is the oldest
+   failure in the list; declaring it now costs one slot and means no class in
+   this map is ever born without a way for the log to say what its rows are.
+
+### Proposed `OPEN.md` lines
+
+- `[T3]` `price_at` is a string naming one of `§1.7`'s three price columns, and
+  two of the three are shops that are also `InternalLocation` rows while the
+  third, wholesale, is not a place at all and never can be — the price is one
+  figure for all 31 accounts. So a price cannot be joined to where it was
+  charged except by matching a label. Whether a price point is a location, a
+  class of its own, or a label that stays a label is undecided, and it is the
+  same shape as v1's folded pan-slot names one level out. Raised 3 Sep ·
+  blocks: generation
+- `[T3]` The map holds three units for a bought item and nothing that converts
+  between them. `§1.5` gives ordered, counted and worked units for 22 items and
+  `§1.6` gives the pack as one phrase, with the packs nesting two deep — a case
+  of six tubs of one kilogram, a carton of ten bags of two. The only factor
+  stated anywhere is Dan's 10.3 kg per bag, and `§1.5` says he weighs anyway. So
+  a count in bags cannot reach a balance in grams by anything in the map.
+  Whether the business is asked for factors, or the map decomposes a pack, or
+  the conversion stays absent and a balance is only ever computable in the
+  counted unit, is undecided. Raised 3 Sep · blocks: derive
+- `[T3]` `location_within` is self-referential and nothing bounds it. LinkML
+  states no acyclicity, the kernel states none, and a generated form's picker
+  will offer every `InternalLocation` including the one being edited — so a
+  shop can be put inside its own cabinet and every reader that walks the chain
+  hangs. Whether a cycle is a violation the way negative stock is, a refusal the
+  form makes, or a shape nobody will ever produce, is undecided. Raised 3 Sep ·
+  blocks: generation
+- `[T3]` A flavour's season is prose the business restates each year.
+  `flavour_runs` holds "September to October", "June to July", "No season" and
+  "On the cabinet plan all year, made perhaps monthly", which is what `§1.4`
+  writes and what a cabinet plan is read off. Nothing turns it into dates, so
+  "which flavours should be on in July" is not a query, and the three
+  no-season flavours have a cabinet card and may not have been made for six
+  weeks. Whether a season is a pair of dates, a recurring rule, or prose a
+  person reads, is undecided. Raised 3 Sep · blocks: generation
