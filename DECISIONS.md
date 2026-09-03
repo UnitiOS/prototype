@@ -1316,3 +1316,45 @@ reasoning lives in `../archived/`. They are closed, which means not re-discussed
              does not move is the competency questions: they are the
              instrument, not the material, and they are still written after the
              profile is frozen, by someone who did not write it.
+2026-09-03 · Sorella's profile is frozen, and a script is what holds it shut.
+             Six sessions, 3,171 lines, `business/sorella/profile.md`, frozen at
+             `ada1d9e`. It does not change again without an item in `NEXT.md`
+             saying why — the 27 Aug guard, restored where it belongs now that
+             there is something worth freezing. The gate is
+             `scripts/check_profile.py`, fourteen checks, run by
+             `make check-profile`. Every check in it was run by hand first,
+             during the rebuild, and each one earned its place by catching
+             something: the mass balance found three batches putting out more
+             than went in, the till totals found Cotham overshooting its own
+             price list by £400, the rules-against-days found three wholesale
+             drops under a minimum that four sessions had read past. **A check
+             enters the suite only when an error it would have caught has
+             already been found.** Adding checks in anticipation is the same
+             failure as writing profile sections in anticipation, and it is the
+             failure this rebuild exists to undo. What the suite cannot do is
+             say whether a map can be written from the file; only writing one
+             can. Two things are now known that were not: the errors five
+             sessions of hand-checking left were miscounts in `LOG.md` about the
+             profile rather than errors in the profile, the file being right and
+             the log wrong every time; and the cheapest check in the suite,
+             weekdays, was the only one that failed to catch its own planted
+             error, because the file writes `Tuesday, 16 June 2026` with a comma
+             and the pattern did not. Cheap is not safe.
+
+2026-09-03 · Milestone one enters Tuesday 16 June 2026, and not the week.
+             The done condition asks for one operational day entered through
+             generated forms with closing balances matching a hand computation,
+             and the profile only supplies the material for it on two days out
+             of seven. Counts in this business are monthly. There is an opening
+             count on Monday 15 June because the business took one for the
+             adoption, and Dan's evening count on Tuesday 16 June, and then
+             nothing anywhere until July. Wednesday to Sunday were written
+             because the week carries what one day cannot — Sunday's invoicing
+             at a five-day lag, a delivery note corrected two days later on a
+             different document, a rule that moved on 16 June — but no day after
+             Tuesday can be checked against an observation. So Tuesday is the
+             day, Monday's count is the opening position, and the rest of the
+             week is material for the stages that come after this one. If a
+             later stage needs a closing count past Tuesday, the business has to
+             be asked for one, which is a change to the profile and therefore an
+             item in `NEXT.md`.
