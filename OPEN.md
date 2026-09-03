@@ -325,6 +325,54 @@ whether the line may hold up this week's work. `blocks: -` means it may not.
   marked as one, or whether the rows are simply ignored by a reader, is
   undecided. Raised 3 Sep · blocks: report
 
+- The gap between a map's `valid_from` and its `sealed_at` is eighty days here,
+  and the 31 Aug three-hour hole scales with it. Sorella's v1 takes effect on
+  15 June 2026 and was sealed on 3 September, so `resolve_version` returns `None`
+  for every `as_of` before the seal — including the whole of milestone one's own
+  week, read at the clocks it happened at. `submit()` is unaffected because it
+  takes the version off the file it was handed, but any reader asking what the
+  map said on 16 June as known on 16 June gets nothing. The 31 Aug line raised
+  this as three hours and harmless; it is now a quarter of a year, and it covers
+  the only operational day the PoC has. Found 4 Sep resolving the sealed store ·
+  blocks: report
+- One log holds two businesses and cannot say which. Marlow's seal and Sorella's
+  differ in `intent.id` and `occurred_at` and in nothing else — same actor, same
+  agent, same `action_name`, same note `sealed draft.yaml as v1` — and every
+  assertion of both carries `ontology_version = 'v1'`, so a group-by over those
+  columns returns one row of 402. The version stores are separate directories and
+  the kernel has no notion of a store, so `ontology_version` is a name unique only
+  within a directory nothing in the log names. Whether a version identifier
+  carries its store, whether the intent carries the business, or whether one log
+  per business is the answer, is undecided — and multi-tenancy is on the
+  stop-list, which is why this is a line and not a proposal. Found 4 Sep sealing
+  the second business into the first one's log · blocks: report
+- The generator renders a form for a class the map says is computed.
+  `IngredientOnHand` and `GelatoOnHand` each render with their aggregates and
+  their net as ordinary fields, and `submit()` would accept a typed value for any
+  of them and write it as a `human_stated` fact — a judgement in a log that is
+  supposed to hold none. The map states the class is derived three separate ways:
+  in the class description, in the `aggregate` annotation on four slots and the
+  `equals_expression` on two, and by neither class carrying `entity_class`.
+  Whether the filter reads the annotations, reads the absence of a type slot, or
+  is a key the map states, is undecided. Found 4 Sep rendering all 21 forms ·
+  blocks: generation
+- An empty picker and an unfillable class are the same sentence. Marlow's
+  `received_from offers nothing: the log holds no Supplier` was the defect;
+  Sorella's `movement_out_of offers nothing: the log holds no Location` is a
+  Tuesday morning before anyone has typed anything, and the two rendered forms are
+  indistinguishable. Telling them apart needs a second artefact — whether a form
+  for the range class renders, and whether `submit()` will mint one. Whether the
+  form should say so, whether a review needs a whole-map render of what is
+  fillable, or whether the distinction only matters to a reviewer, is undecided.
+  Found 4 Sep answering v1's first gap · blocks: generation
+- Slot-level `unit` metadata reaches a second generator and dies there too.
+  `item_pack_price` and `price_amount` both declare `symbol: GBP`, and both render
+  as a bare `decimal` field with nothing about pounds anywhere on the page. The
+  30 Aug line found the same thing about `gen-owl`; the generator is now the
+  second reader to drop it, and it is the one a person looks at. So that line is
+  not about one tool. Found 4 Sep rendering `BoughtItem` and `ProductPrice` ·
+  blocks: generator
+
 ## T2 — wait for a user
 
 - Would anybody pick a movement's kind off a list of fifty-three? The map makes

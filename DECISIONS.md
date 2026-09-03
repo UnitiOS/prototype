@@ -1574,3 +1574,47 @@ reasoning lives in `../archived/`. They are closed, which means not re-discussed
              line asks for, and which changes what Q6 tests. Q6 is not withdrawn
              and is not weakened; it now has to be restated against a shape
              where supersession is not the mechanism that reconciles two counts.
+2026-09-04 · The net on a balance class is one `equals_expression` and the
+             aggregate annotation stays arithmetic-free.
+             `ingredient_on_hand_net` is `'{ingredient_in} - {ingredient_out}'`
+             and `gelato_on_hand_net` is its twin, which is the 1 Sep
+             two-problem split — within a row is LinkML's, across rows is ours —
+             costing exactly two slots. Measured before being written: cast to
+             `decimal` the expressions return `Decimal('-5')`, `Decimal('6')`,
+             `Decimal('1')` and `Decimal('0')`; uncast, straight out of
+             `value_literal`, the same expression raises `TypeError: unsupported
+             operand type(s) for -: 'str' and 'str'` where `{a} + {b}` returns
+             `'34'`. So the missing cast is a loud failure on subtraction and a
+             silent one on addition, and the caster the 1 Sep line asks for
+             cannot be justified by the sums alone.
+2026-09-04 · A business gets its own version store, chosen by `seal --into`,
+             and the log gets no such separation. `business/sorella/v1.yaml` and
+             `business/v1.yaml` are two v1s superseding nothing, which is what
+             the 2 Sep retirement of Marlow requires and what the default
+             `--into` would have destroyed. What does not follow into the kernel
+             is named rather than absorbed: `assertion.ontology_version` holds
+             `'v1'` for both businesses, and `intent` holds the same actor,
+             agent, `action_name` and note for both seals, so one log now
+             carries two businesses and can tell them apart only by which URIs a
+             row happens to name.
+2026-09-04 · A hand-authored map's provenance note is written once, at the
+             seal, covering every sitting, and not once per sitting. `seal`
+             copies one file beside one version and a version is one artefact;
+             four notes would need a concatenation nobody would re-read, and the
+             thing a reader wants — what was chosen and what was refused — is
+             only complete once the map is. The cost is that a choice made in
+             the first sitting is recorded three sittings later, which is why
+             the note carries a heading for what a later sitting took back. It
+             is better evidence for "why does the map say this" than a
+             transcript would have been, and worse evidence for "what did the
+             business say" — the 29 Aug line called it real evidence, and it is,
+             of the author.
+2026-09-04 · The generator renders a form for a derived class, and that is a
+             defect rather than a decision. `IngredientOnHand` and
+             `GelatoOnHand` render fillable forms over slots carrying an
+             `aggregate` annotation or an `equals_expression`, and `submit()`
+             would write one to the log as a `human_stated` fact. The 21 Aug
+             finding — the log holds raw facts and never judgements — is
+             enforced today by nobody typing into that form. Whether the filter
+             reads the annotations, reads the absence of `entity_class`, or is a
+             key the map states, is open; that there must be one is not.
