@@ -20,7 +20,7 @@ carries Wednesday to Sunday. All five are written and the file is finished.
 | 4 | The opening count on the adoption date, Monday 15 June, and Tuesday 16 June | Written |
 | 5 | Wednesday 17 June to Sunday 21 June, and the week's close | Written |
 
-**Frozen 3 September 2026, at commit `PENDING`.** A sixth session checked the
+**Frozen 3 September 2026, at commit `ada1d9e`.** A sixth session checked the
 file with `scripts/check_profile.py` rather than by reading it, repaired what
 that found, and closed it. The script holds fourteen checks and every one of
 them is a pair of sections held against each other; `make check-profile` runs
