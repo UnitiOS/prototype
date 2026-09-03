@@ -4413,3 +4413,485 @@ Two questions were triaged `[T1]` and tried rather than written down: whether
 the aggregate annotation can carry a sign, and whether one balance class can
 carry four dimensions. Both are answered above, in twenty minutes and one
 throwaway script.
+
+## 2026-09-04 — Sorella's map, session 4 of 4: the net, the seal, and v1's five gaps
+
+The map is closed. `business/sorella/v1.yaml`, 56,613 bytes, sealed once with
+`--into business/sorella/`, and the generator run against it. Not a fifth
+modelling session: two slots were added and nothing else in the map moved.
+
+`§3.4`'s fifty-one rules and `§3.5`'s nine contested measures are **not in this
+map** and that is the point of sealing now. Nothing in either touches arrivals
+minus departures, so milestone one does not need them, and adding them after
+the seal is a definition change — stage 7, which has never had a real change to
+replay.
+
+### One — the net column
+
+`ingredient_on_hand_net` and `gelato_on_hand_net`, each an `equals_expression`
+over the two aggregates already beside it:
+
+    ingredient_on_hand_net   '{ingredient_in} - {ingredient_out}'
+    gelato_on_hand_net       '{gelato_in} - {gelato_out}'
+
+Both classes' descriptions said the subtraction was absent. Those sentences are
+gone, and the note beside them in `draft.txt` says why they were there: they
+described a constraint on the author, not a property of the business. That is
+the only sentence this map has ever carried for that reason.
+
+Measured on the map's own two expressions before they were written into it, not
+on a synthetic pair:
+
+| expression | cells | result |
+|---|---|---|
+| `{ingredient_in} - {ingredient_out}` | `Decimal('0')`, `Decimal('5')` | `Decimal('-5')` |
+| `{ingredient_in} - {ingredient_out}` | `Decimal('6')`, `Decimal('0')` | `Decimal('6')` |
+| `{gelato_in} - {gelato_out}` | `Decimal('3')`, `Decimal('2')` | `Decimal('1')` |
+| `{gelato_in} - {gelato_out}` | `Decimal('2')`, `Decimal('2')` | `Decimal('0')` |
+| `{ingredient_in} - {ingredient_out}` | `'0'`, `'5'` — **uncast**, straight out of `value_literal` | `TypeError: unsupported operand type(s) for -: 'str' and 'str'` |
+
+The last row is the one worth keeping. The 1 Sep trial found `{left} + {right}`
+returning `'34'` for 3 + 4 — no exception, a valid `str`, a wrong number. **The
+same evaluator, given two strings and a minus, raises.** Subtraction has no
+string meaning, so the caster the 1 Sep line asks for is enforced by Python's
+own type system on this expression and not on the addition beside it. The
+missing cast is loud here and silent one operator away, which is worse than
+either being uniformly true.
+
+The three-column balance then runs end to end **off the sealed map**, in a
+throwaway written in the scratchpad, no database, reading `over`, `sum`, `by`
+and the expression with `SchemaView` and handing every cell over as a `str` the
+way `generate.py` does:
+
+    IngredientOnHand   over StockMovement, sum movement_quantity, read from v1.yaml
+      ingredient_on_hand  ingredient_where  ingredient_in  ingredient_out  ingredient_on_hand_net
+      caster_sugar        dry_store         25             8               17
+      caster_sugar        terra_nostra      0              25              -25
+      caster_sugar        the_bench         5              0               5
+      dextrose            dry_store         6              0               6
+      dextrose            terra_nostra      0              6               -6
+
+    GelatoOnHand   over StockMovement, sum movement_quantity, read from v1.yaml
+      gelato_flavour  gelato_format  gelato_where     gelato_in  gelato_out  gelato_on_hand_net
+      pistachio       napoli_pan     bar_trentanove   2          0           2
+      pistachio       napoli_pan     blast_freezer    3          3           0
+      pistachio       napoli_pan     holding_freezer  3          2           1
+      pistachio       napoli_pan     the_bench        0          3           -3
+      pistachio       napoli_pan     the_van          2          2           0
+
+Twenty-five kilograms of caster sugar arrived at the dry store and eight left
+it, so seventeen stand. **That is stock falling**, which is gap 2 answered with
+a number rather than with a slot list. One of the eight movements names an
+origin and no destination — three out of the dry store, going nowhere the
+business wrote down — and it is counted in `ingredient_out` and in no arrival
+group anywhere, which is the null rule doing exactly what session 3 measured.
+
+`gen-owl --no-use-native-uris` over the draft exits 0 and writes 112,541 bytes.
+
+### Two — the provenance note
+
+`business/sorella/draft.txt`, 23,086 bytes, and `annotations.transcript:
+draft.txt`. The draft had carried only `valid_from` since session 1, and session
+1's log said so at the time: not a conflict inside that session, a dependency
+the sealing session inherits.
+
+Shaped on Marlow's `v1.txt`, which was read before a line of it was written: the
+same headings — what is in the file, what became what, who would have written
+it, choices the profile does not make, what was deliberately not written, what
+the renders showed. Two headings are new and both earn their place. **What a
+later sitting took back** exists because this map was written over four sittings
+and Marlow's over one, and the only re-homing that ever happened — four slots
+from `BoughtItem` up to `Ingredient` — would otherwise be readable only in
+`LOG.md`. The relationship list is written out slot by slot because Sorella's
+profile has no section 6: Marlow's profile handed the author a relationship
+table and this one did not, so the thirty-five had to be read off the sections
+and there is nowhere else the coverage can be checked.
+
+One note for four sittings, written at the seal, rather than four notes. A
+sealed version is one artefact and `seal` copies one file beside it; four would
+have needed a concatenation nobody would have re-read.
+
+### Three — the seal, once
+
+    sealed  business\sorella\v1.yaml  (v1)
+    transcript business\sorella\v1.txt
+    valid from 2026-06-15T00:00:00+00:00
+    sealed at  2026-09-03T20:14:38.201488+00:00
+    intent 8fc11510-d59f-4fd7-ab36-f41509fffbd0: 101 entities minted, 101 assertions
+
+It did not refuse. Before running it, every check `seal` makes was run against
+the draft **through `seal`'s own functions with no database connection** — 101
+`slot_uri`s, 35 class-ranged, 0 facts, a `valid_from`, a flat annotations block,
+a transcript that is a file, `v1` with nothing superseded, and the sealed text
+re-validated through `SchemaView`. A refusal after the version file is written
+is the one failure mode that cannot be retried, because `seal` refuses to
+rewrite a version that exists, so the pure path was walked first.
+
+**101 assertions and not one fact.** Every row is a URI registration: one per
+declared `slot_uri`. `uniti:uri` itself was not minted, because Marlow's seal
+already registered it and `seal` found it in the registry — the dedupe working
+across two businesses eleven months apart.
+
+Two stores now, each with a v1, neither superseding the other:
+
+    business/          v1  valid_from 2025-09-01   Marlow, retired 2 Sep
+    business/sorella/  v1  valid_from 2026-06-15   Sorella, supersedes: null
+
+`resolve_version('business/sorella', valid_at=16 June 2026, as_of=today)` returns
+`v1`. The default `--into` would have made Sorella a v2 superseding a business
+retired on 2 Sep, which is the 28 Aug failure; it was not used.
+
+**The seal round-trips the map with zero structural change.** Checked with
+`SchemaView` rather than by reading: same 21 classes, same 101 slots, and for
+every slot the same `slot_uri`, `range`, `required`, `identifier`,
+`multivalued`, `equals_expression`, `designates_type`, `unit` and `description`;
+same induced slot list on every class; same class descriptions; the `unique_keys`
+on `ProductPrice`; the enum's two values; all four `aggregate` mappings and both
+`equals_expression`. The schema description string is equal. What did change is
+physical: `yaml.safe_dump` turns every block scalar into a quoted flow scalar and
+reflows it, so the file is 1,308 bytes smaller and every long description is one
+paragraph of wrapped text. The `str()` hazard did not fire because there is
+nothing to stringify — no fact, no boolean, no trailing zero.
+
+`gen-owl` over the sealed file exits 0, 112,699 bytes, 0 `rdfs:domain`, 1
+`owl:hasKey`.
+
+### Four — the generator
+
+**No path was hard-coded and nothing under `components/` was changed.** Every
+occurrence of `business/v1.yaml` in `generate.py` is in the module docstring's
+usage block or in an `argparse` help string; the map is a positional argument.
+That was checked before anything was run, because changing it would have been a
+`components/` change and would have had to be said out loud.
+
+**21 forms, one per class, all exit 0.** 137 fields, 41 pickers, 14 required
+markers.
+
+| class | fields | pickers | required | class | fields | pickers | required |
+|---|---|---|---|---|---|---|---|
+| `Batch` | 9 | 3 | 1 | `Recipe` | 6 | 1 | 1 |
+| `BoughtItem` | 10 | 5 | 1 | `RecipeLine` | 8 | 3 | 0 |
+| `Business` | 5 | 0 | 1 | `SoldProduct` | 10 | 2 | 1 |
+| `Flavour` | 6 | 1 | 1 | `StockCount` | 4 | 1 | 0 |
+| `GelatoOnHand` | 6 | 3 | 0 | `StockCountLine` | 10 | 6 | 0 |
+| `Ingredient` | 6 | 3 | 1 | `StockMovement` | 13 | 9 | 0 |
+| `IngredientOnHand` | 5 | 2 | 0 | `Supplier` | 9 | 0 | 1 |
+| `InternalLocation` | 5 | 1 | 1 | `Unit` | 3 | 0 | 1 |
+| `Location` | 3 | 0 | 1 | `WholesaleAccount` | 6 | 0 | 1 |
+| `MovementKind` | 5 | 0 | 1 | `ProductPrice` | 4 | 1 | 0 |
+| `Person` | 4 | 0 | 1 | | | | |
+
+All 14 required markers sit on identifiers and nowhere else — there is no
+required non-identifier slot anywhere in the map, and the ten identifiers are
+required on each class that induces them, which is where the extra four come
+from.
+
+**21 tables, all exit 0, all 0 rows, all `--verify` clean.** That is correct and
+uninteresting: the log holds 101 URI registrations and no fact, so no entity is
+the subject of anything under any column. Marlow's 301 rows are in the same
+database and **not one of them became a Sorella row** — `uniti:` and `sorella:`
+predicates do not meet.
+
+The form quoted in full is `StockMovement`, because it is the class that answers
+three of the five gaps:
+
+```
+StockMovement form  (v1.yaml, v1)
+
+field                type               from the map
+-------------------  ---------------    --------------------------------------------------------
+entity_class         string             Which class this entity is an instance of
+movement_kind        -> MovementKind    Which of section 3.2's ways this movement was
+movement_out_of      -> Location        Where it came from
+movement_into        -> Location        Where it went
+movement_ingredient  -> Ingredient      Which bought or made thing moved, where the movement is
+movement_flavour     -> Flavour         Which flavour, where the movement is of gelato
+movement_format      -> SoldProduct     What the gelato was in, which is a line of the price lis
+movement_quantity    decimal            How many, or how much
+movement_unit        -> Unit            What the number on this line is in
+movement_batch       -> Batch           Which churn this came off, where it is one of a batch's
+happened_on          date               The date written on the paper
+written_by           -> Person          Who put their name on it
+movement_note        string             Anything written in words rather than in a column
+
+movement_kind offers nothing: the log holds no MovementKind
+
+movement_out_of offers nothing: the log holds no Location
+
+movement_into offers nothing: the log holds no Location
+
+movement_ingredient offers nothing: the log holds no Ingredient
+
+movement_flavour offers nothing: the log holds no Flavour
+
+movement_format offers nothing: the log holds no SoldProduct
+
+movement_unit offers nothing: the log holds no Unit
+
+movement_batch offers nothing: the log holds no Batch
+
+written_by offers nothing: the log holds no Person
+```
+
+All 41 pickers in all 21 forms offer nothing, over 12 distinct classes. Under
+the 1 Sep line that is exactly where a freshly sealed map is supposed to be:
+seal, then the master-data forms, then operate, and this session is the first of
+the three.
+
+### Can an empty picker be told from a missing class, from the rendered form alone?
+
+**No, and it is measured rather than argued.** Marlow's `GoodsReceived` form was
+re-rendered from `business/v1.yaml` — a read, nothing written — and its failing
+line is put beside Sorella's healthy one:
+
+    Marlow v1, the defect:  received_from offers nothing: the log holds no Supplier
+    Sorella v1, expected:   movement_out_of offers nothing: the log holds no Location
+
+Same sentence, same shape. One is a gap and one is a Tuesday morning before
+anybody has typed anything, and nothing else on the page separates them. The
+form names the range class and stops there; whether that class can ever be
+filled depends on whether a form exists for it and whether `submit()` will mint
+one, and both of those are facts about **a different artefact**. A reviewer
+holding one rendered form cannot answer the question this session was set.
+
+What settles it here is one command per class, not one form: `generate.py form`
+succeeds for all 21 classes, so all 12 ranges are fillable. Under this generator
+"the class is in the map" and "a form for it can be rendered" are the same
+statement, so v1's first gap could not recur — but the artefact that shows it is
+the directory listing, not the page.
+
+### v1's five gaps
+
+The list was written on 1 Sep, before Sorella's profile existed, so it cannot
+have been tuned to the map that answers it.
+
+**1 — no supplier was nameable. `received_from` was a field the form offered and
+the log could never fill. → YES, answered.**
+`Supplier` is a class in the sealed map, `is_a Location`, identified by
+`location_name`, which is `required`. `generate.py form business/sorella/v1.yaml
+Supplier` renders nine fields — `outside_where`, `supplier_brings`,
+`supplier_rhythm`, `supplier_lead_time`, `supplier_minimum_order`,
+`credit_terms`, plus the three inherited — and `submit()` mints under the 1 Sep
+line. `BoughtItem.item_supplier -> Supplier` reaches it, and so does
+`movement_out_of -> Location`, because a supplier is a place. The profile names
+nine of them: Whitehall Dairy, Terra Nostra Ingredients, Marchetti Cones and six
+more, where Marlow's `§4` counted four and named none. The picker is empty today
+and that is not the gap — the gap was that no individual could ever exist.
+
+**2 — nothing consumed anything, so material stock could only ever rise. → YES,
+answered, with a number.**
+Every `StockMovement` carries `movement_out_of` and `movement_into`, both
+`-> Location`, so one row is a departure from its origin and an arrival at its
+destination at once. `ingredient_out` is the same sum as `ingredient_in` grouped
+by the other slot, and `ingredient_on_hand_net` subtracts. Run above: caster
+sugar at the dry store is 25 in, 8 out, **17 standing**. Marlow's v1 hung
+`stock_quantity` on `Material`, one subject with one winning row, and
+`GoodsReceived` added while nothing anywhere took away. Consumption also has a
+second home the map states independently: `RecipeLine` says what a page eats,
+and `line_stage` says whether it went into the machine or on top of it.
+
+**3 — no pan was minted, so `PanMoved` and `PanPulled` were forms about a thing
+that did not exist. → YES, and half the answer is a refusal.**
+There is no `Pan` class, no `PanMoved` and no `PanPulled`. The two things
+Marlow's `Pan` was trying to be are separated. The **container** is a
+`BoughtItem` — `§1.6` prices a steel napoli pan at £38.00 — with `item_name` as
+a required identifier, a form of its own, and `movement_ingredient` to move it;
+the pan notebook is two movements a line, out to an account and back. **Gelato
+in a pan** is deliberately not a thing: it is `movement_flavour` plus
+`movement_format` on one line, because no document in the business has ever
+written "pistachio in a napoli pan" as one word. So the container is mintable
+and the filled pan is a refusal with a reason, which is a different answer from
+Marlow's, where neither existed. There is one movement form, and its
+`movement_kind` says which of `§3.2`'s fifty-three ways it was.
+
+**4 — no opening stock, no purchase or sell price, no adoption date. → YES, all
+four.**
+Adoption date: `annotations.valid_from: '2026-06-15T00:00:00+00:00'` in the
+sealed file, from `§1.2` — the Monday Marina picked. Purchase price:
+`item_pack_price` on `BoughtItem`, with slot-level `unit` metadata `symbol:
+GBP`. Sell price: `price_amount` on `ProductPrice`, GBP, carrying the map's one
+`unique_keys` on `price_product` + `price_at`, so a product cannot hold two
+prices in one column. Opening stock: `StockCount` and `StockCountLine`, ten
+fields on the line including `count_line_where`, `count_line_quantity`,
+`count_line_unit` and `count_line_written_as` — the cell as it stands on the
+paper, kept beside what it resolves to. The 3 Sep decision names Monday 15 June
+as the opening position and Tuesday 16 June as milestone one's day.
+
+**5 — four movement classes rendered byte-identical. → YES, and the contrast is
+measured, not quoted.**
+Marlow's four movement forms were re-rendered and hashed with the header line
+stripped: `PanMoved`, `PanPulled`, `ThrownOut` and `TastingGiven` give **one
+distinct body between them**. Sorella's 21 forms give **21 distinct bodies**. No
+two forms in this map are identical even ignoring the header, and there is only
+one movement class for another to be identical with.
+
+Four yes and one yes-with-a-refusal. What none of the five can say is whether
+the map is *right* — that is what competency questions are for, and the 3 Sep
+line records that they are not written in this lap and are not faked in it.
+
+### Surprising
+
+1. **Subtraction raises where addition lies.** `'0' - '5'` is a `TypeError` and
+   `'3' + '4'` is `'34'`. The missing cast the 1 Sep line found is loud on one
+   operator and silent on the one beside it, so a map that only ever added would
+   have shipped the defect and this one cannot. The instrument that catches it
+   is Python's operator table, not anything in this repo.
+2. **The generator renders a form for a balance.** `IngredientOnHand` and
+   `GelatoOnHand` each get a form with fillable-looking fields, including the two
+   aggregates and the net — five and six fields nobody may ever type into. The
+   map says they are computed three times over: the class descriptions say so,
+   four slots carry an `aggregate` annotation and two an `equals_expression`, and
+   neither class carries `entity_class`. The generator reads none of it.
+   `submit()` would accept a hand-typed `ingredient_on_hand_net` and the log
+   would hold a judgement, which is the second closed finding broken by a form.
+3. **Two seals, and the log cannot tell the businesses apart.** Marlow's intent
+   and Sorella's differ in `id` and `occurred_at` and in nothing else: both
+   `fareza`, both `seal`, both `seal_version`, both noted `sealed draft.yaml as
+   v1`, and every assertion of both carries `ontology_version = 'v1'`. `select
+   action_name, note, ontology_version, count(*)` returns **one row of 402**. The
+   store separation this session was careful to get right in the filesystem does
+   not exist in the log at all.
+4. **The note answers a question a transcript would not have.** It is 23 KB,
+   which is 40% of the map it describes, and almost all of it is choices and
+   refusals. A transcript of a real interview would have been the conversation;
+   this is an argument. It is better evidence for "why does the map say this"
+   than a transcript would have been, and worse evidence for "what did the
+   business say". The 29 Aug line called it real evidence, and it is — of the
+   author.
+5. **Docker Desktop was not running**, and nothing in `make` or in `seal` says
+   what to do about that. `make check` starts the container and waits for the
+   database; neither starts the engine. The first symptom was `failed to connect
+   to the docker API at npipe:...`, which reads like a permissions problem.
+6. **The seal costs 1,308 bytes and changes nothing.** Every block scalar becomes
+   a quoted flow scalar on the way through `yaml.safe_dump`, so the sealed file
+   reads worse than the draft while being structurally identical to it — checked
+   field by field with `SchemaView`, not by eye. Anyone diffing a draft against
+   the version it became sees the whole file move.
+
+### Proposed `DECISIONS.md` entries
+
+1. The net on a balance class is one `equals_expression` and the aggregate
+   annotation stays arithmetic-free. `ingredient_on_hand_net` is
+   `'{ingredient_in} - {ingredient_out}'` and `gelato_on_hand_net` is its twin,
+   which is the 1 Sep two-problem split — within a row is LinkML's, across rows
+   is ours — costing exactly two slots. Measured before being written: cast to
+   `decimal` the expressions return `Decimal('-5')`, `Decimal('6')`,
+   `Decimal('1')` and `Decimal('0')`; uncast, straight out of `value_literal`,
+   the same expression raises `TypeError: unsupported operand type(s) for -:
+   'str' and 'str'` where `{a} + {b}` returns `'34'`. So the missing cast is a
+   loud failure on subtraction and a silent one on addition, and the caster the
+   1 Sep line asks for cannot be justified by the sums alone.
+2. A business gets its own version store, chosen by `seal --into`, and the log
+   gets no such separation. `business/sorella/v1.yaml` and `business/v1.yaml`
+   are two v1s superseding nothing, which is what the 2 Sep retirement of Marlow
+   requires and what the default `--into` would have destroyed. What does not
+   follow into the kernel is named rather than absorbed:
+   `assertion.ontology_version` holds `'v1'` for both businesses, and `intent`
+   holds the same actor, agent, `action_name` and note for both seals, so one log
+   now carries two businesses and can tell them apart only by which URIs a row
+   happens to name.
+3. A hand-authored map's provenance note is written once, at the seal, covering
+   every sitting, and not once per sitting. `seal` copies one file beside one
+   version and a version is one artefact; four notes would need a concatenation
+   nobody would re-read, and the thing a reader wants — what was chosen and what
+   was refused — is only complete once the map is. The cost is that a choice made
+   in the first sitting is recorded three sittings later, which is why the note
+   carries a heading for what a later sitting took back.
+4. The generator renders a form for a derived class, and that is a defect rather
+   than a decision. `IngredientOnHand` and `GelatoOnHand` render fillable forms
+   over slots carrying an `aggregate` annotation or an `equals_expression`, and
+   `submit()` would write one to the log as a fact. The 21 Aug finding — the log
+   holds raw facts and never judgements — is enforced today by nobody typing into
+   that form. Whether the filter is the annotations, the absence of
+   `entity_class`, or a key in the map is open; that there must be one is not.
+
+### Proposed `OPEN.md` lines
+
+- `[T3]` One log holds two businesses and cannot say which. Marlow's seal and
+  Sorella's differ in `intent.id` and `occurred_at` and in nothing else — same
+  actor, same agent, same `action_name`, same note `sealed draft.yaml as v1` —
+  and every assertion of both carries `ontology_version = 'v1'`, so a group-by
+  over those columns returns one row of 402. The version stores are separate
+  directories and the kernel has no notion of a store, so `ontology_version` is a
+  name unique only within a directory nothing in the log names. Whether a version
+  identifier carries its store, whether the intent carries the business, or
+  whether one log per business is the answer, is undecided — and multi-tenancy is
+  on the stop-list, which is why this is a line and not a proposal. Found 4 Sep
+  sealing the second business into the first one's log · blocks: report
+- `[T3]` The generator renders a form for a class the map says is computed.
+  `IngredientOnHand` and `GelatoOnHand` each render with their aggregates and
+  their net as ordinary fields, and `submit()` would accept a typed value for any
+  of them and write it as a `human_stated` fact — a judgement in a log that is
+  supposed to hold none. The map states the class is derived three separate ways:
+  in the class description, in the `aggregate` annotation on four slots and the
+  `equals_expression` on two, and by neither class carrying `entity_class`.
+  Whether the filter reads the annotations, reads the absence of a type slot, or
+  is a key the map states, is undecided. Found 4 Sep rendering all 21 forms ·
+  blocks: generation
+- `[T3]` An empty picker and an unfillable class are the same sentence. Marlow's
+  `received_from offers nothing: the log holds no Supplier` was the defect;
+  Sorella's `movement_out_of offers nothing: the log holds no Location` is a
+  Tuesday morning before anyone has typed anything, and the two rendered forms
+  are indistinguishable. Telling them apart needs a second artefact — whether a
+  form for the range class renders, and whether `submit()` will mint one.
+  Whether the form should say so, whether a review needs a whole-map render of
+  what is fillable, or whether the distinction only matters to a reviewer, is
+  undecided. Found 4 Sep answering v1's first gap · blocks: generation
+- `[T3]` Slot-level `unit` metadata reaches a second generator and dies there
+  too. `item_pack_price` and `price_amount` both declare `symbol: GBP`, and both
+  render as a bare `decimal` field with nothing about pounds anywhere on the
+  page. The 30 Aug line found the same thing about `gen-owl`; the generator is
+  now the second reader to drop it, and it is the one a person looks at. So that
+  line is not about one tool. Found 4 Sep rendering `BoughtItem` and
+  `ProductPrice` · blocks: generator
+- `[T3]` The gap between a map's `valid_from` and its `sealed_at` is eighty days
+  here, and the 31 Aug three-hour hole scales with it. Sorella's v1 takes effect
+  on 15 June 2026 and was sealed on 3 September, so `resolve_version` returns
+  `None` for every `as_of` before the seal — including the whole of milestone
+  one's own week, read at the clocks it happened at. `submit()` is unaffected
+  because it takes the version off the file it was handed, but any reader asking
+  what the map said on 16 June as known on 16 June gets nothing. The 31 Aug line
+  raised this as three hours and harmless; it is now a quarter of a year, and it
+  covers the only operational day the PoC has. Found 4 Sep resolving the sealed
+  store · blocks: report
+
+Nothing was triaged `[T2]`. Two questions were `[T1]` and tried rather than
+written down: whether the two named expressions evaluate over the map's own slot
+names, and whether the three-column balance runs off the sealed file. Both are
+answered above, in one throwaway script outside the repo.
+
+### What was run
+
+| Command | Exit |
+|---|---|
+| `SchemaView` over the edited draft | 0 — 21 classes, 101 slots, 1 enum, 35 relationships, 10 identifiers, 4 aggregates, 2 `equals_expression`, 1 `unique_keys`, 4 `is_a`, 0 slots without a `slot_uri` |
+| `PYTHONIOENCODING=utf-8 gen-owl --no-use-native-uris business/sorella/draft.yaml > build/sorella_draft.ttl` | **0** — 112,541 bytes |
+| `PYTHONIOENCODING=utf-8 gen-mermaid-class-diagram -d $TEMP/sorella_mmd4 business/sorella/draft.yaml` | 0 — 21 files, none for the enum |
+| `eval_expr` over both `equals_expression`, cast and uncast | 0 — the table above; the uncast case raises, which is the result |
+| `seal`'s pure path with no connection: `_validate`, `_slot_ranges`, `_facts`, `_valid_from`, `_flat`, `_transcript`, `_next_version`, `_sealed_document`, `_validate` again | 0 — 101 URIs, 0 facts, `v1`, supersedes `None`, 56,613 bytes of sealed text that re-validates |
+| `python components/seal/seal.py business/sorella/draft.yaml --actor fareza --into business/sorella` | **0** — `v1`, 101 entities minted, 101 assertions, intent `8fc11510` |
+| `md5sum business/sorella/draft.txt business/sorella/v1.txt` | 0 — identical, `bfc4b409...` |
+| `load_versions` / `resolve_version` over both stores | 0 — two v1s, neither superseding; `None` before the seal instant and before `valid_from` |
+| `SchemaView` draft-against-sealed, field by field | 0 — **no structural difference**, schema description equal |
+| `PYTHONIOENCODING=utf-8 gen-owl --no-use-native-uris business/sorella/v1.yaml` | 0 — 112,699 bytes, 0 `rdfs:domain`, 1 `owl:hasKey` |
+| `grep -n "business/" components/generator/generate.py` | 0 — 5 hits, all in the docstring's usage block or an `argparse` help string. **No live code path, nothing changed** |
+| 21 × `generate.py form business/sorella/v1.yaml CLASS --out build/sorella_forms/CLASS.txt` | 0 each — 137 fields, 41 pickers, 14 required |
+| 21 × `generate.py table business/sorella/v1.yaml CLASS --valid-at 2026-06-16T23:00:00Z --as-of 2026-09-03T23:00:00Z --verify` | 0 each — 0 rows every time, `--verify` clean |
+| `md5sum` over the 21 form bodies, header stripped | 0 — **21 distinct** |
+| 4 × `generate.py form business/v1.yaml` for `PanMoved`, `PanPulled`, `ThrownOut`, `TastingGiven`, into the scratchpad | 0 each — **1 distinct body between the four** |
+| `generate.py form business/v1.yaml GoodsReceived` | 0 — `received_from offers nothing: the log holds no Supplier` |
+| `trial_net.py` in the scratchpad, against the sealed map, no database | 0 — output above |
+| `make check` | **0** — **64 tests passed**, replay byte-identical twice, 5,334 bytes both times |
+| `git diff --stat HEAD -- business/sorella/profile.md` | 0 — **empty. The profile is untouched** |
+| `git status --porcelain` | ` M business/sorella/draft.yaml`, `?? business/sorella/draft.txt`, `?? business/sorella/v1.txt`, `?? business/sorella/v1.yaml`. **Nothing under `business/` outside `business/sorella/` added, moved or deleted** |
+| `psql -d uniti`, intents and assertion counts | 0 — 2 intents, 402 assertions: Marlow's 301 of 31 Aug 2025 and Sorella's 101 of 3 Sep 2026 |
+| `docker compose up -d`, after starting Docker Desktop by hand | 0 |
+
+`make check` collected 64 and passed 64. This session writes no code and adds no
+test.
+
+**No two clauses of the done condition conflicted.** One pair had to be ordered
+rather than reconciled: `make check` reseeds `uniti_check` and the seal writes to
+the working log `uniti`, which are different databases, so running the check
+after the seal destroys nothing. That was verified afterwards rather than
+assumed — 402 assertions still in `uniti` once `make check` had finished.

@@ -1,0 +1,408 @@
+Provenance note for business/sorella/draft.yaml — Sorella Gelato, the v1 draft.
+
+There was no conversation. The interview is deferred for this PoC (DECISIONS.md,
+29 Aug), so the map was authored by hand from business/sorella/profile.md and
+from nothing else, and this note stands where a transcript would. It records
+what was read, what was decided where the profile does not decide, and what was
+rejected, so that "why does the map say this" is answerable from a file rather
+than from whoever wrote it.
+
+Nothing outside profile.md was used as a source of business fact. CLAUDE.md,
+DECISIONS.md, NEXT.md and OPEN.md were read as instructions about how to author,
+never as facts about the business. The profile is frozen at ada1d9e, 3,171
+lines, six sessions, gated by `make check-profile`.
+
+The map was written over four sittings and this note is written at the fourth,
+before the seal. It describes the file as it stands, not the order it was
+reached in; where a later sitting changed something an earlier one wrote, the
+change is recorded below under WHAT A LATER SITTING TOOK BACK.
+
+
+WHAT IS IN THE FILE
+-------------------
+
+  21 classes
+ 101 slots, every one carrying an explicit slot_uri under the sorella: prefix
+  35 of those slots range over a class — the relationships
+  10 identifiers
+   1 enum, RecipeStage, two values
+   1 unique_keys, on ProductPrice
+   4 aggregate annotations, and 2 equals_expression
+   4 is_a edges under 2 parents; the hierarchy is one level deep
+   0 facts
+
+The absence of facts is the largest single difference from Marlow's v1, which
+carried 127 of them in the draft and 194 by the time it was sealed. Under the
+1 Sep decision master data enters through generated forms and submit() writes
+the class-membership assertion, so the eighty bought items, the nine suppliers,
+the twenty-five flavours, the thirty-one wholesale accounts, the twenty-one
+batch sheets with their ingredient lines and the fifty-three ways stock moves
+are rows a form writes. This file states vocabulary and nothing else.
+
+`entity_class`, `designates_type: true`, is induced on every class, so the log
+has a place to say what an entity is from the first version rather than from a
+repair. Claim C — row identity — is the oldest failure in the list and this is
+the first map written after the 2 Sep line that withdrew the refusal.
+
+
+WHAT BECAME WHAT
+----------------
+
+The profile's own order was followed, one section at a time.
+
+  §1.1        Business, and the premises as InternalLocation rows
+  §1.1        Person — three slots for the table's three columns
+  §1.2        annotations.valid_from: 2026-06-15. The adoption date, and the
+              only thing §1.2 states that the map can hold
+  §1.3        Location and its three subclasses. The five internal tables are
+              InternalLocation; the nine suppliers are Supplier; the wholesale
+              book is WholesaleAccount; the walk-in customer, staff, comps,
+              donations, tastings, Marina's house and the three bins are plain
+              Location rows
+  §1.4        Flavour — name, runs, listing, note
+  §1.5        Unit, and the three unit slots on Ingredient — ordered, counted,
+              worked
+  §1.6        BoughtItem
+  §1.7        SoldProduct for the product and format columns, ProductPrice for
+              the three price columns
+  §1.8        six more slots on Supplier
+  §1.9        three more slots on WholesaleAccount
+  §2.1        Ingredient's plain case — water, named on four pages, off the
+              mains, bought from nobody
+  §2.2        six Ingredient rows carrying made_recipe, and their pages
+  §2.3        Recipe and RecipeLine, and the RecipeStage enum
+  §2.4        SoldProduct's fill slots
+  §2.5        product_which_flavours and product_flavour_decided_by, both prose
+  §2.6, §2.7  twenty-two more Recipe rows and their lines; product_recipe joins
+              the ones that match a price-list line
+  §3.2        MovementKind, and StockMovement
+  §3.3        Batch, StockCount, StockCountLine, and the two derived classes
+              IngredientOnHand and GelatoOnHand
+
+Section 6 of Marlow's profile was a relationship table; Sorella's profile has
+none, so the thirty-five relationships were read off the sections themselves.
+They are listed here so the coverage can be checked:
+
+  location_within        -> InternalLocation   §1.1, §1.3, self-referential
+  item_counted_in        -> Unit               §1.5
+  item_ordered_in        -> Unit               §1.5
+  item_worked_in         -> Unit               §1.5
+  item_supplier          -> Supplier           §1.6
+  price_product          -> SoldProduct        §1.7
+  made_recipe            -> Recipe             §2.2, §2.3 — on Ingredient and
+                                               on Flavour, single-valued both
+  recipe_basis_unit      -> Unit               §2.2
+  line_recipe            -> Recipe             §2.2
+  line_ingredient        -> Ingredient         §2.2
+  line_unit              -> Unit               §2.2
+  product_recipe         -> Recipe             §2.6, §2.7
+  product_fill_unit      -> Unit               §2.4
+  written_by             -> Person             §3.3, on every document class
+  movement_kind          -> MovementKind       §3.2
+  movement_out_of        -> Location           §3.2
+  movement_into          -> Location           §3.2
+  movement_ingredient    -> Ingredient         §3.2
+  movement_flavour       -> Flavour            §3.2
+  movement_format        -> SoldProduct        §3.2
+  movement_unit          -> Unit               §3.2
+  movement_batch         -> Batch              §3.3
+  batch_flavour          -> Flavour            §3.3
+  batch_mix_unit         -> Unit               §3.3
+  line_count             -> StockCount         §3.3
+  count_line_ingredient  -> Ingredient         §3.3
+  count_line_flavour     -> Flavour            §3.3
+  count_line_format      -> SoldProduct        §3.3
+  count_line_unit        -> Unit               §3.3
+  count_line_where       -> Location           §3.3
+  ingredient_on_hand     -> Ingredient         derived, a dimension
+  ingredient_where       -> Location           derived, a dimension
+  gelato_flavour         -> Flavour            derived, a dimension
+  gelato_format          -> SoldProduct        derived, a dimension
+  gelato_where           -> Location           derived, a dimension
+
+
+WHO WOULD HAVE WRITTEN THIS
+---------------------------
+
+Nobody, and that is the point of the file holding no fact. Under the 30 Aug
+line every act must be able to name the component that would have written it,
+and a map version's writer is `seal`. The rows are a different act: the master
+data enters through generated forms, which is the second of the three steps the
+1 Sep line fixes — seal the map, fill the master-data forms, then operate.
+
+The test applied while writing: if a thing is something a person in the business
+would type into a form, or read off a document, it is not in this file. If it is
+a word the business uses to describe what kind of thing that is, it is.
+
+
+CHOICES THE PROFILE DOES NOT MAKE
+---------------------------------
+
+Each of these was underdetermined by profile.md. The plainest option was taken,
+and the alternative is recorded so it can be taken back.
+
+ 1. A supplier and a wholesale account are is_a Location, not classes that
+    reference one.
+    §1.3 lists both among the places stock comes from and goes to, and §1.8 and
+    §1.9 then give each of them more columns. As subclasses they inherit
+    location_name as their identifier, so the nine suppliers §1.3 lists and the
+    nine §1.8 lists cannot become two sets of rows.
+    Rejected: a Supplier class carrying its own supplier_name and pointing at a
+    Location. LinkML refuses a second identifier on a subclass, so the map is
+    unable to drift into having one — a modelling question the tool decides.
+    The consequence is that there is no supplier_name slot anywhere in the map.
+
+ 2. §1.1's premises are InternalLocation rows with location_within
+    self-referential, not a Site class.
+    Two of the things §1.1 calls premises — the van and the container — are
+    already rows in §1.3's own tables.
+    Rejected: a Site class. It would have made the van two things at once, and a
+    Site carrying a name and a description alone renders the same form as a
+    plain Location, which the 1 Sep rule says is one class with a field.
+
+ 3. §1.7's three price columns are a ProductPrice class carrying the column as a
+    value, not three slots named after the columns.
+    Rejected: product_price_cotham_hill and its two siblings. That puts an
+    individual into the vocabulary, so opening a third shop would need a new map
+    version for what is a new row. The cost is named rather than absorbed:
+    price_at is a string, so the three columns are labels rather than places,
+    and nothing stops a fourth spelling. It is an OPEN line.
+
+ 4. Ingredient is the common superclass of everything a recipe line can name,
+    and its plain case is water.
+    §2.1 names water as the one thing a recipe calls for that nobody buys, and
+    §1.6's preamble excludes it from the buying table on purpose. BoughtItem
+    is_a Ingredient, and item_name, item_counted_in, item_worked_in and
+    item_note moved up to the parent, so a bill of materials has no dangling
+    line.
+    Rejected: an any_of range over BoughtItem and a made thing. §6 of Marlow's
+    profile had the same shape and the 30 Aug line already answered it — a slot
+    whose range must cover two classes gets a common superclass, because
+    induced_slot leaves an any_of range at default_range and `seal` would then
+    write the fact into the wrong column silently.
+    Also rejected: Flavour as an Ingredient. The cake settles it rather than an
+    argument — its lines are 1.4 L of one flavour and 1.1 L of a second, chosen
+    on the phone per cake, so no line could have named a flavour even if the
+    class allowed it.
+
+ 5. A recipe's many ingredients are a collection with its own subject: Recipe is
+    the page and RecipeLine is one line.
+    The kernel is closed and (subject, predicate) is the unit of supersession,
+    so a multivalued slot has no story there; refusing multivalued slots means
+    refusing recipes unless a line is its own entity. Four costs are named
+    rather than absorbed: a line has no name and cannot have a unique_keys
+    either, because salted caramel puts one variegate on one page twice at two
+    stages; a page and its lines are two forms where the profile shows one
+    table; nothing says how many lines a page should have, so a half-entered
+    page is a page; and walking a recipe is two hops, paid twice over because
+    white base is itself a page.
+    Rejected: base_ingredients as a multivalued slot, which is what Marlow's v1
+    declared and never filled.
+
+ 6. A page is not an output. What is made names its page, rather than a page
+    naming what it produces.
+    §2.3 says why: the fruit sorbet page serves strawberry, raspberry, mango,
+    the peach half of peach and basil, and a passionfruit that is not in the
+    range at all, because Dan writes the fruit in the margin and leaves the page
+    alone. So made_recipe sits on Ingredient and on Flavour, product_recipe on
+    SoldProduct, and every one of them is single-valued.
+    The return was not foreseen: the hazelnut card is made on the gianduja page
+    from November to February and on the hazelnut page the rest of the year,
+    which is one slot moving on the valid-time axis rather than a second flavour
+    nobody sells.
+
+ 7. line_stage is an enum with two values, in_the_mix and at_fill.
+    §2.3 draws the line itself: a page is per 12.00 kg into the batch freezer,
+    and anything folded, drizzled or rippled in by hand goes in after the
+    machine and on top of it. A page's lines therefore do not sum to its basis,
+    by design, and nothing in the map enforces that they should. The map has a
+    place for the problem; it does not make consumption balance. It is an OPEN
+    line.
+
+ 8. There is no gross-or-net basis on any quantity.
+    §2.4 has a pan reading 3.6 kg on the scale as it stood and about 3.3 kg of
+    gelato in it, and no document in the business records which was meant.
+    Rejected: a basis slot. The business draws no such distinction anywhere, so
+    the slot would be one the map invented. The fact is written into
+    line_quantity's own description instead, so a reader of the map meets it.
+
+ 9. §3.2's fifty-five rows are fifty-three MovementKind rows, and the kind of a
+    movement is a field on the movement.
+    Two names are written twice — refill a well, cabinet expiry — once per shop,
+    and the only difference between the two rows is which places they name,
+    which the movement's own origin and destination already say.
+    Rejected: a kind per shop, and a class per kind. Folding the shop into a
+    kind's name is the same shape as Marlow's folded pan-slot names and as the
+    price columns refused in choice 3 — the third time the map refused it, and
+    it arrived looking different each time.
+
+10. One movement class. There is no GoodsReceived.
+    The 1 Sep line merged four byte-identical movement classes and kept
+    GoodsReceived separate because it added a slot. In this map it adds none: a
+    delivery's origin is a supplier, a supplier is_a Location, and the form is
+    the same form. So "the outside of the business is locations" bought two
+    things and only one was predicted — direction became free, and the movement
+    classes became one.
+
+11. Gelato in a pan is two cells on a line and not a thing.
+    A movement's quantity is of an Ingredient, or of a Flavour in a SoldProduct.
+    The van sheet and the wholesale delivery note write flavour, format and
+    quantity as three cells; the count sheet writes "Fior di latte, 5 L pan" as
+    one cell with a comma in it; §2.5 refuses to write the flavour-and-format
+    pairs out at all.
+    Rejected: a class whose rows are those pairs. It would mint twenty-five by
+    seven facts nobody has stated. The unforeseen return is that movement_format
+    ranges over SoldProduct, which already carries product_fill_quantity, so the
+    join from a count of pans to a recipe in kilograms was a slot that existed.
+    The cost is named: a line the business writes without a flavour — assorted
+    minis, assorted catering tubs, part pans, a finished cake — is in no group
+    of a balance grouped by flavour.
+
+12. A count line is its own entity.
+    This supersedes the 30 Aug rule that a quantity hangs on the thing rather
+    than on the count, for counts, the way 1 Sep superseded it for movements.
+    It is not a quiet change: 30 Aug's decisive reason was Marlow's Q6 — two
+    honest counts of one freezer competing on one (subject, predicate) so the
+    read rule breaks the tie and the overwrite is visible. With a count line as
+    its own entity nothing competes and the two counts stand side by side.
+
+13. Two balance classes and not one, and both are derived.
+    IngredientOnHand is dimensioned by thing and place; GelatoOnHand by flavour,
+    format and place. Measured rather than preferred: one class dimensioned by
+    all four produced 0 groups over 8 synthetic movements, because every
+    movement is silent under two of the four and a row silent under a dimension
+    is in no group. Two classes with disjoint dimension sets give the right
+    rows, and the null rule becomes the filter — an ingredient movement is not
+    in the gelato balance because it names no flavour.
+    Neither class carries entity_class: nobody ever asserts a row of one.
+
+14. Direction is which slot an aggregate groups by, and the sign is a
+    subtraction that is LinkML's own.
+    ingredient_in and ingredient_out are the same sum over the same class,
+    grouped once by movement_into and once by movement_out_of, so one movement
+    row is an arrival at its destination and a departure from its origin in the
+    same breath. Nothing anywhere declares that goods received add and waste
+    subtracts. ingredient_on_hand_net and gelato_on_hand_net subtract the second
+    from the first through equals_expression, which keeps the aggregate
+    annotation arithmetic-free — the 1 Sep two-problem split, within a row
+    against across rows, arriving unchanged.
+    Rejected: a sign on the aggregate. It was measured before being refused: the
+    two groupings already carry the direction, and a sign would say it twice.
+
+15. Every quantity slot's unit is a value_ref to Unit, except two.
+    item_pack_price and price_amount carry slot-level `unit` metadata with the
+    UCUM symbol GBP, because a price is in pounds and always will be. Everything
+    else varies per item — milk in litres, sugar in kilograms, cones in pieces —
+    which is the 30 Aug distinction the profile itself draws, applied without a
+    decision being needed.
+
+16. Three of the four contested things in §1.5's "the same thing counted two
+    ways" are in the map as three different units for one item, and the map
+    converts between none of them.
+    line_unit is grams on almost every page while item_counted_in is bags, sacks
+    and tins, and movement_unit is a third — §3.2's ingredients to the machine
+    are grams off a bench scale. The only factor stated anywhere in the profile
+    is Dan's 10.3 kg per bag, and §1.5 says he weighs anyway.
+    Rejected: inventing factors. It is an OPEN line and it blocks a balance in
+    any unit but the counted one.
+
+
+WHAT A LATER SITTING TOOK BACK
+------------------------------
+
+Four slots were re-homed and three descriptions widened, all in the second
+sitting, all from BoughtItem up to the new Ingredient: item_name — which is
+Ingredient's identifier and BoughtItem inherits — item_counted_in,
+item_worked_in and item_note. BoughtItem still induces all nine of the slots it
+had after the first sitting.
+
+Nothing else was renamed, re-ranged or re-homed at any point. The fourth
+sitting added two slots and changed two class descriptions and nothing else:
+ingredient_on_hand_net and gelato_on_hand_net, each an equals_expression over
+the two totals already beside it. The two class descriptions had said the
+subtraction was absent, and they said so because the third sitting's brief
+forbade equals_expression, not because anything had been discovered. That is
+the only sentence in this map ever written to describe a constraint on the
+author rather than a property of the business, and it is now gone.
+
+
+WHAT WAS DELIBERATELY NOT WRITTEN
+---------------------------------
+
+§3.4 and §3.5 are not in this map, and that is deliberate rather than unfinished.
+§3.4 is fifty-one rules; §3.5 is nine numbers each computed two ways by two
+people in the building, both in use, neither wrong. Nothing in either touches
+arrivals minus departures, so a balance does not need them — and adding them
+after the seal is a definition change, which is the one stage that has never had
+a real change to replay. Sealing without them gives it one.
+
+§3.1 is context and §3.6 and §3.7 belong to no sitting.
+
+The three stock documents with no home at all are left with none: the
+temperature log, which is a twice-daily reading of a place where
+location_temperature is a standing fact; the whiteboard, where nothing is a date
+and nothing is a quantity; and the cabinet plan, where a well is a Unit and not
+a place and a plan is an intention. The first is the most consistently completed
+document in the business.
+
+The five things §3.2's own "what the movements leave out" names are left as they
+are — the container's missing thermometer, empty pans with nowhere to live, the
+three places §1.3 does not name, and the two Cotham back freezers no document
+has ever told apart. The map repairs none of them; each is an OPEN line.
+
+No Machine class, though §2.1 describes two and says machine 2 comes out drier.
+Machine 1 and machine 2 are places a thing can be inside the kitchen and
+InternalLocation already holds them; that §1.3 does not list them is a gap in
+the profile rather than in the map. "Comes out drier" is a rate over batches and
+has no home anywhere.
+
+No join between Flavour and format for §2.5. The section never writes the pairs
+out, only sentences.
+
+No line for sanitiser, CIP detergent, blue roll, gloves, bin liners or dry ice.
+§2.3 says they are bought, used, and associated with a batch by nobody, so a
+line would state a link the business does not make.
+
+No scoop weight. §1.5 says a scoop is a press of a button, §2.4 adds that Aoife
+tells new staff a pan does forty-five and Callum's do thirty, and that nobody
+has ever weighed one. product_fill_quantity exists on the scoop rows and is
+empty. This is the one place where no input would repair the gap, because no
+number exists to be found.
+
+
+WHAT THE RENDERS SHOWED
+-----------------------
+
+`gen-owl --no-use-native-uris` exits 0 under PYTHONIOENCODING=utf-8 and writes
+112,503 bytes. Without the variable the render can exit 1 leaving a zero-byte
+file, because Python encodes redirected stdout as cp1252 and the profile's
+temperatures carry U+2212; this draft holds no fact and no temperature, so the
+trap has not fired yet and will fire in whichever act writes the location rows.
+
+The OWL carries zero rdfs:domain — the third map to measure the same thing, in
+three different sizes, which settles it as a property of the generator rather
+than of any one map. VOWL draws a property as an edge only when it carries both
+a domain and a range, so a WebVOWL picture of this map shows a poorer shape than
+the map has, and a reviewer who does not know that will ask for edges that were
+never missing.
+
+`gen-mermaid-class-diagram` requires -d and writes one file per class: twenty-one
+files, none for the enum, and no whole-schema render exists. It draws neither the
+unique_keys on ProductPrice nor the aggregate annotations nor the two
+equals_expression, so the review picture cannot show that IngredientOnHand and
+GelatoOnHand are computed rather than stated, and cannot tell ProductPrice from
+RecipeLine — the two classes with no identifier.
+
+The enum was probed before it was used. An enum range is not in all_classes()
+and is in all_enums(), so `seal`'s class test sees a non-class and the value
+lands in value_literal, which is right. One defect: mermaid draws the enum as an
+association and emits a click href to a file it never writes, so the review
+render carries one dead link per enum.
+
+The two equals_expression slots were measured before they were written into the
+map, on the values the third sitting's own trial produced: cast to decimal,
+'{ingredient_in} - {ingredient_out}' over 0 and 5 returns Decimal('-5'), and
+over 6 and 0 returns Decimal('6'). Uncast — straight out of value_literal, which
+is text — the same expression raises TypeError rather than returning a string,
+which is the opposite of what '+' does with two strings and is the safer of the
+two failures.

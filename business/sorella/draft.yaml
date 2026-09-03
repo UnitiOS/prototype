@@ -408,15 +408,16 @@ classes:
       one by the origin, so a pallet is an arrival at the dry store and a
       departure from the supplier in the same breath.
 
-      The subtraction that turns the two into a balance is not here. It is one
-      expression over two named totals, which is LinkML's own and belongs to a
-      slot this session's vocabulary does not admit. A reader of this class
-      gets two of its three columns.
+      The subtraction that turns the two into a balance is the third column,
+      ingredient_on_hand_net. It is one expression over the two named totals
+      and it is LinkML's own, not this project's: no arithmetic goes inside an
+      aggregate, and the aggregates carry no sign.
     slots:
       - ingredient_on_hand
       - ingredient_where
       - ingredient_in
       - ingredient_out
+      - ingredient_on_hand_net
 
   GelatoOnHand:
     description: >-
@@ -433,14 +434,16 @@ classes:
       so none of them can enter a total grouped by flavour. That is a thing the
       business does not record rather than a thing the map cannot express.
 
-      Like IngredientOnHand it carries arrivals and departures and not the
-      subtraction between them.
+      Like IngredientOnHand it carries arrivals, departures and the subtraction
+      between them, the last of them an expression over the first two rather
+      than a third sum.
     slots:
       - gelato_flavour
       - gelato_format
       - gelato_where
       - gelato_in
       - gelato_out
+      - gelato_on_hand_net
 
 slots:
 
@@ -1340,6 +1343,23 @@ slots:
             ingredient_on_hand: movement_ingredient
             ingredient_where: movement_out_of
 
+  ingredient_on_hand_net:
+    slot_uri: sorella:ingredient_on_hand_net
+    range: decimal
+    equals_expression: '{ingredient_in} - {ingredient_out}'
+    description: >-
+      What is standing at this place, of this thing, at whatever pair of clocks
+      the question is asked at: everything that arrived less everything that
+      left. Computed from the two totals beside it and never stated, and it is
+      where the sign lives - the aggregates have none, because direction is
+      which slot each one groups by.
+
+      It goes negative and is right when it does. A place the thing left in
+      this window but never arrived at reads below nought, which is what
+      happens to a supplier once the outside of the business is modelled as
+      places: Terra Nostra's own dextrose is drawn down by every delivery it
+      makes.
+
   gelato_flavour:
     slot_uri: sorella:gelato_flavour
     range: Flavour
@@ -1393,6 +1413,21 @@ slots:
             gelato_format: movement_format
             gelato_where: movement_out_of
 
+  gelato_on_hand_net:
+    slot_uri: sorella:gelato_on_hand_net
+    range: decimal
+    equals_expression: '{gelato_in} - {gelato_out}'
+    description: >-
+      What is standing at this place, of this flavour in this format:
+      everything that arrived less everything that left. The same subtraction
+      as ingredient_on_hand_net over the other pair of totals.
+
+      It counts nothing the business wrote without a flavour, because the two
+      totals under it are grouped by one. Assorted minis, assorted catering
+      tubs, part pans on the top shelf and a finished cake are silent under
+      that dimension and so are in no group at all, and the net inherits the
+      omission rather than repairing it.
+
 enums:
 
   RecipeStage:
@@ -1414,3 +1449,4 @@ enums:
 
 annotations:
   valid_from: '2026-06-15T00:00:00Z'
+  transcript: draft.txt
