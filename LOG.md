@@ -4895,3 +4895,1089 @@ rather than reconciled: `make check` reseeds `uniti_check` and the seal writes t
 the working log `uniti`, which are different databases, so running the check
 after the seal destroys nothing. That was verified afterwards rather than
 assumed — 402 assertions still in `uniti` once `make check` had finished.
+
+## 2026-09-04 — Sorella's master data, entered through the forms
+
+The 1 Sep onboarding order's second step. The map was sealed yesterday and the
+log held 101 URI registrations and no fact; it now holds **197 entities and
+1,215 assertions** written by 197 `submit()` calls, all of them inside the
+Monday-and-Tuesday boundary. Nothing under `business/` was touched, nothing was
+sealed, and no value was submitted for a slot the map computes.
+
+Two things were settled before the bulk of the entry, because both could have
+made it worthless.
+
+### 1 — `resolve_version` and a June date. The balance computes.
+
+**The answer is yes for the read the balance actually needs, and no for the
+read the item feared, and the second is correct rather than broken.**
+
+`resolve_version` takes two clocks, not one. Sorella's v1 has
+`valid_from 2026-06-15T00:00:00Z` and `sealed_at 2026-09-03T20:14:38Z` — eighty
+days apart. Six pairs were resolved against `business/sorella`:
+
+| `valid_at` | `as_of` | returns |
+|---|---|---|
+| 2026-06-15T00:00:00Z | 2026-06-15T00:00:00Z | `None` |
+| 2026-06-16T23:00:00Z | 2026-06-16T23:00:00Z | `None` |
+| 2026-06-16T23:00:00Z | 2026-09-03T23:00:00Z | **v1** |
+| 2026-06-16T23:00:00Z | 2026-09-04T12:00:00Z | **v1** |
+| 2026-06-14T23:59:59Z | 2026-09-04T12:00:00Z | `None` |
+| 2026-09-04T12:00:00Z | 2026-09-04T12:00:00Z | **v1** |
+
+The hole is only on the diagonal. A reader asking *what did the map say on
+16 June, as known on 16 June* gets nothing, and that is the honest answer: on
+16 June the business had not been described yet. A reader asking *what does the
+map say today about how the world stood on 16 June* — which is what a balance,
+a report and a shrinkage figure all ask — gets v1. The `None` is a fact about
+the map, not a defect, and the 4 Sep `[T3]` line that raised it can be read
+this way: the eighty days cost nothing that milestone one needs.
+
+That was established by argument, so it was then run end to end. A throwaway
+`june_balance.py` outside the repo resolves the version at a pair of clocks,
+reads the two `aggregate` annotations and the `equals_expression` off whatever
+file the resolver hands back, groups `StockMovement` out of the log through
+`resolve_single` at the same clocks, and evaluates the net. Nothing in
+`components/` does this yet; the script is the shape `report` will have.
+
+At `valid_at 2026-06-16T23:00:00Z`, `as_of 2026-06-16T23:00:00Z` it exits 1 with
+
+```
+resolve_version -> None
+
+No map applies at these clocks. Nothing downstream can run:
+the balance has no column list, so it is not that it comes out
+empty, it is that there is nothing to come out.
+```
+
+At `valid_at 2026-06-16T23:00:00Z`, `as_of 2026-09-04T12:00:00Z` it exits 0:
+
+```
+resolve_version -> v1
+map      v1.yaml  sealed 2026-09-03T20:14:38.201488+00:00
+
+IngredientOnHand   net = {ingredient_in} - {ingredient_out}
+  grouped by ['ingredient_on_hand', 'ingredient_where'], over 0 StockMovement rows
+  0 rows
+
+GelatoOnHand   net = {gelato_in} - {gelato_out}
+  grouped by ['gelato_flavour', 'gelato_format', 'gelato_where'], over 0 StockMovement rows
+  0 rows
+```
+
+Zero rows because the log holds no movement — that is step three, not a
+failure here. So that the run would prove the path and not the sum, a
+`--selftest` pushes four movements **that are made up in the script and never
+written** through the same grouping and the same expression:
+
+```
+--- selftest: four fabricated movements, nothing written ---
+
+IngredientOnHand   net = {ingredient_in} - {ingredient_out}   by ['ingredient_on_hand', 'ingredient_where']
+  Caster sugar | Dry store                         in     25  out    9.2  net   15.8
+
+GelatoOnHand   net = {gelato_in} - {gelato_out}   by ['gelato_flavour', 'gelato_format', 'gelato_where']
+  pistachio | 5 L napoli pan | Holding freezer     in      3  out      1  net      2
+```
+
+**So: the three-column balance can be computed for a June date, off the sealed
+map, at the clocks milestone one happens at. What it lacks is movements.**
+Nothing needs to change for that, and nothing under `components/` was changed.
+
+One thing had to be got right inside the script and is worth writing down,
+because it is a rule about the map rather than about the script. The two
+aggregates are **two group-bys, not one**. `ingredient_in` keys
+`ingredient_where` off `movement_into` and `ingredient_out` keys the same
+column off `movement_out_of`; joining them on the balance's own key slots is
+what makes a pallet an arrival at the dry store and a departure from the
+supplier in one row. Read with a single mapping — the first mistake this
+session made — the same four movements give six rows, three of them keyed
+`None`, and two of the six carry a net with the wrong sign. The map is right;
+a reader that ignores the per-aggregate `by` block is not.
+
+### 2 — Tuesday's consumption is derived, not recorded.
+
+**The profile settles it in one cell**, `§3.2`, *Inside the kitchen*, the first
+row:
+
+> | Ingredients to the machine | Dry store, Walk-in chiller, Ingredient freezer → the pasteuriser or the bench | Tins opened, sacks scooped, a bag of milk lifted out and weighed, a pail of glucose warmed. | **Nothing.** No document in this business records an ingredient leaving a shelf. | — |
+
+`§4.3` bears it out. Tuesday states production twice and consumption never: the
+pasteuriser block is *"07:10, 55 kg white base. 09:30, 55 kg white base. 11:00,
+30 kg sorbet syrup"* and the batch table's only quantity column is *"Mix into
+freezer — 12.0 kg"*. Not one line says how much sugar, milk or pistachio paste
+left a shelf. The single exception proves the rule and is unweighed: *"Three
+trays of Kingsdown strawberries were hulled for 0842. The hulls went in the
+kitchen bin and were not weighed."*
+
+So an ingredient consumption figure for Tuesday exists only as `batch_mix_quantity`
+× a recipe, which means **recipes are master data the balance eventually needs**.
+They are not entered this session, and the reason is the boundary rather than an
+oversight: `§4.1` and `§4.3` name no recipe page. `§4.3` names batch *flavours*
+and `Batch` has no slot for a recipe — `Flavour.made_recipe` is optional and
+naming it would have minted twenty-two `Recipe` entities out of `§2.3`, which is
+the eighty-bought-items failure wearing a different noun. It is written down
+here as the next thing that will be needed rather than taken now.
+
+This also means the derivation is a **second** thing the map states and no built
+code reads, beside the aggregates: a consumption number for Tuesday is
+`RecipeLine.line_quantity` scaled by `batch_mix_quantity ÷ recipe_basis_quantity`,
+and nothing in `components/` walks that.
+
+### The boundary, and how it was applied
+
+The rule used, stated once and applied without exception:
+
+> An entity is in scope when `§4.1` or `§4.3` names it **individually** — by the
+> name that identifies it, or unambiguously by the words the day uses for it.
+
+A group naming is not an individual naming. That is what keeps the thirty-one
+wholesale accounts out: `§4.1`'s *"The 31 wholesale accounts | Every one of them
+is a place a pan can be. Nobody drove round"* names the class and not one
+member, and `§4.3`'s van run names five. The same rule keeps the nine suppliers
+out and lets five in, and it is the reason sixteen bought items were entered
+with no supplier — see below. Applied the other way it would have admitted all
+thirty-one accounts and all nine suppliers off two table rows, which is the
+outcome the item was written to prevent.
+
+**The boundary bites very unevenly, and that is the session's most useful
+number.** It cuts wholesale accounts from 31 to 6 and flavours from 25 to 18.
+It cuts bought items from 80 to **77**. `§4.1`'s six count sheets walk the whole
+building, so the opening count *is* most of `§1.6`: the three it leaves out are
+exactly the three `§4.1` says it left out — *"No line was written for panettone,
+figs or rhubarb. Three seasonals are out of season."* The premise that milestone
+one touches a fraction of the eighty is true of the accounts and false of the
+items.
+
+### What was entered
+
+197 entities, 1,215 assertions, one `submit()` call each, `valid_from
+2026-06-15T00:00:00Z`, actor `fareza`, `recorded_at` left to default. 154 are
+named by `§4.1` and 43 by `§4.3`.
+
+| class | entities | assertions |
+|---|---|---|
+| `BoughtItem` | 77 | 593 |
+| `Unit` | 26 | 104 |
+| `InternalLocation` | 22 | 109 |
+| `SoldProduct` | 21 | 118 |
+| `Flavour` | 18 | 94 |
+| `Location` | 9 | 36 |
+| `Person` | 9 | 45 |
+| `WholesaleAccount` | 6 | 42 |
+| `Supplier` | 5 | 50 |
+| `Ingredient` | 4 | 24 |
+
+Ten classes of the map's twenty-one. The other eleven are dealt with under
+*what had nowhere to go* below.
+
+The full list, every entity against the `§4.1` or `§4.3` line that names it, is
+in `build/sorella_master_entered.txt` and reproduced here.
+
+**Unit — 26**
+
+| uri | § | the line that names it |
+|---|---|---|
+| `sorella:unit_gram` | 4.1 | dry store: Digestive biscuits, 400 g pack \| 17 |
+| `sorella:unit_kilogram` | 4.1 | dry store: Caster sugar, 25 kg sack \| 4, one of them open - 9.2 kg |
+| `sorella:unit_litre` | 4.1 | walk-in chiller: Whole milk, 10 L bag-in-box \| 8 |
+| `sorella:unit_millilitre` | 4.1 | packaging mezzanine: 125 ml mini tub with lid, sleeve of 100 \| 9 |
+| `sorella:unit_each` | 4.1 | packaging mezzanine: 500 ml lid, printed, case of 1,000 \| 1, broken into - 20 lids, counted out on the bench |
+| `sorella:unit_bag` | 4.1 | dry store: Skimmed milk powder, 25 kg bag \| 1, open - 12.4 kg |
+| `sorella:unit_can` | 4.1 | walk-in chiller: Cream 38%, 5 L jerry can \| 3, one open |
+| `sorella:unit_sack` | 4.1 | dry store: Dextrose, 25 kg sack \| 2, one open - 13.8 kg |
+| `sorella:unit_pail` | 4.1 | dry store: Inverted sugar, 14 kg pail \| 2, one open |
+| `sorella:unit_bucket` | 4.1 | walk-in chiller: Aged white base, 25 L bucket \| 1, part - about a third |
+| `sorella:unit_carton` | 4.3 | deliveries received, Terra Nostra: 1 x carton Base 50 (10 x 2 kg) |
+| `sorella:unit_tin` | 4.1 | dry store: Sicilian pistachio paste, 3.5 kg tin \| 1 sealed, 1 open |
+| `sorella:unit_jar` | 4.1 | dry store: Amarena cherries in syrup, 2.6 kg jar \| 4 |
+| `sorella:unit_box` | 4.1 | dry store: Dark chocolate 70% callets, 10 kg box \| 1 sealed, 1 open |
+| `sorella:unit_case` | 4.1 | packaging mezzanine: 500 ml tub, case of 500 \| 2, one broken into |
+| `sorella:unit_sleeve` | 4.1 | packaging mezzanine: Waffle cones, sleeve of 90 \| 21 |
+| `sorella:unit_pack` | 4.1 | dry store: Digestive biscuits, 400 g pack \| 17 |
+| `sorella:unit_tray` | 4.1 | walk-in chiller: Eggs, medium free range, tray of 30 \| 2 |
+| `sorella:unit_punnet` | 4.1 | walk-in chiller: Strawberries, 2 kg punnet \| 2 |
+| `sorella:unit_tub` | 4.1 | ingredient freezer: Fruit puree, mango, 1 kg tub \| 16 |
+| `sorella:unit_pan` | 4.1 | holding freezer: Fior di latte, 5 L pan \| 6 |
+| `sorella:unit_well` | 4.1 | Cotham cabinet: Twenty-four wells, written as fractions of a pan by eye |
+| `sorella:unit_scoop` | 4.3 | sold, Cotham Hill: 268 single scoop, 141 double scoop, 22 triple scoop |
+| `sorella:unit_drum` | 4.1 | dry store: Sanitiser, no-rinse, 5 L drum \| 2 |
+| `sorella:unit_roll` | 4.1 | dry store: Blue roll, roll \| 9 |
+| `sorella:unit_bottle` | 4.1 | dry store: Peppermint extract, 500 ml bottle \| 2, one part-used |
+
+**Location — 9**
+
+| uri | § | the line that names it |
+|---|---|---|
+| `sorella:loc_the_walk_in_customer` | 4.1 | places that were not counted: The walk-in customer, comps, donations, tastings, staff, Marina's house, and the three bins |
+| `sorella:loc_comps` | 4.3 | given away: 4 comped cones at Gloucester Road. 2 were rung on the comp key |
+| `sorella:loc_donations` | 4.3 | given away: 30 x 125 ml minis to the St Werburgh's primary school summer fair |
+| `sorella:loc_tastings` | 4.3 | given away: 1 x 5 L pan of pistachio taken out at 15:00 by Marina in the cool box, to a tasting at a hotel on the Downs |
+| `sorella:loc_staff` | 4.3 | given away: Staff scoops: seven people on shift across the two shops, plus four in the kitchen |
+| `sorella:loc_marina_s_house` | 4.3 | given away: 1 x 5 L pan of vanilla taken home by Marina on her way to the wedding |
+| `sorella:loc_the_kitchen_bin` | 4.3 | thrown out: Batch 2026-0844, salted caramel: 12.0 kg of churned mix, binned |
+| `sorella:loc_the_cotham_bin` | 4.3 | thrown out: Cotham cabinet at close: 3 part pans past the 3-day rule. Scraped out and binned |
+| `sorella:loc_the_gloucester_road_bin` | 4.3 | thrown out: Gloucester Road at close: 1 part pan of biscuit, about half, binned |
+
+**InternalLocation — 22**
+
+| uri | § | the line that names it |
+|---|---|---|
+| `sorella:loc_production_kitchen` | 4.3 | evening stock count - production unit, 21:10 |
+| `sorella:loc_cotham_hill` | 4.1 | Aoife took Cotham Hill with Yusuf reading the cabinet out to her |
+| `sorella:loc_gloucester_road` | 4.1 | Priya took Gloucester Road on her own |
+| `sorella:loc_dry_store` | 4.1 | The production kitchen - the dry store. Dan, 05:55 to 07:10 |
+| `sorella:loc_walk_in_chiller` | 4.1 | The production kitchen - walk-in chiller. Dan, 07:10 to 08:05 |
+| `sorella:loc_ingredient_freezer` | 4.1 | The production kitchen - ingredient freezer. Tomas, 06:20 to 06:50 |
+| `sorella:loc_blast_freezer` | 4.1 | The production kitchen - blast freezer. Tomas, 07:50 |
+| `sorella:loc_holding_freezer` | 4.1 | The production kitchen - holding freezer. Tomas, 06:20 to 07:45 |
+| `sorella:loc_packaging_mezzanine` | 4.1 | The production kitchen - packaging mezzanine. Jordan, 08:15 to 10:20 |
+| `sorella:loc_office_cupboard` | 4.1 | The production kitchen - office cupboard. Jordan, 10:20 to 10:30 |
+| `sorella:loc_cotham_cabinet` | 4.1 | Cotham cabinet. Aoife, 07:30 to 07:55, with Yusuf reading the wells out |
+| `sorella:loc_cotham_back_freezer_1` | 4.1 | 5 L pan - Cotham back freezer 1 and Cotham back freezer 2 counted as one line \| 16 |
+| `sorella:loc_cotham_back_freezer_2` | 4.1 | 5 L pan - Cotham back freezer 1 and Cotham back freezer 2 counted as one line \| 16 |
+| `sorella:loc_cotham_under_counter_fridge` | 4.1 | Cotham under-counter fridge - whole milk, coffee bar, 2 L bottle \| 5, one open |
+| `sorella:loc_cotham_shelf_unit` | 4.1 | Cotham shelf unit - waffle cones, sleeve of 90 \| 3, one part |
+| `sorella:loc_gloucester_road_cabinet` | 4.1 | Gloucester Road cabinet, 16 wells \| 13 wells with something in them, 3 empty |
+| `sorella:loc_gloucester_road_under_counter_freezer` | 4.1 | Gloucester Road under-counter freezer, 5 L pan \| 6 |
+| `sorella:loc_gloucester_road_shelves` | 4.1 | Gloucester Road shelves - waffle cones, sleeve of 90 \| 2 |
+| `sorella:loc_the_van` | 4.1 | The van. Jordan, 06:05, before anything else |
+| `sorella:loc_the_cool_box` | 4.1 | places that were not counted: Marina's cool box \| At her house, in the boot |
+| `sorella:loc_the_trailer` | 4.1 | The trailer. Jordan, 10:35. Parked at the kitchen and switched off since September |
+| `sorella:loc_the_container` | 4.1 | places that were not counted: The container, Avonmouth |
+
+**Supplier — 5**
+
+| uri | § | the line that names it |
+|---|---|---|
+| `sorella:loc_whitehall_dairy` | 4.3 | deliveries received: 06:40 \| Whitehall Dairy \| 12 x 10 L bag-in-box whole milk; 8 x 5 L jerry can cream 38% |
+| `sorella:loc_terra_nostra_ingredients` | 4.3 | deliveries received: 11:20 \| Terra Nostra Ingredients \| 4 x 3.5 kg tins pistachio paste; 2 x 5 kg tins hazelnut paste |
+| `sorella:loc_severn_catering_supplies` | 4.3 | deliveries received: - \| Severn Catering Supplies \| Did not arrive. The Thursday drop was moved and nobody told the kitchen |
+| `sorella:loc_avonside_packaging` | 4.3 | deliveries received: 14:05 \| Avonside Packaging \| 4 cases 500 ml tubs (500 per case); 2 cases 500 ml lids (1,000 per case) |
+| `sorella:loc_kingsdown_fruit_farm` | 4.3 | deliveries received: 08:15 \| Kingsdown Fruit Farm \| 14 x 2 kg punnets of strawberries, left at the roller door before anybody was in |
+
+**WholesaleAccount — 6**
+
+| uri | § | the line that names it |
+|---|---|---|
+| `sorella:loc_caffe_umberto` | 4.3 | wholesale delivered: Caffe Umberto, Clifton \| 6 x 5 L pan \| 5 empty collected |
+| `sorella:loc_bar_trentanove` | 4.3 | wholesale delivered: Bar Trentanove \| 3 x 5 L pan \| 0 empty collected |
+| `sorella:loc_cleeve_coffee_house` | 4.3 | wholesale delivered: Cleeve Coffee House, Bishopston \| 3 x 5 L pan \| 4 empty collected |
+| `sorella:loc_the_hollow` | 4.3 | wholesale delivered: The Hollow, Old City \| 4 x 1.5 L catering tub vanilla |
+| `sorella:loc_wapping_wharf_kitchen` | 4.3 | wholesale delivered: Wapping Wharf Kitchen \| 4 x 5 L pan; 24 x 500 ml tub assorted |
+| `sorella:loc_the_old_bakehouse` | 4.1 | The van: The Old Bakehouse was shut and Steve did not go back |
+
+**Person — 9**
+
+| uri | § | the line that names it |
+|---|---|---|
+| `sorella:person_marina_devlin` | 4.1 | Marina walked round, wrote the notes at the foot, and rang Whitehall at five past eight |
+| `sorella:person_dan_farrugia` | 4.1 | Dan took the dry store and the walk-in chiller |
+| `sorella:person_tomas_nowicki` | 4.1 | Tomas the three freezers |
+| `sorella:person_rekha_pillai` | 4.3 | produced: Rekha drew down a pistachio pan and a dark chocolate pan and stood both back part-used |
+| `sorella:person_jordan_hale` | 4.1 | Jordan the van, the packaging mezzanine and the office cupboard |
+| `sorella:person_steve_corrigan` | 4.1 | The 31 wholesale accounts: Steve was asked and read his notebook back standing at the van |
+| `sorella:person_aoife_brennan` | 4.1 | Aoife took Cotham Hill with Yusuf reading the cabinet out to her |
+| `sorella:person_yusuf_adeyemi` | 4.1 | Aoife took Cotham Hill with Yusuf reading the cabinet out to her |
+| `sorella:person_priya_shah` | 4.1 | Priya took Gloucester Road on her own |
+
+**Flavour — 18**
+
+| uri | § | the line that names it |
+|---|---|---|
+| `sorella:flavour_fior_di_latte` | 4.1 | holding freezer: Fior di latte, 5 L pan \| 6 |
+| `sorella:flavour_stracciatella` | 4.1 | holding freezer: Stracciatella, 5 L pan \| 4 |
+| `sorella:flavour_pistachio` | 4.1 | holding freezer: Pistachio, 5 L pan \| 6 |
+| `sorella:flavour_hazelnut` | 4.1 | holding freezer: Hazelnut, 5 L pan \| 3 |
+| `sorella:flavour_dark_chocolate` | 4.1 | holding freezer: Dark chocolate, 5 L pan \| 4 |
+| `sorella:flavour_salted_caramel` | 4.1 | holding freezer: Salted caramel, 5 L pan \| 3 |
+| `sorella:flavour_vanilla` | 4.1 | holding freezer: Vanilla, 5 L pan \| 5 |
+| `sorella:flavour_coffee` | 4.1 | holding freezer: Coffee, 5 L pan \| 3 |
+| `sorella:flavour_mint_choc_chip` | 4.1 | holding freezer: Mint choc chip, 5 L pan \| 2 |
+| `sorella:flavour_biscuit` | 4.1 | holding freezer: Biscuit, 5 L pan \| 3 |
+| `sorella:flavour_strawberry_sorbet` | 4.1 | holding freezer: Strawberry sorbet, 5 L pan \| 2 |
+| `sorella:flavour_lemon_sorbet` | 4.1 | holding freezer: Lemon sorbet, 5 L pan \| 3 |
+| `sorella:flavour_mango_sorbet` | 4.1 | holding freezer: Mango sorbet, 5 L pan \| 4 |
+| `sorella:flavour_raspberry_sorbet` | 4.1 | holding freezer: Raspberry sorbet, 5 L pan \| 4 |
+| `sorella:flavour_elderflower_sorbet` | 4.1 | holding freezer: Elderflower sorbet, 5 L pan \| 4 |
+| `sorella:flavour_local_strawberry` | 4.1 | Cotham cabinet: Local strawberry \| 3/4 \| Eyeballed |
+| `sorella:flavour_amarena_cherry` | 4.1 | Cotham cabinet: Amarena cherry \| 1/4 \| Eyeballed |
+| `sorella:flavour_coconut` | 4.1 | Cotham cabinet: Coconut \| Well empty, cabinet card still in it |
+
+**Ingredient — 4**
+
+| uri | § | the line that names it |
+|---|---|---|
+| `sorella:item_white_base` | 4.3 | produced: Pasteuriser runs: 07:10, 55 kg white base. 09:30, 55 kg white base |
+| `sorella:item_sorbet_syrup` | 4.3 | produced: Pasteuriser runs: 11:00, 30 kg sorbet syrup |
+| `sorella:item_biscuit_base` | 4.1 | ingredient freezer: Biscuit base, lidded tub \| 1, about half |
+| `sorella:item_coffee_brew` | 4.1 | walk-in chiller: Coffee brew, lidded bucket \| 1, about 2 L, steeped Friday night |
+
+**BoughtItem — 77**
+
+| uri | § | the line that names it |
+|---|---|---|
+| `sorella:item_caster_sugar_sucrose` | 4.1 | dry store: Caster sugar, 25 kg sack \| 4, one of them open - 9.2 kg |
+| `sorella:item_dextrose` | 4.1 | dry store: Dextrose, 25 kg sack \| 2, one open - 13.8 kg |
+| `sorella:item_skimmed_milk_powder` | 4.1 | dry store: Skimmed milk powder, 25 kg bag \| 1, open - 12.4 kg |
+| `sorella:item_glucose_syrup_de38` | 4.1 | dry store: Glucose syrup DE38, 12.5 kg pail \| 1, open. Not lifted |
+| `sorella:item_inverted_sugar` | 4.1 | dry store: Inverted sugar, 14 kg pail \| 2, one open |
+| `sorella:item_base_50_stabiliser` | 4.1 | dry store: Base 50 stabiliser, 2 kg bag \| 4, one of them open with about a kilo in it |
+| `sorella:item_sicilian_pistachio_paste` | 4.1 | dry store: Sicilian pistachio paste, 3.5 kg tin \| 1 sealed, 1 open |
+| `sorella:item_hazelnut_paste` | 4.1 | dry store: Hazelnut paste, 5 kg tin \| 1 sealed, 1 open |
+| `sorella:item_cocoa_22_24` | 4.1 | dry store: Cocoa 22/24, 5 kg bag \| 1 sealed, 1 open - about 2 kg in it |
+| `sorella:item_dark_chocolate_70_callets` | 4.1 | dry store: Dark chocolate 70% callets, 10 kg box \| 1 sealed, 1 open - about 6 kg |
+| `sorella:item_vanilla_bean_paste` | 4.1 | dry store: Vanilla bean paste, 1 kg tub \| 2, one open |
+| `sorella:item_salted_caramel_variegate` | 4.1 | dry store: Salted caramel variegate, 3 kg pail \| 3, one open |
+| `sorella:item_peppermint_extract` | 4.1 | dry store: Peppermint extract, 500 ml bottle \| 2, one part-used |
+| `sorella:item_amarena_cherries_in_syrup` | 4.1 | dry store: Amarena cherries in syrup, 2.6 kg jar \| 4 |
+| `sorella:item_amaretti_biscuits` | 4.1 | dry store: Amaretti biscuits, 1 kg box \| 2 |
+| `sorella:item_pumpkin_puree` | 4.1 | dry store: Pumpkin puree, 3 kg tin \| 2, both dated last October |
+| `sorella:item_marsala` | 4.1 | dry store: Marsala, 750 ml bottle \| 1, part-used, from December |
+| `sorella:item_sea_salt_fine` | 4.1 | dry store: Sea salt, fine, 1 kg tub \| 3 |
+| `sorella:item_digestive_biscuits` | 4.1 | dry store: Digestive biscuits, 400 g pack \| 17 |
+| `sorella:item_honey_clear` | 4.1 | dry store: Honey, clear, 3 kg tub \| 2, one open |
+| `sorella:item_ground_cinnamon` | 4.1 | dry store: Ground cinnamon, 500 g tub \| 1 |
+| `sorella:item_lemons` | 4.1 | dry store: Lemons, 5 kg net bag \| 2 |
+| `sorella:item_lemon_juice` | 4.1 | dry store: Lemon juice, bottled, 1 L bottle \| 6 |
+| `sorella:item_elderflower_cordial` | 4.1 | dry store: Elderflower cordial, 1 L bottle \| 5 |
+| `sorella:item_coffee_beans_espresso_blend` | 4.1 | dry store: Coffee beans, espresso blend, 1 kg bag \| 1, open - carried back from Cotham |
+| `sorella:item_sanitiser_no_rinse` | 4.1 | dry store: Sanitiser, no-rinse, 5 L drum \| 2 |
+| `sorella:item_cip_alkaline_detergent` | 4.1 | dry store: CIP alkaline detergent, 10 L drum \| 1, part-used |
+| `sorella:item_blue_roll` | 4.1 | dry store: Blue roll, roll \| 9 |
+| `sorella:item_nitrile_gloves` | 4.1 | dry store: Nitrile gloves, box of 100 \| 6 |
+| `sorella:item_bin_liners_heavy_duty` | 4.1 | dry store: Bin liners, roll of 25 \| 4 |
+| `sorella:item_freezer_label_blank` | 4.1 | dry store: Freezer label, roll of 500 \| 2, one part-used |
+| `sorella:item_whole_milk_kitchen` | 4.1 | walk-in chiller: Whole milk, 10 L bag-in-box \| 8, one of them open with about 4 kg left |
+| `sorella:item_whipping_cream_38` | 4.1 | walk-in chiller: Cream 38%, 5 L jerry can \| 3, one open - about 2.6 kg |
+| `sorella:item_strawberries` | 4.1 | walk-in chiller: Strawberries, 2 kg punnet \| 2 |
+| `sorella:item_ricotta` | 4.1 | walk-in chiller: Ricotta, 2 kg tub \| 1 |
+| `sorella:item_cream_cheese` | 4.1 | walk-in chiller: Cream cheese, 2 kg tub \| 1 |
+| `sorella:item_eggs_medium_free_range` | 4.1 | walk-in chiller: Eggs, medium free range, tray of 30 \| 2 |
+| `sorella:item_basil_fresh` | 4.1 | walk-in chiller: Basil, fresh, 100 g pack \| A line was written and struck through. None found |
+| `sorella:item_fruit_puree_strawberry` | 4.1 | ingredient freezer: Fruit puree, strawberry, 1 kg tub \| 9 |
+| `sorella:item_fruit_puree_raspberry` | 4.1 | ingredient freezer: Fruit puree, raspberry, 1 kg tub \| 12 |
+| `sorella:item_fruit_puree_mango` | 4.1 | ingredient freezer: Fruit puree, mango, 1 kg tub \| 16 |
+| `sorella:item_fruit_puree_passionfruit` | 4.1 | ingredient freezer: Fruit puree, passionfruit, 1 kg tub \| 4 |
+| `sorella:item_fruit_puree_peach` | 4.1 | ingredient freezer: Fruit puree, peach, 1 kg tub \| 6 |
+| `sorella:item_fruit_puree_blood_orange` | 4.1 | ingredient freezer: Fruit puree, blood orange, 1 kg tub \| 2 |
+| `sorella:item_fruit_puree_pink_grapefruit` | 4.1 | ingredient freezer: Fruit puree, pink grapefruit, 1 kg tub \| 3 |
+| `sorella:item_coconut_puree` | 4.1 | ingredient freezer: Coconut puree, 1 kg tub \| 5 |
+| `sorella:item_freeze_dried_raspberry_pieces` | 4.1 | ingredient freezer: Freeze-dried raspberry pieces, 400 g tub \| 2, one open |
+| `sorella:item_500_ml_tub` | 4.1 | packaging mezzanine: 500 ml tub, case of 500 \| 2, one broken into - about 300 left in it |
+| `sorella:item_500_ml_lid_printed` | 4.1 | packaging mezzanine: 500 ml lid, printed, case of 1,000 \| 1, broken into - 20 lids |
+| `sorella:item_125_ml_mini_tub_with_lid` | 4.1 | packaging mezzanine: 125 ml mini tub with lid, sleeve of 100 \| 9, one open with about 40 in it |
+| `sorella:item_1_5_l_catering_tub_with_lid` | 4.1 | packaging mezzanine: 1.5 L catering tub with lid, case of 50 \| 1, part - 22 |
+| `sorella:item_waffle_cones` | 4.1 | packaging mezzanine: Waffle cones, sleeve of 90 \| 21 - five cases and a loose sleeve |
+| `sorella:item_wafer_cones` | 4.1 | packaging mezzanine: Wafer cones, sleeve of 120 \| 14 |
+| `sorella:item_gelato_cup_two_scoop` | 4.1 | packaging mezzanine: Gelato cup, two scoop, case of 1,000 \| 2 |
+| `sorella:item_gelato_cup_three_scoop` | 4.1 | packaging mezzanine: Gelato cup, three scoop, case of 1,000 \| 1 |
+| `sorella:item_gelato_spoon` | 4.1 | packaging mezzanine: Gelato spoon, box of 1,000 \| 4 |
+| `sorella:item_tasting_spoon` | 4.1 | packaging mezzanine: Tasting spoon, case of 5,000 \| 1, open. Nobody has ever counted one out |
+| `sorella:item_napkin_2_ply` | 4.1 | packaging mezzanine: Napkin, 2-ply, pack of 500 \| 19 |
+| `sorella:item_takeaway_bag_paper_handled` | 4.1 | packaging mezzanine: Takeaway bag, case of 250 \| 2, one open |
+| `sorella:item_cake_box_8` | 4.1 | packaging mezzanine: Cake box, 8", case of 50 \| 1, part - about 20 |
+| `sorella:item_cake_board_8` | 4.1 | packaging mezzanine: Cake board, 8", case of 100 \| 1, part - about 55 |
+| `sorella:item_napoli_pan_polycarbonate_5_l` | 4.1 | packaging mezzanine: Napoli pan, polycarbonate, new, case of 24 \| 1 |
+| `sorella:item_printed_sleeve_500_ml` | 4.1 | office cupboard: Printed sleeve, 500 ml, case of 1,000 \| 1, open - about 400 |
+| `sorella:item_napoli_pan_stainless_5_l` | 4.1 | empty pans, by the fill bench: Napoli pan, stainless 5 L, empty \| 34 |
+| `sorella:item_whole_milk_coffee_bar` | 4.1 | Cotham under-counter fridge - whole milk, coffee bar, 2 L bottle \| 5, one open |
+| `sorella:item_oat_milk_barista` | 4.1 | Cotham Hill: Oat milk, barista, 1 L carton \| 3 |
+| `sorella:item_canned_soft_drink` | 4.1 | Cotham Hill: Canned soft drink \| 31 |
+| `sorella:item_bottled_water_500_ml` | 4.1 | Cotham Hill: Bottled water, 500 ml \| 18 |
+| `sorella:item_vanilla_syrup` | 4.1 | Cotham Hill: Vanilla syrup, 1 L bottle \| 1, part-used |
+| `sorella:item_hazelnut_syrup` | 4.1 | Cotham Hill: Hazelnut syrup, 1 L bottle \| 1, part-used |
+| `sorella:item_caramel_syrup` | 4.1 | Cotham Hill: Caramel syrup, 1 L bottle \| 2, one part-used |
+| `sorella:item_hot_chocolate_powder` | 4.1 | Cotham Hill: Hot chocolate powder, 2 kg tub \| 1, part-used |
+| `sorella:item_paper_cup_8_oz` | 4.1 | Cotham Hill: Paper cup, 8 oz \| About 700 |
+| `sorella:item_paper_cup_12_oz` | 4.1 | Cotham Hill: Paper cup, 12 oz \| About 500 |
+| `sorella:item_paper_cup_lid` | 4.1 | Cotham Hill: Paper cup lid \| About 900 |
+| `sorella:item_wooden_stirrer` | 4.1 | Cotham Hill: Wooden stirrer \| 1 box, part-used |
+| `sorella:item_dry_ice_pellets` | 4.1 | The van: Dry ice, 10 kg insulated tub \| 1, part-used, bought Saturday |
+
+**SoldProduct — 21**
+
+| uri | § | the line that names it |
+|---|---|---|
+| `sorella:product_single_scoop` | 4.3 | sold, Cotham Hill: 268 single scoop |
+| `sorella:product_double_scoop` | 4.3 | sold, Cotham Hill: 141 double scoop |
+| `sorella:product_triple_scoop` | 4.3 | sold, Cotham Hill: 22 triple scoop |
+| `sorella:product_waffle_cone_instead_of_wafer` | 4.3 | sold, Cotham Hill: 118 waffle-cone supplements |
+| `sorella:product_500_ml_retail_tub` | 4.3 | sold, Cotham Hill: 34 x 500 ml tub |
+| `sorella:product_125_ml_mini_tub` | 4.3 | sold, Cotham Hill: 6 x 125 ml mini |
+| `sorella:product_1_5_l_catering_tub` | 4.3 | wholesale delivered: The Hollow, Old City \| 4 x 1.5 L catering tub vanilla |
+| `sorella:product_5_l_napoli_pan` | 4.1 | holding freezer: Fior di latte, 5 L pan \| 6 |
+| `sorella:product_gelato_cake_8` | 4.1 | holding freezer: 8" cake, finished and boxed, awaiting collection \| 2 |
+| `sorella:product_affogato` | 4.3 | sold, Cotham Hill: 12 affogato |
+| `sorella:product_espresso` | 4.3 | sold, Cotham Hill: 96 coffees: 14 espresso |
+| `sorella:product_americano` | 4.3 | sold, Cotham Hill: 96 coffees: 21 americano |
+| `sorella:product_cappuccino` | 4.3 | sold, Cotham Hill: 96 coffees: 19 cappuccino |
+| `sorella:product_flat_white` | 4.3 | sold, Cotham Hill: 96 coffees: 17 flat white |
+| `sorella:product_latte` | 4.3 | sold, Cotham Hill: 96 coffees: 15 latte |
+| `sorella:product_mocha` | 4.3 | sold, Cotham Hill: 96 coffees: 6 mocha |
+| `sorella:product_hot_chocolate` | 4.3 | sold, Cotham Hill: 96 coffees: 4 hot chocolate |
+| `sorella:product_oat_milk` | 4.3 | sold, Cotham Hill: 23 oat milk supplements |
+| `sorella:product_syrup_shot` | 4.3 | sold, Cotham Hill: 19 syrup shots |
+| `sorella:product_canned_soft_drink` | 4.3 | sold, Cotham Hill: 27 cans |
+| `sorella:product_bottled_water` | 4.3 | sold, Cotham Hill: 14 bottles of water |
+
+### `submit()` and the class-membership assertion
+
+The 1 Sep line says master data enters through generated forms and `submit()`
+writes the class membership. **The first half is done and the second half is
+not built.** `submit()` mints a URI it has never seen and registers it under
+`uniti:uri`, and it spends `class_name` on `action_name` alone; it writes no
+class fact. Checked in the code before entering anything, not inferred:
+`grep -n "designates_type\|entity_class\|rdf:type" components/generator/generate.py`
+returns nothing.
+
+What carries the class instead is the map. `sorella:entity_class` is a slot on
+fifteen of the twenty-one classes, so **every submission set `entity_class`
+explicitly as a form field** — `--set entity_class=BoughtItem` — and the fact
+is in the log with both clocks, correctable like any other, which is what the
+1 Sep line wanted. It went through `submit()`; nothing was hand-written. The
+gap is that the value came off a hand-typed field rather than off the class the
+form was generated from, and for an entity minted through a ref field there
+would be no such field at all — which is the half of the 1 Sep line that is
+still a proposal.
+
+Nothing was minted through a ref field this session: the rows are ordered so
+that every referenced entity already exists, and the guard that proves it is
+the count — 197 planned, 197 minted, one per submission.
+
+### The two live defects, and what the entry did to them
+
+**The computed classes were not written to.** The plan refuses, before opening a
+connection, any value for a slot carrying an `aggregate` annotation or an
+`equals_expression`, and any submission at all to `IngredientOnHand` or
+`GelatoOnHand`. The map's own reading of which slots those are:
+
+```
+slots that may not be submitted: ['gelato_in', 'gelato_on_hand_net',
+ 'gelato_out', 'ingredient_in', 'ingredient_on_hand_net', 'ingredient_out']
+```
+
+Checked afterwards against the log rather than trusted — every slot of both
+balance classes, counted by predicate:
+
+```
+  sorella:gelato_flavour               0 assertions
+  sorella:gelato_format                0 assertions
+  sorella:gelato_in                    0 assertions
+  sorella:gelato_on_hand_net           0 assertions
+  sorella:gelato_out                   0 assertions
+  sorella:gelato_where                 0 assertions
+  sorella:ingredient_in                0 assertions
+  sorella:ingredient_on_hand           0 assertions
+  sorella:ingredient_on_hand_net       0 assertions
+  sorella:ingredient_out               0 assertions
+  sorella:ingredient_where             0 assertions
+```
+
+Eleven slots, nothing under any of them. The 21 Aug rule still holds and is
+still held by nobody typing plus, now, one guard in a throwaway script.
+
+**The log still cannot tell the two businesses apart by any column, and the
+count is below.**
+
+### Sorella's assertions, apart from Marlow's
+
+| | assertions | entities | intents |
+|---|---|---|---|
+| Marlow | 301 | 107 | 1 |
+| **Sorella** | **1,316** | **298** | **198** |
+| total in the log | 1,617 | 405 | 199 |
+
+Sorella's 1,316 are the seal's 101 slot-URI registrations plus this session's
+1,215. The 1,215 are 197 entity mints and 1,018 field values.
+
+**How they were told apart: the prefix on the URI a row's subject is registered
+under, and nothing else.** Marlow's entities and slots are all `uniti:`,
+Sorella's all `sorella:`, so the query joins every assertion to the `uniti:uri`
+registry through its `subject_id` and buckets on the prefix:
+
+```sql
+WITH reg AS (
+  SELECT a.subject_id AS eid, a.value_literal AS uri
+  FROM assertion a
+  WHERE a.predicate_id = (SELECT subject_id FROM assertion
+                          WHERE subject_id = predicate_id
+                            AND value_literal = 'uniti:uri'
+                          ORDER BY seq LIMIT 1)
+    AND a.value_literal IS NOT NULL)
+SELECT CASE WHEN s.uri LIKE 'sorella:%' THEN 'sorella'
+            WHEN s.uri LIKE 'uniti:%'   THEN 'marlow' END, count(*)
+FROM assertion a LEFT JOIN reg s ON s.eid = a.subject_id
+GROUP BY 1;
+```
+
+→ `[('sorella', 1316), ('marlow', 301)]`, no unregistered subject.
+
+Every other column still says nothing. `ontology_version` is `'v1'` for both.
+`source` splits `human_stated 1212` / `system_derived 405` across both
+businesses. The 197 new intents are `fareza` / `generator` /
+`submit_<Class>` — distinguishable from the two seals by `action_name`, but
+that separates a *write path*, not a business, and Marlow's next form
+submission would land in the same bucket. **The prefix is a convention this
+session chose, not something the kernel knows**; had the URIs been minted
+`uniti:caster_sugar`, nothing anywhere would have told the two apart. The 4 Sep
+`[T3]` line stands, and is now load-bearing rather than theoretical.
+
+### The tables, and the defect the entry created
+
+`generate.py table` was run for each of the ten filled classes at
+`valid_at 2026-06-16T23:00:00+00:00`, `as_of 2026-09-03T21:08:05+00:00`, each
+with `--verify`. All ten exit 0 and every cell equals a direct read:
+
+| class | rows | cells verified |
+|---|---|---|
+| `Unit` | 197 | 591 |
+| `Location` | 197 | 591 |
+| `InternalLocation` | 197 | 985 |
+| `Supplier` | 197 | 1,773 |
+| `WholesaleAccount` | 197 | 1,182 |
+| `Person` | 197 | 788 |
+| `Flavour` | 197 | 1,182 |
+| `Ingredient` | 197 | 1,182 |
+| `BoughtItem` | 197 | 1,970 |
+| `SoldProduct` | 197 | 1,970 |
+
+The done condition asks for non-zero rows per class and a clean `--verify`, and
+both hold. **They hold in the worst possible way: every table has all 197
+entities in it.** Every one. A unit is a row of the `BoughtItem` table, a
+supplier is a row of the `Flavour` table, and a flavour is a row of the `Unit`
+table.
+
+The cause is the generator's row rule meeting the class fact:
+
+> a row of this table is an entity that is the subject of at least one fact
+> under one of this table's columns, and has at least one value standing at
+> these clocks.
+
+`entity_class` is a column of fifteen of the twenty-one classes, and now every
+entity has one, so every entity qualifies as a row of every one of those
+fifteen tables. **Filling the master data made every projection in the system
+strictly worse than it was when the log was empty**, and it did so through the
+one fact that exists to fix it.
+
+The map already says which slot that is — `entity_class` carries
+`designates_type: true` — and the log now carries the value. The generator
+reads neither. This is the same shape as the `aggregate` defect found on
+4 Sep: the map states something three ways and the generator reads none of
+them. It is not worked around here; changing `components/` was outside this
+item and would not have been said afterwards.
+
+The same rule wrecks the pickers, and the before-and-after is exact. Yesterday
+**all 41 pickers over 12 classes offered nothing.** Today **all 41 offer 197**,
+which is every entity in the log whatever the field's range. `movement_flavour`,
+whose range is `Flavour`:
+
+```
+movement_flavour offers 197:
+    sorella:flavour_amarena_cherry  Amarena cherry
+    sorella:flavour_biscuit  Biscuit
+    sorella:flavour_coconut  Coconut
+    ...
+    sorella:unit_tray
+    sorella:unit_tub
+    sorella:unit_well
+```
+
+The eighteen real flavours carry a label and the other 179 do not, because a
+label is the range class's identifier and a unit has no `flavour_name`. So the
+rendered form does carry the information needed to separate them — the
+generator computes the label and then does not use it to decide the row. An
+empty picker and a picker holding the whole log are the same defect twice.
+
+`Business`, `MovementKind`, `Recipe`, `RecipeLine`, `ProductPrice`,
+`StockMovement`, `Batch`, `StockCount` and `StockCountLine` were not filled and
+their tables also show 197 rows, for the same reason. Only `IngredientOnHand`
+and `GelatoOnHand` show 0 — they are the two classes with no `entity_class`
+slot, which is an accident of them being computed rather than a mechanism.
+
+### What `§4.1` or `§4.3` named that had nowhere to go
+
+1. **The place beside the fill bench.** `§4.1` counts 34 steel and 12
+   polycarbonate empty pans and says of the heading itself: *"Jordan wrote these
+   under a heading of his own — by the bench — which is not one of the places in
+   `§1.3`."* `§3.2` agrees: *"Empty pans have nowhere to live. They come back on
+   the van, get washed and stacked by the fill bench, and `§1.3` names no place
+   for them."* No `InternalLocation` was entered, because the only name available
+   is one the profile says the business does not have. The two count lines were
+   entered as `BoughtItem` rows; where they were counted has no row.
+2. **Aoife's car, the drinks fridge at Gloucester Road, and the sink at Cotham
+   Hill.** `§4.1`'s own words: *"Neither was counted, because neither is a
+   place."* Three things stock moves through with no `Location` row, and `§3.2`
+   says the sink takes more milk than anything except the coffee machine.
+3. **The pasteuriser and the bench.** `§4.1`: *"the pasteuriser went on at
+   07:05."* `§3.2`: *"Between the chiller and the blast freezer everything in the
+   building is inside a machine or on a bench, and `§1.3` names neither."* That
+   is the destination of every ingredient-to-machine movement, so the
+   consumption that `§3.2` says is unrecorded also has nowhere to be recorded
+   *to*.
+4. **The four confidence words.** `§4.1` has a section for them — *Weighed,
+   Counted, Eyeballed, Not counted* — and says *"the difference between those
+   two lines is the whole of what this count knows about itself."*
+   `StockCountLine` has ten slots and not one is a confidence. The kernel has
+   `assertion.confidence` and `submit()` has no way to set it, so the column
+   exists and the map cannot reach it. This is the largest of the six for step
+   three: without it `§4.1` can be entered as numbers and not as a count.
+5. **Promo items.** `§4.1`, office cupboard: *"Promo items — a box of postcards
+   from 2023, two roller banners | 1 box, 2 banners."* Not in `§1.6`'s eighty,
+   not a flavour, a unit, a product or a place.
+6. **A `twelve`.** `§1.5` orders steel napoli pans in *twelves* and `§1.6` says
+   *"single pan, bought twelve at a time."* No `Unit` row was entered for it
+   because no line of `§4.1` or `§4.3` names one, so
+   `item_ordered_in` is blank on `sorella:item_napoli_pan_stainless_5_l`.
+7. **Coffee beans, counted two ways.** `§1.5`: *"Coffee beans | kilos | bags at
+   the shop | grams in the kitchen | Same bean, two places, two units."*
+   `item_counted_in` is single-valued and holds `bag`; the kitchen's kilo has
+   nowhere to go on the same row. The same shape as the two Cotham back
+   freezers, one row short of what the business does.
+8. **Sixteen bought items with no supplier.** `item_supplier` is blank on
+   `bottled_water_500_ml`, `canned_soft_drink`, `caramel_syrup`,
+   `coffee_beans_espresso_blend`, `dry_ice_pellets`, `hazelnut_syrup`,
+   `hot_chocolate_powder`, `oat_milk_barista`, `paper_cup_8_oz`,
+   `paper_cup_12_oz`, `paper_cup_lid`, `vanilla_syrup`, `wafer_cones`,
+   `waffle_cones`, `whole_milk_coffee_bar` and `wooden_stirrer`. `§1.6` gives
+   all sixteen a supplier and the four suppliers concerned — Bristol Cash &
+   Carry, Marchetti Cones, Coldharbour Roastery, Bristol Ice & Dry Ice — are
+   named by no line of `§4.1` or `§4.3`, so filling the field would have minted
+   an out-of-scope entity through a ref field.
+
+**The one borderline call, recorded so it can be overturned in a sentence.**
+`§4.1` writes *"the cash and carry run was in the car by half past ten"*, which
+does point at exactly one of the nine suppliers. It was read as **not** a
+naming, because the sentence sits inside the table row headed *"Aoife's car,
+the drinks fridge at Gloucester Road, and the sink at Cotham Hill — three
+things `§3.7` says stock moves through that `§1.3` does not name"*, and what it
+is there to say is that the car held stock. Reading a supplier out of it is
+reading past what the line is about. Admitting it would add one `Supplier` row
+and twelve `item_supplier` values.
+
+### Classes deliberately not filled
+
+| class | why |
+|---|---|
+| `Business` | `§4.1` and `§4.3` never write *Sorella Gelato Ltd*, which is the identifier. "Sorella" appears once, in *"the first count anybody at Sorella has taken"*. One row, wanted because it would be tidy, which is the boundary working |
+| `MovementKind` | `§3.2`'s fifty-three rows are master data step three needs, and `§4.3` names events under `§3.2`'s five headings, never one of the fifty-three kinds |
+| `Recipe`, `RecipeLine` | no page is named. See the consumption answer above — this is the one exclusion that has a cost |
+| `ProductPrice` | `§4.3` gives two days' takings and not one product's price. `§1.7`'s grid is the source and neither day names a cell of it |
+| `StockMovement`, `Batch`, `StockCount`, `StockCountLine` | documents and events, which is step three |
+| `IngredientOnHand`, `GelatoOnHand` | computed. Not filled, by the 21 Aug rule and the 4 Sep defect |
+
+### One table, in full
+
+`Unit` — the smallest of the ten, and the clearest picture of what the row rule
+now does. Twenty-six rows are units. The other 171 are there because they carry
+an `entity_class`, and the class each of them carries is written in the first
+column of the table it does not belong in.
+
+```
+Unit  (v1)
+valid_at   2026-06-16T23:00:00+00:00
+as_of      2026-09-03T21:08:05.022894+00:00
+
+subject                                            entity_class      unit_name   unit_meaning
+-------------------------------------------------  ----------------  ----------  ----------------------------------------------------------------------------------------------------------------------------------------
+sorella:flavour_amarena_cherry                     Flavour
+sorella:flavour_biscuit                            Flavour
+sorella:flavour_coconut                            Flavour
+sorella:flavour_coffee                             Flavour
+sorella:flavour_dark_chocolate                     Flavour
+sorella:flavour_elderflower_sorbet                 Flavour
+sorella:flavour_fior_di_latte                      Flavour
+sorella:flavour_hazelnut                           Flavour
+sorella:flavour_lemon_sorbet                       Flavour
+sorella:flavour_local_strawberry                   Flavour
+sorella:flavour_mango_sorbet                       Flavour
+sorella:flavour_mint_choc_chip                     Flavour
+sorella:flavour_pistachio                          Flavour
+sorella:flavour_raspberry_sorbet                   Flavour
+sorella:flavour_salted_caramel                     Flavour
+sorella:flavour_stracciatella                      Flavour
+sorella:flavour_strawberry_sorbet                  Flavour
+sorella:flavour_vanilla                            Flavour
+sorella:item_125_ml_mini_tub_with_lid              BoughtItem
+sorella:item_1_5_l_catering_tub_with_lid           BoughtItem
+sorella:item_500_ml_lid_printed                    BoughtItem
+sorella:item_500_ml_tub                            BoughtItem
+sorella:item_amarena_cherries_in_syrup             BoughtItem
+sorella:item_amaretti_biscuits                     BoughtItem
+sorella:item_base_50_stabiliser                    BoughtItem
+sorella:item_basil_fresh                           BoughtItem
+sorella:item_bin_liners_heavy_duty                 BoughtItem
+sorella:item_biscuit_base                          Ingredient
+sorella:item_blue_roll                             BoughtItem
+sorella:item_bottled_water_500_ml                  BoughtItem
+sorella:item_cake_board_8                          BoughtItem
+sorella:item_cake_box_8                            BoughtItem
+sorella:item_canned_soft_drink                     BoughtItem
+sorella:item_caramel_syrup                         BoughtItem
+sorella:item_caster_sugar_sucrose                  BoughtItem
+sorella:item_cip_alkaline_detergent                BoughtItem
+sorella:item_cocoa_22_24                           BoughtItem
+sorella:item_coconut_puree                         BoughtItem
+sorella:item_coffee_beans_espresso_blend           BoughtItem
+sorella:item_coffee_brew                           Ingredient
+sorella:item_cream_cheese                          BoughtItem
+sorella:item_dark_chocolate_70_callets             BoughtItem
+sorella:item_dextrose                              BoughtItem
+sorella:item_digestive_biscuits                    BoughtItem
+sorella:item_dry_ice_pellets                       BoughtItem
+sorella:item_eggs_medium_free_range                BoughtItem
+sorella:item_elderflower_cordial                   BoughtItem
+sorella:item_freeze_dried_raspberry_pieces         BoughtItem
+sorella:item_freezer_label_blank                   BoughtItem
+sorella:item_fruit_puree_blood_orange              BoughtItem
+sorella:item_fruit_puree_mango                     BoughtItem
+sorella:item_fruit_puree_passionfruit              BoughtItem
+sorella:item_fruit_puree_peach                     BoughtItem
+sorella:item_fruit_puree_pink_grapefruit           BoughtItem
+sorella:item_fruit_puree_raspberry                 BoughtItem
+sorella:item_fruit_puree_strawberry                BoughtItem
+sorella:item_gelato_cup_three_scoop                BoughtItem
+sorella:item_gelato_cup_two_scoop                  BoughtItem
+sorella:item_gelato_spoon                          BoughtItem
+sorella:item_glucose_syrup_de38                    BoughtItem
+sorella:item_ground_cinnamon                       BoughtItem
+sorella:item_hazelnut_paste                        BoughtItem
+sorella:item_hazelnut_syrup                        BoughtItem
+sorella:item_honey_clear                           BoughtItem
+sorella:item_hot_chocolate_powder                  BoughtItem
+sorella:item_inverted_sugar                        BoughtItem
+sorella:item_lemon_juice                           BoughtItem
+sorella:item_lemons                                BoughtItem
+sorella:item_marsala                               BoughtItem
+sorella:item_napkin_2_ply                          BoughtItem
+sorella:item_napoli_pan_polycarbonate_5_l          BoughtItem
+sorella:item_napoli_pan_stainless_5_l              BoughtItem
+sorella:item_nitrile_gloves                        BoughtItem
+sorella:item_oat_milk_barista                      BoughtItem
+sorella:item_paper_cup_12_oz                       BoughtItem
+sorella:item_paper_cup_8_oz                        BoughtItem
+sorella:item_paper_cup_lid                         BoughtItem
+sorella:item_peppermint_extract                    BoughtItem
+sorella:item_printed_sleeve_500_ml                 BoughtItem
+sorella:item_pumpkin_puree                         BoughtItem
+sorella:item_ricotta                               BoughtItem
+sorella:item_salted_caramel_variegate              BoughtItem
+sorella:item_sanitiser_no_rinse                    BoughtItem
+sorella:item_sea_salt_fine                         BoughtItem
+sorella:item_sicilian_pistachio_paste              BoughtItem
+sorella:item_skimmed_milk_powder                   BoughtItem
+sorella:item_sorbet_syrup                          Ingredient
+sorella:item_strawberries                          BoughtItem
+sorella:item_takeaway_bag_paper_handled            BoughtItem
+sorella:item_tasting_spoon                         BoughtItem
+sorella:item_vanilla_bean_paste                    BoughtItem
+sorella:item_vanilla_syrup                         BoughtItem
+sorella:item_wafer_cones                           BoughtItem
+sorella:item_waffle_cones                          BoughtItem
+sorella:item_whipping_cream_38                     BoughtItem
+sorella:item_white_base                            Ingredient
+sorella:item_whole_milk_coffee_bar                 BoughtItem
+sorella:item_whole_milk_kitchen                    BoughtItem
+sorella:item_wooden_stirrer                        BoughtItem
+sorella:loc_avonside_packaging                     Supplier
+sorella:loc_bar_trentanove                         WholesaleAccount
+sorella:loc_blast_freezer                          InternalLocation
+sorella:loc_caffe_umberto                          WholesaleAccount
+sorella:loc_cleeve_coffee_house                    WholesaleAccount
+sorella:loc_comps                                  Location
+sorella:loc_cotham_back_freezer_1                  InternalLocation
+sorella:loc_cotham_back_freezer_2                  InternalLocation
+sorella:loc_cotham_cabinet                         InternalLocation
+sorella:loc_cotham_hill                            InternalLocation
+sorella:loc_cotham_shelf_unit                      InternalLocation
+sorella:loc_cotham_under_counter_fridge            InternalLocation
+sorella:loc_donations                              Location
+sorella:loc_dry_store                              InternalLocation
+sorella:loc_gloucester_road                        InternalLocation
+sorella:loc_gloucester_road_cabinet                InternalLocation
+sorella:loc_gloucester_road_shelves                InternalLocation
+sorella:loc_gloucester_road_under_counter_freezer  InternalLocation
+sorella:loc_holding_freezer                        InternalLocation
+sorella:loc_ingredient_freezer                     InternalLocation
+sorella:loc_kingsdown_fruit_farm                   Supplier
+sorella:loc_marina_s_house                         Location
+sorella:loc_office_cupboard                        InternalLocation
+sorella:loc_packaging_mezzanine                    InternalLocation
+sorella:loc_production_kitchen                     InternalLocation
+sorella:loc_severn_catering_supplies               Supplier
+sorella:loc_staff                                  Location
+sorella:loc_tastings                               Location
+sorella:loc_terra_nostra_ingredients               Supplier
+sorella:loc_the_container                          InternalLocation
+sorella:loc_the_cool_box                           InternalLocation
+sorella:loc_the_cotham_bin                         Location
+sorella:loc_the_gloucester_road_bin                Location
+sorella:loc_the_hollow                             WholesaleAccount
+sorella:loc_the_kitchen_bin                        Location
+sorella:loc_the_old_bakehouse                      WholesaleAccount
+sorella:loc_the_trailer                            InternalLocation
+sorella:loc_the_van                                InternalLocation
+sorella:loc_the_walk_in_customer                   Location
+sorella:loc_walk_in_chiller                        InternalLocation
+sorella:loc_wapping_wharf_kitchen                  WholesaleAccount
+sorella:loc_whitehall_dairy                        Supplier
+sorella:person_aoife_brennan                       Person
+sorella:person_dan_farrugia                        Person
+sorella:person_jordan_hale                         Person
+sorella:person_marina_devlin                       Person
+sorella:person_priya_shah                          Person
+sorella:person_rekha_pillai                        Person
+sorella:person_steve_corrigan                      Person
+sorella:person_tomas_nowicki                       Person
+sorella:person_yusuf_adeyemi                       Person
+sorella:product_125_ml_mini_tub                    SoldProduct
+sorella:product_1_5_l_catering_tub                 SoldProduct
+sorella:product_500_ml_retail_tub                  SoldProduct
+sorella:product_5_l_napoli_pan                     SoldProduct
+sorella:product_affogato                           SoldProduct
+sorella:product_americano                          SoldProduct
+sorella:product_bottled_water                      SoldProduct
+sorella:product_canned_soft_drink                  SoldProduct
+sorella:product_cappuccino                         SoldProduct
+sorella:product_double_scoop                       SoldProduct
+sorella:product_espresso                           SoldProduct
+sorella:product_flat_white                         SoldProduct
+sorella:product_gelato_cake_8                      SoldProduct
+sorella:product_hot_chocolate                      SoldProduct
+sorella:product_latte                              SoldProduct
+sorella:product_mocha                              SoldProduct
+sorella:product_oat_milk                           SoldProduct
+sorella:product_single_scoop                       SoldProduct
+sorella:product_syrup_shot                         SoldProduct
+sorella:product_triple_scoop                       SoldProduct
+sorella:product_waffle_cone_instead_of_wafer       SoldProduct
+sorella:unit_bag                                   Unit              bag         Milk (10 L bag-in-box), skimmed milk powder (25 kg), cocoa (5 kg), Base 50 (2 kg), coffee beans (1 kg). Five unrelated things are a bag.
+sorella:unit_bottle                                Unit              bottle      A 500 ml, 750 ml, 1 L or 2 L bottle. Section 1.5's unit list does not carry it and section 1.6 counts eight items in it.
+sorella:unit_box                                   Unit              box         10 kg of chocolate, 1 kg of amaretti, 1,000 spoons, 5 kg of rhubarb.
+sorella:unit_bucket                                Unit              bucket      Also the 25 L lidded bucket that aged base is drawn into. Two buckets in the chiller is base; two buckets in the dry store is glucose.
+sorella:unit_can                                   Unit              can         The 5 L jerry can cream arrives in.
+sorella:unit_carton                                Unit              carton      Ten 2 kg bags of Base 50. The only thing bought by the carton.
+sorella:unit_case                                  Unit              case        The outer a supplier ships in. Never the same count twice: 500 tubs, 1,000 lids, 6 puree tubs, 4 cone sleeves, 24 cans.
+sorella:unit_drum                                  Unit              drum        5 L or 10 L of cleaning chemical.
+sorella:unit_each                                  Unit              each        One item. Cones, cups, spoons, napkins, tubs, lids, cake boards.
+sorella:unit_gram                                  Unit              gram        Weight. Every recipe, the pasteuriser scale, the bench scale.
+sorella:unit_jar                                   Unit              jar         2.6 kg of amarena cherries.
+sorella:unit_kilogram                              Unit              kilogram    Weight. Every recipe, the pasteuriser scale, the bench scale.
+sorella:unit_litre                                 Unit              litre       Volume. Pack sizes, pan and tub capacity, cordials and syrups.
+sorella:unit_millilitre                            Unit              millilitre  Volume. Pack sizes, pan and tub capacity, cordials and syrups.
+sorella:unit_pack                                  Unit              pack        400 g of digestives, 500 napkins, 100 g of basil.
+sorella:unit_pail                                  Unit              pail        12.5 kg of glucose, 14 kg of inverted sugar, 3 kg of caramel variegate. Everyone says bucket.
+sorella:unit_pan                                   Unit              pan         A 5 L napoli pan, steel or polycarbonate.
+sorella:unit_punnet                                Unit              punnet      The kitchen's word for the same object.
+sorella:unit_roll                                  Unit              roll        Blue roll, bin liners.
+sorella:unit_sack                                  Unit              sack        25 kg of caster sugar or dextrose.
+sorella:unit_scoop                                 Unit              scoop       One press of a till button.
+sorella:unit_sleeve                                Unit              sleeve      90 waffle cones, 120 wafer cones, 100 mini tubs.
+sorella:unit_tin                                   Unit              tin         3.5 kg pistachio paste, 5 kg hazelnut paste, 3 kg pumpkin puree.
+sorella:unit_tray                                  Unit              tray        Kingsdown's word for a 2 kg punnet of strawberries or figs.
+sorella:unit_tub                                   Unit              tub         A 500 ml retail tub, a 1 kg puree tub, a 1.5 L catering tub, a 2 kg ricotta tub, a 3 kg honey tub. The word alone never says which.
+sorella:unit_well                                  Unit              well        One hole in a display cabinet. Twenty-four at Cotham, sixteen at Gloucester Road.
+
+197 rows, 3 columns, 342 of 591 cells blank
+```
+
+### Surprising
+
+1. **The class fact broke every table, and it is the fact that exists to fix
+   them.** Yesterday every table had 0 rows and every picker offered nothing.
+   Today every table has 197 rows and every picker offers 197. Neither number is
+   right, and the thing that changed between them is the assertion the 1 Sep
+   line asked for. The generator's row rule guesses class membership from which
+   columns are filled; the log now *states* it, and the guess is worse than it
+   was because the stated fact is one of the columns it guesses from. The map
+   even says which slot to read — `designates_type: true` on `entity_class` —
+   and the 1 Sep line refused `designates_type` on the ground that nothing reads
+   it. It is still true that nothing reads it, and it is now the difference
+   between a table and a dump.
+2. **Two modules are named `resolve.py`.** `components/kernel/resolve.py` has
+   `resolve_single` and `components/ontology/resolve.py` has `resolve_version`.
+   Put both directories on `sys.path` and the second import silently gets the
+   first module and dies on the name it wanted:
+   `ImportError: cannot import name 'resolve_single' from 'resolve'
+   (...\components\ontology\resolve.py)`. That was the first thing this session
+   ran after writing the balance probe. `generate.py` never hits it because it
+   only ever imports the kernel's. **Every reader of a balance needs both** —
+   which map applies, then which fact wins — so `report` will hit it on its
+   first line. The workaround here was `importlib.util.spec_from_file_location`.
+3. **`§1.5` has no `bottle`.** The section the profile calls *"the single most
+   persistent source of confusion in the business"* lists twenty-six units and
+   omits the one `§1.6` counts eight rows in — peppermint extract, marsala,
+   lemon juice, elderflower cordial, the coffee-bar milk and three syrups.
+   `§4.1` writes *bottle* on eight of its lines. It was entered as a `Unit` under the
+   item's own escape hatch, cited to *"Peppermint extract, 500 ml bottle | 2,
+   one part-used"*. `flat`, which `§1.5` does list, was left out because no line
+   of either day uses it. So the count of units the business works in is 26
+   either way and the membership is not the same 26.
+4. **The boundary barely touches the bought items.** It was written to keep the
+   eighty out and it kept out three — panettone, figs and rhubarb — which are
+   the exact three `§4.1` says nobody wrote a line for. Six sheets walking a
+   building in five hands is not a sample of `§1.6`; it is very nearly `§1.6`.
+   Where the boundary did its work is the accounts, 6 of 31, and the flavours,
+   18 of 25.
+5. **`submit()` does not write the class fact and the map does.** The 1 Sep line
+   reads as a statement about the code and is satisfied by the map: fifteen
+   classes carry an `entity_class` slot, so a form has a field for it and a
+   submission fills it. From outside, the log looks exactly as the decision
+   intended. From inside, the class came off a typed field rather than off the
+   class the form was generated from, and an entity minted through a **ref**
+   field — the supplier first named on a receipt, which is the case the 1 Sep
+   line spells out — would still get no class at all. Nothing was minted that
+   way this session, so the gap did not bite; step three is where it will.
+6. **LinkML's annotations are not a mapping, and they fail three different
+   ways.** `dict(slot.annotations)` raises `ValueError: dictionary update
+   sequence element #0 has length 11; 2 is required` — on an annotations block
+   that is *empty*. `spec.by.items()` raises `AttributeError: 'JsonObj' object
+   has no attribute 'items'. Did you mean: '_items'?`. Reading the map's own
+   `aggregate` spec took three attempts. Every one failed loudly, which is the
+   opposite of 4 Sep's silent `'3' + '4' == '34'`, and is the reason this took
+   ten minutes rather than shipping wrong.
+7. **Sorella now outweighs Marlow four to one in one log and no column says
+   so.** 1,316 against 301. The separation is a prefix this session chose when
+   it minted the first URI; nothing enforced it and nothing would have noticed
+   `uniti:caster_sugar`.
+8. **One form submission is one intent, exactly.** 197 submissions, 197 new
+   intents, 197 entities, 1,215 assertions, no partial write. The kernel's write
+   gate held without anything being asked of it.
+
+### Proposed `DECISIONS.md` entries
+
+1. **A URI namespace per identifier slot.** The map identifies on ten slots and
+   this session's ten classes use six of them — `location_name`, `unit_name`,
+   `person_name`, `flavour_name`, `item_name`, `product_name` — so entity URIs
+   are minted `sorella:loc_…`,
+   `sorella:unit_…`, `sorella:person_…`, `sorella:flavour_…`, `sorella:item_…`
+   and `sorella:product_…`. Forced by a case in the profile rather than chosen
+   for tidiness: *Canned soft drink* is a `BoughtItem` in `§1.6` and a
+   `SoldProduct` in `§1.7` — the same object bought and sold — and each class
+   identifies on its own slot, so one URI cannot carry both. The alternatives
+   were to rename one of them, which puts a word in the log the business does
+   not use, or to give one entity two class facts, which loses the distinction
+   the map draws. A supplier and a freezer share `location_name` and therefore
+   share a namespace and may not share a name, which is the same thing the
+   identifier already said. The cost is that a URI now names a class as well as
+   an entity, and that duplicates a fact the log holds properly.
+2. **Master data is valid from the adoption date and recorded today.** All 197
+   entities carry `valid_from 2026-06-15T00:00:00Z` — `§1.2`'s Monday, and the
+   map's own `valid_from` — with `recorded_at` left to `now()`. So the master
+   data is true from the day the business started recording and known from the
+   day it was typed, which is the two axes doing the only thing they can
+   honestly do about eighty days of backfill. The alternative, back-dating
+   `recorded_at`, would assert that the log knew in June.
+3. **`resolve_version` returning `None` before `sealed_at` is correct, and the
+   4 Sep line can be closed rather than fixed.** The gap is eighty days and it
+   costs milestone one nothing, because the read a balance makes is `valid_at`
+   in June and `as_of` today, which returns v1. The read that returns `None` is
+   *what did the map say on 16 June as known on 16 June*, and the honest answer
+   is that on 16 June the business had not been described. Anything that made
+   that pair return v1 would be a lie about when the map was written. Measured
+   before proposing: six clock pairs, and a three-column balance computed off
+   the sealed file at a June `valid_at`.
+4. **The generator's row rule reads the class fact.** Today it is *subject of at
+   least one of this table's columns*, and now that `entity_class` is a column
+   of fifteen classes and every entity has one, that rule puts all 197 entities
+   in all fifteen tables and all 197 in every one of the 41 pickers. The rule
+   the log can now support is *the entity whose `entity_class` says this class*,
+   and the map names the slot with `designates_type: true`, so reading it stays
+   domain-blind. This is a decision and not a repair because it changes what a
+   projection **is** — from a guess the generator's own docstring admits to, to
+   a read — and because it makes the 1 Sep class-membership line load-bearing
+   rather than tidy.
+
+### Proposed `OPEN.md` lines
+
+- `[T3]` The generator's row rule is a guess and the log now contradicts it.
+  Every one of the ten filled classes renders 197 rows and every one of the 41
+  pickers offers 197, because `entity_class` is a column of fifteen classes and
+  all 197 entities carry one, so the rule *subject of at least one of this
+  table's columns* admits everything to everything. Before the master data went
+  in the same tables had 0 rows and the same pickers offered nothing, so filling
+  the log made every projection in the system worse. The map names the slot to
+  read — `designates_type: true` on `entity_class` — and the 1 Sep line refused
+  `designates_type` on the ground that nothing reads it. Whether the row rule
+  reads that flag, reads a class-membership predicate the generator knows by
+  name, or is a key the map states, is undecided. Found 4 Sep entering 197
+  master-data rows · blocks: generation
+- `[T3]` Two modules are named `resolve.py` and every reader of a balance needs
+  both. `components/kernel/resolve.py` carries `resolve_single` and
+  `components/ontology/resolve.py` carries `resolve_version`; with both
+  directories on `sys.path` the second import gets the first module and raises
+  `ImportError: cannot import name 'resolve_single' from 'resolve'`.
+  `generate.py` is unaffected because it imports only the kernel's, which is
+  also why nothing has caught this in three weeks. A balance needs the map
+  resolver and the fact resolver in one process, so `report` hits it on its
+  first line. Whether the files are renamed, whether the components become
+  packages, or whether the 1 Sep line's unnamed joint inside `generate.py` is
+  extracted and owns both, is undecided. Found 4 Sep writing a throwaway balance
+  · blocks: report
+- `[T3]` A count line has no confidence and the kernel has one.
+  `assertion.confidence` is a column and `submit()` has no field for it;
+  `StockCountLine` has ten slots and not one of them is *Weighed / Counted /
+  Eyeballed / Not counted*. `§4.1` gives those four words a section of their own
+  and says *"the difference between those two lines is the whole of what this
+  count knows about itself"*, so entering Monday's count without them records
+  the numbers and throws away what the count says about itself. Whether the four
+  words are a slot on the line, an enum, or the `confidence` column the kernel
+  already has reached through a form field, is undecided — and the second and
+  third are different answers to whether a confidence is a fact about the world
+  or about the claim. Found 4 Sep reading `§4.1` for master data · blocks:
+  live use
+- `[T2]` The business has no name for the place empty pans stand in. `§4.1`
+  counts 34 steel and 12 polycarbonate pans under a heading Jordan invented —
+  *by the bench* — and says it is not one of `§1.3`'s places; `§3.2` says the
+  file has no name for it. It is reached by the wash-and-stack leg of every pan
+  that comes back on the van, so it is not a place the map can leave out for
+  long. Only Sorella can say what it is called. Found 4 Sep entering the two
+  empty-pan lines · blocks: live use
+- `[T2]` One bought item is counted in two units in two places and the map holds
+  one. `§1.5` says of coffee beans *"kilos | bags at the shop | grams in the
+  kitchen | Same bean, two places, two units"*; `item_counted_in` is
+  single-valued and now holds `bag`. Whether the second reading is a second
+  `BoughtItem`, a per-location unit, or something the business would say is one
+  thing, is a question for Sorella and not for this desk. Found 4 Sep entering
+  `sorella:item_coffee_beans_espresso_blend` · blocks: live use
+
+Nothing was triaged `[T1]` and written down. Three questions were `[T1]` and
+tried instead: whether `resolve_version` returns the map for a June `as_of`,
+whether the three-column balance computes off the sealed file at a June
+`valid_at`, and what filling `entity_class` does to the tables. All three are
+answered above, in two throwaway scripts outside the repo.
+
+### What was run
+
+Working log is `uniti` (the default DSN); `make check` runs against
+`uniti_check` and touches nothing here.
+
+| Command | Exit |
+|---|---|
+| `resolve_version` over `business/sorella`, six clock pairs | 0 — the table above; `None` on the diagonal, **v1** for a June `valid_at` read today |
+| `june_balance.py 2026-06-16T23:00:00+00:00 2026-06-16T23:00:00+00:00` | **1** — `resolve_version -> None`, and that is the result |
+| `june_balance.py … --selftest`, first attempt | **1** — `ImportError: cannot import name 'resolve_single' from 'resolve'`. Two modules, one name |
+| `june_balance.py … --selftest`, second attempt | **1** — `ValueError: dictionary update sequence element #0 has length 11` from `dict(slot.annotations)` |
+| `june_balance.py … --selftest`, third attempt | **1** — `AttributeError: 'JsonObj' object has no attribute 'items'` |
+| `june_balance.py 2026-06-16T23:00:00+00:00 2026-09-04T12:00:00+00:00 --selftest` | **0** — v1 resolved off the sealed file, 0 movements in the log, and the fabricated four give `15.8` and `2` through the map's own `equals_expression` |
+| `sorella_master.py --dry-run` | 0 — 197 entities planned, no duplicate subject, no URI colliding with a slot URI, no computed slot in any submission |
+| `sorella_master.py` | **0** — **197 submissions, 1,215 assertions, 197 entities minted** |
+| assertion / entity / intent counts, bucketed on the URI prefix of each row's subject | 0 — `[('sorella', 1316), ('marlow', 301)]`, 405 entities, 199 intents, no unregistered subject |
+| every slot of `IngredientOnHand` and `GelatoOnHand`, counted by predicate | 0 — **eleven slots, 0 assertions under each** |
+| 10 × `generate.py table business/sorella/v1.yaml CLASS --valid-at 2026-06-16T23:00:00+00:00 --as-of 2026-09-03T21:08:05+00:00 --verify` | 0 each — **197 rows every time**, 12,214 cells verified against a direct read, no disagreement |
+| 11 × `generate.py table` for the classes not filled | 0 each — 197 rows for the nine that carry `entity_class`, **0 rows** for `IngredientOnHand` and `GelatoOnHand` |
+| 21 × `generate.py form business/sorella/v1.yaml CLASS` | 0 each — **41 pickers, every one offering 197**, none offering nothing |
+| `grep -n "designates_type\|entity_class\|rdf:type" components/generator/generate.py` | **1** — no match. The generator reads none of the three |
+| `make check` | **0** — **64 tests passed**, replay byte-identical twice, 5,334 bytes both times |
+| `git status --porcelain` | 0 — **empty** |
+| `git diff --stat HEAD -- business/` | 0 — **empty. Nothing under `business/` added, moved, changed or deleted** |
+| assertion count in `uniti` after `make check` | 0 — 1,617, unchanged |
+
+**No two clauses of the done condition conflicted, and one came close enough to
+be worth naming.** *"`generate.py table` shows non-zero rows for each class
+filled"* and *"`--verify` is clean"* both pass, and they pass on tables that
+list every entity in the log under every class. Neither clause is wrong; they
+were written before there was a way to know that a table could be simultaneously
+non-empty, internally verified and useless. It is reported here rather than
+satisfied quietly, because a reader who saw only the two green checks would
+conclude the projections work.
