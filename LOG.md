@@ -51,3 +51,16 @@ tables,log}` and `build/check/`; `OUT` in the Makefile moved from `build` to
 them. `make check` exits 0, 65 tests pass, the replay is identical twice
 (5,334 bytes), both projections land in `build/check/`, and `build/`'s top
 level holds only the two directories.
+
+**2 — explicit domains.** `scripts/owl_domains.py` reads a gen-owl TTL, walks
+the `owl:Restriction`s a class carries and writes the missing end back onto the
+property. `rdfs:domain` 0 -> 101: 95 slots are used by exactly one class and
+get a plain domain; 6 are used by more and get `owl:unionOf` — `entity_class`
+(15 classes), `happened_on` and `written_by` (3), `credit_terms`,
+`made_recipe`, `outside_where` (2). No repeated plain domain is emitted.
+`rdfs:range` was already complete at 101, so none was added; 2,170 -> 2,337
+triples from 385 restrictions. Object properties carrying both ends, which is
+what a node-link viewer needs to draw an edge: 0 -> 36.
+Surprising: `gen-owl` does not repeat an inherited slot on a subclass, so no
+union holds both a class and its parent — no pruning was needed. And the map
+has 36 object properties, not the 16 relationships `NEXT.md` counts.
