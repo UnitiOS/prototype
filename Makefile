@@ -16,7 +16,14 @@ DC  := docker compose
 CHECK_DB := uniti_check
 export UNITI_DSN := postgresql://uniti:uniti@localhost:5433/$(CHECK_DB)
 
-.PHONY: check venv schema test replay check-profile
+# What `make build` renders, and where it puts it.
+BUSINESS := sorella
+VERSION  := v1
+MAP      := business/$(BUSINESS)/$(VERSION).yaml
+RENDER   := build/$(BUSINESS)/$(VERSION)
+GRAPH    := build/$(BUSINESS)/$(VERSION)/graph/$(BUSINESS)-$(VERSION)
+
+.PHONY: check venv schema test replay check-profile build
 
 # The one command: environment, schema, tests, and a replay that must come out
 # byte-identical twice. Exits non-zero if the tests fail or the two differ.
@@ -62,3 +69,18 @@ replay: venv
 	$(PY) scripts/project.py $(OUT)/projection_a.txt
 	$(PY) scripts/project.py $(OUT)/projection_b.txt
 	$(PY) scripts/project.py --compare $(OUT)/projection_a.txt $(OUT)/projection_b.txt
+
+# The inspection surface: the map, rendered for a person to look at. It is
+# deliberately not a part of `check` — check exercises the system and can fail,
+# build only renders. It reads the working log, never the throwaway one, so it
+# overrides the DSN this file exports; it writes nothing back.
+# pyLODE is absent on purpose: it is being tried, not adopted.
+build: export UNITI_DSN := postgresql://uniti:uniti@localhost:5433/uniti
+build: venv
+	$(DC) up -d
+	mkdir -p $(RENDER)/graph $(RENDER)/forms $(RENDER)/tables $(RENDER)/log
+	PYTHONIOENCODING=utf-8 .venv/Scripts/gen-owl.exe --no-use-native-uris $(MAP) > $(GRAPH).raw.ttl 2> $(RENDER)/log/gen-owl.err
+	PYTHONIOENCODING=utf-8 $(PY) scripts/owl_domains.py $(GRAPH).raw.ttl --out $(GRAPH).ttl 2> $(RENDER)/log/owl_domains.err
+	PYTHONIOENCODING=utf-8 $(PY) scripts/render_map.py $(MAP) table --into $(RENDER)/tables 2> $(RENDER)/log/tables.err
+	PYTHONIOENCODING=utf-8 $(PY) scripts/render_map.py $(MAP) form --into $(RENDER)/forms 2> $(RENDER)/log/forms.err
+	@echo "build: $(RENDER)"

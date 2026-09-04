@@ -45,35 +45,40 @@ status --short` shows nothing new.
 ## 2026-09-05 — The map becomes something a person can look at
 
 **1 — `build/` takes its shape.** Created `build/sorella/v1/{graph,forms,
-tables,log}` and `build/check/`; `OUT` in the Makefile moved from `build` to
-`build/check`, and the two `projection_{a,b}.txt` left at the top level on
-4 Sep were deleted rather than moved — they are derived and `replay` rewrites
-them. `make check` exits 0, 65 tests pass, the replay is identical twice
-(5,334 bytes), both projections land in `build/check/`, and `build/`'s top
-level holds only the two directories.
+tables,log}` and `build/check/`; `OUT` moved from `build` to `build/check`, and
+the two `projection_{a,b}.txt` left at the top level on 4 Sep were deleted, not
+moved — they are derived and `replay` rewrites them. `make check` exits 0, 65
+tests pass, the replay is identical twice (5,334 bytes), both projections land
+in `build/check/`, and `build/`'s top level holds only the two directories.
 
 **2 — explicit domains.** `scripts/owl_domains.py` reads a gen-owl TTL, walks
 the `owl:Restriction`s a class carries and writes the missing end back onto the
-property. `rdfs:domain` 0 -> 101: 95 slots are used by exactly one class and
-get a plain domain; 6 are used by more and get `owl:unionOf` — `entity_class`
-(15 classes), `happened_on` and `written_by` (3), `credit_terms`,
-`made_recipe`, `outside_where` (2). No repeated plain domain is emitted.
-`rdfs:range` was already complete at 101, so none was added; 2,170 -> 2,337
-triples from 385 restrictions. Object properties carrying both ends, which is
-what a node-link viewer needs to draw an edge: 0 -> 36.
+property. `rdfs:domain` 0 -> 101: 95 slots are used by one class and get a
+plain domain; 6 by more and get `owl:unionOf` — `entity_class` (15 classes),
+`happened_on`, `written_by` (3), `credit_terms`, `made_recipe`, `outside_where`
+(2). No repeated plain domain is emitted. `rdfs:range` was already complete at
+101, so none was added; 2,170 -> 2,337 triples from 385 restrictions. Object
+properties carrying both ends, what a viewer needs to draw an edge: 0 -> 36.
 Surprising: `gen-owl` does not repeat an inherited slot on a subclass, so no
-union holds both a class and its parent — no pruning was needed. And the map
-has 36 object properties, not the 16 relationships `NEXT.md` counts.
+union holds a class and its parent. And the map has 36 object properties, not
+the 16 relationships `NEXT.md` counts.
 
 **3 — pyLODE 3.6.0, trialled.** `pip install pylode` into `.venv` only; the
-Makefile is untouched. Ran on both TTLs (`-i` is not its flag; input is
-positional). Both files render, 22 class blocks each — the 21 classes and the
-`RecipeStage` enum — with every class and slot description from the map, and
-cardinalities as `min 1` / `max 1` / `only xsd:string` lines under Super Class
-Of. It draws no diagram at all: no SVG, no image. Relationships are text.
-The difference task 2 makes: every one of the 101 properties gains a `Domain`
-row (raw: none), and 21 class blocks gain an `In Domain Of` back-link list
-(raw: 0). `In Range Of` is 13 in both. A union domain renders as
-`Supplier c or WholesaleAccount c`, but pyLODE back-links only a plain domain,
-so exactly the 95 single-class slots appear under `In Domain Of` and the 6
-union ones appear under no class.
+Makefile and `make build` are untouched by it. Ran on both TTLs (input is
+positional). Both render, 22 class blocks each — 21 classes and the
+`RecipeStage` enum — with every description from the map and cardinalities as
+`min 1` / `max 1` / `only xsd:string`. It draws no diagram: no SVG, no image;
+relationships are text. What task 2 changes: all 101 properties gain a `Domain`
+row (raw: none) and 21 classes gain an `In Domain Of` list (raw: 0); `In Range
+Of` is 13 in both. A union renders `Supplier c or WholesaleAccount c`, but only
+a plain domain is back-linked, so just the 95 single-class slots are listed.
+
+**4 — Sorella rendered.** `scripts/render_map.py` asks the generator for every
+class in the map; `make build` runs gen-owl, `owl_domains` and it twice, and is
+no prerequisite of `check`. `rm -rf build/sorella && make build` reproduces 46
+files: 21 tables, 19 forms (`GelatoOnHand` and `IngredientOnHand` refused, the
+generator's reason on stderr), 2 TTLs, 4 stderr logs. `build` reads `uniti` and
+not `uniti_check`, and the log is unchanged either side: 418 entities, 1,673
+assertions, 208 intents. The 21 tables hold 197 distinct entities — Location 42
+covers its 33 subclass rows, Ingredient 81 covers BoughtItem 77 — which is the
+master data of 1 Sep.
