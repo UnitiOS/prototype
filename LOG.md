@@ -23,3 +23,16 @@ same 16 sections under a two-line header. The moved body is byte-identical to
 Surprising: the previous run's "Questions for Fareza" went to history with
 their section, so LOG.md no longer surfaces them. They are unanswered in
 `history/LOG-2026-09.md`, last section.
+
+**build/ triage.** 259 files before, 2 after. Every `.py`, `.sh` and `.sql`
+anywhere under `build/` was exactly the eight named — no ninth turned up, and
+none of the eight is named by `components/`, `scripts/`, `tests/` or the
+Makefile, so all eight are hand-written. Moved to `history/build-scripts/`
+(plain `mv` then `git add`: `git mv` refuses an untracked path, and `build/`
+has been in `.gitignore` since 2026-08-22, so nothing in it was ever tracked).
+Deleted: `build/v1/` (139), `sorella_forms/` (21), `sorella_forms2/` (21),
+`webvowl/` (23), `sorella_mmd/` (11), `sorella_tables/` (10), `probe/` (2),
+`t/` (2), and 22 loose `.txt`/`.ttl`/`.err`/`.mmd` files at the root — 251 in
+all. `build/` kept as an empty directory; `make replay` does not create it.
+`make check` then exited 0, 65 tests passed, and `build/` holds only the
+`projection_{a,b}.txt` that run just wrote.
