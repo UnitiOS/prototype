@@ -41,3 +41,13 @@ all. `build/` kept as an empty directory; `make replay` does not create it.
 which it had nothing to do with, into its own "# Build output" heading. It is
 now line 23; `git check-ignore -v build/x` still resolves to it, and `git
 status --short` shows nothing new.
+
+## 2026-09-05 — The map becomes something a person can look at
+
+**1 — `build/` takes its shape.** Created `build/sorella/v1/{graph,forms,
+tables,log}` and `build/check/`; `OUT` in the Makefile moved from `build` to
+`build/check`, and the two `projection_{a,b}.txt` left at the top level on
+4 Sep were deleted rather than moved — they are derived and `replay` rewrites
+them. `make check` exits 0, 65 tests pass, the replay is identical twice
+(5,334 bytes), both projections land in `build/check/`, and `build/`'s top
+level holds only the two directories.

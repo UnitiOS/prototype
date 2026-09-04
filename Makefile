@@ -3,7 +3,9 @@
 # it builds the rest, including the virtualenv and the schema.
 
 PY  := .venv/Scripts/python.exe
-OUT := build
+# `build/check/` is what `make check` writes and holds nothing else; the
+# renders a person looks at live under `build/<business>/<version>/`.
+OUT := build/check
 DC  := docker compose
 
 # `make check` must not destroy evidence. `schema` drops and recreates the three
