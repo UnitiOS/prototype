@@ -1,21 +1,22 @@
 """Generating a table and a form from a sealed map and the log.
 
 One fixture draft, sealed into a temporary directory so the production map
-store is left alone, describes four classes:
+store is left alone, describes five classes:
 
-    Tub      three slots of its own and one inherited from Held
-    Held     the parent, one slot
+    Tub      three slots of its own, two inherited from Held
+    Held     the parent, two slots, one of them `g_class`
     Flavour  one slot, and one entity — what a class-ranged field offers
     Rumour   declared, and nobody ever said a thing under it
+    Tally    declared with no `g_class` slot: a table, and no form
 
-and four entities: a tub with every cell filled, a tub with only its name, a
-crate that is not a tub, and a flavour.
+and four entities, each with its class stated: a tub with every cell filled, a
+tub with only its name, a crate that is a Held and not a Tub, and a flavour.
 
-The crate is the point of the fixture. Nothing in the map or the log says an
-entity is a Tub, so the generator's rule is "subject of one of this table's
-columns" — and `g_place` is one of Tub's columns, by inheritance. The crate is
-therefore a row of the tub table with three cells blank. That is recorded here
-rather than fixed: fixing it means asserting a class membership nobody stated.
+The crate is the point of the fixture. `g_place` is a column of Tub by
+inheritance, so a rule that made an entity a row of every table one of whose
+columns it had a fact under would put the crate in the tub table. It says it
+is a Held; the log is read, and it is a row of the parent's table only. The
+tubs are rows of both, which is what `is_a` means.
 
 The reads sit at as_of 1 June and the form writes are recorded 1 August, so
 these tests do not depend on the order they run in.
@@ -85,18 +86,19 @@ def test_a_draft_is_not_a_map():
 def test_the_columns_are_the_classs_induced_slots(map_):
     cols = columns(map_, "Tub")
     assert [c["name"] for c in cols] == [
-        "g_tub_name", "g_tub_kilograms", "g_tub_flavour", "g_place"
+        "g_tub_name", "g_tub_kilograms", "g_tub_flavour", "g_class", "g_place"
     ]
     assert [c["uri"] for c in cols] == [
-        "uniti:g_tub_name", "uniti:g_tub_kilograms",
-        "uniti:g_tub_flavour", "uniti:g_place",
+        "uniti:g_tub_name", "uniti:g_tub_kilograms", "uniti:g_tub_flavour",
+        "uniti:g_class", "uniti:g_place",
     ]
     # Straight off the map: an identifier induces required, and a class range
     # is the same test seal makes when it picks value_ref over value_literal.
-    assert [c["required"] for c in cols] == [True, True, False, False]
-    assert [c["ref"] for c in cols] == [False, False, True, False]
-    # The parent's own table is the one slot it declares.
-    assert [c["name"] for c in columns(map_, "Held")] == ["g_place"]
+    assert [c["required"] for c in cols] == [True, True, False, False, False]
+    assert [c["ref"] for c in cols] == [False, False, True, False, False]
+    # The parent's own table is the two slots it declares. The class column is
+    # one of them, so a class's own table always shows what put a row in it.
+    assert [c["name"] for c in columns(map_, "Held")] == ["g_class", "g_place"]
     with pytest.raises(MapError, match="declares no class"):
         columns(map_, "Sundae")
 
@@ -104,14 +106,12 @@ def test_the_columns_are_the_classs_induced_slots(map_):
 def test_the_table_is_what_the_log_says_at_those_clocks(conn, map_):
     t = built(conn, map_, "Tub")
     assert cells(t) == {
-        "uniti:g_crate": [None, None, None, "Dry store"],
-        "uniti:g_tub_1": ["Tub 1", "4.8", "uniti:g_vanilla", "Display cabinet"],
-        "uniti:g_tub_2": ["Tub 2", None, None, None],
+        "uniti:g_tub_1": ["Tub 1", "4.8", "uniti:g_vanilla", "Tub",
+                          "Display cabinet"],
+        "uniti:g_tub_2": ["Tub 2", None, None, "Tub", None],
     }
     # Rows come out in one order whatever the log's insertion order was.
-    assert [r["uri"] for r in t["rows"]] == [
-        "uniti:g_crate", "uniti:g_tub_1", "uniti:g_tub_2"
-    ]
+    assert [r["uri"] for r in t["rows"]] == ["uniti:g_tub_1", "uniti:g_tub_2"]
 
 
 def test_the_rows_equal_a_direct_read_of_the_log(conn, map_):
@@ -122,39 +122,54 @@ def test_the_rows_equal_a_direct_read_of_the_log(conn, map_):
     compared is the generator's pivot — which entity is a row, which value
     lands in which column — not the read rule against itself.
     """
-    for class_name in ("Tub", "Held", "Flavour", "Rumour"):
+    for class_name in ("Tub", "Held", "Flavour", "Rumour", "Tally"):
         t = built(conn, map_, class_name)
         assert verify(conn, t) == [], class_name
 
 
-def test_an_inherited_column_puts_a_crate_in_the_tub_table(conn, map_):
-    """The cost of guessing membership from the slots, recorded not fixed.
+def test_a_row_is_what_the_log_says_the_entity_is(conn, map_):
+    """The crate has a fact under one of Tub's columns and is not a Tub.
 
-    Nobody said the crate is a tub. It is here because `g_place` is a column
-    of this table, and `g_place` is a column of this table because Tub is_a
-    Held. See OPEN.md: what makes an entity a row is undecided.
+    `g_place` is a column of Tub by inheritance, and the crate has a g_place.
+    What keeps it out is the only thing that should: it says it is a Held.
     """
-    assert "uniti:g_crate" in cells(built(conn, map_, "Tub"))
-    # And the parent's table holds the tub, which is the same rule reading
-    # the right way round.
-    assert set(cells(built(conn, map_, "Held"))) == {
-        "uniti:g_crate", "uniti:g_tub_1"
+    assert "uniti:g_crate" not in cells(built(conn, map_, "Tub"))
+    # The parent's table holds all three, because `is_a` is walked downward
+    # for rows exactly as `columns()` walks it upward for columns. A tub is a
+    # row of two tables, which is what the relation means.
+    assert cells(built(conn, map_, "Held")) == {
+        "uniti:g_crate": ["Held", "Dry store"],
+        "uniti:g_tub_1": ["Tub", "Display cabinet"],
+        "uniti:g_tub_2": ["Tub", None],
     }
 
 
 def test_a_class_nobody_spoke_about_generates_an_empty_table(conn, map_):
     """A real outcome. The map declares Rumour; the log holds no rumour."""
     t = built(conn, map_, "Rumour")
-    assert [c["name"] for c in t["columns"]] == ["g_rumour_text"]
+    assert [c["name"] for c in t["columns"]] == ["g_class", "g_rumour_text"]
     assert t["rows"] == []
-    assert "0 rows, 1 columns" in render_table(t)
+    assert "0 rows, 2 columns" in render_table(t)
+
+
+def test_a_class_with_no_class_slot_is_a_table_and_not_a_form(conn, map_):
+    """Nothing can say an entity is a Tally, so no form can ask for one.
+
+    It keeps its table — a class whose rows are counted up rather than
+    written down is still a set of columns — and that table is empty.
+    """
+    t = built(conn, map_, "Tally")
+    assert [c["name"] for c in t["columns"]] == ["g_tally_total"]
+    assert t["rows"] == []
+    with pytest.raises(MapError, match="designates_type"):
+        form(conn, map_, "Tally")
 
 
 def test_a_form_is_generated_for_one_class(conn, map_):
     f = form(conn, map_, "Tub", valid_at=READ, as_of=READ)
     fields = {field["name"]: field for field in f["fields"]}
     assert list(fields) == [
-        "g_tub_name", "g_tub_kilograms", "g_tub_flavour", "g_place"
+        "g_tub_name", "g_tub_kilograms", "g_tub_flavour", "g_class", "g_place"
     ]
     assert fields["g_tub_kilograms"]["range"] == "decimal"
     assert fields["g_tub_kilograms"]["required"] is True
@@ -164,9 +179,9 @@ def test_a_form_is_generated_for_one_class(conn, map_):
     assert fields["g_tub_flavour"]["options"] == [("uniti:g_vanilla", "Vanilla")]
     assert fields["g_tub_name"]["options"] == []
     assert "-> Flavour" in render_form(f)
-    # A class nobody has spoken about still has a form. It is the empty table
-    # that is the finding, not the form.
-    assert len(form(conn, map_, "Rumour")["fields"]) == 1
+    # A class nobody has spoken about still has a form: it carries the slot
+    # that could say so. It is the empty table that is the finding.
+    assert len(form(conn, map_, "Rumour")["fields"]) == 2
 
 
 def test_a_value_entered_through_the_form_reaches_the_log(conn, map_):
@@ -194,23 +209,29 @@ def test_a_value_entered_through_the_form_reaches_the_log(conn, map_):
     # And the generated table is a read, not a store: at the as_of the other
     # tests use, the log had not learned any of this yet.
     assert cells(built(conn, map_, "Tub"))["uniti:g_tub_2"] == [
-        "Tub 2", None, None, None
+        "Tub 2", None, None, "Tub", None
     ]
     assert cells(built(conn, map_, "Tub", LATER, LATER))["uniti:g_tub_2"] == [
-        "Tub 2", "5.1", "uniti:g_vanilla", None
+        "Tub 2", "5.1", "uniti:g_vanilla", "Tub", None
     ]
 
 
 def test_a_form_naming_an_entity_the_log_has_never_held_mints_it(conn, map_):
+    """And the class field is what puts the new entity in a table.
+
+    The form asks for it like any other field. A submission that left it out
+    would mint an entity that is a row of nothing, which is the rule being
+    honest rather than a defect.
+    """
     result = submit(
         conn, map_, "Tub",
         subject="uniti:g_tub_3",
-        values={"g_tub_name": "Tub 3"},
+        values={"g_tub_name": "Tub 3", "g_class": "Tub"},
         actor_id="test", valid_from=ENTERED_FROM, recorded_at=ENTERED_AT,
     )
     assert list(result["minted"]) == ["uniti:g_tub_3"]
     assert cells(built(conn, map_, "Tub", LATER, LATER))["uniti:g_tub_3"] == [
-        "Tub 3", None, None, None
+        "Tub 3", None, None, "Tub", None
     ]
 
 

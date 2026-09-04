@@ -15,6 +15,7 @@ classes:
   Held:
     description: Anything the shop holds and can say where it is.
     slots:
+      - g_class
       - g_place
   Tub:
     is_a: Held
@@ -27,12 +28,26 @@ classes:
   Flavour:
     description: One entry in the recipe book.
     slots:
+      - g_class
       - g_flavour_name
   Rumour:
     description: A class the shop declares and never states one fact about.
     slots:
+      - g_class
       - g_rumour_text
+  Tally:
+    description: A class nothing is ever an instance of, because it is counted
+      up rather than written down. It carries no slot designating a class,
+      which is what makes it a table and not a form.
+    slots:
+      - g_tally_total
 slots:
+  g_class:
+    slot_uri: uniti:g_class
+    designates_type: true
+    range: string
+    description: Which class this entity is an instance of. Stated, never
+      inferred from which columns happen to be filled.
   g_place:
     slot_uri: uniti:g_place
     range: string
@@ -60,13 +75,23 @@ slots:
     slot_uri: uniti:g_rumour_text
     range: string
     description: Something someone said.
+  g_tally_total:
+    slot_uri: uniti:g_tally_total
+    range: decimal
+    description: A number nobody writes down.
 annotations:
   transcript: draft_shop.txt
   valid_from: '2026-01-01T00:00:00Z'
   facts:
     - subject: uniti:g_vanilla
+      predicate: uniti:g_class
+      value: Flavour
+    - subject: uniti:g_vanilla
       predicate: uniti:g_flavour_name
       value: Vanilla
+    - subject: uniti:g_tub_1
+      predicate: uniti:g_class
+      value: Tub
     - subject: uniti:g_tub_1
       predicate: uniti:g_tub_name
       value: Tub 1
@@ -80,8 +105,14 @@ annotations:
       predicate: uniti:g_place
       value: Display cabinet
     - subject: uniti:g_tub_2
+      predicate: uniti:g_class
+      value: Tub
+    - subject: uniti:g_tub_2
       predicate: uniti:g_tub_name
       value: Tub 2
+    - subject: uniti:g_crate
+      predicate: uniti:g_class
+      value: Held
     - subject: uniti:g_crate
       predicate: uniti:g_place
       value: Dry store

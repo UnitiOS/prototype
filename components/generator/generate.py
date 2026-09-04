@@ -12,20 +12,17 @@ comes out.
                same (valid_at, as_of), so the table is a read of the kernel and
                never a store of its own.
 
-**Which entities are rows is not in the map.** A class is a set of slots; the
-log is (subject, predicate, value); and nothing anywhere asserts that an entity
-is a Material. So the rule here is the only one the two files can support:
+**Which entities are rows is read, not guessed.** The map flags one slot with
+`designates_type`, and the log holds a fact under it for every entity that has
+been classified. So:
 
-    a row of this table is an entity that is the subject of at least one fact
-    under one of this table's columns, and has at least one value standing at
-    these clocks.
+    a row of this table is an entity whose class fact, standing at these
+    clocks, names this class or a class below it.
 
-That is self-consistent — the table shows exactly what it has something to say
-about — and it is a guess, not a reading. An inherited slot makes it visibly
-wrong: `stock_location` is a column of Material *and* of Pan, so a pan sitting
-in a freezer is a row of the material table with every other cell blank. See
-OPEN.md. It is not worked around here, because working around it would mean
-inventing a class assertion the business never made.
+`is_a` is walked downward for rows because `columns()` already walks it upward
+for columns — one relation, read one way. A class the map gives no
+`designates_type` slot has no rows and renders no form: nothing in the log can
+say an entity is one.
 
 A form is the same slots, asked for rather than reported. `submit()` turns the
 entered values into one `perform()` call — one form submission is one intent —
@@ -71,11 +68,12 @@ WHERE a.predicate_id = (
   AND a.value_literal IS NOT NULL
 """
 
-# Anything ever said under one of these predicates. Record time is not filtered
-# here: a subject whose only facts were recorded after `as_of` survives this
-# query and is dropped later, when every one of its cells resolves to nothing.
-_SUBJECTS_SQL = """
-SELECT DISTINCT subject_id FROM assertion WHERE predicate_id = ANY(%s)
+# Anyone ever said to be of one of these classes. Neither clock is filtered
+# here: this is the candidate set, and each candidate's class fact is resolved
+# at the clocks afterwards, so a retracted or superseded one drops out there.
+_TYPED_SUBJECTS_SQL = """
+SELECT DISTINCT subject_id FROM assertion
+WHERE predicate_id = %s AND value_literal = ANY(%s)
 """
 
 # The independent read. Deliberately not resolve_single: one statement with
@@ -167,6 +165,16 @@ def _identifier(map_, class_name):
     return None
 
 
+def _type_slot(map_, class_name):
+    """The induced slot the map flags as carrying this entity's class, or None."""
+    if class_name not in map_["view"].all_classes():
+        return None
+    for slot in map_["view"].class_induced_slots(class_name):
+        if slot.designates_type:
+            return slot
+    return None
+
+
 def _registry(conn):
     """uri -> entity id, and entity id -> uri."""
     with conn.cursor() as cur:
@@ -175,22 +183,39 @@ def _registry(conn):
     return {uri: eid for eid, uri in rows}, {eid: uri for eid, uri in rows}
 
 
-def _subjects(conn, predicate_ids):
-    if not predicate_ids:
+def _row_subjects(conn, map_, class_name, by_uri, *, valid_at, as_of):
+    """The entities the log says are of this class, or of one below it.
+
+    Two reads, both of the map: which slot carries the class, and which class
+    names count. The second is `class_descendants`, the same relation
+    `class_induced_slots` walks the other way when it collects the columns.
+    """
+    slot = _type_slot(map_, class_name)
+    predicate_id = by_uri.get(slot.slot_uri) if slot else None
+    if predicate_id is None:
         return []
+    names = [str(name) for name in map_["view"].class_descendants(class_name)]
     with conn.cursor() as cur:
-        cur.execute(_SUBJECTS_SQL, (list(predicate_ids),))
-        return [row[0] for row in cur.fetchall()]
+        cur.execute(_TYPED_SUBJECTS_SQL, (predicate_id, names))
+        candidates = [row[0] for row in cur.fetchall()]
+
+    standing = []
+    for subject_id in candidates:
+        row = resolve_single(conn, subject_id=subject_id, predicate_id=predicate_id,
+                             valid_at=valid_at, as_of=as_of)
+        if row is not None and row["value_literal"] in names:
+            standing.append(subject_id)
+    return standing
 
 
 def table(conn, map_, class_name, *, valid_at, as_of):
     """The projection: columns from the map, rows and cells from the log."""
     cols = columns(map_, class_name)
     by_uri, by_id = _registry(conn)
-    predicate_ids = [by_uri[c["uri"]] for c in cols if c["uri"] in by_uri]
 
     rows = []
-    for subject_id in _subjects(conn, predicate_ids):
+    for subject_id in _row_subjects(conn, map_, class_name, by_uri,
+                                    valid_at=valid_at, as_of=as_of):
         cells = []
         for col in cols:
             predicate_id = by_uri.get(col["uri"])
@@ -207,12 +232,9 @@ def table(conn, map_, class_name, *, valid_at, as_of):
                 cells.append(by_id.get(row["value_ref"], f"<{row['value_ref']}>"))
             else:
                 cells.append(row["value_literal"])
-        # An entity with nothing standing at these clocks is not a row: the
-        # log has no answer about it, and an all-blank line would claim it did.
-        if any(cell is not None for cell in cells):
-            rows.append({"subject": subject_id,
-                         "uri": by_id.get(subject_id, f"<{subject_id}>"),
-                         "cells": cells})
+        rows.append({"subject": subject_id,
+                     "uri": by_id.get(subject_id, f"<{subject_id}>"),
+                     "cells": cells})
 
     rows.sort(key=lambda r: r["uri"])
     return {"class": class_name, "columns": cols, "rows": rows,
@@ -258,16 +280,26 @@ def verify(conn, built):
 def form(conn, map_, class_name, *, valid_at=None, as_of=None):
     """The same slots, asked for instead of reported.
 
-    A field over a class range offers what the log already holds for that
+    A field over a class range offers the entities the log says are of that
     class, labelled by whatever the map says identifies it. That is the whole
     of the dropdown: the options are entities, not strings, so choosing one
     writes an edge. The options are read at clocks like everything else — a
     form filled in today offers what today's log holds, which is the default.
+
+    A class the map gives no `designates_type` slot gets no form. Submitting
+    one would state facts about an entity nothing could ever say the class of,
+    so the entity would be a row of no table.
     """
+    cols = columns(map_, class_name)
+    if _type_slot(map_, class_name) is None:
+        raise MapError(
+            f"{class_name} has no slot carrying designates_type, so nothing in "
+            f"the log can say an entity is one — it has a table and no form"
+        )
     valid_at = valid_at or _NOW()
     as_of = as_of or _NOW()
     fields = []
-    for col in columns(map_, class_name):
+    for col in cols:
         field = dict(col)
         field["options"] = (
             _options(conn, map_, col["range"], valid_at=valid_at, as_of=as_of)
@@ -279,15 +311,14 @@ def form(conn, map_, class_name, *, valid_at=None, as_of=None):
 
 
 def _options(conn, map_, class_name, *, valid_at, as_of):
-    """Every entity the log holds for a class, as (uri, label) pairs."""
-    cols = columns(map_, class_name)
+    """Every entity the log says is of a class, as (uri, label) pairs."""
     by_uri, by_id = _registry(conn)
-    predicate_ids = [by_uri[c["uri"]] for c in cols if c["uri"] in by_uri]
     identifier = _identifier(map_, class_name)
     label_id = by_uri.get(identifier.slot_uri) if identifier else None
 
     out = []
-    for subject_id in _subjects(conn, predicate_ids):
+    for subject_id in _row_subjects(conn, map_, class_name, by_uri,
+                                    valid_at=valid_at, as_of=as_of):
         label = ""
         if label_id is not None:
             row = resolve_single(conn, subject_id=subject_id, predicate_id=label_id,

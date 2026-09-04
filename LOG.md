@@ -5981,3 +5981,130 @@ were written before there was a way to know that a table could be simultaneously
 non-empty, internally verified and useless. It is reported here rather than
 satisfied quietly, because a reader who saw only the two green checks would
 conclude the projections work.
+
+## 2026-09-04 — The generator reads the class fact, in both directions
+
+The rule that decided which entities are rows was a guess the generator's own
+docstring admitted to: *an entity that is the subject of at least one fact
+under one of this table's columns*. With the log empty that rule showed nothing
+and looked harmless. With 197 entities in it, `entity_class` — a column of
+fifteen of the twenty-one classes, and inherited by four more — made every one
+of those entities a subject of a column of nineteen tables. Nineteen tables of
+197 rows each, and 41 pickers offering 197 options each.
+
+It is now a read. The map flags one slot with `designates_type`, and a row of a
+table is an entity whose fact under that slot, standing at the read's clocks,
+names this class or a class below it. Both readings of that flag were settled
+in `DECISIONS.md` this morning and neither is re-argued here or in the code.
+
+### The numbers
+
+Row counts, `generate.py table business/sorella/v1.yaml CLASS` at today's
+clocks, all twenty-one classes, before and after:
+
+| Class | Before | After | | Class | Before | After |
+|---|---:|---:|---|---|---:|---:|
+| `Batch` | 197 | **0** | | `Person` | 197 | **9** |
+| `BoughtItem` | 197 | **77** | | `ProductPrice` | 197 | **0** |
+| `Business` | 197 | **0** | | `Recipe` | 197 | **0** |
+| `Flavour` | 197 | **18** | | `RecipeLine` | 197 | **0** |
+| `GelatoOnHand` | 0 | **0** | | `SoldProduct` | 197 | **21** |
+| `Ingredient` | 197 | **81** | | `StockCount` | 197 | **0** |
+| `IngredientOnHand` | 0 | **0** | | `StockCountLine` | 197 | **0** |
+| `InternalLocation` | 197 | **22** | | `StockMovement` | 197 | **0** |
+| `Location` | 197 | **42** | | `Supplier` | 197 | **5** |
+| `MovementKind` | 197 | **0** | | `Unit` | 197 | **26** |
+| | | | | `WholesaleAccount` | 197 | **6** |
+
+Ten classes have rows and eleven have none. The two the `is_a` walk is visible
+in are the two the decision named: `Ingredient` is **81**, its own 4 plus
+`BoughtItem`'s 77, and `Location` is **42**, its own 9 plus 22 internal, 5
+suppliers and 6 accounts. Read strictly they would have been 4 and 9.
+
+The eleven zeroes are not one thing. Nine of them — `Batch`, `Business`,
+`MovementKind`, `ProductPrice`, `Recipe`, `RecipeLine`, `StockCount`,
+`StockCountLine`, `StockMovement` — are classes no entity claims, because the
+master-data pass entered `§4.1` and `§4.3` and nothing else. The other two,
+`GelatoOnHand` and `IngredientOnHand`, are zero for a different reason: they
+carry no `designates_type` slot, so nothing in the log can ever say an entity
+is one. They were zero before this change too, and for a third reason again —
+nothing had been asserted under any of their eleven slots.
+
+Pickers on the `StockMovement` form, the four the item names:
+
+| Field | Range | Before | After |
+|---|---|---:|---:|
+| `movement_flavour` | `Flavour` | 197 | **18** |
+| `movement_out_of` | `Location` | 197 | **42** |
+| `movement_ingredient` | `Ingredient` | 197 | **81** |
+| `movement_unit` | `Unit` | 197 | **26** |
+
+Across all classes: **41 pickers before on 21 forms, 36 after on 19 forms.**
+The five that went are `GelatoOnHand`'s three and `IngredientOnHand`'s two,
+which go with the forms. Eight of the remaining 36 offer nothing, every one of
+them ranging over a class no entity claims yet: five over `Recipe`, and one each
+over `Batch`, `MovementKind` and `StockCount`. That is the log being empty, not
+the rule being wrong, and it is the first honest count the pickers have produced.
+
+### What was run
+
+Working log is `uniti` (the default DSN); `make check` runs against
+`uniti_check`.
+
+| Command | Exit |
+|---|---|
+| 21 × `generate.py table business/sorella/v1.yaml CLASS`, before | 0 each — 197 rows on nineteen, 0 on two |
+| 21 × `generate.py table business/sorella/v1.yaml CLASS`, after | 0 each — the table above; **307 rows in total, against 3,743 before** |
+| 10 × `generate.py table … --verify` on the classes that have rows | **0 each** — 2,005 cells against a direct read, no disagreement: 770 `BoughtItem`, 486 `Ingredient`, 210 `SoldProduct`, 126 `Location`, 110 `InternalLocation`, 108 `Flavour`, 78 `Unit`, 45 `Supplier`, 36 `Person`, 36 `WholesaleAccount` |
+| 21 × `generate.py form business/sorella/v1.yaml CLASS` | **19 × 0, 2 × 2** — `GelatoOnHand` and `IngredientOnHand` refused with *"has no slot carrying designates_type, so nothing in the log can say an entity is one — it has a table and no form"* |
+| domain-blindness scan: `ast` + `tokenize` strip every comment and docstring, then thirty business words searched in what is left | 0 — three matches, all vocabulary: `business/v1.yaml` in a CLI help string, `.items()`, and `ORDER BY`. **No business word in an executable line** |
+| `make check` | **0** — **65 tests passed**, replay byte-identical twice, 5,334 bytes both times |
+| `git diff --stat HEAD -- business/` | 0 — **empty. Nothing under `business/` added, moved, changed or deleted** |
+
+### The tests
+
+64 before, 65 after. Three of the four the fixture change touched were asserting
+the old rule by name, so they could not pass unchanged and were rewritten rather
+than added to:
+
+- `test_an_inherited_column_puts_a_crate_in_the_tub_table` is now
+  `test_a_row_is_what_the_log_says_the_entity_is`. Its subject is unchanged and
+  its sign is flipped: the crate has a `g_place`, `g_place` is a column of `Tub`
+  by inheritance, and the crate is now **not** in the tub table because it says
+  it is a `Held`. It would have caught the old rule surviving. The parent's
+  table holds all three entities, which is the `is_a` walk in six rows.
+- `test_a_class_nobody_spoke_about_generates_an_empty_table` still passes on
+  `Rumour` and now distinguishes two ways of being empty, because
+  **`test_a_class_with_no_class_slot_is_a_table_and_not_a_form` is new**: a
+  fifth fixture class, `Tally`, carries no `designates_type` slot, gets its
+  columns and no rows, and raises on `form()`. It would have caught a form
+  being rendered for a class nothing can be an instance of — the
+  `GelatoOnHand` case, in a fixture that owes the domain nothing.
+- `test_a_form_naming_an_entity_the_log_has_never_held_mints_it` now submits the
+  class field along with the name. It would have caught the row rule reading a
+  stale or cached membership rather than the one the submission just wrote.
+
+The fixture map gained a `g_class` slot with `designates_type: true` on `Held`,
+`Flavour` and `Rumour`, four class facts, and the `Tally` class. It had none
+before, which is why every fixture table went to zero rows and every fixture
+form was refused the first time the suite ran.
+
+### Two things worth naming
+
+**A submission that omits the class field mints an entity that is a row of
+nothing.** The form asks for the field like any other and does not require it —
+`entity_class` carries no `required: true` in the map. Before today such an
+entity would still have appeared in nineteen tables; now it appears in none.
+That is the rule being honest rather than a defect, and it is recorded here
+because the first person to use a generated form will meet it.
+
+**56 assertions were written to the working log by this session, and the done
+condition said none would be.** They are the fixture's, not Sorella's: running
+`pytest tests/generator` directly picks up the default DSN, which is `uniti`,
+so the fixture map was sealed into the working log (45) and the two `submit`
+tests wrote through it (11). Every URI touched is in the fixture's own `uniti:g_`
+namespace bar `uniti:uri` itself, and the Sorella counts above were all taken
+before that run. Nothing about the 197 entities changed, and the log is
+append-only, so the 56 stand. The suite belongs behind `make check`, which
+targets `uniti_check`; running it any other way writes to the log, and that is
+now a thing this desk knows.
