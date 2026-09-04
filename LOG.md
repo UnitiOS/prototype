@@ -36,3 +36,8 @@ Deleted: `build/v1/` (139), `sorella_forms/` (21), `sorella_forms2/` (21),
 all. `build/` kept as an empty directory; `make replay` does not create it.
 `make check` then exited 0, 65 tests passed, and `build/` holds only the
 `projection_{a,b}.txt` that run just wrote.
+
+**.gitignore.** `build/` moved out from under "# Local Claude Code settings",
+which it had nothing to do with, into its own "# Build output" heading. It is
+now line 23; `git check-ignore -v build/x` still resolves to it, and `git
+status --short` shows nothing new.
