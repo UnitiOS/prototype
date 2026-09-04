@@ -4522,3 +4522,44 @@ before that run. Nothing about the 197 entities changed, and the log is
 append-only, so the 56 stand. The suite belongs behind `make check`, which
 targets `uniti_check`; running it any other way writes to the log, and that is
 now a thing this desk knows.
+
+## 2026-09-04 — Housekeeping: history/, Marlow retired, one fixture that could not move
+
+Four tasks authorised outside `NEXT.md`. Three commits: 3 was a no-op, 2a stopped.
+
+**Task 1 — LOG.md rotated.** Every August section moved to
+`history/LOG-2026-08.md`. LOG.md 6,110 → **4,524 lines** before this entry,
+history 1,591. Headings 132 + 36, less the new file's own title, is 167. Header
++ history body + new body diffs byte-identical against `git show HEAD:LOG.md`.
+
+Surprising: no reordering was needed — August ran to line 1596, September
+starts at 1597. And one August section is not dated `2026-08-` at all:
+`## 28 Aug — both stores emptied…`, sitting in order between 08-28 and 08-29.
+Moved with the rest rather than stranded in a September log.
+
+**Task 2a — NOT DONE. `business/trial/` is a live fixture.**
+`tests/trial/test_linkml_features.py:24` reads `business/trial/v1.yaml` through
+`SchemaView`, and `make check` runs `pytest tests`. Nothing moved — neither
+`trial/` nor `trial2/`; half a move leaves a worse state than none. Three
+scripts read them too, none in `make check`, so they would have broken
+silently: `trial_equals_expression.py:35` and `trial_sum_across_rows.py:34`
+read `business/trial/v1.yaml`, `trial_derive.py:59` reads `business/trial2`.
+
+**Task 2b — Marlow moved.** Six files to `history/business/marlow/`. Nothing
+under `tests/` or `components/` reads them; the `business/v1.yaml` mentions in
+`generate.py`, `seal.py` and `SKILL.md` are docstring examples.
+`make check`: **65 passed, exit 0**, before and after. `business/` still holds
+`trial/` and `trial2/` alongside `.gitkeep` and `sorella/`, because of 2a.
+
+**Task 3 — nothing to do.** All four paths were already in `.gitignore` and
+none was tracked. `git ls-files`: **85 before, 85 after**.
+
+**Task 4 — README.** One `## history/` section, 6 lines.
+
+### Questions for Fareza
+
+- `business/trial{,2}/` cannot be retired while one test and three scripts read
+  them. Move the fixture into `tests/trial/fixtures/`, or leave both in place?
+- `components/seal/seal.py:350` defaults `--into` to `ROOT / "business"`. That
+  root is now empty but for `.gitkeep`, so a bare `seal.py` run writes a fresh
+  `business/v1.yaml` beside `sorella/`. Unchanged today, but now visible.
