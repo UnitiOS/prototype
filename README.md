@@ -149,6 +149,12 @@ them — a restated rule drifts from the one it restates.
 are known not to work — revocation does not cascade, `revokes` is not tied to
 the same slot — written down rather than patched.
 
+## history/
+
+Material that has stopped being carried: `LOG.md`'s August sections, and
+Marlow, the business Sorella replaced. Read-only evidence — quotable to
+answer a named question, never browsed. Same rule as `../archived/`.
+
 ## Not built
 
 Two different reasons, and they are not interchangeable. The `interview` skill,
