@@ -64,3 +64,16 @@ what a node-link viewer needs to draw an edge: 0 -> 36.
 Surprising: `gen-owl` does not repeat an inherited slot on a subclass, so no
 union holds both a class and its parent — no pruning was needed. And the map
 has 36 object properties, not the 16 relationships `NEXT.md` counts.
+
+**3 — pyLODE 3.6.0, trialled.** `pip install pylode` into `.venv` only; the
+Makefile is untouched. Ran on both TTLs (`-i` is not its flag; input is
+positional). Both files render, 22 class blocks each — the 21 classes and the
+`RecipeStage` enum — with every class and slot description from the map, and
+cardinalities as `min 1` / `max 1` / `only xsd:string` lines under Super Class
+Of. It draws no diagram at all: no SVG, no image. Relationships are text.
+The difference task 2 makes: every one of the 101 properties gains a `Domain`
+row (raw: none), and 21 class blocks gain an `In Domain Of` back-link list
+(raw: 0). `In Range Of` is 13 in both. A union domain renders as
+`Supplier c or WholesaleAccount c`, but pyLODE back-links only a plain domain,
+so exactly the 95 single-class slots appear under `In Domain Of` and the 6
+union ones appear under no class.
