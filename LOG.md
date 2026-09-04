@@ -82,3 +82,44 @@ not `uniti_check`, and the log is unchanged either side: 418 entities, 1,673
 assertions, 208 intents. The 21 tables hold 197 distinct entities — Location 42
 covers its 33 subclass rows, Ingredient 81 covers BoughtItem 77 — which is the
 master data of 1 Sep.
+
+## 2026-09-05 — gen-doc trialled against pyLODE
+
+A comparison, authorised by Fareza. `make build`, `scripts/` and the pyLODE
+output are untouched. `gen-doc business/sorella/v1.yaml -d build/sorella/v1/
+graph/gen-doc` exits 0, writing **144** files: 21 classes, 101 slots, 1 enum,
+19 types, `index.md`, the schema. pyLODE was re-measured, not quoted.
+
+| | map | pyLODE 3.6.0 | gen-doc |
+|---|---|---|---|
+| classes / slots | 21 / 101 | 21 / 101 | 21 / 101 |
+| class / slot descriptions | 21 / 101 | 21 / 101 | 21 / 101 |
+| cardinality | 137 class-slot pairs | 244 axioms, 122 pairs | 137 pairs |
+| domain / range per slot | 101 / 101 | 101 / 101 | 101 / 101 |
+| `is_a` | 4 | 4 | 4, and 2 parent-side |
+
+The baseline handed to this run was wrong on two rows. `gen-owl` writes no
+`rdfs:comment` but does write `skos:definition`, whence pyLODE's descriptions;
+its 244 is 122 `max 1` + 112 `min 0` + 10 `min 1`, and the 15 pairs short of 137
+are inherited slots it never repeats. gen-doc gives all 137 a cell (`0..1` x123,
+`1` x14) and `Required` on the 10 identifiers; the map bounds nothing else.
+
+| the four | pyLODE | gen-doc |
+|---|---|---|
+| `aggregate` `over`/`sum`/`by`, 4 slots | 4 of 4 | 4 of 4 |
+| `equals_expression`, 2 slots | 0 of 2 | 2 of 2 |
+| `unique_keys` on `ProductPrice` | no | yes, both slots named |
+| `designates_type` on `entity_class` | no | yes, its own row |
+
+pyLODE showing the aggregates is the surprise: `gen-owl` emits each as a
+`sorella:aggregate` string, the `JsonObj(...)` repr. The other three stay behind.
+
+`mkdocs` 1.6.1 and `mkdocs-material` into `.venv` only, Makefile untouched;
+`mkdocs.yml` was generated into `gen-doc/` by a scratchpad script, so nothing
+under `build/` is hand-written. `mkdocs build --strict` is clean: 144 pages, 192
+files, 142 links and every diagram click target resolving, 21 mermaid diagrams.
+
+    .venv/Scripts/mkdocs.exe serve -f build/sorella/v1/graph/gen-doc/mkdocs.yml
+
+Surprising: superfences' `format:` must be the bare `!!python/name:` — one level
+deeper every fence is literal backticks, no diagram draws, `--strict` still ok.
