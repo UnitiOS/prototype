@@ -130,8 +130,11 @@ Built 2026-09-04 from 203 entries, of which 52 carried a reversal.
   list. Nobody is "at" a stage · 26 Aug, superseding 24 Aug
 - The stop-list is entered only through `NEXT.md`, never by editing CLAUDE.md
   · 24 Aug
-- Claude Code never writes `DECISIONS.md`; it proposes wording in `LOG.md`
-  · 24 Aug
+- One session holds both modes. `NEXT.md` and `DECISIONS.md` are written
+  once Fareza has agreed to the wording, never as a side effect of an
+  implementation run · 5 Sep, superseding 24 Aug
+- `CLAUDE.md` says what the system is and does not track it. Where the work
+  stands is `ROADMAP.md`; how a session works is the two skills · 5 Sep
 - The archived corpus may be quoted to answer a named question, with file and
   section cited, and never browsed · 24 Aug
 - Decisions are written at the rate evidence arrives, not at the rate arguments
@@ -215,3 +218,19 @@ browsed.
              the log as a stated fact and `GelatoOnHand` returned no rows. This
              replaces the `constraint engine` brake, which pointed the other
              way; `constraint engine` leaves the stop-list.
+
+2026-09-05 · The governing files are split by what they answer, because status
+             written in three places disagreed in all three. `CLAUDE.md` says
+             what the system is and tracks nothing; `ROADMAP.md` is the only
+             file that says where the work stands; `README.md` says how to run
+             it. It found `CLAUDE.md` naming a design diagram that does not
+             exist and `README.md` claiming three built components, an empty
+             `business/` and 41 tests, against five, three and 65.
+2026-09-05 · Session procedure leaves `CLAUDE.md` for two skills,
+             `.claude/skills/uniti-discuss` and `uniti-build`, invoked by name.
+             The read budget, the per-entry line ceilings, the file-count
+             ceilings and the ban on new root `.md` files are dropped rather
+             than moved: they policed the session instead of describing the
+             system, and `ROADMAP.md` is the seventh root file they forbade.
+             What survives is the one rule with a failure behind it — a
+             decision is not written in the same act as the code it justifies.

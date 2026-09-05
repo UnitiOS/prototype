@@ -1,7 +1,6 @@
 # Execution Log
 
-Written **only by Claude Code**, after something has actually been run.
-Desktop reads this at the start of a session and never writes to it.
+Written after something has actually been run, never before.
 
 Format: date · what was run · the result · what was surprising.
 Plans do not go here. Only what already happened.
@@ -363,3 +362,40 @@ choice from its alternative.
 and the compiler reads the working log, which `check` deliberately does not.
 No test was written for the compiler — the done condition asks for a table, a
 number and a grep, and all three are above.
+
+## 2026-09-05 — The governing files restructured, and two skills installed
+
+Authorised by Fareza in conversation, not a `NEXT.md` item. No code was
+touched: `components/`, `scripts/` and `tests/` are unchanged, so `make check`
+was not re-run.
+
+**What was wrong.** `CLAUDE.md` named its design of record as
+`../doc/design-2026-08-31.png`, which does not exist — the file is
+`../doc/Screenshot 2026-08-31 225845.png`. `README.md` claimed three built
+components (five exist), an empty `business/` (three directories), and
+"expect 41 passed" (`pytest --collect-only` reports 65). `CLAUDE.md` still
+carried the `generate.py` reads-no-annotations paragraph in the present tense,
+which `486fe20` had made false the day before, and `NEXT.md` still carried the
+compiler item unticked with the same run recorded as finished below it.
+
+**What changed.** `ROADMAP.md` is new and is now the only file that states
+status: milestones, per-stage progress, per-component status. `CLAUDE.md` was
+rewritten to describe the system only — 244 lines against 319, with the stage
+and component tables kept but their status columns removed. `README.md` was
+corrected throughout and given a `business/` section and rows for the generator
+and compiler docstrings. `NEXT.md` holds no open item.
+
+`.claude/` was empty; nothing was installed anywhere, and no skill had ever
+loaded. It now holds `skills/uniti-discuss/` and `skills/uniti-build/`.
+`../uniti-pm-SKILL.md` was the ancestor of the first and is left where it is.
+
+**Dropped rather than moved**: the ~150-line read budget, the twenty-minute
+question time-box, the per-entry line ceilings, the per-file line ceilings, and
+"no new `.md` files at the root". They constrained the session rather than
+describing the system, and the last of them forbade `ROADMAP.md`.
+
+Surprising: `components/interview/SKILL.md` writes `business/draft.yaml`, a
+path the 4 Sep per-business version store retired. It is not installed as a
+skill, so nothing was reading it — the same shape as the `equals_expression`
+annotations no code read. Left alone; the stage is deferred and `OPEN.md`
+already carries the `seal --into` half of it.
