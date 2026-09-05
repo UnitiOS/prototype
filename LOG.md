@@ -123,3 +123,103 @@ files, 142 links and every diagram click target resolving, 21 mermaid diagrams.
 
 Surprising: superfences' `format:` must be the bare `!!python/name:` — one level
 deeper every fence is literal backticks, no diagram draws, `--strict` still ok.
+
+## 2026-09-05 — two movements in the log, and a balance to compute
+
+`NEXT.md` item one. Nothing under `components/` changed; two `generate.py
+submit` calls and nothing else.
+
+**The ingredient is digestive biscuits, and the unit is `pack`.** The aggregate
+on `IngredientOnHand` does not group by unit, so the seed had to be one
+ingredient in one unit. Two candidates were rejected first:
+
+- **Canned soft drink** — the richest Monday story in §4.2 (4 cases into Cotham
+  at 09:50, 2 cases into Gloucester Road at 10:35, 19 and 14 sold, one off the
+  Gloucester Road shelf for a staff drink) and unusable. It arrives in cases of
+  24 and leaves in cans, and §1.6 counts it in cases, so seeding it needs a
+  case-to-can conversion the map holds nowhere. Bottled water fails identically.
+- **Honey, clear** — one unit in the map (`tub`, no worked unit) but §2.2 draws
+  0.75 kg of a 3 kg tub into the biscuit base run, so the only movement it has
+  on Monday is in kilograms against a count in tubs.
+
+Digestives are not innocent either: §1.5 gives them three units, ordered in
+cases, counted in packs, worked in grams. What made them the pick is that
+**every quantity the profile actually states for them is a pack** — 17 at the
+count, ten a run — because §2.2 says the biscuit base page "is the only page in
+the book that starts from a count of packs rather than a weight". So no seeded
+movement needs a conversion, which is the condition that matters. No ingredient
+with both an arrival and a departure on Monday is single-unit in §1.5; the
+choice is between a mixed-unit seed and a seed with no departure at all.
+
+**The two movements.**
+
+| Subject | Out of | Into | Qty | From |
+|---|---|---|---|---|
+| `mov_2026_06_15_digestives_opening` | Severn Catering Supplies | Dry store | 17 pack | §4.1, Dan's dry store sheet, 05:55–07:10, *Counted* |
+| `mov_2026_06_15_digestives_biscuit_base` | Dry store | — | 10 pack | §4.2 afternoon, Rekha's run; §2.2 puts a run at ten packs |
+
+Both `valid_from 2026-06-15T00:00:00+00`, `recorded_at` today, `happened_on
+2026-06-15`, source `human_stated`. `movement_kind` and `movement_batch` left
+empty — the log holds no `MovementKind` and no `Batch`, neither slot is
+required, and minting one to fill a picker would be inventing master data.
+`written_by` left empty on both: §3.2 says nothing is written for the biscuit
+base run, and the opening line is a count sheet, not a movement document.
+
+Two seeding choices worth naming. **The opening position is given the supplier
+as its origin** — §3.2 has the weekly drop as Severn Catering Supplies → Dry
+store, and the map's own `ingredient_on_hand_net` description expects a supplier
+to read negative. **The run has no destination.** §3.2's row for a digestive
+leaving a shelf is *Ingredients to the machine — Dry store, Walk-in chiller,
+Ingredient freezer → the pasteuriser or the bench*, and adds that §1.3 names
+neither; the separate *Biscuit base made — Dry store → Ingredient freezer* row
+is about where the made thing went, not where the packs went. Putting ten packs
+of digestives into the ingredient freezer would have made the freezer hold packs
+it does not hold.
+
+**The hand computation.** Digestive biscuits, in packs, at `valid_at`
+2026-06-15 or later, `as_of` now. `ingredient_in` sums `movement_quantity`
+grouped by `movement_into`, `ingredient_out` by `movement_out_of`, and the net
+is the first less the second.
+
+| Location | in | out | net |
+|---|---|---|---|
+| Dry store | 17 | 10 | **7** |
+| Severn Catering Supplies | 0 | 17 | **−17** |
+| *no location* | 10 | 0 | **10** |
+
+Seven packs on the dry store shelf at close on Monday, which is 17 counted at
+05:55 less the ten Rekha took in the afternoon. Total across every location is
+nought, as it must be when nothing is created.
+
+**Run and result.**
+
+    generate.py submit business/sorella/v1.yaml StockMovement \
+      --subject sorella:mov_2026_06_15_digestives_opening \
+      --set entity_class=StockMovement --set movement_quantity=17 ... \
+      --actor fareza --valid-from 2026-06-15T00:00:00+00:00
+
+Two intents, 2 entities minted, 17 assertions (9 and 8). Every predicate
+already existed from the sealed map, so each call minted only its own subject.
+`generate.py table business/sorella/v1.yaml StockMovement --verify` lists both
+rows and reports *26 cells equal a direct read of the log*; 11 of 26 cells are
+blank and five columns are empty — `movement_kind`, `movement_flavour`,
+`movement_format`, `movement_batch`, `written_by`.
+
+**What a quantity looks like in the log, for item two.** `value_literal` is
+`text` and holds `'17'` and `'10'`, length 2, casting cleanly to `numeric`. The
+compiler will have to cast. Unlike `seal`, `submit` does not round-trip through
+a Python float: it takes the `--set` string and calls `str()` on it, so what was
+typed is what is stored. The `4.20` → `"4.2"` T1 in `OPEN.md` is a `seal`
+problem and not a `submit` one, and this seed happens not to exercise it because
+packs are whole.
+
+**Surprising.** The profile is built so that almost nothing survives the
+single-unit test: of the items that move at all on Monday, the only ones counted
+and worked in the same unit are wooden stirrers and paper cups, and neither has
+a departure anybody records. The unit mismatch is not an edge case in this
+business, it is the shape of it — §1.5 opens by calling it "the single most
+persistent source of confusion" — and an aggregate that does not group by unit
+can only ever be seeded around it.
+
+Appended to `OPEN.md`: a T3 on what the compiler does with a movement that
+names no place at one end, since the seed now contains one.

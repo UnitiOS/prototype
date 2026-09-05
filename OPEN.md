@@ -53,6 +53,9 @@ Compacted 2026-09-04 from 150 items. The full text is
   COMMITTED, and a slow transaction leaks into the past · blocks: live use
 - Whether the diff attributes a difference to the individual rule that moved,
   or data-vs-definition decomposition is enough · blocks: report
+- A movement may name no place at one end, and the seed now holds one:
+  whether a group under no location is a row of the balance, is dropped, or
+  is named · blocks: generation
 
 ## T1 — just try it
 
