@@ -334,13 +334,23 @@ def _NOW():
 
 
 def submit(conn, map_, class_name, *, subject, values, actor_id,
-           valid_from=None, recorded_at=None):
+           valid_from=None, recorded_at=None,
+           authority=None, confidence=None, reason_code=None, note=None):
     """One form submission: one intent, N assertions.
 
     `values` is keyed by field name, which is the slot's name in the map. A
     URI never seen before — the subject, or the entity a ref field names — is
     registered under `uniti:uri` exactly as `seal` registers one, so the form
     and the seal put the same entity in the log rather than two.
+
+    `authority` is who says so and `confidence` how sure they are; both land on
+    every assertion the submission states, and both default to NULL, because
+    "nobody said who set this" is a fact about the log rather than something to
+    fill in. They are not put on the `uniti:uri` rows: registering an identifier
+    is bookkeeping, and nobody set it.
+
+    `reason_code` and `note` land on the intent — one act, one reason. `note`
+    replaces the default description of the submission when it is given.
     """
     fields = {c["name"]: c for c in columns(map_, class_name)}
     unknown = sorted(set(values) - set(fields))
@@ -375,6 +385,8 @@ def submit(conn, map_, class_name, *, subject, values, actor_id,
                else {"value": str(value)}),
             "valid_from": valid_from,
             "source": FORM_SOURCE,
+            "authority": authority,
+            "confidence": confidence,
         }
         for name, value in values.items()
     ]
@@ -385,7 +397,8 @@ def submit(conn, map_, class_name, *, subject, values, actor_id,
         agent_id="generator",
         action_name=f"submit_{class_name}",
         ontology_version=map_["version"],
-        note=f"{class_name} form, {len(values)} field(s), {subject}",
+        reason_code=reason_code,
+        note=note or f"{class_name} form, {len(values)} field(s), {subject}",
         mint=minting,
         assertions=assertions,
         recorded_at=recorded_at,
@@ -494,6 +507,13 @@ def main(argv=None):
             p.add_argument("--actor", required=True)
             p.add_argument("--valid-from", default=None)
             p.add_argument("--recorded-at", default=None)
+            # Provenance. No defaults: unsaid is NULL, not a guess.
+            p.add_argument("--authority", default=None,
+                           help="who says so, on every assertion")
+            p.add_argument("--confidence", default=None,
+                           choices=["high", "medium", "low"])
+            p.add_argument("--reason-code", default=None, help="on the intent")
+            p.add_argument("--note", default=None, help="why, on the intent")
 
     args = parser.parse_args(argv)
 
@@ -530,7 +550,9 @@ def main(argv=None):
             result = submit(conn, map_, args.klass, subject=args.subject,
                             values=values, actor_id=args.actor,
                             valid_from=_utc(args.valid_from) if args.valid_from else None,
-                            recorded_at=_utc(args.recorded_at) if args.recorded_at else None)
+                            recorded_at=_utc(args.recorded_at) if args.recorded_at else None,
+                            authority=args.authority, confidence=args.confidence,
+                            reason_code=args.reason_code, note=args.note)
             print(f"intent {result['intent_id']}: {len(result['minted'])} minted, "
                   f"{len(result['assertions'])} assertions")
             for name in values:

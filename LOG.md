@@ -399,3 +399,54 @@ path the 4 Sep per-business version store retired. It is not installed as a
 skill, so nothing was reading it — the same shape as the `equals_expression`
 annotations no code read. Left alone; the stage is deferred and `OPEN.md`
 already carries the `seal --into` half of it.
+
+## 2026-09-05 — Stage 1: the write gate can carry provenance
+
+`NEXT.md` stage 1 of the four-rules trial, taken to its done condition.
+
+**What changed.** `submit()` in `components/generator/generate.py:337` now takes
+`authority`, `confidence`, `reason_code` and `note`, and the CLI offers
+`--authority`, `--confidence` (choices `high`/`medium`/`low`), `--reason-code`
+and `--note`. `authority` and `confidence` land on every assertion the
+submission states; `reason_code` and `note` land on the intent, `note`
+replacing the default description of the submission. All four default to
+`None`, and nothing fills them in. `perform()` was not touched — it already
+took every one of these.
+
+The `uniti:uri` rows minted alongside a submission deliberately carry neither
+`authority` nor `confidence`: registering an identifier is bookkeeping, and
+nobody set it.
+
+**What was run.**
+
+    make check          67 passed, replay identical twice (5334 bytes), exit 0
+    grep -rn "authority" components/generator/generate.py
+                        5 lines: signature, docstring, the assertion dict,
+                        the CLI flag, the call. No default value anywhere
+
+Two new tests in `tests/generator/test_generated.py` — 65 before, 67 now. The
+first submits `g_tub_name` with `authority="Marina"`, `confidence="high"`,
+`reason_code="correction"` and a note, then reads back the assertion's
+`authority` and `confidence` and the intent's `reason_code` and `note`, and
+asserts the minted `uniti:uri` row carries `(None, None)`. The second submits
+the same field with no provenance and asserts NULL on the row and the default
+note on the intent.
+
+The CLI path was run end to end against `uniti_check`, with the generator's
+fixture draft sealed into a scratch directory first:
+
+     source         | authority | confidence | reason_code | note
+    ----------------+-----------+------------+-------------+--------------------------
+     system_derived |           |            | correction  | the CLI carries a reason
+     human_stated   | Marina    | high       | correction  | the CLI carries a reason
+
+**Surprising.** `make test` alone fails four tests — three in `tests/seal/` and
+one in `tests/generator/` — on a `uniti_check` left dirty by a previous run;
+`make check` reloads the schema first and all 67 pass. The same four fail on an
+untouched tree, so it is not this change. It is a second face of the trap
+`OPEN.md` already carries about running `pytest` directly: the suite is not
+independent of the state of the database it finds.
+
+`business/sorella/v1.yaml` has no `item_label` slot — the first smoke attempt
+used it and the generator refused, listing the ten fields `BoughtItem` has. The
+refusal came from the map, not from code that knew the domain.

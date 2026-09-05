@@ -239,3 +239,67 @@ def test_a_field_the_map_does_not_declare_is_refused(conn, map_):
     with pytest.raises(MapError, match="g_colour"):
         submit(conn, map_, "Tub", subject="uniti:g_tub_1",
                values={"g_colour": "white"}, actor_id="test")
+
+
+def _intent(conn, intent_id):
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT reason_code, note FROM intent WHERE id = %s", (intent_id,)
+        )
+        return cur.fetchone()
+
+
+def _authority(conn, assertion_id):
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT authority, confidence FROM assertion WHERE id = %s",
+            (assertion_id,),
+        )
+        return cur.fetchone()
+
+
+def test_a_submission_carries_who_said_it_and_why(conn, map_):
+    """Provenance reaches the log: authority on the row, the reason on the act.
+
+    §3.4 of a profile gives every rule a setter and a reason for each change.
+    Those are `assertion.authority` and `intent.note`, and a form that dropped
+    them would keep the number and lose the half that makes it evidence.
+    """
+    result = submit(
+        conn, map_, "Tub",
+        subject="uniti:g_tub_4",
+        values={"g_tub_name": "Tub 4"},
+        actor_id="test", valid_from=ENTERED_FROM, recorded_at=ENTERED_AT,
+        authority="Marina", confidence="high",
+        reason_code="correction", note="Set by Marina after the count",
+    )
+    assert _intent(conn, result["intent_id"]) == (
+        "correction", "Set by Marina after the count"
+    )
+    stated = resolve_single(
+        conn, subject_id=result["subject_id"],
+        predicate_id=result["predicates"]["g_tub_name"],
+        valid_at=LATER, as_of=LATER,
+    )
+    assert stated["value_literal"] == "Tub 4"
+    assert stated["authority"] == "Marina"
+    assert stated["confidence"] == "high"
+
+    # The uniti:uri row minted alongside it is bookkeeping, and nobody set it.
+    minted = [a for a in result["assertions"] if a != stated["id"]]
+    assert len(minted) == 1
+    assert _authority(conn, minted[0]) == (None, None)
+
+
+def test_a_submission_naming_no_authority_writes_null(conn, map_):
+    """Unsaid is NULL. "Nobody said who set this" is a fact about the log."""
+    result = submit(
+        conn, map_, "Tub",
+        subject="uniti:g_tub_4",
+        values={"g_tub_kilograms": "2.0"},
+        actor_id="test", valid_from=ENTERED_FROM, recorded_at=ENTERED_AT,
+    )
+    assert [_authority(conn, a) for a in result["assertions"]] == [(None, None)]
+    reason_code, note = _intent(conn, result["intent_id"])
+    assert reason_code is None
+    assert note == "Tub form, 1 field(s), uniti:g_tub_4"
