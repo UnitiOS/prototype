@@ -4,8 +4,9 @@ The map declares rules. This turns one kind of rule into SQL and runs it.
 
     the map    which class the table is, which columns it has, and for each
                column what derives it: an `aggregate` annotation naming an
-               operator, a source class and a grouping, or an
-               `equals_expression` over the columns beside it.
+               operator, a source class and a grouping, an `equals_expression`
+               over the columns beside it, or a `parameter` annotation naming a
+               key column and one slot to read off the entity that key names.
     the log    the values, resolved at one pair of clocks by the same rule
                `resolve_single()` uses, written once as a CTE rather than once
                per cell.
@@ -15,10 +16,17 @@ The map declares rules. This turns one kind of rule into SQL and runs it.
 Two connections and no join between them: nothing that reads the operational
 store can reach an `assertion` row, because it is not in the same database.
 
-**Nothing here knows what the map is about.** It reads four words — `over`,
-the operator, `by`, and `equals_expression` — and emits SQL. A column whose
-name it recognised would be a defect: point it at another map and another
-table comes out.
+**Nothing here knows what the map is about.** It reads six words — `over`,
+the operator, `by`, `equals_expression`, `parameter` and its `of` and `slot` —
+and emits SQL. A column whose name it recognised would be a defect: point it at
+another map and another table comes out.
+
+A `parameter` column is the fourth kind: not computed from the rows at all, but
+one fact the log holds about the entity a key column names — a threshold
+somebody set, a rate somebody agreed. It carries no clock machinery of its own,
+because the fact is read out of the same `stated` CTE every other cell is read
+from, already resolved at both clocks. Where nothing is stated the cell is
+NULL, never a nought: an absent rule is not a rule that says zero.
 
     a row of the table is one distinct combination of the grouping values,
     from every aggregate on the class taken together. A combination one
@@ -173,28 +181,75 @@ def _read_aggregate(map_, where, spec):
     }
 
 
+def _read_parameter(map_, where, spec, keys, cols):
+    """One `parameter` annotation: a fact the log holds about a key's entity.
+
+    `of` names one of this table's key columns and `slot` names a slot of
+    whatever that column ranges over, or of a class below it — the same
+    downward walk `_source_cte` does, because the log classifies an entity as
+    the narrowest thing it is and a key may name any of them.
+    """
+    view = map_["view"]
+    if set(spec) != {"of", "slot"}:
+        raise MapError(
+            f"{where}: a parameter is `of` and `slot` — this one has {sorted(spec)}"
+        )
+    of = str(spec["of"])
+    if of not in keys:
+        raise MapError(
+            f"{where}: `of` names {of!r}, which is not one of this table's "
+            f"key columns {keys}"
+        )
+    range_ = next(col["range"] for col in cols if col["name"] == of)
+    if range_ not in view.all_classes():
+        raise MapError(
+            f"{where}: `of` names {of!r}, whose range {range_} is not a class, "
+            f"so its value names no entity to read a fact off"
+        )
+    wanted = str(spec["slot"])
+    for class_name in view.class_descendants(range_):
+        for slot in view.class_induced_slots(class_name):
+            if str(slot.name) == wanted:
+                if not slot.slot_uri:
+                    raise MapError(
+                        f"{where}: {class_name}.{wanted} declares no slot_uri"
+                    )
+                return {"of": of, "slot_uri": str(slot.slot_uri)}
+    raise MapError(
+        f"{where}: `slot` names {wanted!r}, which neither {range_} nor any "
+        f"class below it has a slot for"
+    )
+
+
 def plan(map_, class_name):
     """What the map says this class's table is: its columns, and each one's rule.
 
-    Every column falls in one of four kinds. `key` is a column an aggregate
-    groups by; `aggregate` is one the map annotates; `expression` is one the
-    map writes in terms of the others; `unfilled` is a column no rule reaches,
-    which is a column of nulls and is reported as one.
+    Every column falls in one of five kinds. `key` is a column an aggregate
+    groups by; `aggregate` is one the map annotates; `parameter` is one the map
+    reads off the entity a key names; `expression` is one the map writes in
+    terms of the others; `unfilled` is a column no rule reaches, which is a
+    column of nulls and is reported as one.
     """
     view = map_["view"]
     cols = columns(map_, class_name)
     slots = {slot.name: slot for slot in view.class_induced_slots(class_name)}
 
-    aggregates, expressions = {}, {}
+    aggregates, expressions, stated = {}, {}, {}
     for col in cols:
         slot = slots[col["name"]]
         annotation = _annotation(slot, "aggregate")
+        parameter = _annotation(slot, "parameter")
         expression = slot.equals_expression
         where = f"{class_name}.{col['name']}"
-        if annotation and expression:
-            raise MapError(f"{where} declares an aggregate and an expression both")
+        declared = sum(1 for rule in (annotation, parameter, expression) if rule)
+        if declared > 1:
+            raise MapError(
+                f"{where} declares more than one rule, and a column has one"
+            )
         if annotation:
             aggregates[col["name"]] = _read_aggregate(map_, where, annotation)
+        elif parameter:
+            stated[col["name"]] = parameter
         elif expression:
             expressions[col["name"]] = str(expression)
 
@@ -217,7 +272,8 @@ def plan(map_, class_name):
     stray = sorted(grouped_by - names)
     if stray:
         raise MapError(f"{class_name} is grouped by {stray}, which it has no slot for")
-    derived = sorted(grouped_by & (set(aggregates) | set(expressions)))
+    derived = sorted(
+        grouped_by & (set(aggregates) | set(expressions) | set(stated)))
     if derived:
         raise MapError(f"{class_name} is grouped by {derived}, which it derives")
 
@@ -225,11 +281,17 @@ def plan(map_, class_name):
     # the map wrote it rather than the way an annotation happened to be keyed.
     keys = [col["name"] for col in cols if col["name"] in grouped_by]
 
+    parameters = {
+        name: _read_parameter(map_, f"{class_name}.{name}", spec, keys, cols)
+        for name, spec in stated.items()
+    }
+
     planned = []
     for col in cols:
         kind = (
             "key" if col["name"] in keys
             else "aggregate" if col["name"] in aggregates
+            else "parameter" if col["name"] in parameters
             else "expression" if col["name"] in expressions
             else "unfilled"
         )
@@ -241,6 +303,7 @@ def plan(map_, class_name):
         "columns": planned,
         "keys": keys,
         "aggregates": aggregates,
+        "parameters": parameters,
         "expressions": expressions,
         "version": map_["version"],
     }
@@ -332,6 +395,25 @@ def _aggregate_cte(spec, column, alias, source_alias, keys, prefix):
     return f"{alias} AS (\n{body}\n    GROUP BY {group}\n)"
 
 
+def _parameter_cte(spec, alias):
+    """One parameter: what the log says under one slot, per entity, by URI.
+
+    It reads `stated`, so it is resolved at both clocks already and the value
+    that comes back is the one standing then. An entity the log says nothing
+    about under this slot is absent here, and the LEFT JOIN then leaves the
+    cell NULL — which is the whole difference between a rule nobody wrote and
+    a rule that says nought.
+    """
+    return (
+        f"{alias} AS (\n"
+        f"    SELECT e.uri AS key_value, s.value AS value\n"
+        f"    FROM registry e\n"
+        f"    JOIN stated s ON s.subject_id = e.entity_id\n"
+        f"                 AND s.slot = {_lit(spec['slot_uri'])}\n"
+        f")"
+    )
+
+
 def _column_sql(plan_, name, aliases, stack=()):
     """The SQL that produces one column, wherever the map puts its rule."""
     col = next(c for c in plan_["columns"] if c["name"] == name)
@@ -340,6 +422,8 @@ def _column_sql(plan_, name, aliases, stack=()):
     if col["kind"] == "aggregate":
         empty = EMPTY[plan_["aggregates"][name]["operator"]]
         return f"coalesce({aliases[name]}.{_ident(name)}, {empty})"
+    if col["kind"] == "parameter":
+        return f"({aliases[name]}.value)::{col['type']}"
     if col["kind"] == "unfilled":
         return "NULL"
 
@@ -387,7 +471,7 @@ def emit(map_, plan_):
             sources[spec["over"]] = alias
             source_ctes.append(_source_cte(map_, spec["over"], alias))
 
-    aliases, aggregate_ctes = {}, []
+    aliases, aggregate_ctes, parameter_ctes = {}, [], []
     for i, (column, spec) in enumerate(plan_["aggregates"].items()):
         alias = f"total_{i}"
         aliases[column] = alias
@@ -395,22 +479,34 @@ def emit(map_, plan_):
             _aggregate_cte(spec, column, alias, sources[spec["over"]], keys, f"t{i}_")
         )
 
+    for i, (column, spec) in enumerate(plan_["parameters"].items()):
+        alias = f"param_{i}"
+        aliases[column] = alias
+        parameter_ctes.append(_parameter_cte(spec, alias))
+
     key_list = ", ".join(_ident(k) for k in keys)
     grouping = "grouping AS (\n" + "\n    UNION\n".join(
         f"    SELECT {key_list} FROM {aliases[column]}" for column in plan_["aggregates"]
     ) + "\n)"
 
     joins = []
-    for column, alias in aliases.items():
+    for column in plan_["aggregates"]:
+        alias = aliases[column]
         on = "\n                       AND ".join(
             f"{alias}.{_ident(k)} IS NOT DISTINCT FROM g.{_ident(k)}" for k in keys
         )
         joins.append(f"LEFT JOIN {alias} ON {on}")
+    for column, spec in plan_["parameters"].items():
+        alias = aliases[column]
+        joins.append(
+            f"LEFT JOIN {alias} ON {alias}.key_value "
+            f"IS NOT DISTINCT FROM g.{_ident(spec['of'])}"
+        )
 
     select = (
         "WITH "
         + ",\n".join([_STANDING, _REGISTRY, _STATED] + source_ctes
-                     + aggregate_ctes + [grouping])
+                     + aggregate_ctes + parameter_ctes + [grouping])
         + "\nSELECT "
         + ",\n       ".join(
             f"{_column_sql(plan_, c['name'], aliases)} AS {_ident(c['name'])}"
@@ -473,7 +569,7 @@ def render(built):
     for col in plan_["columns"]:
         kinds.setdefault(col["kind"], []).append(col["name"])
     out += ["", f"{len(built['rows'])} rows, {len(headers)} columns"]
-    for kind in ("key", "aggregate", "expression", "unfilled"):
+    for kind in ("key", "aggregate", "parameter", "expression", "unfilled"):
         if kind in kinds:
             out.append(f"{kind}: {', '.join(kinds[kind])}")
     return "\n".join(out) + "\n"

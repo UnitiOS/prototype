@@ -760,3 +760,158 @@ count: whether the van is a leg or a place, whether "1 half pan" is 0.5 or no
 number, whether a place with two names is one row or two, and whether the
 12.0 kg mix line is a movement. Three of the four went the way that produces
 *fewer* rows and *more* findings.
+
+---
+
+## 2026-09-06 — The crossing: a parameter named by the graph, executed
+
+`NEXT.md`'s one item, all four parts. Everything below ran against
+`uniti_trial`; the working log `uniti` was not touched.
+
+**What was run, in order.**
+
+    python <scratch>/mkscratch.py business/sorella/v2.yaml <scratch>/v2p.yaml
+    UNITI_DSN=…/uniti_trial python components/compiler/compile.py <scratch>/v2p.yaml \
+        IngredientOnHand --valid-at 2026-06-16 --as-of 2026-09-06
+    UNITI_DSN=…/uniti_check bash scripts/state_six_items.sh          # smoke test
+    bash scripts/state_six_items.sh                                  # into uniti_trial
+    UNITI_DSN=…/uniti_check python components/seal/seal.py business/sorella/draft.yaml \
+        --actor fareza --into business/sorella
+    UNITI_DSN=…/uniti_trial python components/seal/seal.py business/sorella/v3.yaml \
+        --actor fareza --register
+    UNITI_DSN=…/uniti_trial python components/compiler/compile.py business/sorella/v3.yaml \
+        IngredientOnHand --valid-at 2025-06-01 --as-of 2026-09-06 --into build/sorella/v3/tables/2025-06-01
+    UNITI_DSN=…/uniti_trial python components/compiler/compile.py business/sorella/v3.yaml \
+        IngredientOnHand --valid-at 2026-06-16 --as-of 2026-09-06 --into build/sorella/v3/tables/2026-06-16
+    make check
+
+**Part 2 first, against a scratch map.** The parameter column was written and
+proved against a copy of `v2.yaml` in the scratchpad before anything was
+sealed, which is how `CLAUDE.md`'s refusal of unexecutable notation was
+honoured. The compiler's vocabulary went from four words to six: `parameter`,
+`of`, `slot`. `plan()` gained a fifth column kind and `emit()` one CTE shape.
+The emitted SQL for a parameter is five lines, and it reads the same `stated`
+CTE every other cell reads, so both clocks come free:
+
+    param_0 AS (
+        SELECT e.uri AS key_value, s.value AS value
+        FROM registry e
+        JOIN stated s ON s.subject_id = e.entity_id
+                     AND s.slot = 'sorella:item_reorder_level'
+    ),
+    …
+    LEFT JOIN param_0 ON param_0.key_value IS NOT DISTINCT FROM g."ingredient_on_hand"
+
+`'sorella:item_reorder_level'` is the only place the slot appears, and it came
+out of the map.
+
+**Part 1, `scripts/state_six_items.sh`.** 23 submissions through
+`generate.py submit`: 6 master-data rows, 5 pack prices, 2 reorder levels and
+10 movements. Pistachio's price chain, its level, its opening position and its
+pallet line were already there and were not rewritten. The trial log went from
+11 intents / 116 entities / 150 assertions to **35 / 139 / 274**, over eight
+distinct `valid_from` dates: 2023-01-01, 2024-09-01, 2025-11-01, 2026-02-01,
+2026-04-01, 2026-06-07, 2026-06-15, 2026-06-16.
+
+**Part 3, v3.** Sealed from `business/sorella/draft.yaml` with a fresh
+`draft.txt`; `valid_from` unchanged at `2026-06-15T00:00:00Z`, `sealed_at`
+2026-09-05T23:19:25Z, `supersedes: v2`. 109 slots, was 105. `--register` into
+`uniti_trial` minted **4 entities and 4 assertions** — exactly the four new
+slot URIs. `VERSION` in the Makefile now reads `v3`.
+
+**Part 4, the table at `valid_at 2026-06-16`, `as_of 2026-09-06`.** 16 rows,
+9 columns.
+
+| item | where | unit | in | out | net | level | price | value |
+|---|---|---|---|---|---|---|---|---|
+| base_50_stabiliser | dry_store | bag | 4 | 0 | 4 | 4 | 276.00 | 1104.00 |
+| base_50_stabiliser | dry_store | carton | 1 | 0 | 1 | 4 | 276.00 | 276.00 |
+| base_50_stabiliser | terra_nostra | bag | 0 | 4 | −4 | 4 | 276.00 | −1104.00 |
+| base_50_stabiliser | terra_nostra | carton | 0 | 1 | −1 | 4 | 276.00 | −276.00 |
+| cocoa_22_24 | dry_store | bag | 4 | 0 | 4 | | 41.00 | 164.00 |
+| cocoa_22_24 | terra_nostra | bag | 0 | 4 | −4 | | 41.00 | −164.00 |
+| dark_chocolate_70 | dry_store | box | 3 | 0 | 3 | | 96.00 | 288.00 |
+| dark_chocolate_70 | terra_nostra | box | 0 | 3 | −3 | | 96.00 | −288.00 |
+| dextrose | dry_store | sack | 4 | 0 | 4 | | 41.00 | 164.00 |
+| dextrose | terra_nostra | sack | 0 | 4 | −4 | | 41.00 | −164.00 |
+| hazelnut_paste | dry_store | tin | 4 | 0 | 4 | 2 | 142.50 | 570.00 |
+| hazelnut_paste | terra_nostra | tin | 0 | 4 | −4 | 2 | 142.50 | −570.00 |
+| pistachio_paste | dry_store | kilogram | 0 | 0.68 | −0.68 | 2 | 203.00 | −138.0400 |
+| pistachio_paste | dry_store | tin | 6 | 0 | 6 | 2 | 203.00 | 1218.00 |
+| pistachio_paste | terra_nostra | tin | 0 | 6 | −6 | 2 | 203.00 | −1218.00 |
+| pistachio_paste | *(none)* | kilogram | 0.68 | 0 | 0.68 | 2 | 203.00 | 138.0400 |
+
+The run at `valid_at 2025-06-01`, `as_of 2026-09-06`, same map and same log:
+**0 rows**, 9 columns.
+
+**The done conditions, one by one.**
+
+1. **Holds.** Six items. Base 50 reads 4, hazelnut 2, pistachio 2 — exactly the
+   three §3.4 names — and cocoa, dark chocolate and dextrose read empty. Not 0:
+   the cell is NULL, and §3.4:1682 names those three among the things with no
+   written level.
+2. **Holds.** Pistachio is 6 tins and −0.68 kg as two rows. Six is 2 from
+   §4.1's "1 sealed, 1 open" plus 4 from §4.3's pallet line. The 5.32 of 5 Sep
+   is gone because `ingredient_unit` is a third grouping dimension, not because
+   a `WHERE` removed anything: every movement that entered the 5.32 is still in
+   the table, in one of the two rows.
+3. **Holds.** Base 50 appears twice at the dry store, 4 bags and 1 carton,
+   unconverted, and twice more at the supplier with the signs reversed.
+4. **Holds.** `ingredient_stock_value` is 1218.00 for pistachio in tins: 6, a
+   number summed out of the movements, times 203.00, a number Terra Nostra set
+   in February 2026 and somebody wrote into §1.6. The graph named the price,
+   through `parameter: {of: ingredient_on_hand, slot: item_pack_price}`, and
+   the compiler read the log through that name. **A rule carried half in the
+   graph and half in the kernel executed.** Ninety-three parameter values had
+   been inert since 5 Sep; two of them are now read.
+5. **Does not hold, and no pair of clocks on this log would make it hold.** The
+   run at `valid_at 2025-06-01` returns 0 rows rather than the same movements
+   at the older price. Every movement in the trial log has `valid_from`
+   2026-06-15 or 2026-06-16, and pistachio's price rose from 170.50 to 203.00
+   on 2026-02-01, four months earlier — so at every clock where a movement
+   stands the price is already 203.00, and at every clock where 170.50 stands
+   there are no movements. `as_of` does not rescue it: the 203.00 row was
+   recorded at 22:39:20.919989 and the 170.50 row at 22:39:21.580324 on 5 Sep,
+   both before any movement was recorded, so no `as_of` yields 170.50 with rows
+   beside it. The two runs do differ, but they differ because the movements
+   appeared and not because a rule moved. Missing information rather than a
+   missing mechanism — the clocks reach the parameter, which `resolve_single`
+   showed on 5 Sep and which the emitted SQL shows structurally, since the
+   parameter is read out of the already-resolved `stated` — but the input that
+   would make it pass is a movement dated before February 2026, and the profile
+   has none.
+6. **Holds.** `grep -rn -i "pistachio\|reorder\|tin\|cocoa\|stock\|ingredient"
+   components/ --include=*.py` returns 7 lines, every one of them either a
+   substring inside an ordinary word — `DISTINCT`, `minting`, `continuations`,
+   `stated` — or prose in a docstring. No live code path branches on a business
+   word. `parameter`, `of` and `slot` are the only names the change added, and
+   none of them is a business term.
+7. **Holds.** `make check`: ok, **69 tests**, replay byte-identical twice.
+   `business/sorella/` holds v1, v2 and v3 and no v4.
+
+**Surprising.**
+
+The parameter column needed **no clock machinery at all**. The expectation was
+that a fact with a history would want resolving separately from the rows; it
+does not, because `stated` is already one resolution of the whole log at the
+two clocks and a parameter is one more read of it. Five lines of SQL, and the
+history came with them.
+
+The unit dimension changed **which rows exist**, not only what they read.
+Before it, pistachio at the dry store was one row reading 5.32; after it, two
+rows reading 6 and −0.68 — and Base 50 went from one row to two at each of two
+places. The table is 16 rows where the same movements without the dimension
+would give 8, and not one movement was added to make that happen.
+
+`ingredient_stock_value` is **wrong in a visible way** for Base 50, and that is
+the honest output rather than a defect: 1 carton × £276.00 is right, and 4 bags
+× £276.00 = £1104.00 is four times what is actually on the shelf, because §1.6
+prices Base 50 by the carton, §1.5 counts it in bags, and nothing converts. The
+map states no conversion, so the compiler states none, and the row says so on
+its face rather than quietly averaging it away.
+
+Sealing v3 minted **97 entities into `uniti_check`** and 4 into `uniti_trial`.
+The 97 is the whole v2 vocabulary, because `uniti_check` had been wiped by the
+previous `make check`; the 4 is the real number of new names in v3. Sealing
+against a throwaway log and registering into the real one keeps those two
+numbers apart, which is what `--register` was built for on 6 Sep.

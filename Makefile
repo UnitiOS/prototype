@@ -18,7 +18,7 @@ export UNITI_DSN := postgresql://uniti:uniti@localhost:5433/$(CHECK_DB)
 
 # What `make build` renders, and where it puts it.
 BUSINESS := sorella
-VERSION  := v2
+VERSION  := v3
 MAP      := business/$(BUSINESS)/$(VERSION).yaml
 RENDER   := build/$(BUSINESS)/$(VERSION)
 GRAPH    := build/$(BUSINESS)/$(VERSION)/graph/$(BUSINESS)-$(VERSION)

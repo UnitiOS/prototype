@@ -26,6 +26,16 @@ description: >-
   here, nothing in the map derives from any of them, and the other forty-seven
   rules of that section still have no home.
 
+  Its second sitting is this one, and it does two different things. It gives
+  IngredientOnHand the dimension it was missing - what the number on a movement
+  was written in - so a carton and a bag are two rows rather than five of one
+  thing. And it names, for the first time, numbers that live in the log:
+  ingredient_reorder_level and ingredient_pack_price read a stated fact off the
+  thing a row is about, and ingredient_stock_value multiplies one of them by a
+  balance summed out of the movements. Until now every rule in this map derived
+  from movements alone and every number in the log was inert; this is the first
+  slot that crosses.
+
 prefixes:
   linkml: https://w3id.org/linkml/
   sorella: https://uniti.example/sorella/
@@ -426,9 +436,13 @@ classes:
     slots:
       - ingredient_on_hand
       - ingredient_where
+      - ingredient_unit
       - ingredient_in
       - ingredient_out
       - ingredient_on_hand_net
+      - ingredient_reorder_level
+      - ingredient_pack_price
+      - ingredient_stock_value
 
   GelatoOnHand:
     description: >-
@@ -1392,6 +1406,17 @@ slots:
       The place a row of IngredientOnHand is about. A dimension of a computed
       group, never stated.
 
+  ingredient_unit:
+    slot_uri: sorella:ingredient_unit
+    range: Unit
+    description: >-
+      What the number on the movement was written in. A dimension of a
+      computed group, never stated, and the third of them because section 1.5
+      has the business counting one thing in two units and the map converts
+      between them nowhere. A carton of Base 50 and four bags of it are two
+      rows here, and adding them would state a conversion nobody has written
+      down.
+
   ingredient_in:
     slot_uri: sorella:ingredient_in
     range: decimal
@@ -1407,6 +1432,7 @@ slots:
           by:
             ingredient_on_hand: movement_ingredient
             ingredient_where: movement_into
+            ingredient_unit: movement_unit
 
   ingredient_out:
     slot_uri: sorella:ingredient_out
@@ -1423,6 +1449,7 @@ slots:
           by:
             ingredient_on_hand: movement_ingredient
             ingredient_where: movement_out_of
+            ingredient_unit: movement_unit
 
   ingredient_on_hand_net:
     slot_uri: sorella:ingredient_on_hand_net
@@ -1440,6 +1467,53 @@ slots:
       happens to a supplier once the outside of the business is modelled as
       places: Terra Nostra's own dextrose is drawn down by every delivery it
       makes.
+
+  ingredient_reorder_level:
+    slot_uri: sorella:ingredient_reorder_level
+    range: decimal
+    annotations:
+      parameter:
+        value:
+          of: ingredient_on_hand
+          slot: item_reorder_level
+    description: >-
+      The level stated for the thing this row is about, read off the log at
+      the same pair of clocks as everything beside it. Neither computed from
+      the movements nor asserted about the row: a row is a group, and this is
+      a fact about one of the things the group is grouped by.
+
+      Where nothing is stated it is empty rather than nought. Section 3.4
+      names three things with a level and says of everything else that it has
+      none, and a zero here would be a rule the business does not have.
+
+  ingredient_pack_price:
+    slot_uri: sorella:ingredient_pack_price
+    range: decimal
+    annotations:
+      parameter:
+        value:
+          of: ingredient_on_hand
+          slot: item_pack_price
+    description: >-
+      The price per pack of the thing this row is about, read off the log the
+      same way the level is. It has a history - section 1.6 has pistachio
+      paste at three prices over two years - and the history needs no
+      machinery here, because the clocks the question is asked at are the
+      clocks the fact is resolved at.
+
+  ingredient_stock_value:
+    slot_uri: sorella:ingredient_stock_value
+    range: decimal
+    equals_expression: '{ingredient_on_hand_net} * {ingredient_pack_price}'
+    description: >-
+      What is standing here, at what it cost. The left half of it is summed
+      out of the movements and the right half is a number somebody stated on a
+      day, and the map names both: it is the one column that crosses.
+
+      It is empty wherever the price is, and the unit dimension makes it a
+      value per unit the thing was counted in rather than one number for the
+      thing. A row in cartons multiplied by a price per bag is wrong, and it
+      is left visibly wrong rather than quietly converted.
 
   gelato_flavour:
     slot_uri: sorella:gelato_flavour

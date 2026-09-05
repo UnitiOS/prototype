@@ -1,0 +1,1323 @@
+id: https://uniti.example/sorella
+name: sorella_gelato
+version: v3
+title: Sorella Gelato inventory
+description: 'What Sorella Gelato Ltd holds, where it can sit, what it counts in,
+  what it buys and what it sells, what it makes and what each made or filled thing
+  takes.
+
+  Sessions one, two and three of four, drawn from sections 1.1 to 3.3 of business/sorella/profile.md,
+  frozen at ada1d9e. Session one stated the nouns and where they can be; session two
+  states how a product is made and what a filled unit eats; session three states every
+  way stock moves, what a count sheet holds, and what arrived and left per thing and
+  place.
+
+  It states vocabulary only. Not one fact is here: the eighty bought items, the nine
+  suppliers, the twenty-five flavours, the thirty-one wholesale accounts, the twenty-one
+  batch sheets with their ingredient lines and the fifty-three ways stock moves are
+  rows a generated form writes, and submit() states the class membership. The rules
+  with their numbers and the numbers two people work out differently are session four.
+
+  Session four has begun, and this is its first sitting: four slots from section 3.4
+  - a bought item''s reorder level and its order quantity, the minimum flavours a
+  cabinet is meant to hold, and the order value above which a wholesale delivery is
+  free. Names only. Not one of the four numbers is here, nothing in the map derives
+  from any of them, and the other forty-seven rules of that section still have no
+  home.
+
+  Its second sitting is this one, and it does two different things. It gives IngredientOnHand
+  the dimension it was missing - what the number on a movement was written in - so
+  a carton and a bag are two rows rather than five of one thing. And it names, for
+  the first time, numbers that live in the log: ingredient_reorder_level and ingredient_pack_price
+  read a stated fact off the thing a row is about, and ingredient_stock_value multiplies
+  one of them by a balance summed out of the movements. Until now every rule in this
+  map derived from movements alone and every number in the log was inert; this is
+  the first slot that crosses.'
+prefixes:
+  linkml: https://w3id.org/linkml/
+  sorella: https://uniti.example/sorella/
+default_prefix: sorella
+imports:
+- linkml:types
+default_range: string
+classes:
+  Business:
+    description: The company itself. One row. It is registered in England, it has
+      traded since its first batch was sold, and it trades under a shorter name than
+      the one it is registered under.
+    slots:
+    - entity_class
+    - business_legal_name
+    - business_trading_name
+    - business_registered_in
+    - business_trading_since
+    - free_delivery_above
+  Location:
+    description: 'One place a thing can be. Section 1.3 divides its list in two and
+      says the outside ones are places too: a delivery is somewhere before it arrives,
+      a pan handed to a cafe is somewhere afterwards, and so is a scoop, a bin bag
+      and a school fair. This class is the plain case - a name and what it is - which
+      is what the outside destinations are. Where stock goes when it leaves and is
+      not sold to an account: the walk-in customer, staff, comps, donations, tastings,
+      the owner''s house, and the three bins, which are three places because there
+      are three waste sheets and nobody distinguishes them any other way.'
+    slots:
+    - entity_class
+    - location_name
+    - location_description
+  InternalLocation:
+    is_a: Location
+    description: 'A place inside the business: the seven in the production kitchen,
+      the five at one shop and the three at the other, the van, the cool box, the
+      trailer, and the rented container. These are the ones that are kept at a temperature
+      and the ones that sit within a premises. The premises themselves are of this
+      class too - the kitchen and the two shops are places inside the business that
+      other places are within.'
+    slots:
+    - location_within
+    - location_temperature
+    - location_minimum_flavours
+  Supplier:
+    is_a: Location
+    description: 'One company the business buys from, and a place before it is anything
+      else: milk and cream are the dairy''s until the driver puts them in the chiller,
+      and stock at the cash and carry is theirs until it is in the car. There are
+      nine. One of them is ordered through another and one of them is collected rather
+      than delivered.'
+    slots:
+    - outside_where
+    - supplier_brings
+    - supplier_rhythm
+    - supplier_lead_time
+    - supplier_minimum_order
+    - credit_terms
+  WholesaleAccount:
+    is_a: Location
+    description: 'One account on the wholesale book, and a place: a pan is at a cafe
+      until it comes back empty, or does not. Thirty-one of them - cafes, a tearoom,
+      two restaurants, a deli, a cinema, a hotel and four farm shops.'
+    slots:
+    - account_kind
+    - outside_where
+    - credit_terms
+  Person:
+    description: 'Someone who works in the business. Sixteen are named: the owner,
+      the head gelatiere, a shop manager, two gelatieres, a packer, a driver, a bookkeeper
+      and eight counter staff. One shop has no manager.'
+    slots:
+    - entity_class
+    - person_name
+    - person_role
+    - person_responsible_for
+  Unit:
+    description: 'What a quantity is counted in. Section 1.5 calls the mismatch between
+      them the single most persistent source of confusion in the business: five unrelated
+      things are a bag, a case is never the same count twice, and a tray and a punnet
+      are one object under two words.
+
+      This class is the unit stock is counted, ordered or worked in, and nothing else.
+      A duration, a percentage or a number of days in a rule is not one of these and
+      does not belong here, so that a dropdown offering a material''s unit never offers
+      a week.'
+    slots:
+    - entity_class
+    - unit_name
+    - unit_meaning
+  Flavour:
+    description: 'One entry in the range. Twenty-five: fourteen always on, eight on
+      a seasonal rotation, and three in the book and made when the head gelatiere
+      feels like it. Two of them are made from strawberries and have been separate
+      entries since 2023.'
+    slots:
+    - entity_class
+    - flavour_name
+    - flavour_runs
+    - flavour_listing
+    - flavour_note
+    - made_recipe
+  Ingredient:
+    description: 'One thing a recipe line can name. This class is the plain case -
+      a thing the kitchen uses that it neither buys nor sells - and section 2.1 names
+      exactly one of those: water, which is in the dark chocolate sheet, the sorbet
+      syrup, the coffee brew, the stewed rhubarb and whatever Dan tops the fresh-fruit
+      sorbet up with, and which section 1.6 excludes from the buying table in its
+      own preamble.
+
+      Its other plain rows are the six things section 2.2 makes in a run and draws
+      from many times - white base, sorbet syrup, biscuit base, the coffee brew, the
+      custard base and the stewed rhubarb - which are made rather than bought and
+      so carry a page rather than a supplier.
+
+      It exists because a recipe line has to be able to name a bought thing and a
+      made thing with one slot, and the 30 Aug line says two classes sharing a slot
+      get a common superclass rather than a boolean range constraint.'
+    slots:
+    - entity_class
+    - item_name
+    - item_counted_in
+    - item_worked_in
+    - item_note
+    - made_recipe
+  BoughtItem:
+    is_a: Ingredient
+    description: One thing the business buys, once. Eighty of them, from dairy and
+      nut pastes to bin liners and dry ice. Water, gas and electricity are not tracked
+      against product and are not here.
+    slots:
+    - item_ordered_in
+    - item_arrives_as
+    - item_pack_price
+    - item_supplier
+    - item_reorder_level
+    - item_order_quantity
+  Recipe:
+    description: 'One written page, and the collection its lines belong to. Section
+      2.2''s six runs, section 2.3''s twenty-two batch sheets, section 2.6''s fourteen
+      rows of what a filled or sold unit takes, and section 2.7''s eight drinks are
+      all one shape: a heading, a basis, and lines under it.
+
+      It is a page and not an output, because the two are not the same thing here.
+      One page serves four flavours and a fifth thing that is not a flavour at all
+      - section 2.3''s fruit sorbet page, where Dan writes the puree''s name in the
+      margin and leaves the rest alone - so what a page makes is decided by whoever
+      is using it. What is made therefore names its page and not the other way round:
+      made_recipe on Ingredient and on Flavour, product_recipe on SoldProduct.'
+    slots:
+    - entity_class
+    - recipe_name
+    - recipe_basis
+    - recipe_basis_quantity
+    - recipe_basis_unit
+    - recipe_note
+  RecipeLine:
+    description: 'One line under one page: what goes in, how much of it, and whether
+      it goes in before the machine or by hand afterwards. A collection with its own
+      subject, which is what a bill of materials has always been, and what lets a
+      page hold many ingredients while an assertion stays one subject, one predicate,
+      one value.
+
+      A line may carry no quantity. Section 2.3''s three flavours with no page are
+      made by feel - honey until it tastes right, a good glug of marsala, most of
+      a 100 g pack of basil - and a line with an ingredient, no number and a note
+      is what the business actually has. A line may also carry no ingredient: the
+      cake takes 1.4 L of one flavour and 1.1 L of a second, and which two is decided
+      on the phone per cake rather than on the page.'
+    slots:
+    - entity_class
+    - line_recipe
+    - line_ingredient
+    - line_named_as
+    - line_quantity
+    - line_unit
+    - line_stage
+    - line_note
+  SoldProduct:
+    description: One line on what the business sells - a scoop, a tub, a pan, a cake,
+      a coffee, a can - and the three supplements that are sold on top of another
+      line rather than on their own.
+    slots:
+    - entity_class
+    - product_name
+    - product_format
+    - product_recipe
+    - product_filled_to
+    - product_fill_quantity
+    - product_fill_unit
+    - product_expected_per_batch
+    - product_which_flavours
+    - product_flavour_decided_by
+  ProductPrice:
+    description: What one product costs at one of the three places the business prices
+      in. Section 1.7 is a grid of three price columns and a dash where a product
+      is not sold there; this is one cell of it. A separate class because a price
+      is per product and per column, and naming the columns as slots would put two
+      shop names into the vocabulary, so that opening a third shop would need a new
+      map version rather than a new row.
+    slots:
+    - entity_class
+    - price_product
+    - price_at
+    - price_amount
+    unique_keys:
+      product_and_column:
+        description: A price is identified by its product and its column and by no
+          single slot, which is why this class has no identifier. Two prices for one
+          product in one column are the same cell and compete; the same product at
+          two columns does not.
+        unique_key_slots:
+        - price_product
+        - price_at
+  MovementKind:
+    description: 'One of the ways stock moves. Section 3.2 tables fifty-five rows
+      under five headings and they are fifty-three kinds: two names appear twice -
+      refill a well, and cabinet expiry - once for each shop, and the only thing that
+      differs between the two rows is which places they name. Which shop is a property
+      of the movement and is already said by its origin and its destination, so folding
+      the shop into the kind''s name would put an individual into the vocabulary.
+      That is the same refusal section 1.7''s three price columns got.
+
+      The row is master data and not the event. A wholesale drop is always written
+      on the duplicate delivery note, the driver always fills it and the customer
+      always signs it, and the invoice for it is always typed the following Sunday.
+      None of that is retyped per drop, and asking the driver to write it on every
+      note is what putting those columns on the movement would mean.
+
+      Twenty-two of the fifty-five rows say Nothing in the document column and two
+      more produce only a text message or a card receipt. That is what this class
+      records. It does not repair it.'
+    slots:
+    - entity_class
+    - kind_name
+    - kind_happens
+    - kind_document
+    - kind_lag
+  StockMovement:
+    description: 'One thing moving from one place to another, once. Every row of section
+      3.2 is one of these however it is written down and whether or not it is written
+      down at all: a pallet arriving, a sack scooped into the machine, a trolley wheeled
+      from one freezer to the next, a pan handed over a counter, a scoop pressed into
+      a cone, half a tub scraped into a bin, a pan taken home.
+
+      There is one class and not five. A goods-in movement adds no field to a transfer:
+      its origin is a supplier and a supplier is a place, so the direction of every
+      movement falls out of its origin and its destination and nothing has to declare
+      that a delivery adds and a bin subtracts. What kind of movement it was is a
+      row of MovementKind, which is a field here rather than a class of its own.
+
+      Everything on it is optional, including both ends. Section 3.2 records twenty-two
+      of its fifty-five ways as writing nothing down and names three places the business
+      has no name for - a car, a drinks fridge and a sink - so a required destination
+      would refuse to record the milk poured away, and a required recorder would assert
+      that somebody was there.'
+    slots:
+    - entity_class
+    - movement_kind
+    - movement_out_of
+    - movement_into
+    - movement_ingredient
+    - movement_flavour
+    - movement_format
+    - movement_quantity
+    - movement_unit
+    - movement_batch
+    - happened_on
+    - written_by
+    - movement_note
+  Batch:
+    description: 'One churn: what section 1.5 says Dan means by a batch, which is
+      what goes into a batch freezer at once. It is one row of the production sheet,
+      and section 3.3 lists that row''s cells in the order they are filled - the number
+      from the running book and the flavour and the mix in kilograms at the machine,
+      the freeze time when the trolley goes in, the initials last and often every
+      row at once at the end of the day.
+
+      What came off the bench is not a cell here. Section 3.3''s pans out and tubs
+      out columns are movements into the blast freezer that name this batch, in the
+      same way a recipe''s lines are rows under its page: a production sheet is a
+      header and its lines, and entering one is two forms where the paper is one table.
+      Minis have no column of their own and are written in the tubs-out column with
+      the word beside the number.'
+    slots:
+    - entity_class
+    - batch_number
+    - batch_flavour
+    - batch_mix_quantity
+    - batch_mix_unit
+    - batch_frozen_at
+    - happened_on
+    - written_by
+    - batch_note
+  StockCount:
+    description: 'One count sheet: a blank ruled sheet, monthly, at the kitchen. Section
+      3.3 gives it a date and who counted at the head, lines in the middle, and notes
+      at the foot in sentences. It has no number on it and nothing in the business
+      identifies one, so it carries no key.
+
+      It is a list of what is there, and it is used to decide what to make next week.
+      It is not a movement and does not move anything: two people counting one freezer
+      produce two counts, which is a disagreement the log can show rather than a tie
+      it has to break.'
+    slots:
+    - entity_class
+    - happened_on
+    - written_by
+    - count_note
+  StockCountLine:
+    description: 'One line on a count sheet. Section 3.3 says the item is written
+      as it is found and not read off a list, and that there is no printed list of
+      what should be there, which is why a line can be written for something and struck
+      through when it is not found - and why a thing that has run out simply has no
+      line.
+
+      One cell on the paper becomes several slots here. The sheet writes "Fior di
+      latte, 5 L pan" and "Caster sugar" in the same column, so the cell is kept as
+      written beside the flavour, the format and the thing it resolves to. Section
+      3.3''s field list carries no place either, and the count runs through the building,
+      so where the line was counted is a slot the paper does not have a column for.'
+    slots:
+    - entity_class
+    - line_count
+    - count_line_written_as
+    - count_line_ingredient
+    - count_line_flavour
+    - count_line_format
+    - count_line_where
+    - count_line_quantity
+    - count_line_unit
+    - count_line_note
+  IngredientOnHand:
+    description: 'What arrived and what left, per thing bought or made and per place.
+      Not a form and not a row anybody states: every value on it is computed from
+      the movements at a stated pair of clocks, and nothing is ever asserted about
+      it.
+
+      A movement is one row and it subtracts where it came from and adds where it
+      went. Nothing carries a sign: the two totals are the same sum over the same
+      class grouped two different ways, one by the destination and one by the origin,
+      so a pallet is an arrival at the dry store and a departure from the supplier
+      in the same breath.
+
+      The subtraction that turns the two into a balance is the third column, ingredient_on_hand_net.
+      It is one expression over the two named totals and it is LinkML''s own, not
+      this project''s: no arithmetic goes inside an aggregate, and the aggregates
+      carry no sign.'
+    slots:
+    - ingredient_on_hand
+    - ingredient_where
+    - ingredient_unit
+    - ingredient_in
+    - ingredient_out
+    - ingredient_on_hand_net
+    - ingredient_reorder_level
+    - ingredient_pack_price
+    - ingredient_stock_value
+  GelatoOnHand:
+    description: 'The same two totals for what a batch fills, which the business counts
+      by flavour and format together and never as one word. Section 4''s count sheet
+      writes "Pistachio, 5 L pan" and section 3.3''s van sheet and delivery note write
+      flavour, format and quantity as three cells on a line, so gelato in a pan is
+      two dimensions of a group rather than a thing with a name.
+
+      What it cannot hold is a line the business writes without a flavour. Its own
+      count sheet has assorted catering tubs, assorted minis, part pans on the top
+      shelf and a finished cake, and none of them says what is in it, so none of them
+      can enter a total grouped by flavour. That is a thing the business does not
+      record rather than a thing the map cannot express.
+
+      Like IngredientOnHand it carries arrivals, departures and the subtraction between
+      them, the last of them an expression over the first two rather than a third
+      sum.'
+    slots:
+    - gelato_flavour
+    - gelato_format
+    - gelato_where
+    - gelato_in
+    - gelato_out
+    - gelato_on_hand_net
+slots:
+  entity_class:
+    slot_uri: sorella:entity_class
+    designates_type: true
+    range: string
+    description: Which class this entity is an instance of. Stated as a fact with
+      both clocks, never guessed from which columns happen to be filled.
+  business_legal_name:
+    slot_uri: sorella:business_legal_name
+    identifier: true
+    range: string
+    description: The name it is registered under, which is what identifies it.
+  business_trading_name:
+    slot_uri: sorella:business_trading_name
+    range: string
+    description: The shorter name it trades as and puts on the shopfront.
+  business_registered_in:
+    slot_uri: sorella:business_registered_in
+    range: string
+    description: Where it is registered.
+  business_trading_since:
+    slot_uri: sorella:business_trading_since
+    range: string
+    description: When it first sold, stated the way the business states it, which
+      is a month and a year rather than a date.
+  free_delivery_above:
+    slot_uri: sorella:free_delivery_above
+    range: decimal
+    unit:
+      symbol: GBP
+      descriptive_name: pounds
+    description: 'The order value at or above which a wholesale delivery is not charged
+      for. Section 3.4 states one hundred and twenty pounds, set by Marina in April
+      2026; it was eighty, and it moved on fuel and van servicing.
+
+      It stands on the business rather than on an account because it is one number
+      for the whole wholesale book - the term that does vary per account is credit_terms.
+      It is not the minimum wholesale order, which is four pans and a different rule,
+      and it is not a fact about any delivery: a delivery that was or was not charged
+      for is something a document says, and this is the standing number that decides
+      it.'
+  location_name:
+    slot_uri: sorella:location_name
+    identifier: true
+    range: string
+    description: What the staff call this place, and what identifies it. Two chest
+      freezers in one corridor have two names and no document has ever said which
+      of them a pan is in.
+  location_description:
+    slot_uri: sorella:location_description
+    range: string
+    description: What it is, in the words section 1.3 uses. For a freezer that is
+      what goes in it, for an outside place it is usually where ownership passes.
+  location_within:
+    slot_uri: sorella:location_within
+    range: InternalLocation
+    description: Which premises this place is part of. Section 1.3 lists its places
+      under the kitchen, one shop and the other. The van, the cool box, the trailer
+      and the rented container are inside the business and within nothing.
+  location_temperature:
+    slot_uri: sorella:location_temperature
+    range: string
+    description: How cold it is kept, stated the way the business states it, which
+      is a range of two numbers for the freezers, one number for the blast freezer,
+      and the word ambient for the dry store. Most places have no stated temperature
+      at all.
+  location_minimum_flavours:
+    slot_uri: sorella:location_minimum_flavours
+    range: integer
+    description: 'How many flavours this place is meant to have in it at once. Section
+      3.4 states twelve, set by Marina in November 2025; it was sixteen at Cotham,
+      and was cut to reduce end-of-day waste, which Aoife still disputes.
+
+      It is a count of flavours and not of pans, and it is not a capacity: how many
+      wells a cabinet has is a fact about the cabinet, and this is what the business
+      intends to keep in it. Only a serve cabinet has one - the chest freezers, the
+      van, the dry store and the premises themselves carry nothing here - and it is
+      not a fact about a movement or a count: what is actually in the cabinet on a
+      day is counted, and this is what was intended before anybody looked.'
+  outside_where:
+    slot_uri: sorella:outside_where
+    range: string
+    description: The town, district or country it is in, as the Where column of sections
+      1.8 and 1.9 writes it. Coarser than an address and that is all anybody says.
+  credit_terms:
+    slot_uri: sorella:credit_terms
+    range: string
+    description: What was agreed about paying, in the sentence the business uses.
+      Some are a number of days, some are pro forma, some are a card at the till,
+      and two of them carry the reason they are what they are.
+  supplier_brings:
+    slot_uri: sorella:supplier_brings
+    range: string
+    description: 'What this supplier brings, as section 1.8 writes it: one phrase
+      per supplier rather than a list of items, because that is how the business says
+      it and because the items already name their own supplier.'
+  supplier_rhythm:
+    slot_uri: sorella:supplier_rhythm
+    range: string
+    description: How often they come, and on which days. One of them comes whenever
+      the shop runs short, because it is collected rather than delivered.
+  supplier_lead_time:
+    slot_uri: sorella:supplier_lead_time
+    range: string
+    description: 'How long between ordering and arriving, in the sentence the business
+      uses. Not a number of days: one is next day if ordered before a stated time,
+      one is three weeks on stock lines and ten to twelve on printed ones, and one
+      is None because it is collected.'
+  supplier_minimum_order:
+    slot_uri: sorella:supplier_minimum_order
+    range: string
+    description: The smallest order they will take, in the sentence the business uses.
+      Some are money, some are cases or trays or kilograms, one carries a second threshold
+      for free carriage, and one is None.
+  account_kind:
+    slot_uri: sorella:account_kind
+    range: string
+    description: What kind of business the account is, in the word section 1.9 uses
+      - cafe, tearoom, restaurant, deli, cinema, hotel, farm shop. A cafe and a bar
+      and a cafe and a bakery are each written as one phrase.
+  person_name:
+    slot_uri: sorella:person_name
+    identifier: true
+    range: string
+    description: What the business calls this person.
+  person_role:
+    slot_uri: sorella:person_role
+    range: string
+    description: Their job, as the Role column writes it. It carries the hours and
+      sometimes the shop as part of the same phrase, because that is how the business
+      states it and it makes no separate distinction.
+  person_responsible_for:
+    slot_uri: sorella:person_responsible_for
+    range: string
+    description: What they are responsible for, in the business's own sentence. It
+      is prose and includes what somebody does badly.
+  unit_name:
+    slot_uri: sorella:unit_name
+    identifier: true
+    range: string
+    description: The word - gram, litre, each, bag, pail, bucket, case, sleeve, tray,
+      punnet, pan, well, scoop. The word alone often does not say how much.
+  unit_meaning:
+    slot_uri: sorella:unit_meaning
+    range: string
+    description: What the word means in this business, which is the only thing that
+      disambiguates it. Two buckets in the chiller is aged base and two buckets in
+      the dry store is glucose.
+  flavour_name:
+    slot_uri: sorella:flavour_name
+    identifier: true
+    range: string
+    description: What it is called on the cabinet card.
+  flavour_runs:
+    slot_uri: sorella:flavour_runs
+    range: string
+    description: When it runs, as the Runs column writes it - all year, a pair of
+      months, no season at all, or made perhaps monthly.
+  flavour_listing:
+    slot_uri: sorella:flavour_listing
+    range: string
+    description: 'Which of section 1.4''s three lists it is on: core and always on,
+      the seasonal rotation, or in the book and made when the head gelatiere feels
+      like it. The third list is why a cabinet card can exist for a flavour nobody
+      has made for six weeks.'
+  flavour_note:
+    slot_uri: sorella:flavour_note
+    range: string
+    description: What section 1.4's Note column says - that one flavour is made as
+      a different thing for four months of the year under the same name, or that two
+      entries are made from the same fruit and are deliberately separate.
+  item_name:
+    slot_uri: sorella:item_name
+    identifier: true
+    range: string
+    description: 'What the business calls it, and what identifies it. Two items are
+      both called the milk in conversation and are written apart here because they
+      have two suppliers, two units and two places.
+
+      It identifies an ingredient of any kind: the eighty things section 1.6 buys,
+      the six things section 2.2 makes in a run, and water. What a recipe page calls
+      the thing is a separate slot, because section 2.2 says one 2 kg bag of Base
+      50 is written two ways in the book.'
+  item_counted_in:
+    slot_uri: sorella:item_counted_in
+    range: Unit
+    description: 'What a count of it is written in. Every bought item has one. It
+      is a thing a fact points at rather than a unit fixed on this slot, because items
+      disagree: milk is in bags, sugar in sacks, cones in sleeves.
+
+      A made thing has one too - aged base is counted in the 25 L buckets it is drawn
+      into, and section 2.2 says it is the largest single quantity of value in the
+      building at 6 a.m. and that nobody has ever counted it.'
+  item_ordered_in:
+    slot_uri: sorella:item_ordered_in
+    range: Unit
+    description: What an order for it is written in, where that differs from what
+      a count is written in. Purees are ordered in cases and counted in tubs; stabiliser
+      is ordered in cartons and counted in bags.
+  item_worked_in:
+    slot_uri: sorella:item_worked_in
+    range: Unit
+    description: What the kitchen works in when it uses the thing, where that differs
+      again. Recipes are mass, so almost everything that reaches a bench is worked
+      in grams whatever it was bought in.
+  item_arrives_as:
+    slot_uri: sorella:item_arrives_as
+    range: string
+    description: The pack as it arrives, in the phrase the buying table uses - a 10
+      L bag-in-box, a 25 kg sack, a case of 6 tubs of 1 kg, a case of 4 sleeves of
+      90. It is one phrase and not a number and a unit, because the packs nest two
+      deep and the business writes them as one thing.
+  item_pack_price:
+    slot_uri: sorella:item_pack_price
+    range: decimal
+    unit:
+      symbol: GBP
+      descriptive_name: pounds
+    description: What one pack costs as it arrives. One supplier quotes a price per
+      kilogram and invoices a price per tin, and the invoice is what this is.
+  item_supplier:
+    slot_uri: sorella:item_supplier
+    range: Supplier
+    description: Who it is bought from.
+  item_reorder_level:
+    slot_uri: sorella:item_reorder_level
+    range: decimal
+    description: 'The level at which Dan reorders this item, in what the item is counted
+      in - section 3.4 writes pistachio paste as "reorder at 2 tins" and item_counted_in
+      already says a tin, so no unit is stated twice. He picks it as about a fortnight''s
+      use at the summer rate, which is practice rather than a calculation and was
+      written down for the first time on 7 June 2026.
+
+      It is not a minimum stock the system enforces and nothing refuses a count below
+      it. Section 3.4 gives a level to four items and says everything else has none,
+      so seventy-six of the eighty bought items carry nothing here. It is not a fact
+      about a movement either: it stands on the item and moves when Dan moves it,
+      not when stock does.'
+  item_order_quantity:
+    slot_uri: sorella:item_order_quantity
+    range: decimal
+    description: 'How much is ordered when the level is reached. Section 3.4 writes
+      it beside the level - "reorder at 2 tins, order 10" - and for three of its four
+      items the two numbers are in the same unit. The fourth is not: Base 50 stabiliser
+      is "reorder at 4 bags, order 1 carton", which is item_counted_in for the level
+      and item_ordered_in for the quantity, the same split section 1.5 already draws.
+      Nothing here says which of the two a given number is in, and the map converts
+      between them nowhere.
+
+      Pistachio''s moved from six to ten in February 2026, after a price rise, to
+      buy ahead; hazelnut''s has been six since 2023. It is not a supplier''s minimum
+      - that is the supplier''s own rule and sits on Supplier as supplier_minimum_order
+      - and it is not the quantity on any particular order, which is a line on a document.
+      Like the level, most bought items carry none.'
+  item_note:
+    slot_uri: sorella:item_note
+    range: string
+    description: 'What section 1.5''s Note column says about this item''s units -
+      that a bag is volume and a recipe is mass, that a pail is never emptied cleanly,
+      that tubs and lids run out at different times permanently.
+
+      For a thing that is not bought it carries what the business says about the thing
+      itself instead: that water comes off the mains through the filter on the wall
+      by the pasteuriser and is not tracked against product, or that a run of biscuit
+      base lasts three or four batches and a couple of cakes.'
+  product_name:
+    slot_uri: sorella:product_name
+    identifier: true
+    range: string
+    description: What it is called on the price list.
+  product_format:
+    slot_uri: sorella:product_format
+    range: string
+    description: What it is sold as, in the phrase section 1.7 uses - a cone or a
+      cup, a printed tub with a printed lid and a sleeve, boxed on a board and pre-order
+      only, a supplement on any drink.
+  price_product:
+    slot_uri: sorella:price_product
+    range: SoldProduct
+    description: Which product this price is for.
+  price_at:
+    slot_uri: sorella:price_at
+    range: string
+    description: Which of section 1.7's three price columns this is - the busier shop's
+      counter, the other shop's counter, or wholesale. The two counters carry the
+      same product names at different prices and the tills do not say which shop a
+      line came from; wholesale is one price for all thirty-one accounts and there
+      is no printed list.
+  price_amount:
+    slot_uri: sorella:price_amount
+    range: decimal
+    unit:
+      symbol: GBP
+      descriptive_name: pounds
+    description: What it costs there.
+  made_recipe:
+    slot_uri: sorella:made_recipe
+    range: Recipe
+    description: 'Which page this is made on. On an Ingredient it is section 2.2''s
+      six runs; on a Flavour it is section 2.3''s batch sheet.
+
+      Single-valued, and pointing this way round rather than from the page, because
+      one page serves several things - the fruit sorbet page is used for strawberry,
+      raspberry, mango, the peach half of peach and basil, and a passionfruit that
+      is not in the range at all - while each thing is made on one page at a time.
+      At a time is what matters: from November to February the hazelnut card carries
+      gianduja, which is a different page with chocolate in it and no salt, so this
+      slot''s value moves with the season and the valid-time clock is what carries
+      it.
+
+      Empty for a bought thing, empty for water, and empty for the three seasonals
+      section 2.3 says have never been written down.'
+  recipe_name:
+    slot_uri: sorella:recipe_name
+    identifier: true
+    range: string
+    description: The heading on the page, and what identifies it - White base, Pistachio,
+      Gianduja, Fruit sorbet, 5 L napoli pan, Any scoop sale, Latte. For section 2.6
+      it is the phrase in that table's Unit column, which is sometimes a format and
+      sometimes a condition on a sale.
+  recipe_basis:
+    slot_uri: sorella:recipe_basis
+    range: string
+    description: 'What the page''s quantities are per, in the words the page uses
+      - per 12.00 kg into the batch freezer, per 10.00 kg of mix, per 30.00 kg of
+      a run, per run which is ten packs of digestives, per bucket, per box, per unit
+      filled or sold.
+
+      Section 2.3 states its own basis and it is the mix in, not the output: a page
+      is what is weighed in before the machine runs, and anything folded, drizzled
+      or rippled in by hand at fill is listed under the table because it goes in afterwards
+      and is on top of the 12 kg. That is why a line carries a stage.'
+  recipe_basis_quantity:
+    slot_uri: sorella:recipe_basis_quantity
+    range: decimal
+    description: The number in the basis, where there is one. Twelve for a batch sheet,
+      ten for the white base page, thirty for a sorbet syrup run, one for a bucket,
+      a box or a filled unit.
+  recipe_basis_unit:
+    slot_uri: sorella:recipe_basis_unit
+    range: Unit
+    description: 'What that number is in. A thing a fact points at rather than a unit
+      fixed here, because the pages disagree: most are kilograms, the biscuit base
+      is a run, the coffee brew is a bucket, the stewed rhubarb is a box and a packaging
+      bill is one each.'
+  recipe_note:
+    slot_uri: sorella:recipe_note
+    range: string
+    description: Everything the page says that is not a line - the method, how it
+      is kept, how big a run is, and what Dan or Rekha says about it. It carries that
+      the white base is made in 55 kg runs and scaled on the pasteuriser's own scale
+      with the milk rounded to the nearest 100 g, that the fruit sorbet page is used
+      for any straight puree swap with the name written in the margin, and that a
+      run of biscuit base is the only page in the book that starts from a count of
+      packs.
+  line_recipe:
+    slot_uri: sorella:line_recipe
+    range: Recipe
+    description: Which page this line is under.
+  line_ingredient:
+    slot_uri: sorella:line_ingredient
+    range: Ingredient
+    description: 'What goes in. A bought thing or a made thing or water, which is
+      why the range is the superclass and not BoughtItem.
+
+      It can be empty, and section 2.3''s cake is why: it takes 1.4 L of one flavour
+      and 1.1 L of a second and which two is read out on the phone per cake, so the
+      page names an amount and no ingredient.'
+  line_named_as:
+    slot_uri: sorella:line_named_as
+    range: string
+    description: 'The words the page uses, where they are not the ingredient''s name.
+      Section 2.2 says the stabiliser is one bag under two names - Base 50 stabiliser/emulsifier
+      on the dairy pages and stabiliser base on the water and sorbet pages, both meaning
+      the 2 kg bag of Base 50 in the dry store. The fruit sorbet page writes Puree
+      and Dan writes the fruit in the margin; the lemon page writes lemon juice from
+      about a 5 kg bag of lemons.
+
+      Kept beside the resolved ingredient rather than instead of it, so that the page
+      can go on saying what it has always said while a count still reaches one thing.'
+  line_quantity:
+    slot_uri: sorella:line_quantity
+    range: decimal
+    description: 'How much, where the page says. It can be empty, and section 2.3''s
+      three flavours with no page are why: honey goes into the ricotta and fig until
+      it tastes right, the marsala is a good glug, and the basil is most of a 100
+      g pack that Dan smells and decides about. He will not write a number for the
+      basil and says so.
+
+      Nothing here says whether a quantity is gross or net. Section 2.4 has a pan
+      reading 3.6 kg on the scale as it stood and about 3.3 kg of gelato in it, and
+      no document in the business records which was meant. The business makes no such
+      distinction, so the map does not invent one.'
+  line_unit:
+    slot_uri: sorella:line_unit
+    range: Unit
+    description: What the quantity is in. Kilograms on almost every batch sheet, grams
+      and millilitres on the drinks, and each on a packaging line - one tub, one printed
+      lid, one printed sleeve.
+  line_stage:
+    slot_uri: sorella:line_stage
+    range: RecipeStage
+    description: 'Whether the line is inside the basis or on top of it. Section 2.3
+      draws this line itself and the stracciatella page is its pattern: 12.00 kg of
+      base in the machine and 0.85 kg of chocolate after it.
+
+      Empty on a page where nothing is churned - a run, a packaging bill, a drink.'
+  line_note:
+    slot_uri: sorella:line_note
+    range: string
+    description: What the page says about this line. It carries the conditions section
+      2.6 writes into its own cells - a paper handled bag if the customer asks or
+      if there is more than one thing, a wooden stirrer if they take sugar, one or
+      two tasting spoons and six on a Saturday with a family - and what section 2.3
+      says about a line it cannot number.
+  product_recipe:
+    slot_uri: sorella:product_recipe
+    range: Recipe
+    description: 'Which page says what one of these takes. Section 2.6 for a filled
+      unit, section 2.7 for a drink.
+
+      Single-valued, and section 2.6 does not fit it everywhere: five of its rows
+      are formats and eight more are drinks or cans that match a price-list line one
+      for one, but the rest are conditions across several lines at once - any scoop
+      sale, tub or cake taken away, any drink taken away - and a scoop''s own bill
+      depends on whether the customer took a cone or a cup, which section 1.7 prices
+      as one product either way. Those pages exist as Recipe rows with nothing pointing
+      at them.'
+  product_filled_to:
+    slot_uri: sorella:product_filled_to
+    range: string
+    description: Section 2.4's Filled to column, in its own words - level with the
+      rim by eye, about 460 g so the lid domes, about 100 g. Empty for a scoop, which
+      section 2.4 says has no weight and never has had one.
+  product_fill_quantity:
+    slot_uri: sorella:product_fill_quantity
+    range: decimal
+    description: 'The number inside that sentence, which is what joins a count of
+      pans to a recipe in kilograms. About 3.3 for a napoli pan, from three pans weighed
+      on one morning in June 2026 because a hotel asked; about 0.460 for a 500 ml
+      retail tub, about 0.100 for a mini and about 1.15 for a catering tub.
+
+      Every one of them is approximate and the business says so. A part pan is written
+      as a half or three quarters by eye and nothing converts it.'
+  product_fill_unit:
+    slot_uri: sorella:product_fill_unit
+    range: Unit
+    description: What that fill is measured in.
+  product_expected_per_batch:
+    slot_uri: sorella:product_expected_per_batch
+    range: string
+    description: 'Section 2.4''s third column, in its own words - three pans and a
+      part pan, twenty-six tubs, about a hundred and fifteen minis, ten tubs. Prose
+      and not a number, because two of the four are written as an approximation and
+      one of them is written as a count plus a fraction nobody measures.
+
+      What is expected against what is recorded is a comparison and is not here.'
+  product_which_flavours:
+    slot_uri: sorella:product_which_flavours
+    range: string
+    description: Section 2.5's second column, in its own words - any of the twenty-five,
+      the fourteen core only, whatever was the tail of a batch, no sorbet because
+      it sets too hard to cut. A sentence and not a list of flavours, because section
+      2.5 never writes the pairs out and inventing them would state a distinction
+      the business does not make.
+  product_flavour_decided_by:
+    slot_uri: sorella:product_flavour_decided_by
+    range: string
+    description: Section 2.5's third column - who or what decides. The printed sleeve,
+      the customer then Yusuf, Steve at loading off the pan notebook, nobody, and
+      Rekha, who refused stracciatella in a catering tub because the shards tear a
+      plating portion.
+  happened_on:
+    slot_uri: sorella:happened_on
+    range: date
+    description: 'The date written on the paper. Every one of section 3.3''s eighteen
+      documents starts with one and a person fills it in, which is why it is a slot:
+      a form with no date field does not produce any of them.
+
+      It is not the same thing as when the system learned of it. Section 3.2''s lag
+      column is the distance between the two and it runs from nought to six days on
+      most documents, a fortnight on the beans note, and negative on the van sheet
+      and the delivery notes, which are written at loading or at the first drop from
+      memory and so predate what they record.'
+  written_by:
+    slot_uri: sorella:written_by
+    range: Person
+    description: 'Who put their name on it. Section 3.3 calls it initials on the production
+      sheet and the waste sheets, the driver''s initials on the van sheet, who counted
+      on the count sheet, and a signature elsewhere.
+
+      Empty far more often than it is filled, and that is what the profile says: the
+      initials column on the production sheet is written every row at once at the
+      end of the day, the waste sheets'' is mostly blank, Gloucester Road''s signature
+      line is usually empty, and Whitehall''s note is unsigned two mornings out of
+      three.'
+  kind_name:
+    slot_uri: sorella:kind_name
+    identifier: true
+    range: string
+    description: What section 3.2 calls this way of moving stock, in its Movement
+      column - a wholesale drop, a cabinet expiry, a staff allowance, beans back to
+      the kitchen, Marina's pan. Fifty-five rows and fifty-three names, because refill
+      a well and cabinet expiry are each written twice, once per shop, and the shop
+      is on the movement.
+  kind_happens:
+    slot_uri: sorella:kind_happens
+    range: string
+    description: 'Section 3.2''s What actually happens column, in its own words. It
+      is the only place the business describes the act rather than the paper, and
+      it carries what nobody would write on a form: that the driver has a key and
+      is in and out before anybody arrives, that a dropped sleeve is ninety cones,
+      that Rekha takes what she needs off two or three pans and never empties one,
+      and that a pan is scraped into the one that replaces it.'
+  kind_document:
+    slot_uri: sorella:kind_document
+    range: string
+    description: 'Section 3.2''s document column: what gets filled in and by whom,
+      as the profile writes it. Twenty-two of the fifty-five rows say Nothing, and
+      the word is the value rather than an absence, because the business is stating
+      that this movement is not written down anywhere.
+
+      Two more produce something that is not a document: a text message about trays
+      of fruit, and a card receipt for dry ice. Section 3.3 says the same thing from
+      the other side - there is no goods-in book, and the only record of a delivery
+      is the paper the supplier brought with it.'
+  kind_lag:
+    slot_uri: sorella:kind_lag
+    range: string
+    description: 'How long after the thing happened the paper is filled in, as section
+      3.2 writes it. Not a number of days: None, negative mostly, the same day or
+      three days later, up to six days because the sheet is weekly and gets filled
+      in from memory, and a fortnight when Aoife empties the drawer under the till.'
+  movement_kind:
+    slot_uri: sorella:movement_kind
+    range: MovementKind
+    description: 'Which of section 3.2''s ways this movement was. This is where the
+      kind of a movement lives, rather than in a class per kind: four movement classes
+      that render the same form are one class and a field, and the field is a row
+      here rather than a word, so the ways stock moves are master data a form writes
+      and not a vocabulary the map fixed.'
+  movement_out_of:
+    slot_uri: sorella:movement_out_of
+    range: Location
+    description: 'Where it came from. Section 3.2''s Out of column, which draws on
+      the same list of places whether the place is inside the business or outside
+      it: a supplier, a freezer, a cabinet well, a wholesale account sending a pan
+      back, a van.
+
+      A movement''s direction is nothing more than this slot and the next one. Nothing
+      anywhere says that goods received add and waste subtracts.'
+  movement_into:
+    slot_uri: sorella:movement_into
+    range: Location
+    description: 'Where it went. Section 3.2''s Into column. The outside destinations
+      are places too: the walk-in customer, staff, comps, donations, tastings, the
+      owner''s house and the three bins.
+
+      Section 3.2 names three destinations the profile has no place for - a car that
+      carries the shop-to-shop transfer and the cash and carry run, a drinks fridge
+      at one shop, and the sink at the other, which takes more milk than anything
+      but the machine. The slot is optional partly for them.'
+  movement_ingredient:
+    slot_uri: sorella:movement_ingredient
+    range: Ingredient
+    description: 'Which bought or made thing moved, where the movement is of one.
+      A bag of milk, a sack of sugar, a case of tubs, a bucket of aged base, a bag
+      of beans going back to the kitchen, an empty napoli pan coming off the van.
+
+      Empty when what moved is gelato, which the business names by flavour and format
+      instead.'
+  movement_flavour:
+    slot_uri: sorella:movement_flavour
+    range: Flavour
+    description: 'Which flavour, where the movement is of gelato. The van sheet and
+      the wholesale delivery note both write flavour, format and quantity as three
+      cells on one line, and the count sheet writes the first two into one cell with
+      a comma between them.
+
+      Empty on plenty of real lines and not by accident: minis go out assorted, catering
+      tubs are counted assorted, part pans on the top shelf do not say what is in
+      them, and the till''s generic scoop key records a sale with no flavour at all,
+      which section 3.3 says is what gets used under pressure.'
+  movement_format:
+    slot_uri: sorella:movement_format
+    range: SoldProduct
+    description: 'What the gelato was in, which is a line of the price list: a 5 L
+      napoli pan, a 500 ml retail tub, a 125 ml mini, a 1.5 L catering tub, an 8 inch
+      cake, a single scoop.
+
+      This is the slot that joins a count of pans to a recipe in kilograms, because
+      the same row carries product_fill_quantity - about 3.3 for a pan, about 0.460
+      for a tub, about 0.100 for a mini - and every one of those numbers is approximate
+      and the business says so. It carries nothing at all for a scoop, which has never
+      been weighed.'
+  movement_quantity:
+    slot_uri: sorella:movement_quantity
+    range: decimal
+    description: 'How many, or how much. Empty whenever the business did not write
+      one down, which is most of the time: twenty-two of section 3.2''s fifty-five
+      ways record nothing at all, and of the ones that do, the waste sheets have a
+      how-much column that mostly repeats the what column or is blank.
+
+      A part pan is written as a half or three quarters by eye and nothing in the
+      business converts a fraction. What a movement with no quantity means when it
+      is summed is not settled here.'
+  movement_unit:
+    slot_uri: sorella:movement_unit
+    range: Unit
+    description: 'What the number on this line is in. Not always what the thing is
+      counted in: section 1.5 gives twenty-two items an ordered unit, a counted unit
+      and a worked unit, and section 3.2''s ingredients to the machine is grams off
+      a bench scale while the same item is counted in bags, sacks and tins. Nothing
+      in the map converts between them.'
+  movement_batch:
+    slot_uri: sorella:movement_batch
+    range: Batch
+    description: 'Which churn this came off, where it is one of a batch''s outputs.
+      This is what makes a production sheet row readable as a header and its lines:
+      the pans-out and tubs-out cells are movements into the blast freezer naming
+      their batch.
+
+      It is also what a label carries - section 2.6 says every pan and every catering
+      tub is labelled with the flavour, the batch number and the freeze date - and
+      empty on every movement that is not an output of one.'
+  movement_note:
+    slot_uri: sorella:movement_note
+    range: string
+    description: Anything written in words rather than in a column. The delivery note's
+      anything-coming-back line, written across the bottom when the driver remembers;
+      the production sheet's margin, which is the only place a failed batch is ever
+      recorded; the packer's shortage line at the foot of Avonside's note; the word
+      donation written in the waste sheet's what column.
+  batch_number:
+    slot_uri: sorella:batch_number
+    identifier: true
+    range: string
+    description: The number off the running number in the book, which is the first
+      cell of a production sheet row after the flavour and the one thing that identifies
+      a churn. It is also the middle field of the hand-written label on every pan
+      and every catering tub.
+  batch_flavour:
+    slot_uri: sorella:batch_flavour
+    range: Flavour
+    description: What was made. One churn is one flavour, and how it was made is the
+      flavour's own page rather than a cell on this row - the production sheet names
+      no recipe anywhere.
+  batch_mix_quantity:
+    slot_uri: sorella:batch_mix_quantity
+    range: decimal
+    description: 'The mix in, weighed at the machine. Section 2.4 says this is the
+      only weight on a production sheet, so nothing on the sheet says how much came
+      out: the other output columns are counts of pans and tubs.'
+  batch_mix_unit:
+    slot_uri: sorella:batch_mix_unit
+    range: Unit
+    description: What that weight is in. Kilograms on every sheet, and a thing a fact
+      points at rather than a unit fixed here for the same reason every other quantity
+      in this map does it.
+  batch_frozen_at:
+    slot_uri: sorella:batch_frozen_at
+    range: time
+    description: 'The freeze time: when the trolley goes into the blast freezer. Section
+      3.3 says it is empty about half the time, and section 3.2 adds that when the
+      holding freezer is full the trolley stays where it is for a day or two and nothing
+      records that either.'
+  batch_note:
+    slot_uri: sorella:batch_note
+    range: string
+    description: What was written in the margin about this row, in words, across the
+      side of the sheet. It is the only place a failed batch is ever recorded - it
+      comes out grainy, or it splits, and the whole thing goes.
+  count_note:
+    slot_uri: sorella:count_note
+    range: string
+    description: Section 3.3's notes at the foot of the count sheet, in sentences.
+      It is where a counter writes what a column could not hold.
+  line_count:
+    slot_uri: sorella:line_count
+    range: StockCount
+    description: Which sheet this line is on.
+  count_line_written_as:
+    slot_uri: sorella:count_line_written_as
+    range: string
+    description: 'The cell as it stands on the paper. Section 3.3 says the item is
+      written as it is found and not read off a list, so one column holds "Fior di
+      latte, 5 L pan", "Caster sugar", "Part pans, assorted, on the top shelf" and
+      "500 ml tub, case of 500" alike.
+
+      Kept beside what the line resolves to rather than instead of it, which is what
+      a recipe line does with the words its page uses.'
+  count_line_ingredient:
+    slot_uri: sorella:count_line_ingredient
+    range: Ingredient
+    description: Which bought or made thing the line is about, where it is about one.
+      Empty when the line is about gelato.
+  count_line_flavour:
+    slot_uri: sorella:count_line_flavour
+    range: Flavour
+    description: 'Which flavour, where the cell names one. Empty on the assorted lines,
+      which is a state the sheet is in rather than one it fell into: a count of loose
+      minis says how many and not what is in them.'
+  count_line_format:
+    slot_uri: sorella:count_line_format
+    range: SoldProduct
+    description: What the gelato is in, where the cell names a format. A pan, a catering
+      tub, a retail tub, a mini, a finished cake.
+  count_line_where:
+    slot_uri: sorella:count_line_where
+    range: Location
+    description: Where the line was counted. Section 3.3's field list has no column
+      for it - the sheet is a date, a who, an item, a number and some notes - and
+      the count runs through the whole building, so this is a slot the paper does
+      not have and a balance cannot do without.
+  count_line_quantity:
+    slot_uri: sorella:count_line_quantity
+    range: decimal
+    description: The counted column. It can be a tally of more than a hundred loose
+      objects, a number of sealed cases, or a fraction of a pan read off a well by
+      eye.
+  count_line_unit:
+    slot_uri: sorella:count_line_unit
+    range: Unit
+    description: 'What the number is in, where the cell says. The same mismatch as
+      everywhere else: cases, sleeves, pans, wells and bags on one sheet.'
+  count_line_note:
+    slot_uri: sorella:count_line_note
+    range: string
+    description: What is written beside the number - one broken into, part, open,
+      nobody has ever counted one out - and, where a line was struck through, that
+      it was.
+  ingredient_on_hand:
+    slot_uri: sorella:ingredient_on_hand
+    range: Ingredient
+    description: The thing a row of IngredientOnHand is about. A dimension of a computed
+      group, never stated.
+  ingredient_where:
+    slot_uri: sorella:ingredient_where
+    range: Location
+    description: The place a row of IngredientOnHand is about. A dimension of a computed
+      group, never stated.
+  ingredient_unit:
+    slot_uri: sorella:ingredient_unit
+    range: Unit
+    description: What the number on the movement was written in. A dimension of a
+      computed group, never stated, and the third of them because section 1.5 has
+      the business counting one thing in two units and the map converts between them
+      nowhere. A carton of Base 50 and four bags of it are two rows here, and adding
+      them would state a conversion nobody has written down.
+  ingredient_in:
+    slot_uri: sorella:ingredient_in
+    range: decimal
+    description: Everything of this thing that arrived at this place, summed over
+      the movements at whatever pair of clocks the question is asked at. Computed,
+      never stated.
+    annotations:
+      aggregate:
+        value:
+          over: StockMovement
+          sum: movement_quantity
+          by:
+            ingredient_on_hand: movement_ingredient
+            ingredient_where: movement_into
+            ingredient_unit: movement_unit
+  ingredient_out:
+    slot_uri: sorella:ingredient_out
+    range: decimal
+    description: Everything of this thing that left this place. The same sum over
+      the same movements as ingredient_in, grouped by where they came from instead
+      of where they went, which is the whole of what direction means here.
+    annotations:
+      aggregate:
+        value:
+          over: StockMovement
+          sum: movement_quantity
+          by:
+            ingredient_on_hand: movement_ingredient
+            ingredient_where: movement_out_of
+            ingredient_unit: movement_unit
+  ingredient_on_hand_net:
+    slot_uri: sorella:ingredient_on_hand_net
+    range: decimal
+    equals_expression: '{ingredient_in} - {ingredient_out}'
+    description: 'What is standing at this place, of this thing, at whatever pair
+      of clocks the question is asked at: everything that arrived less everything
+      that left. Computed from the two totals beside it and never stated, and it is
+      where the sign lives - the aggregates have none, because direction is which
+      slot each one groups by.
+
+      It goes negative and is right when it does. A place the thing left in this window
+      but never arrived at reads below nought, which is what happens to a supplier
+      once the outside of the business is modelled as places: Terra Nostra''s own
+      dextrose is drawn down by every delivery it makes.'
+  ingredient_reorder_level:
+    slot_uri: sorella:ingredient_reorder_level
+    range: decimal
+    annotations:
+      parameter:
+        value:
+          of: ingredient_on_hand
+          slot: item_reorder_level
+    description: 'The level stated for the thing this row is about, read off the log
+      at the same pair of clocks as everything beside it. Neither computed from the
+      movements nor asserted about the row: a row is a group, and this is a fact about
+      one of the things the group is grouped by.
+
+      Where nothing is stated it is empty rather than nought. Section 3.4 names three
+      things with a level and says of everything else that it has none, and a zero
+      here would be a rule the business does not have.'
+  ingredient_pack_price:
+    slot_uri: sorella:ingredient_pack_price
+    range: decimal
+    annotations:
+      parameter:
+        value:
+          of: ingredient_on_hand
+          slot: item_pack_price
+    description: The price per pack of the thing this row is about, read off the log
+      the same way the level is. It has a history - section 1.6 has pistachio paste
+      at three prices over two years - and the history needs no machinery here, because
+      the clocks the question is asked at are the clocks the fact is resolved at.
+  ingredient_stock_value:
+    slot_uri: sorella:ingredient_stock_value
+    range: decimal
+    equals_expression: '{ingredient_on_hand_net} * {ingredient_pack_price}'
+    description: 'What is standing here, at what it cost. The left half of it is summed
+      out of the movements and the right half is a number somebody stated on a day,
+      and the map names both: it is the one column that crosses.
+
+      It is empty wherever the price is, and the unit dimension makes it a value per
+      unit the thing was counted in rather than one number for the thing. A row in
+      cartons multiplied by a price per bag is wrong, and it is left visibly wrong
+      rather than quietly converted.'
+  gelato_flavour:
+    slot_uri: sorella:gelato_flavour
+    range: Flavour
+    description: The flavour a row of GelatoOnHand is about. A dimension of a computed
+      group, never stated.
+  gelato_format:
+    slot_uri: sorella:gelato_format
+    range: SoldProduct
+    description: The format a row of GelatoOnHand is about. A dimension of a computed
+      group, never stated.
+  gelato_where:
+    slot_uri: sorella:gelato_where
+    range: Location
+    description: The place a row of GelatoOnHand is about. A dimension of a computed
+      group, never stated.
+  gelato_in:
+    slot_uri: sorella:gelato_in
+    range: decimal
+    description: Everything of this flavour in this format that arrived at this place.
+      Computed, never stated.
+    annotations:
+      aggregate:
+        value:
+          over: StockMovement
+          sum: movement_quantity
+          by:
+            gelato_flavour: movement_flavour
+            gelato_format: movement_format
+            gelato_where: movement_into
+  gelato_out:
+    slot_uri: sorella:gelato_out
+    range: decimal
+    description: Everything of this flavour in this format that left this place. The
+      same sum grouped by the origin instead of the destination.
+    annotations:
+      aggregate:
+        value:
+          over: StockMovement
+          sum: movement_quantity
+          by:
+            gelato_flavour: movement_flavour
+            gelato_format: movement_format
+            gelato_where: movement_out_of
+  gelato_on_hand_net:
+    slot_uri: sorella:gelato_on_hand_net
+    range: decimal
+    equals_expression: '{gelato_in} - {gelato_out}'
+    description: 'What is standing at this place, of this flavour in this format:
+      everything that arrived less everything that left. The same subtraction as ingredient_on_hand_net
+      over the other pair of totals.
+
+      It counts nothing the business wrote without a flavour, because the two totals
+      under it are grouped by one. Assorted minis, assorted catering tubs, part pans
+      on the top shelf and a finished cake are silent under that dimension and so
+      are in no group at all, and the net inherits the omission rather than repairing
+      it.'
+enums:
+  RecipeStage:
+    description: Where on a batch sheet a line sits, in section 2.3's own division.
+      The section states both values and states why they differ, and there is no third.
+    permissible_values:
+      in_the_mix:
+        description: Weighed into the batch freezer before it runs, inside the 12.00
+          kg the page is written per.
+      at_fill:
+        description: Folded, drizzled or rippled in by hand during filling, after
+          the machine and on top of the 12.00 kg. Section 2.1 names the five - stracciatella
+          chocolate, caramel ripple, biscuit, cherries, amaretti - and says they are
+          not in the machine.
+annotations:
+  valid_from: '2026-06-15T00:00:00+00:00'
+  sealed_at: '2026-09-05T23:19:25.768676+00:00'
+  supersedes: v2
+  transcript: v3.txt
