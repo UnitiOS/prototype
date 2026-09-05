@@ -19,6 +19,14 @@ Compacted 2026-09-04 from 150 items. The full text is
 
 ## T3 — discuss to a conclusion
 
+- A form's dropdown options are read from the kernel by `generate._options`,
+  which is a read path from a form to `assertion` — the one `CLAUDE.md`
+  forbids. Closing it needs a projection for every class a ref field ranges
+  over, and only two classes have one. Knowingly left open 6 Sep so the
+  interface can be built · blocks: generation
+- Constraint is the one kind of rule with no mechanism: computation and
+  parameter both execute, and what a map writes to say what is refused has
+  never been asked · blocks: generation
 - Whether `required: true` is enforced by the write gate, refused by the
   generator, or a documentation-only marker · blocks: generation
 - Whether a ref field may mint at all, and whether `submit()` writes the class

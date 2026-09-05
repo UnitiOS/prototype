@@ -8,7 +8,7 @@ the one being kept current.
 What is being worked on right now is `NEXT.md`. This file is the horizon
 behind it.
 
-Last reviewed: 2026-09-05.
+Last reviewed: 2026-09-06.
 
 ## Definition of done
 
@@ -52,7 +52,8 @@ system can be used, not that it is better.
 | `ontology` | built | Version resolution at two clocks |
 | `seal` | built | The gate a draft passes to become a version |
 | `generator` | built | Tables and forms from a sealed map |
-| `compiler` | built 5 Sep | Aggregates and expressions from the map, executed as SQL. It cannot read a parameter, and its `aggregate` cannot say which rows a balance counts — `p_gelato_on_hand` is three rows about nothing |
+| `compiler` | built 5 Sep, extended 6 Sep | Aggregates, expressions and now parameters from the map, executed as SQL. Its `aggregate` still cannot say which rows a balance counts — `p_gelato_on_hand` is three rows about nothing |
+| `web` | not built | The interface: forms and dashboards in a browser, with the two clocks on every page. `NEXT.md` carries it |
 | `business/` | in use | Not code. Sorella's `v1.yaml` is sealed at `b8de674` — 21 classes, 101 slots |
 | `interview` | prose only | `components/interview/SKILL.md`. Not installed as a skill; the stage is deferred and the file predates the per-business version store |
 | `report` | not built | |
@@ -60,6 +61,19 @@ system can be used, not that it is better.
 
 ## What has landed recently
 
+- **6 Sep** — the crossing ran. A `parameter` annotation names a key column and
+  a slot, and the compiler reads that slot off the log for the entity the key
+  resolves to; `ingredient_stock_value` is a balance summed out of the
+  movements multiplied by a price stated in the kernel, joined by a name the
+  graph gave it. Two of the three kinds of rule in `CLAUDE.md` now execute and
+  constraint has no mechanism at all. It cost five lines of SQL and no clock
+  machinery, because a parameter is one more read of `stated`. `LOG.md` and
+  `DECISIONS.md`, same date.
+- **6 Sep** — the PoC turns to an interface before finishing any more
+  mechanism. Two weeks of widening produced nothing usable, and neither
+  constraint nor definition change yields something a person can be shown.
+  Nothing is reversed and nothing is dropped; the order changes. `DECISIONS.md`
+  and `NEXT.md`, same date.
 - **5 Sep** — the compiler. `make compile` fills `p_ingredient_on_hand` from the
   map's own `aggregate` and `equals_expression`, and the net matches a hand
   computation: Dry store 27, Severn Catering Supplies −37, no location 10. The

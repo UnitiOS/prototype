@@ -13,7 +13,8 @@ did is the failure this index exists to prevent.
 
 Built 2026-09-04 from 203 entries, of which 52 carried a reversal. Extended
 2026-09-05 with the rule-corpus entries and 2026-09-06 with the dimension-and-
-scope split, both of which the build predates.
+scope split, the executed crossing and the turn to an interface, none of which
+the build predates.
 
 ### What is being proven
 
@@ -30,6 +31,14 @@ scope split, both of which the build predates.
 - An ERP is a benchmark, not a direction. Each mechanism is admitted or refused
   with a reason · 1 Sep
 - Milestone one's forms are rendered HTML in a browser, local, no polish · 4 Sep
+- Two of the three kinds of rule execute: computation and parameter. Constraint
+  has no mechanism at all · 6 Sep
+- A result is read against the design claim, never against whether the numbers
+  are true. A question only tidier data could answer is not a question about
+  the system · 6 Sep
+- The interface comes before any more mechanism, and is the smallest whole
+  loop: a form writing to the kernel, a dashboard reading the operational
+  store, two clocks on every page · 6 Sep
 
 ### The two stores
 
@@ -135,6 +144,12 @@ scope split, both of which the build predates.
   a defect: the hole is only on the diagonal · 4 Sep, closing 31 Aug
 
 ### The generator
+
+- The browser reads the operational store and nothing else, so there is no
+  entity-list page. A form's dropdown is the one knowing exception and is
+  parked in `OPEN.md` · 6 Sep
+- A parameter needs no clock machinery: it is read out of `stated`, which is
+  already the whole log resolved at both clocks · 6 Sep
 
 - The generator may not know what a business is. The rule is stated against code
   with comments and docstrings stripped · 1 Sep
@@ -450,3 +465,53 @@ browsed.
              irreproducibility may be correct; for a trial it blocks the door,
              and `seal` gains a way to register a sealed version's URIs into a
              log without publishing a version.
+2026-09-06 · Two of the three kinds of rule now execute. Computation has since
+             5 Sep, parameter since today, and constraint has no mechanism at
+             all. The parameter half is the one that was in doubt, because a
+             number in the kernel is inert until the graph names it and that
+             crossing had run zero times: the thing that moved 93 values from
+             inert to read was one annotation in the map, not a line of code
+             and not a row of data. Its cost was five lines of SQL, and the
+             reason it was that cheap is the finding worth keeping — a
+             parameter is read out of `stated`, the same CTE every other cell
+             is read out of, which is already one resolution of the whole log
+             at both clocks. The expectation had been that a fact with a
+             history wants resolving separately from the rows it qualifies. It
+             does not. Two time axes are a property of the substrate rather
+             than a feature each reader implements, so any future column that
+             reads the log inherits them by construction.
+2026-09-06 · A result is read against the design claim, never against whether
+             the numbers are true. The profile is a stage property: its only
+             job is to stop the compiler guessing the answer, and once a cell
+             is filled through a name the graph gave it, whether the figure is
+             right adds nothing to the question that was asked. The trial ran
+             three sessions past its own answer arguing about prices and units.
+             The rule that follows: a question only answerable by tidier data
+             is not a question about the system, and it goes in `LOG.md` as a
+             finding rather than becoming the next item.
+2026-09-06 · The PoC turns to an interface before it finishes any more
+             mechanism. Scope had widened for two weeks with nothing usable at
+             the end of it, and neither of the two mechanisms left — constraint
+             and definition change — produces something a person can be shown.
+             This reverses nothing: both remain, and definition change is still
+             the stage that can kill the premise. It reorders. What is built is
+             the smallest whole loop, a form that writes to the kernel and a
+             dashboard that reads the operational store, with the two clocks as
+             boxes on every page, because the clocks are the only part of the
+             surface no ERP already has. `http.server` from the standard
+             library, chosen so the question of a web framework does not have
+             to be answered to find out whether the loop closes.
+2026-09-06 · The browser reads the operational store and nothing else, so the
+             interface has no entity-list page. Only `IngredientOnHand` and
+             `GelatoOnHand` are compiled, and a page listing every Location
+             would have to reach `assertion` from a form, which is the read
+             path `CLAUDE.md` forbids. Nineteen forms and two dashboards is
+             thinner than it could be and it is the honest shape: a loop that
+             is whole is worth more than a surface with one leak in it. The
+             exception is knowing and recorded — a form's dropdown options are
+             read from the kernel by `generate._options`, which is that same
+             forbidden path. It predates this decision, closing it needs
+             projections for classes that have none, and building forms without
+             dropdowns would make the interface unusable for the one thing it
+             exists to demonstrate. It is exposed rather than created, and
+             `OPEN.md` carries it.
