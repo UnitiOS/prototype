@@ -520,3 +520,136 @@ records, is unaffected because both of its numbers are tins.
 `make build` was run before `make compile` and `mkdir -p` both times, so
 `build/sorella/v1/` still stands beside `build/sorella/v2/`. Nothing removed it
 and nothing points at it.
+
+## 2026-09-05 — Stage 3: the numbers enter the kernel, with their history
+
+Ten submissions through `generate.py submit`, all against `business/sorella/v2.yaml`,
+scripted in `scripts/state_stage3.sh` — committed, because it is the record of
+what was stated. Nothing was inserted directly, no `revokes` anywhere, and
+nothing executes any of it. 1,704 assertions in the working log before, 1,742
+after: 38 written under `ontology_version` v2, 4 entities minted.
+
+**What was run.**
+
+    scripts/state_stage3.sh   10 intents, 38 assertions, exit 0
+    make compile              p_ingredient_on_hand, 6 rows, was 3
+    make check                67 passed, replay identical twice, exit 0
+
+The whole script was rehearsed against `uniti_check` first, so nothing
+unsealable reached an append-only log.
+
+**The six values, one query.** Every one carries `ontology_version` v2 and
+`recorded_at` today; `valid_from` is the day the number took effect.
+
+    subject                        slot                       value   valid_from  authority                 conf
+    -----------------------------  -------------------------  ------  ----------  ------------------------  ----
+    item_sicilian_pistachio_paste  item_pack_price            170.50  2024-09-01  Terra Nostra Ingredients
+    item_sicilian_pistachio_paste  item_pack_price            203.00  2026-02-01  Terra Nostra Ingredients
+    item_sicilian_pistachio_paste  item_reorder_level         2       2026-06-07  Dan Farrugia              low
+    item_sicilian_pistachio_paste  item_order_quantity        10      2026-02-01  Dan Farrugia
+    loc_cotham_cabinet             location_minimum_flavours  12      2025-11-01  Marina
+    business_sorella_gelato        free_delivery_above        120     2026-04-01  Marina
+
+A seventh row stands beside them and was not written today: `item_pack_price`
+203.00, `valid_from` 2026-06-15, `ontology_version` v1, no authority — the
+adoption-date row the log already held. It stays, as the item said.
+
+`authority` went from 0 assertions to 6. Before this stage the column had never
+been non-NULL in the working log; stage 1 gave `submit` the flag and this is the
+first use of it.
+
+The Business entity was minted first, six assertions, no authority — nobody
+"set" the company's name. Rule C had no subject before it.
+
+**Two clocks on one parameter.** `resolve_single()` on `item_pack_price` for
+pistachio, `as_of` now:
+
+    valid_at 2025-06-01  ->  170.50   (the row valid from 2024-09-01)
+    valid_at 2026-06-16  ->  203.00   (the row valid from 2026-06-15)
+    valid_at 2024-01-01  ->  None     (the 152.00 was never recorded)
+
+One parameter, two clocks, two answers. The 203.00 answer is won by the
+adoption-date row rather than by the 2026-02-01 one, because `valid_from DESC`
+picks the later of two rows carrying the same value. Both say 203.00 so the
+answer is right, but the row that wins is the one with no authority on it.
+
+**The hand computation was 6 tins. `p_ingredient_on_hand` reads 5.32.**
+
+    ingredient_on_hand                     ingredient_where                        in    out    net
+    -------------------------------------  ------------------------------------  ----  -----  -----
+    sorella:item_digestive_biscuits        sorella:loc_dry_store                   37     10     27
+    sorella:item_digestive_biscuits        sorella:loc_severn_catering_supplies     0     37    -37
+    sorella:item_digestive_biscuits                                                10      0     10
+    sorella:item_sicilian_pistachio_paste  sorella:loc_dry_store                    6   0.68   5.32
+    sorella:item_sicilian_pistachio_paste  sorella:loc_terra_nostra_ingredients     0      6     -6
+    sorella:item_sicilian_pistachio_paste                                        0.68      0   0.68
+
+The balance summed tins and kilograms into one number: 2 + 4 tins in, 0.68 kg
+out, 6 − 0.68 = 5.32 of nothing. It is the second of the two outcomes the item
+named in advance, and nothing was changed to repair it — no `WHERE`, no unit
+filter, no conversion.
+
+The business's own closing sheet, §5.1, counts "5 sealed, 1 open", which is 6,
+because §1.5 counts a tin as one tin whether it is sealed or has 400 g left in
+it. So the business and the compiler disagree by exactly one 0.68 kg draw that
+the business's own counting method does not subtract.
+
+Read under `CLAUDE.md`, "Reading a result": **missing mechanism.** No input
+repairs it. Recording the draw in tins would make 6 come out, but §1.5 says the
+count does not decrement on a draw, so that number would be invented. The
+compiler has `movement_unit` in the map and no construct that lets an
+`aggregate` say a balance is per unit or convert between two — and `OPEN.md`
+already carries both halves, the G-conversion line and the line saying an
+`aggregate` cannot say which rows a balance counts. This is the first time
+either has been executable rather than argued.
+
+The arithmetic is internally consistent even so: 5.32 − 6 + 0.68 = 0, so
+nothing leaked. Only the units are mixed.
+
+The digestive-biscuit rows are unchanged at 27 / −37 / 10. New facts about a
+different item moved none of them.
+
+**What was not written, and why.**
+
+- **`item_pack_price` 152.00.** §1.6 says "it was £152.00 until September 2024"
+  — an end and no start. `valid_from` is NOT NULL, so the earliest value of a
+  chain cannot be recorded at all.
+- **`item_order_quantity` 6**, **`location_minimum_flavours` 16**,
+  **`free_delivery_above` 80.** Same shape. §3.4 dates *changes* and never
+  *starts*, so for every one of the four rules the predecessor is undateable.
+  Of the seven values the profile states across these four chains, three could
+  be dated and four could not.
+
+That is the result worth keeping from this stage: a business records a rule as
+"12, changed from 16 in November 2025", which is one dated instant and two
+values, while the two-axis model wants a `valid_from` on each. The half the
+model cannot take is always the older half, so the log can never be asked what
+the rule was before the first change anybody remembers.
+
+`location_minimum_flavours` carries a second problem. "Was 16 at Cotham" is a
+claim about one location; the current 12 is stated for cabinets generally. The
+12 was recorded on `sorella:loc_cotham_cabinet`, which is the only cabinet the
+change is evidenced at, but Gloucester Road's cabinet now carries nothing and
+the map cannot say that a rule applies to a class rather than to a row.
+
+**Surprising.**
+
+`submit` cannot write into a log that has never been sealed into. The first
+rehearsal, against a `uniti_check` freshly wiped by `make check`, died in
+`perform._ref` with `ValueError: badly formed hexadecimal UUID string`:
+`submit` mints the subject and every field URI but never `uniti:uri` itself, so
+on a virgin log the predicate of its own registration rows resolves to the
+literal string. Sealing the map into `uniti_check` first fixed it and the
+script then ran clean. The working log has been sealed into since v1, so this
+never touches it — but the error names a UUID, not a missing registry, and
+gives a reader nothing to go on.
+
+`--authority` was recorded verbatim from `NEXT.md`, which writes "Dan Farrugia"
+in full and "Marina" without a surname, though the log holds
+`sorella:person_marina_devlin`. Three spellings now stand in one text column —
+two people and a company — and nothing joins any of them to a `Person` entity.
+
+No `movement_kind` on any of the three movements: the log holds no
+`MovementKind` entity and minting one would state a thing nobody has. The three
+digestive movements set none either. `movement_batch` is empty for the same
+reason — batch 2026-0838 is in `movement_note` as text.
