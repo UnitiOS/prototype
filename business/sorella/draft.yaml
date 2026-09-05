@@ -19,6 +19,13 @@ description: >-
   class membership. The rules with their numbers and the numbers two people
   work out differently are session four.
 
+  Session four has begun, and this is its first sitting: four slots from
+  section 3.4 - a bought item's reorder level and its order quantity, the
+  minimum flavours a cabinet is meant to hold, and the order value above which
+  a wholesale delivery is free. Names only. Not one of the four numbers is
+  here, nothing in the map derives from any of them, and the other forty-seven
+  rules of that section still have no home.
+
 prefixes:
   linkml: https://w3id.org/linkml/
   sorella: https://uniti.example/sorella/
@@ -40,6 +47,7 @@ classes:
       - business_trading_name
       - business_registered_in
       - business_trading_since
+      - free_delivery_above
 
   Location:
     description: >-
@@ -69,6 +77,7 @@ classes:
     slots:
       - location_within
       - location_temperature
+      - location_minimum_flavours
 
   Supplier:
     is_a: Location
@@ -174,6 +183,8 @@ classes:
       - item_arrives_as
       - item_pack_price
       - item_supplier
+      - item_reorder_level
+      - item_order_quantity
 
   Recipe:
     description: >-
@@ -478,6 +489,24 @@ slots:
       When it first sold, stated the way the business states it, which is a
       month and a year rather than a date.
 
+  free_delivery_above:
+    slot_uri: sorella:free_delivery_above
+    range: decimal
+    unit:
+      symbol: GBP
+      descriptive_name: pounds
+    description: >-
+      The order value at or above which a wholesale delivery is not charged
+      for. Section 3.4 states one hundred and twenty pounds, set by Marina in
+      April 2026; it was eighty, and it moved on fuel and van servicing.
+
+      It stands on the business rather than on an account because it is one
+      number for the whole wholesale book - the term that does vary per account
+      is credit_terms. It is not the minimum wholesale order, which is four
+      pans and a different rule, and it is not a fact about any delivery: a
+      delivery that was or was not charged for is something a document says,
+      and this is the standing number that decides it.
+
   location_name:
     slot_uri: sorella:location_name
     identifier: true
@@ -510,6 +539,22 @@ slots:
       range of two numbers for the freezers, one number for the blast freezer,
       and the word ambient for the dry store. Most places have no stated
       temperature at all.
+
+  location_minimum_flavours:
+    slot_uri: sorella:location_minimum_flavours
+    range: integer
+    description: >-
+      How many flavours this place is meant to have in it at once. Section 3.4
+      states twelve, set by Marina in November 2025; it was sixteen at Cotham,
+      and was cut to reduce end-of-day waste, which Aoife still disputes.
+
+      It is a count of flavours and not of pans, and it is not a capacity: how
+      many wells a cabinet has is a fact about the cabinet, and this is what the
+      business intends to keep in it. Only a serve cabinet has one - the chest
+      freezers, the van, the dry store and the premises themselves carry
+      nothing here - and it is not a fact about a movement or a count: what is
+      actually in the cabinet on a day is counted, and this is what was
+      intended before anybody looked.
 
   outside_where:
     slot_uri: sorella:outside_where
@@ -699,6 +744,42 @@ slots:
     slot_uri: sorella:item_supplier
     range: Supplier
     description: Who it is bought from.
+
+  item_reorder_level:
+    slot_uri: sorella:item_reorder_level
+    range: decimal
+    description: >-
+      The level at which Dan reorders this item, in what the item is counted in
+      - section 3.4 writes pistachio paste as "reorder at 2 tins" and
+      item_counted_in already says a tin, so no unit is stated twice. He picks
+      it as about a fortnight's use at the summer rate, which is practice
+      rather than a calculation and was written down for the first time on
+      7 June 2026.
+
+      It is not a minimum stock the system enforces and nothing refuses a count
+      below it. Section 3.4 gives a level to four items and says everything else
+      has none, so seventy-six of the eighty bought items carry nothing here.
+      It is not a fact about a movement either: it stands on the item and moves
+      when Dan moves it, not when stock does.
+
+  item_order_quantity:
+    slot_uri: sorella:item_order_quantity
+    range: decimal
+    description: >-
+      How much is ordered when the level is reached. Section 3.4 writes it
+      beside the level - "reorder at 2 tins, order 10" - and for three of its
+      four items the two numbers are in the same unit. The fourth is not: Base
+      50 stabiliser is "reorder at 4 bags, order 1 carton", which is
+      item_counted_in for the level and item_ordered_in for the quantity, the
+      same split section 1.5 already draws. Nothing here says which of the two
+      a given number is in, and the map converts between them nowhere.
+
+      Pistachio's moved from six to ten in February 2026, after a price rise,
+      to buy ahead; hazelnut's has been six since 2023. It is not a supplier's
+      minimum - that is the supplier's own rule and sits on Supplier as
+      supplier_minimum_order - and it is not the quantity on any particular
+      order, which is a line on a document. Like the level, most bought items
+      carry none.
 
   item_note:
     slot_uri: sorella:item_note

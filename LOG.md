@@ -450,3 +450,73 @@ independent of the state of the database it finds.
 `business/sorella/v1.yaml` has no `item_label` slot — the first smoke attempt
 used it and the generator refused, listing the ten fields `BoughtItem` has. The
 refusal came from the map, not from code that knew the domain.
+
+## 2026-09-05 — Stage 2: the four slots enter the map, sealed as v2
+
+`business/sorella/v2.yaml`, sealed from `draft.yaml` at 08:37:24 UTC. Four
+slots added and nothing else: `free_delivery_above` on `Business` (decimal,
+`unit: GBP`), `location_minimum_flavours` on `InternalLocation` (integer),
+`item_reorder_level` and `item_order_quantity` on `BoughtItem` (decimal). 21
+classes unchanged, 101 slots to 105, 0 facts. No number entered the kernel.
+
+`valid_from` stayed at `2026-06-15T00:00:00+00:00`, byte-identical to v1's;
+`supersedes: v1`; `transcript: v2.txt`, 7,717 bytes against v1.txt's 23,086 —
+a new note, not a copy.
+
+**What was run.**
+
+    seal.py draft.yaml --actor fareza --into business/sorella
+                        v2, 4 entities minted, 4 assertions.
+                        The other 101 slot URIs were already registered;
+                        425 uniti:uri rows in the working log after
+    make build          gen-owl 105 properties, 105 domains, 36 drawable;
+                        21 of 21 tables, 19 of 21 forms
+    make compile        p_ingredient_on_hand 3 rows, unchanged
+    make check          67 passed, replay identical twice (5334 bytes), exit 0
+
+A rehearsal seal ran first, into a scratch directory against `uniti_check`, so
+the draft was known to validate and to produce v2 before anything reached the
+append-only working log. The v1-to-v2 diff is 76 added lines and 6 removed; all
+six removals are the four stamped annotations and the two line boundaries the
+description paragraph reflowed. No slot removed, renamed or re-ranged.
+
+`p_ingredient_on_hand` under v2, movement data untouched:
+
+    ingredient_on_hand               ingredient_where       in  out  net
+    -------------------------------  ---------------------  --  ---  ---
+    sorella:item_digestive_biscuits  sorella:loc_dry_store  37   10   27
+    sorella:item_digestive_biscuits  ...severn_catering...   0   37  -37
+    sorella:item_digestive_biscuits                         10    0   10
+
+27 / −37 / 10, the same three numbers as under v1. Adding vocabulary moved no
+number.
+
+**`resolve_version` discriminated, on its first real choice.** v1 is sealed at
+2026-09-03T20:14:38, v2 at 2026-09-05T08:37:24. Both hold `valid_from`
+2026-06-15, so `valid_at` is the same for both and only `as_of` separates them:
+
+    valid_at 2026-06-16  as_of 2026-09-04T00:00:00Z  ->  v1
+    valid_at 2026-06-16  as_of 2026-09-05T23:00:00Z  ->  v2
+
+Until today the component had only ever had one candidate.
+
+The four slot URIs in the working log's registry, one query, four rows:
+
+    sorella:free_delivery_above        386c8ad1-4236-4321-96e3-e37d23ee678e
+    sorella:item_order_quantity        86323f42-3c71-447a-8e3a-3773f49788cc
+    sorella:item_reorder_level         1518c851-5338-4733-a497-023d1b083f31
+    sorella:location_minimum_flavours  a5003bcd-b691-4e26-95c1-bcb40d604a7a
+
+**Surprising.** §3.4's ordering table does not carry the two numbers in one
+unit, which the stage's brief assumed it did. Three of its four rows do —
+"reorder at 2 tins, order 10", "reorder at 3 sacks, order 10" — and the fourth
+does not: Base 50 stabiliser is "reorder at 4 bags, order 1 carton", which is
+`item_counted_in` for the level and `item_ordered_in` for the quantity. The map
+already draws that split, so no new slot was needed, but nothing in the map
+says which of the two a given `item_order_quantity` is in. It is written into
+the slot's own description and into `v2.txt`; pistachio, the only item stage 3
+records, is unaffected because both of its numbers are tins.
+
+`make build` was run before `make compile` and `mkdir -p` both times, so
+`build/sorella/v1/` still stands beside `build/sorella/v2/`. Nothing removed it
+and nothing points at it.
