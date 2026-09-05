@@ -43,8 +43,11 @@ Compacted 2026-09-04 from 150 items. The full text is
 - Whether a movement carries a clock time, or `happened_on` becomes a datetime
   · blocks: generation
 - Where a pack-to-pack conversion factor lives — asked of the business,
-  decomposed in the map, or a balance only ever in the counted unit
-  · blocks: generation
+  decomposed in the map, or a balance only ever in the counted unit. A fourth
+  answer was probed 6 Sep and works with no code change: the balance is *per
+  unit*, `movement_unit` in the aggregate's `by`. That leaves only the case
+  where two units of one item must be added, which the business itself does not
+  do · blocks: generation
 - Revocation does not cascade, and nothing ties `revokes` to the same
   (subject, predicate) · blocks: kernel
 - Two concurrent writers at the write gate: stock can go negative under READ
@@ -58,6 +61,19 @@ Compacted 2026-09-04 from 150 items. The full text is
   and `p_ingredient_on_hand` are numerically identical and one of them is about
   nothing. Diagnosed as a missing mechanism 5 Sep, `DECISIONS.md` same date; the
   question left is what a map writes to say it · blocks: generation
+- A rule the business states about a class is recorded on one row: "minimum
+  flavours in a cabinet, 12" sits on `loc_cotham_cabinet` alone and Gloucester
+  Road's carries nothing. Assert it per cabinet, give the map a class the rule
+  can be scoped to, or a class-scoped parameter is new mechanism
+  · blocks: generation
+- `authority` is free text and joins to nothing. Three spellings stand in one
+  column — "Dan Farrugia", "Marina", "Terra Nostra Ingredients" — while the log
+  holds `sorella:person_marina_devlin`. It may be right: "the HACCP plan" is
+  neither a Person nor a Supplier · blocks: kernel
+- Master data carries `valid_from` of the adoption date, and for most facts
+  that is not when they became true — 1,333 of 1,700 v1 assertions share
+  2026-06-15. It shadows better-dated facts written later, and every question
+  asked before that date returns almost nothing · blocks: report
 - The other two constructs with no home — F refusal (no sorbet in a cake,
   minimum order 4 pans) and H schedule (van runs Tue/Thu/Sat May to September).
   Parked until something demands one; G conversion has its own line above

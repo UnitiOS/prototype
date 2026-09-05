@@ -12,7 +12,8 @@ readable, still dated — but it no longer governs, and reading it as though it
 did is the failure this index exists to prevent.
 
 Built 2026-09-04 from 203 entries, of which 52 carried a reversal. Extended
-2026-09-05 with the rule-corpus entries, which the build predates.
+2026-09-05 with the rule-corpus entries and 2026-09-06 with the dimension-and-
+scope split, both of which the build predates.
 
 ### What is being proven
 
@@ -76,9 +77,16 @@ Built 2026-09-04 from 203 entries, of which 52 carried a reversal. Extended
   across rows is ours — an `aggregate` annotation with `over`, `sum` and `by`,
   arithmetic-free · 1 Sep, spelling fixed 2 Sep, net is one expression 4 Sep
 - No rule construct enters a map before something can execute it · 5 Sep
+- An aggregate's `by` names every slot its measure is meaningless without. This
+  is what a projection class is authored against · 6 Sep
+- A missing **dimension** and a missing **scope** are different failures. The
+  rows are the right rows but not comparable to each other, and the map repairs
+  it by adding to `by`; or the rows are the wrong rows, and no dimension helps
+  · 6 Sep, splitting a basket the 5 Sep entries had held as one
 - An `aggregate` is `over`, an operator and `by`, and cannot say which rows a
   balance counts. `p_gelato_on_hand` is three rows about nothing because of it
-  · 5 Sep
+  · 5 Sep. This is the scope half and it stands; the unit half was a dimension
+  and was corrected 6 Sep
 - LinkML's class `rules` are refused: `linkml_runtime` raises
   `NotImplementedError` for any rule, so a map could look enforcing and never
   execute · 1 Sep
@@ -342,3 +350,46 @@ browsed.
              line "Gelato in a pan has no name in the map" leaves, answered
              by the 3 Sep standing rule; the classifying-dimension line stays,
              now typed as a missing mechanism rather than a question.
+
+2026-09-06 · `p_ingredient_on_hand` reading 5.32 is the map grouping by the
+             wrong set, not a mechanism the compiler lacks, and the 5 Sep
+             entry that put it in the missing-mechanism basket is corrected
+             here rather than edited. Probed: a copy of `v2.yaml` with one
+             slot `ingredient_unit` added to `IngredientOnHand` and
+             `ingredient_unit: movement_unit` added to the `by` of both its
+             aggregates, compiled against the same log with **no code change
+             at all**, gives pistachio 6 in tins and −0.68 in kilograms as two
+             rows. Six is the hand computation exactly. `movement_unit` has
+             been in the map since v1 and was carried as a field to display,
+             never as a dimension to group by — the same data-model thinking
+             the 5 Sep entry names, this time inside an aggregate. Under
+             `CLAUDE.md`'s own test there was an input that made it pass, so
+             it was never a missing mechanism. The gelato finding is not
+             corrected with it: no dimension repairs that one.
+2026-09-06 · An aggregate's `by` names every slot its measure is meaningless
+             without, and this is the ideal a projection class is authored
+             against. The test for a missing one is whether the rows of a
+             group are comparable to each other. It separates two failures
+             that had been sitting in one basket, and the separation is the
+             durable part:
+
+             A **missing dimension** — every row belongs in the table, but
+             they are not comparable, tins summed against kilograms. The map
+             repairs it by adding the dimension to `by`, and nothing else is
+             needed. Diagnosis: the number is nonsense but the rows are the
+             right rows.
+
+             A **missing scope** — rows are in the table that should not be
+             there at all, every digestive movement standing in
+             `p_gelato_on_hand`. No dimension helps: the offending rows are
+             silent on the dimension that would exclude them, and silence
+             produces a group keyed on nothing rather than no group. This is
+             the mechanism `aggregate` does not have. Diagnosis: the rows are
+             the wrong rows, whatever the number says.
+
+             When a map names a measure, the question to ask of it is what
+             this number would mean nothing without. Every answer is a `by`
+             entry. Place, unit, flavour and format are all answers; the map
+             had asked it only of place. Calling a dimension a mechanism does
+             two harms — it inflates what the PoC thinks it has learned, and
+             it hides work that could be done today.

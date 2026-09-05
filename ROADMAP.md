@@ -65,6 +65,13 @@ system can be used, not that it is better.
   computation: Dry store 27, Severn Catering Supplies −37, no location 10. The
   same rule at an earlier `--valid-at` gives 7 / −17 / 10, which is two runs of
   one rule at two clocks — the thing the substrate is for. `LOG.md`, same date.
+- **6 Sep** — the first three stages of the trial ran, and one of their results
+  was re-read. `p_ingredient_on_hand` reading 5.32 against a hand computation of
+  6 was recorded as a missing mechanism and is not one: adding `movement_unit`
+  to the aggregate's `by` gives 6 in tins and −0.68 in kilograms as two rows,
+  with no code change. A missing **dimension** and a missing **scope** are
+  different failures, and only the second is what the PoC is for.
+  `DECISIONS.md`, same date.
 - **5 Sep** — the rule corpus was measured against the two stores, and a trial
   was designed from what it found. The graph carries six rules, the kernel
   carries 93 parameter values, and none of the 93 is named by any rule in the
