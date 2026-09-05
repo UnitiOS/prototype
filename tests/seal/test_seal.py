@@ -34,7 +34,7 @@ sys.path.insert(0, str(ROOT / "components" / "seal"))
 sys.path.insert(0, str(ROOT / "components"))
 
 from ontology.resolve import load_versions, resolve_version  # noqa: E402
-from seal import URI_PREDICATE, DraftError, main, seal  # noqa: E402
+from seal import URI_PREDICATE, DraftError, main, register, seal  # noqa: E402
 from seal import connect  # noqa: E402
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
@@ -383,6 +383,52 @@ def test_a_fifth_key_on_a_fact_is_still_refused(conn, tmp_path):
         seal(conn, FIXTURES / "extra_fact_key.yaml", actor_id="test", into=tmp_path)
     assert list(tmp_path.iterdir()) == []
     assert _counts(conn) == before
+
+
+def test_register_names_every_slot_uri_and_writes_no_file(conn, sealed):
+    """A sealed version's vocabulary reaches a log without a version being cut.
+
+    The directory is read before and after: registering is a write into the
+    log and nowhere else, so a second log costs no `vN+1` in the map store.
+    """
+    into, first, _ = sealed
+    before = sorted(p.name for p in into.iterdir())
+
+    result = register(conn, into / "v1.yaml", actor_id="test")
+
+    assert sorted(p.name for p in into.iterdir()) == before
+    assert result["version"] == first["version"]
+    declared = _slot_uris(into / "v1.yaml")
+    assert declared
+    for uri in declared:
+        assert _entities_named(conn, uri), f"{uri} is in no log row"
+
+
+def test_register_mints_nothing_the_log_already_holds(conn, sealed):
+    """The second call writes nothing and reuses what the first one minted.
+
+    Registering the same version into the same log twice is how a seeding
+    script that is re-run behaves, and it must not leave a second entity
+    behind every URI.
+    """
+    into, _, _ = sealed
+    first = register(conn, into / "v1.yaml", actor_id="test")
+    again = register(conn, into / "v1.yaml", actor_id="test")
+
+    assert again["minted"] == {}
+    assert again["assertions"] == []
+    declared = _slot_uris(into / "v1.yaml")
+    assert {uri: again["entities"][uri] for uri in declared} == {
+        uri: first["entities"][uri] for uri in declared
+    }
+
+
+def _slot_uris(path):
+    """Every slot_uri a version file declares, read out of the file itself."""
+    document = yaml.safe_load(path.read_text(encoding="utf-8"))
+    return sorted(
+        slot["slot_uri"] for slot in (document.get("slots") or {}).values()
+    )
 
 
 def _counts(conn):

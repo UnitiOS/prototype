@@ -56,7 +56,13 @@ That file is evidence and is required. It lands beside the version as `vN.txt`
 and the sealed annotation is rewritten to match, so a sealed version and the
 conversation that produced it are found together.
 
+One sealed version can be put into a second log without being sealed again.
+`register()` reads a version that already exists, writes its `slot_uri` rows
+under `uniti:uri`, and writes no file — the door into an empty log for a map
+that has one. It states no facts: a sealed version carries none.
+
 Run: .venv/Scripts/python.exe components/seal/seal.py business/draft.yaml --actor fareza
+     .venv/Scripts/python.exe components/seal/seal.py business/sorella/v2.yaml          --register --actor fareza
 """
 
 import argparse
@@ -464,11 +470,120 @@ def seal(conn, draft_path, *, actor_id, into=None, sealed_at=None):
     }
 
 
+def register(conn, version_path, *, actor_id, recorded_at=None):
+    """Put a sealed version's vocabulary into a log, writing no file.
+
+    `seal` does two things at once: it decides a version and it registers the
+    URIs that version names. In one directory with one log that is right —
+    every version file has its facts in the log beside it. Point the same map
+    at a second log and the two come apart: the version already exists, the log
+    knows none of its URIs, and there is no door in. Sealing again would mint a
+    `vN+1` that describes nothing new, so the map store would grow a version
+    for every store it was ever loaded into.
+
+    So this registers and does not decide: it takes a version that is already
+    sealed, reads the `slot_uri` of every slot it declares, and writes one
+    `uniti:uri` row for each one the log does not already hold — the same rows
+    `seal` writes, under the same predicate, dated by the version's own
+    `valid_from`. Nothing is written to disk and no version number is assigned.
+
+    It is not a way to load facts. A sealed version carries none: `seal` strips
+    them on the way out, because a fact kept in the map is a fact living
+    outside the log. A file that still carries `annotations.facts` is a draft
+    however it is named, and is refused.
+
+    Registering twice is not an error and writes nothing the second time: a URI
+    the log already holds is left alone, exactly as a second `seal` reuses the
+    predicates the first one minted.
+
+    `recorded_at` is when this log learned the vocabulary, which is now, and is
+    not the version's `sealed_at` — the version was sealed once, and a log
+    seeded from it today is learning it today.
+    """
+    version_path = Path(version_path)
+    if not version_path.is_file():
+        raise DraftError(f"no version at {version_path}")
+    text = version_path.read_text(encoding="utf-8")
+    view = _validate(text, version_path.name)
+    document = yaml.safe_load(text) or {}
+
+    version = view.schema.version
+    if not version:
+        raise DraftError(
+            f"{version_path.name} carries no version, so it is a draft — "
+            f"seal it before registering it"
+        )
+
+    annotations = document.get("annotations") or {}
+    if annotations.get("facts"):
+        raise DraftError(
+            f"{version_path.name} still carries annotations.facts, so it is a "
+            f"draft — register states no facts, only the URIs a map names"
+        )
+
+    ranges = _slot_ranges(view, version_path.name)
+    valid_from = _valid_from(annotations, version_path.name)
+
+    with conn.cursor() as cur:
+        cur.execute(_REGISTRY_SQL, (URI_PREDICATE,))
+        known = {uri: entity_id for uri, entity_id in cur.fetchall()}
+
+    minting = []
+    for uri in [URI_PREDICATE] + list(ranges):
+        if uri not in known and uri not in minting:
+            minting.append(uri)
+
+    def ref(uri):
+        return known.get(uri, uri)
+
+    assertions = [
+        {
+            "subject": ref(uri),
+            "predicate": ref(URI_PREDICATE),
+            "value": uri,
+            "valid_from": valid_from,
+            "source": MINT_SOURCE,
+        }
+        for uri in minting
+    ]
+
+    intent_id, names, assertion_ids = perform(
+        conn,
+        actor_id=actor_id,
+        agent_id="seal",
+        action_name="register_version",
+        ontology_version=version,
+        note=f"registered the URIs {version_path.name} names",
+        mint=minting,
+        assertions=assertions,
+        recorded_at=recorded_at,
+    )
+
+    return {
+        "version": version,
+        "path": version_path,
+        "valid_from": valid_from,
+        "intent_id": intent_id,
+        "entities": {**known, **names},
+        "minted": names,
+        "assertions": assertion_ids,
+    }
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Seal a draft as the next version.")
-    parser.add_argument("draft", help="path to the draft, e.g. business/draft.yaml")
+    parser.add_argument(
+        "draft",
+        help="path to the draft, or to a sealed version with --register",
+    )
     parser.add_argument("--actor", required=True, help="who is sealing")
     parser.add_argument("--into", default=None, help="version directory, default business/")
+    parser.add_argument(
+        "--register",
+        action="store_true",
+        help="the file is already sealed: put the URIs it names into this log "
+             "and write nothing to disk",
+    )
     # A dated episode is sealed at the instant it belongs to, not at the
     # instant it is replayed: seal() has taken sealed_at since it was written,
     # and without this the only caller that can pass one is a test.
@@ -485,6 +600,21 @@ def main(argv=None):
     except ValueError as exc:
         print(f"not sealed: --sealed-at is not an instant — {exc}", file=sys.stderr)
         return 2
+
+    if args.register:
+        try:
+            with connect() as conn:
+                result = register(conn, args.draft, actor_id=args.actor)
+        except DraftError as exc:
+            print(f"not registered: {exc}", file=sys.stderr)
+            return 2
+        print(f"registered {result['path']}  ({result['version']})")
+        print(f"valid from {result['valid_from'].isoformat()}")
+        print(
+            f"intent {result['intent_id']}: {len(result['minted'])} entities minted, "
+            f"{len(result['assertions'])} assertions"
+        )
+        return 0
 
     try:
         with connect() as conn:

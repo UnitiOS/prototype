@@ -653,3 +653,110 @@ No `movement_kind` on any of the three movements: the log holds no
 `MovementKind` entity and minting one would state a thing nobody has. The three
 digestive movements set none either. `movement_batch` is empty for the same
 reason — batch 2026-0838 is in `movement_note` as text.
+
+## 2026-09-06 — Stage substrate: the door into an empty log, and the seed measured
+
+`NEXT.md`, stage **substrate**. Two of its seven done conditions are met and
+the third through sixth are held at the checkpoint condition 1 puts in front of
+them.
+
+**The blocker, cleared.** `seal.py` gained `register()` and a `--register`
+flag. It takes a version that is already sealed, reads the `slot_uri` of every
+slot it declares, and writes one `uniti:uri` row for each one the log does not
+already hold — the same rows `seal` writes, under the same predicate, dated by
+the version's own `valid_from`. No file is written and no version number is
+assigned. A file still carrying `annotations.facts` is refused as a draft; a
+file with no `version:` is refused for the same reason.
+
+    createdb uniti_trial; psql -f /kernel/001_schema.sql
+    UNITI_DSN=…/uniti_trial seal.py business/sorella/v2.yaml --register --actor fareza
+    → registered business/sorella/v2.yaml (v2)
+      valid from 2026-06-15T00:00:00+00:00
+      intent d5925203: 106 entities minted, 106 assertions
+
+106 = v2's 105 slots plus `uniti:uri`, which registers itself.
+`business/sorella/` before and after holds `v1.yaml`, `v1.txt`, `v2.yaml`,
+`v2.txt`, `draft.yaml`, `draft.txt`, `profile.md` — unchanged, so **done
+condition 2 holds**.
+
+**`state_stage3.sh` re-ran unchanged against `uniti_trial`**: 10 submissions,
+6 minted subjects, all six parameter values landed. `resolve_single` on
+`item_pack_price`:
+
+| `valid_at` | value | `valid_from` of the winning row | `authority` |
+|---|---|---|---|
+| 2025-06-01 | 170.50 | 2024-09-01 | Terra Nostra Ingredients |
+| 2026-06-16 | 203.00 | 2026-02-01 | Terra Nostra Ingredients |
+
+That is **done condition 5**, including its second half. In the working log the
+winner at the second clock was the adoption-dated row with `authority` NULL;
+here nothing blanket-dated shadows the February row, so the answer carries who
+said it. Trial log after both runs: 11 intents, 116 entities, 150 assertions,
+`valid_from` spread over 2024-09-01, 2025-11-01, 2026-02-01, 2026-04-01,
+2026-06-07, 2026-06-15 and 2026-06-16.
+
+**The enumeration** is `scripts/seed_2026_06_16.md`, written before anything
+was submitted — **done condition 1**. It applies the selection rule to §4.3 and
+§4.1, numbers every row, and states the four conventions it had to commit to
+before a row could be written: one movement per line of paper (so the van is
+named only where the profile puts something in it), a quantity is the number on
+the paper or nothing, a place is the finest one the paper distinguishes, and
+master data is not in the seed.
+
+**The size, measured rather than guessed:**
+
+| Part | Rows | | Part | Rows |
+|---|---|---|---|---|
+| B1 deliveries received | 10 | | B9 evening stock count | 39 |
+| B2 produced | 22 | | C1 opening — ingredients | 57 |
+| B3 wholesale delivered | 23 | | C2 opening — gelato | 50 |
+| B4 transferred to the shops | 22 | | D control carried over | 3 |
+| B5 sold | 25 | | | |
+| B6 the cake order | 0 | | **Total** | **265** |
+| B7 given away | 6 | | | |
+| B8 thrown out | 8 | | | |
+
+265 `generate.py submit` calls, each with a note quoting its profile section.
+Two more rows the rule selects are already in the log — pistachio's opening
+position and its Terra Nostra pallet line — so the day is 267 rows. Dates:
+2026-06-15 on 109, 2026-06-16 on 155, 2026-06-18 on 1. The seeded log would be
+about 276 intents and roughly 2,600 assertions.
+
+**28 findings** are written up rather than skipped. The sharpest is **F14**:
+the cake notice period moved from three days to forty-eight hours on 16 June
+2026 — the only rule §3.4 says changed while anybody was recording — and v2
+names no slot for it, so the one rule that moved is the one the log cannot
+hold. **F2**: the nine batches draw no recorded ingredient off any shelf, and
+the only draw this trial has comes from a §2.3 recipe page rather than from the
+day. **F19/F20**: twelve of the evening count's 38 lines are words rather than
+a number, and none of the 38 carries a confidence.
+
+**`make check`: ok, 69 tests.** Two new ones in `tests/seal/test_seal.py` —
+`register` names every `slot_uri` and writes no file, and a second call mints
+nothing and reuses what the first minted. The count is 69 and not the 67
+`NEXT.md` predicts: the repo was already at 67 before this run, not the 65 the
+prediction was made from. `grep` over `components/` for business terms finds
+six hits, all of them usage examples in docstrings, which `CLAUDE.md` exempts.
+
+**Surprising.**
+
+Registering a sealed version costs one intent and 106 assertions, and every one
+of them carries `valid_from 2026-06-15` — the version's own. So a freshly
+registered log already has 106 rows sharing one date before a single fact is
+stated. They are `uniti:uri` bookkeeping under `source = system_derived` and
+not claims about the world, but a query grouping the log by `valid_from` sees
+them, and done condition 4's "no blanket dates" has to be read as being about
+stated facts rather than about the registry.
+
+Applying the selection rule turns up **107 opening-position rows against the
+day's own 116 movements** — the previous morning is nearly as large as the day
+it opens. Most of the difference is §4.1's count of the two shops, the
+packaging mezzanine and the coffee bar, which 16 June touches through sales and
+transfers but which no single §4.3 line names.
+
+The enumeration cannot be transcribed mechanically. Four questions had to be
+decided before any row could be written, and each of them changes the row
+count: whether the van is a leg or a place, whether "1 half pan" is 0.5 or no
+number, whether a place with two names is one row or two, and whether the
+12.0 kg mix line is a movement. Three of the four went the way that produces
+*fewer* rows and *more* findings.
