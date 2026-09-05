@@ -7,6 +7,14 @@ two time axes. Not schema generation — that is a commodity (ERPNext has shippe
 it for a decade). Generation still happens, and has a stage of its own; it is a
 means, never the thing being proven.
 
+The substrate is half of it. The other half is that the business's own logic —
+how a balance is derived, what a threshold is, what is refused — lives in the
+graph and in the log and never in code. An ERP carries those rules too: in a
+config column that gets overwritten, and in a branch that gets recompiled. The
+claim here is that they can be carried somewhere that keeps their history and
+can still be executed. If they end up in code, the graph is decoration and this
+is an ERP with fewer features.
+
 Definition of done for the PoC: **the same shrinkage report, computed as it was
 computed then and with today's definition, side by side with why the numbers
 differ.**
@@ -23,6 +31,28 @@ tracked against — between here and there every week looks the same.
 
 The shrinkage report is not milestone one.
 
+## The three layers
+
+The design of record is the 31 August diagram, `../doc/design-2026-08-31.png`.
+In words:
+
+| Layer | Says | Read by |
+|---|---|---|
+| Graph | what things mean, how numbers are derived | the compiler, and nothing else |
+| Kernel | what was stated, by whom, when, and what was later found wrong | the compiler, replay, provenance |
+| Operational DB | what is true now, plain rows and plain indexes | forms, dashboards, agents |
+
+- **Nothing but the compiler reads the kernel.** Forms, lists and dashboards
+  read the operational database, never the log. A read path that reaches
+  `assertion` from a form is a defect, not a shortcut.
+- **The operational database is derived.** Its schema comes from the graph, its
+  rows from the kernel. It may be dropped whole and rebuilt, it is never a
+  source of truth, and nothing writes to it directly.
+- **One write gate.** Every door — a form, the chatbot, `seal` — produces one
+  `intent` and N `assertion`, and nothing else writes anywhere.
+- The kernel is a ledger, not a balance sheet. It holds what was said, including
+  what was said wrongly. Nothing computed ever enters it.
+
 ## The stages
 
 A **flow**, not a build list: one lap the system runs for one business, from
@@ -36,7 +66,8 @@ one, and every number after them moved. A name survives the next merge.
   description becomes an ontology to an existing standard
 - **Graph review** — the ontology is visualised and judged
 - **Kernel recording** — everything stated is in the log
-- **Generation** — UI and projection tables come from the ontology and the kernel
+- **Generation** — the operational database, its schema and its rules, and the
+  UI, are all compiled from the ontology and filled from the kernel
 - **Live use** — the forms are used, the kernel is checked
 - **Definition change** — a definition moves, history is replayed
 - **Agentic access** — the data is navigated and acted on
@@ -53,7 +84,8 @@ one stage needs several components.
 
 | Component | Kind | Serves |
 |---|---|---|
-| `kernel` | store | recording, live use, every reader |
+| `kernel` | store | recording, replay, provenance |
+| `compiler` | compiler | generation, live use, definition change |
 | `business/` | store | map versions and transcripts — files, no code |
 | `interview` | skill | interview and mapping |
 | `seal` | tool | interview and mapping, recording |
@@ -87,8 +119,9 @@ Closed means not re-discussed, not proven. Reasoning lives in `../archived/`.
 4. Detection is computed; judgement is asserted.
 5. XTDB, Palantir Foundry and ERPNext already built adjacent things. What is
    left is narrow: open source, small organisations, LLM-assisted authoring.
-6. The largest risk is process, not technical. Four previous projects died
-   because nobody outside the team ever used them.
+6. The largest risk is the design spiral, not the technical problem. Four
+   previous projects died from rebuilding rather than shipping. The stop-list
+   and the `NEXT.md` ceiling exist because of it.
 
 ## Reading a result
 
@@ -115,17 +148,38 @@ Three tables: `intent`, `assertion`, `entity`. The column list is closed.
 If you need a new column on `assertion` for a business reason: **stop and ask.**
 Business needs live in the ontology.
 
+## Where a rule lives
+
+Every rule a business states is one of three kinds, and each has one home.
+
+| Kind | Lives in | Compiles to |
+|---|---|---|
+| Computation — how a number is derived | graph, as an expression | SQL filling a projection column |
+| Parameter — a number with a history | kernel, as a dated assertion | a constant resolved at both clocks |
+| Constraint — what is refused | graph for the shape, kernel for its numbers | form validation, write gate, violation table |
+
+The graph is the only thing the compiler reads. **A parameter in the kernel is
+inert until the graph names it.** That is what makes a rule execute, and it is
+why a rule can never be recorded in the kernel alone.
+
+**No rule construct enters a map before something can execute it.** For weeks
+`sorella/v1.yaml` carried four `aggregate` annotations and two
+`equals_expression` that `generate.py` never read — measured, zero occurrences —
+so every derived column was sought in the log as a stated fact and came back
+empty. Notation that moves nothing is worse than an absence, because it reads as
+capability. This replaces the older brake, which pointed the other way.
+
+The compiler may not know what a business is, on the same terms as the
+generator: it reads `over`, `sum`, `by` and `equals_expression`, and emits SQL.
+A branch on a business word is the same failure there as anywhere else.
+
 ## Stop-list
 
-RLS · Neo4j · observation store · constraint engine · process primitives ·
-emergent layer · impact routing · multi-tenancy · marketplace · export
+RLS · Neo4j · observation store · process primitives · emergent layer ·
+impact routing · multi-tenancy · marketplace · export
 
 Not forbidden — routed. Nothing here is built unless an item in `NEXT.md` names
 it. Components enter through `NEXT.md`, never by editing this file.
-
-`constraint engine` is the one that arrives by accident, so it has its own
-brake: a key enters a map's `annotations` only when a rule already stated in the
-business profile cannot be expressed without it — never in anticipation of one.
 
 ## Deciding alone, and stopping
 
@@ -156,6 +210,17 @@ field, carry on with the part of the item that is not blocked, and report it in
 - No new `.md` files at the root. The six that exist are enough.
 - Slides and diagrams live in `../doc/`, are always derived, and are never
   treated as a source of truth.
+- `build/` is the inspection surface: where a person looks at what the system
+  produced — the graph in a viewer, the generated forms, the projection tables.
+  It is not a working directory and nothing is ever kept there.
+  - Scoped by business and map version, `build/<business>/<version>/`, never by
+    a filename prefix or a hand-typed counter.
+  - Under each: `graph/`, `forms/`, `tables/`, and `log/` for the generators'
+    stderr. `build/check/` holds what `make check` writes and nothing else.
+  - Nothing hand-written ever lives under `build/`. A script found there belongs
+    in `scripts/`.
+  - Rebuilt by one command, and gitignored, so it may be deleted whole at any
+    time — which holds only while the two rules above do.
 - A new, more elegant architecture idea mid-stream: record it in `OPEN.md`, do
   not build it. That is the exact shape that killed the four previous projects.
 
@@ -205,3 +270,8 @@ It may be **quoted to answer a named question**, with the file and section
 cited so the answer can be checked without anyone re-reading the corpus. Never
 browse it for context, never write to it. The previous cycle died from reading
 and amending that corpus, not from lacking it.
+
+`history/` holds this project's own rotated material: earlier `LOG.md` and
+`DECISIONS.md` entries, retired business maps, scripts that stopped being run.
+The same rule governs it — quoted by date to answer a named question, never
+browsed for context. Nothing is deleted; it stops being carried.
