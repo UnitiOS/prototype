@@ -14,10 +14,9 @@ statement, so a student's name can be human-confirmed while their phone number
 is document-extracted.
 
 **Schema generation is not the bet.** That is a commodity — ERPNext has shipped
-it for a decade. The bet is the evidence substrate underneath it.
-
-The findings this rests on are one line each in `DECISIONS.md`. Closed there
-means not re-discussed; it does not mean proven.
+it for a decade. The bet is the evidence substrate underneath it, and the
+business logic that runs from the graph rather than from code. `CLAUDE.md` says
+what the system is; `ROADMAP.md` says how far it has got.
 
 **What the kernel must do:** one fact, corrected late, read at four
 combinations of valid time and record time, gives four correct and distinct
@@ -26,25 +25,7 @@ parametrised table is the specification — if you read one thing after this
 file, read that.
 
 That is the kernel's bar, not the PoC's. What the PoC as a whole has to show is
-a **definition change** result, and it is stated in `CLAUDE.md`.
-
-## The stages, and what is built
-
-The PoC is one lap the system runs for one business: **interview and mapping**,
-**graph review**, **kernel recording**, **generation**, **live use**,
-**definition change**, **agentic access**. Names only here — `CLAUDE.md` says
-what each one means and which of them can kill the premise, and `DECISIONS.md`
-says why they are named and never numbered.
-
-Nobody is "at" a stage, so this file does not claim one. What can be checked is
-which components exist. `CLAUDE.md` lists eight and says which stage each one
-serves; that table is not repeated here. **Three are built** — `kernel`,
-`ontology` and `seal`, one directory each under `components/`. Beside them sits
-`business/`, which is not code: it is one flat file per sealed map version and
-its transcript beside it, written by `seal` and read by `ontology`. It is empty
-today — the first interview seals `v1.yaml` into it.
-
-If this file and `CLAUDE.md` ever disagree, `CLAUDE.md` is right.
+a **definition change** result, and it is stated in `ROADMAP.md`.
 
 ## Run it
 
@@ -56,11 +37,21 @@ make check
 
 One command from a clean clone: virtualenv, schema, tests, and a replay that
 must come out byte-identical twice. It exits non-zero if either half fails.
-Every target in the `Makefile` runs against a **throwaway database**,
+**65 tests today.**
+
+`check`, `schema`, `test` and `replay` run against a throwaway database,
 `uniti_check`, created on the first run and wiped on every one — `make` resets
-what it owns and never touches the working log. The rest of this section is the
-same thing by hand, against the working database, for when one step needs to be
-run alone.
+what it owns and never touches the working log. `build` and `compile` point
+back at the working log deliberately, because that is where the day being
+entered lives.
+
+```
+make build      render the sealed map into build/sorella/v1/
+make compile    run the map's own rules into the operational store
+```
+
+The rest of this section is `check` by hand, against the working database, for
+when one step needs to be run alone.
 
 ```
 docker compose up -d                    # postgres:17 on host port 5433
@@ -79,13 +70,13 @@ rewritten into a Windows one. The script drops and recreates: it is re-runnable.
 ```
 python -m venv .venv
 .venv/Scripts/python.exe -m pip install "psycopg[binary]" pytest linkml
-.venv/Scripts/python.exe -m pytest tests -q          # expect 41 passed
+.venv/Scripts/python.exe -m pytest tests -q          # expect 65 passed
 ```
 
 Connection string comes from `UNITI_DSN`, defaulting to
 `postgresql://uniti:uniti@localhost:5433/uniti` (`components/kernel/perform.py`).
-That default is the working log. The `Makefile` overrides it with `uniti_check`
-for everything it runs, so a sealed version survives any number of checks.
+That default is the working log — running `pytest tests` directly therefore
+writes into it, which is why `make test` exists.
 
 ```
 make replay
@@ -119,6 +110,15 @@ class membership is a claim like any other and claims belong in the log. Saying
 un-correctable; asserted as `member_of`, it gets the same two clocks, the same
 provenance and the same right to be wrong as every other fact.
 
+## business/
+
+Not code: one directory per business, holding one flat file per sealed map
+version with its transcript beside it. Written by `seal`, read by `ontology`
+and by every generator. `business/sorella/` is the live one — `v1.yaml`, 21
+classes and 101 slots, sealed at `b8de674`, with `profile.md` beside it as the
+source the map was written from. `business/trial/` and `business/trial2/` are
+fixtures that tests and scripts read.
+
 ## Which file answers which question
 
 Most of the value in this repo is knowing where a rule lives. Each rule lives
@@ -127,11 +127,16 @@ them — a restated rule drifts from the one it restates.
 
 | Question | Where the answer lives |
 |---|---|
+| What is this system, and what must stay true of it? | `CLAUDE.md` |
+| How far has it got — milestones, stages, components? | `ROADMAP.md` |
+| What is being worked on right now? | `NEXT.md` |
 | Why does `as_of` exist? What is settled? | `DECISIONS.md` |
 | How is a read resolved — which row wins, and why that one? | docstring of `components/kernel/resolve.py` |
 | Which map version applies at a `(valid_at, as_of)`? | docstring of `components/ontology/resolve.py` |
 | What turns a draft into a sealed version, and what is refused? | docstring of `components/seal/seal.py` |
 | What may be written, and what is deliberately not validated? | docstring of `components/kernel/perform.py` |
+| How does a table or a form come out of the map? | docstring of `components/generator/generate.py` |
+| How does a rule in the map become SQL that runs? | docstring of `components/compiler/compile.py` |
 | What are the columns, constraints and append-only guards? | `components/kernel/001_schema.sql` |
 | What must be true, exactly? | `tests/` — the tests are the spec |
 | What does a correction look like, versus a change? | `tests/kernel/test_bitemporal.py` fixtures |
@@ -140,29 +145,36 @@ them — a restated rule drifts from the one it restates.
 | What does a projection look like, and why is it never stored? | `scripts/project.py` |
 | Where does the demo data come from? | `scripts/seed_200.py` (one RNG seed, deterministic) |
 | What does the smallest possible write look like? | `scripts/write_three.py` |
-| How is this repo worked on? What may not be built? | `CLAUDE.md` |
-| What are the stages, and which components serve them? | `CLAUDE.md`, then `DECISIONS.md` |
-| What is being worked on right now? | `NEXT.md` |
 | What was run, and what was surprising? | `LOG.md` |
 
 `OPEN.md` is worth reading before trusting the kernel. It records things that
 are known not to work — revocation does not cascade, `revokes` is not tied to
 the same slot — written down rather than patched.
 
+## Working on it
+
+Two skills under `.claude/skills/`, invoked by name:
+
+- `/uniti-discuss` — design questions, reviewing a result, choosing what is next
+- `/uniti-build` — one item from `NEXT.md`, run to its done condition
+
 ## history/
 
-Material that has stopped being carried: `LOG.md`'s August sections, and
-Marlow, the business Sorella replaced. Read-only evidence — quotable to
-answer a named question, never browsed. Same rule as `../archived/`.
+Material that has stopped being carried: earlier `LOG.md` and `DECISIONS.md`
+eras, the retired T2 questions, Marlow (the business Sorella replaced), and the
+eight hand-written scripts that once lived under `build/`. Read-only evidence —
+quotable to answer a named question, never browsed. Same rule as `../archived/`.
 
 ## Not built
 
-Two different reasons, and they are not interchangeable. The `interview` skill,
-the `generator`, the `report` harness and the `agent` MCP are components this
-lap needs and does not have yet; they arrive with the stages that need them.
-Everything on the stop-list in `CLAUDE.md` is reasonable and still not built,
-because nothing there is needed to find out whether this works, and four
-previous projects died of building it first.
+The `report` harness and the `agent` MCP are components this lap needs and does
+not have yet; they arrive with the stages that need them. The `interview` skill
+exists as prose at `components/interview/SKILL.md` but is not installed and is
+not current — the stage is deferred, and the file predates the per-business
+version store.
+
+Everything listed as out of scope in `ROADMAP.md` is reasonable and still not
+built, because nothing there is needed to find out whether this works.
 
 Either way the route in is the same: an item in `NEXT.md` names it. Nothing
 enters by argument.
