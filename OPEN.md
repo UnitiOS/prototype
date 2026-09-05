@@ -40,8 +40,6 @@ Compacted 2026-09-04 from 150 items. The full text is
   as one, or a reader simply ignores those rows · blocks: report
 - Whether an empty picker and an unfillable class can be told apart in a
   rendered form · blocks: generation
-- Gelato in a pan has no name in the map, and milestone one's closing balance
-  runs through it · blocks: generation
 - Whether a movement carries a clock time, or `happened_on` becomes a datetime
   · blocks: generation
 - Where a pack-to-pack conversion factor lives — asked of the business,
@@ -56,9 +54,13 @@ Compacted 2026-09-04 from 150 items. The full text is
 - A movement may name no place at one end, and the seed now holds one:
   whether a group under no location is a row of the balance, is dropped, or
   is named · blocks: generation
-- The same emptiness on a classifying dimension is worse than on a place: a
-  movement with no flavour and no format is a row of `p_gelato_on_hand` keyed
-  on nothing, so every digestive movement is in the gelato balance
+- An `aggregate` cannot say which rows a balance counts, so `p_gelato_on_hand`
+  and `p_ingredient_on_hand` are numerically identical and one of them is about
+  nothing. Diagnosed as a missing mechanism 5 Sep, `DECISIONS.md` same date; the
+  question left is what a map writes to say it · blocks: generation
+- The other two constructs with no home — F refusal (no sorbet in a cake,
+  minimum order 4 pans) and H schedule (van runs Tue/Thu/Sat May to September).
+  Parked until something demands one; G conversion has its own line above
   · blocks: generation
 
 ## T1 — just try it

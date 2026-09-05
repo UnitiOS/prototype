@@ -52,7 +52,7 @@ system can be used, not that it is better.
 | `ontology` | built | Version resolution at two clocks |
 | `seal` | built | The gate a draft passes to become a version |
 | `generator` | built | Tables and forms from a sealed map |
-| `compiler` | built 5 Sep | Aggregates and expressions from the map, executed as SQL |
+| `compiler` | built 5 Sep | Aggregates and expressions from the map, executed as SQL. It cannot read a parameter, and its `aggregate` cannot say which rows a balance counts — `p_gelato_on_hand` is three rows about nothing |
 | `business/` | in use | Not code. Sorella's `v1.yaml` is sealed at `b8de674` — 21 classes, 101 slots |
 | `interview` | prose only | `components/interview/SKILL.md`. Not installed as a skill; the stage is deferred and the file predates the per-business version store |
 | `report` | not built | |
@@ -65,6 +65,12 @@ system can be used, not that it is better.
   computation: Dry store 27, Severn Catering Supplies −37, no location 10. The
   same rule at an earlier `--valid-at` gives 7 / −17 / 10, which is two runs of
   one rule at two clocks — the thing the substrate is for. `LOG.md`, same date.
+- **5 Sep** — the rule corpus was measured against the two stores, and a trial
+  was designed from what it found. The graph carries six rules, the kernel
+  carries 93 parameter values, and none of the 93 is named by any rule in the
+  graph, so every one is inert; the fifty-one rules of profile §3.4 are in
+  neither store. `NEXT.md` carries the six-stage trial; `DECISIONS.md`, same
+  date, carries the six entries behind it.
 - **5 Sep** — the design was frozen: three layers, and where a rule lives.
 - **4 Sep** — governance rotated. `OPEN.md` compacted from 150 items, `LOG.md`
   and `DECISIONS.md` rotated to `history/`, `build/` triaged from 259 files to 2.

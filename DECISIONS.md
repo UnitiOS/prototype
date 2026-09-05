@@ -11,7 +11,8 @@ A rule that has been superseded is not listed. Its entry is still below, still
 readable, still dated — but it no longer governs, and reading it as though it
 did is the failure this index exists to prevent.
 
-Built 2026-09-04 from 203 entries, of which 52 carried a reversal.
+Built 2026-09-04 from 203 entries, of which 52 carried a reversal. Extended
+2026-09-05 with the rule-corpus entries, which the build predates.
 
 ### What is being proven
 
@@ -41,6 +42,20 @@ Built 2026-09-04 from 203 entries, of which 52 carried a reversal.
   would a report about last month change with it · 30 Aug
 - A business gets its own version store via `seal --into`. The log gets no such
   separation, so one log now carries two businesses · 4 Sep
+- A rule that computes lives in the graph; a rule that is a number with a
+  history lives in the kernel and is inert until the graph names it · 5 Sep
+- Every rule splits into a sentence the graph carries and a number the kernel
+  carries. A rule that cannot be split that way is not yet understood
+  · 5 Sep, extending the line above
+- The kernel's columns are sufficient for the rule corpus and the graph's are
+  not. None has been exercised: `authority` is NULL on all 1,700 assertions and
+  there are no revocations · 5 Sep
+- Nine kinds of rule. A about one entity, B about one place, C about the
+  business are one mechanism under three subjects and need nothing new; D is
+  the aggregates; I is an observed rate that is explicitly not a rule. E scope,
+  F refusal, G conversion and H schedule have no construct · 5 Sep
+- The map was authored as a data model, never as a rule model, which is why the
+  two stores do not meet: the rule crossing has run zero times · 5 Sep
 
 ### The map
 
@@ -60,6 +75,10 @@ Built 2026-09-04 from 203 entries, of which 52 carried a reversal.
 - Derivation is two problems: within a row is LinkML's `equals_expression`,
   across rows is ours — an `aggregate` annotation with `over`, `sum` and `by`,
   arithmetic-free · 1 Sep, spelling fixed 2 Sep, net is one expression 4 Sep
+- No rule construct enters a map before something can execute it · 5 Sep
+- An `aggregate` is `over`, an operator and `by`, and cannot say which rows a
+  balance counts. `p_gelato_on_hand` is three rows about nothing because of it
+  · 5 Sep
 - LinkML's class `rules` are refused: `linkml_runtime` raises
   `NotImplementedError` for any rule, so a map could look enforcing and never
   execute · 1 Sep
@@ -234,3 +253,92 @@ browsed.
              system, and `ROADMAP.md` is the seventh root file they forbade.
              What survives is the one rule with a failure behind it — a
              decision is not written in the same act as the code it justifies.
+
+2026-09-05 · The business's rules are in no store. Measured against the working
+             log and `sorella/v1.yaml`: the graph carries six rules — four
+             `aggregate` annotations and two `equals_expression`, which is the
+             whole of `annotations` across 1,190 lines of map. The kernel
+             carries 93 parameter values — `item_pack_price` 77,
+             `credit_terms` 11, `supplier_minimum_order` 5 — and not one of
+             them is named by any rule in the graph, so by the 5 Sep line
+             above every one is inert. `compile.py` carries zero business
+             terms, which is correct and is the only one of the four homes
+             that is as it should be. The fifty-one rules of profile §3.4,
+             each with a number, a setter, a date it last changed and what it
+             was before, are in none of the three.
+2026-09-05 · Every rule splits into a sentence the graph carries and a number
+             the kernel carries, and a rule that cannot be split that way is
+             not yet understood. The graph carries the shape: which class the
+             rule is about, the slot that names its number, and what the
+             number does. The kernel carries the value: the number,
+             `valid_from`, `recorded_at`, `authority`, and the reason on the
+             intent. This extends the 5 Sep line from a division of rules into
+             two kinds to a decomposition applied to each rule. The reason is
+             that a number and a shape have different lifetimes: the cake
+             order's notice rule has not changed shape since 2022 and its
+             number moved on 16 June 2026, so holding both in one place makes
+             every change of a number publish a map version and re-version
+             every report ever run. It is also the whole of the difference
+             from an ERP's config column, which holds the number with no
+             history and the shape in a branch that gets recompiled.
+2026-09-05 · The kernel's columns are sufficient for the rule corpus and the
+             graph's are not. §3.4's four columns map onto the kernel with
+             nothing left over: the number is the value, "Last changed" is
+             `valid_from`, "written down 7 June 2026" is `recorded_at` and is
+             a different date, "Set by" is `authority`, why it changed is
+             `intent.note`, and what it was before is the superseded
+             assertion. No column is missing. What has not been exercised is
+             all of it: `authority` is NULL on all 1,700 assertions,
+             `confidence` is set on 19, there are no revocations, and 1,700
+             assertions cover 1,672 distinct (subject, predicate) pairs, so 28
+             are a second or later value. The log is a snapshot, not a history.
+2026-09-05 · The map was authored as a data model and never as a rule model,
+             and that is why the graph and the kernel do not meet. The order
+             was profile, then map from the nouns the business handles, then
+             kernel loaded with master data whose shape the map had already
+             fixed. So the kernel sits downstream of the graph's *data* shape
+             and the rules were an input to neither. Only one kind of crossing
+             has ever happened — the map declares a slot and the kernel holds
+             values for it — and the crossing the design is about, where the
+             graph names a parameter, the kernel supplies its value and its
+             history, and the compiler executes it, has run zero times.
+             `credit_terms` exists because it reads as an attribute of a
+             supplier; "21 days maximum age in the holding freezer" does not,
+             because it reads as a rule and there was no home for a rule.
+2026-09-05 · The rule corpus classifies into nine kinds, and only four of them
+             need mechanism that does not exist. A rules about one entity
+             (a reorder level, a credit term, a price), B rules about one
+             place (12 flavours minimum in a cabinet, 21 days in the holding
+             freezer), C rules about the business (free delivery above £120)
+             are one mechanism under three subjects — a slot and an assertion
+             — and need nothing new. D derivations are the aggregates that
+             exist. I is an observed rate that is explicitly not a rule
+             ("a tin of pistachio does about five batches"; "Specials
+             actually run — Practice, and not a rule") and is what
+             `confidence` and `authority` are for. The four with no
+             construct are E scope (which movements a balance counts, which
+             flavours go in which format), F refusal (no sorbet in a cake,
+             minimum order 4 pans), G conversion (case to pack to gram), and
+             H schedule (van runs Tue/Thu/Sat May to September). Roughly two
+             thirds of §3.4 is A, B or C. The map is not short of
+             expressiveness; it was never asked what governs its classes.
+2026-09-05 · The gelato balance's spurious rows are a scope hole in the
+             `aggregate` construct, not a defect in the map. Measured:
+             `p_gelato_on_hand` and `p_ingredient_on_hand` are numerically
+             identical, 27 / −37 / 10, both produced by the same three
+             digestive-biscuit movements, and one of the two tables is
+             entirely about nothing. The profile is not at fault — §2.5 is
+             wholly about flavour and format and even names the cases written
+             without a flavour. The map is not at fault for what it models —
+             the 3 Sep line that gelato in a pan is two cells on a line
+             stands, and `GelatoOnHand`'s own description states that a line
+             without a flavour should be in no group at all. The fault is
+             that the description is the only place that rule exists: an
+             `aggregate` is `over`, an operator and `by`, and there is no way
+             for a map to say which rows a balance counts. The 5 Sep brake
+             stopping the compiler from filtering is right and was read as
+             though nothing needed to decide; what follows from it is that
+             the graph must be able to say it, and it cannot. The `OPEN.md`
+             line "Gelato in a pan has no name in the map" leaves, answered
+             by the 3 Sep standing rule; the classifying-dimension line stays,
+             now typed as a missing mechanism rather than a question.
