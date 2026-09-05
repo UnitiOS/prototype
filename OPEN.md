@@ -56,9 +56,19 @@ Compacted 2026-09-04 from 150 items. The full text is
 - A movement may name no place at one end, and the seed now holds one:
   whether a group under no location is a row of the balance, is dropped, or
   is named · blocks: generation
+- The same emptiness on a classifying dimension is worse than on a place: a
+  movement with no flavour and no format is a row of `p_gelato_on_hand` keyed
+  on nothing, so every digestive movement is in the gelato balance
+  · blocks: generation
 
 ## T1 — just try it
 
+- The compiler reads `equals_expression` as arithmetic over `{slot}` names and
+  refuses anything else, while LinkML's own is a fuller language. Write one the
+  map needs and this refuses · blocks: generation
+- Two aggregates on one class must group by the same set or the compiler
+  refuses. Write a class where they should not and see what a row of it is
+  · blocks: generation
 - `gen-doc` renders from LinkML directly rather than through OWL, so the 122
   descriptions and the cardinalities should survive where they do not now.
   Render v1 and compare against `build/sorella/v1/graph/sorella-v1.html`

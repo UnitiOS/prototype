@@ -23,7 +23,12 @@ MAP      := business/$(BUSINESS)/$(VERSION).yaml
 RENDER   := build/$(BUSINESS)/$(VERSION)
 GRAPH    := build/$(BUSINESS)/$(VERSION)/graph/$(BUSINESS)-$(VERSION)
 
-.PHONY: check venv schema test replay check-profile build
+# The operational database. A store of its own and not a schema inside the log:
+# a read path from a form to `assertion` is then impossible rather than
+# discouraged. It is derived, so it is dropped and rebuilt on every run.
+OPS_DB := uniti_ops
+
+.PHONY: check venv schema test replay check-profile build compile
 
 # The one command: environment, schema, tests, and a replay that must come out
 # byte-identical twice. Exits non-zero if the tests fail or the two differ.
@@ -84,3 +89,18 @@ build: venv
 	PYTHONIOENCODING=utf-8 $(PY) scripts/render_map.py $(MAP) table --into $(RENDER)/tables 2> $(RENDER)/log/tables.err
 	PYTHONIOENCODING=utf-8 $(PY) scripts/render_map.py $(MAP) form --into $(RENDER)/forms 2> $(RENDER)/log/forms.err
 	@echo "build: $(RENDER)"
+
+# The map's rules, executed. Like `build` it reads the working log rather than
+# the throwaway one, because that is where the day being entered lives, and it
+# writes only to the operational store — which it creates on the first run and
+# drops table by table on every run after.
+compile: export UNITI_DSN     := postgresql://uniti:uniti@localhost:5433/uniti
+compile: export UNITI_OPS_DSN := postgresql://uniti:uniti@localhost:5433/$(OPS_DB)
+compile: venv
+	$(DC) up -d
+	@$(DC) exec -T db psql -U uniti -d postgres -tAc \
+	    "SELECT 1 FROM pg_database WHERE datname = '$(OPS_DB)'" | grep -q 1 \
+	    || $(DC) exec -T db createdb -U uniti $(OPS_DB)
+	mkdir -p $(RENDER)/tables $(RENDER)/log
+	PYTHONIOENCODING=utf-8 $(PY) components/compiler/compile.py $(MAP) \
+	    --into $(RENDER)/tables 2> $(RENDER)/log/compile.err

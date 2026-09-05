@@ -223,3 +223,143 @@ can only ever be seeded around it.
 
 Appended to `OPEN.md`: a T3 on what the compiler does with a movement that
 names no place at one end, since the seed now contains one.
+
+## 2026-09-05 — the compiler, and one rule executing
+
+`NEXT.md` item two. New component `components/compiler/compile.py`, a `compile`
+target in the `Makefile`, one more movement in the log. `generate.py` untouched,
+`table()` and its defect left where they were.
+
+**The seed first.** The 20 packs of digestives are §5.1's **Thursday 18 June**
+09:15 Severn drop, not 17 June — line 2892 sits under the Thursday heading and
+§5.1's own week says *Severn comes Thursday*; Wednesday's only delivery is
+Whitehall Dairy's milk and cream. Same ingredient, same `pack`, so no conversion
+is needed. `written_by` is Jordan Hale, who signed the driver's hand-held;
+`movement_kind` and `movement_batch` are empty for the reasons item one gave.
+One intent, 1 entity minted, 10 assertions. The log now holds 211 intents, 421
+entities, 1700 assertions.
+
+**The store.** The operational database is `uniti_ops`, a database of its own on
+the same server, not a schema inside `uniti`. Two connections, no join between
+them: a form that reached `assertion` would have to open a second connection to
+another database to do it, so the read rule is enforced by the topology rather
+than by discipline. The cost is that the projection is materialised through
+Python — one `SELECT` against the log, one `executemany` into the store — rather
+than as `INSERT ... SELECT`. **Proposed for `DECISIONS.md`:** *The operational
+database is a database of its own, not a schema beside the kernel. A read path
+from a form to `assertion` is then impossible rather than discouraged, at the
+cost of the fill being two statements on two connections.*
+
+**What the compiler reads.** Four words and nothing else: `over`, the operator
+key, `by`, and `equals_expression`. The operator is read from the annotation
+rather than assumed — `EMPTY = {"sum": "0"}` is both the list of operators it
+knows and what each is over no rows. Column kinds fall out of that: a column an
+aggregate groups `by` is a key, a column carrying the annotation is a total, a
+column carrying `equals_expression` is arithmetic over the others, and a column
+no rule reaches is nulls and is reported as such. Ranges become column types
+through one table; a class or enum range is `text`, because the cell holds the
+URI the log resolved to.
+
+**The SQL it emitted**, verbatim from
+`build/sorella/v1/tables/p_ingredient_on_hand.sql`, minus the three CTEs that
+are the same for every map (`standing`, the DECISIONS.md 2026-08-22 rule
+written once for all subjects and predicates; `registry`, uri to entity,
+`DISTINCT ON` so a join cannot multiply a sum; `stated`, one standing fact as
+subject/slot/value with a ref coming back as its URI):
+
+    source_0 AS (
+        SELECT s.subject_id FROM stated s
+        WHERE s.slot = 'sorella:entity_class'
+          AND s.value = ANY (ARRAY['StockMovement'])
+    ),
+    total_0 AS (
+        SELECT t0_k0.value AS "ingredient_on_hand",
+               t0_k1.value AS "ingredient_where",
+               sum((t0_m.value)::numeric) AS "ingredient_in"
+        FROM source_0 r
+        LEFT JOIN stated t0_k0 ON t0_k0.subject_id = r.subject_id
+                            AND t0_k0.slot = 'sorella:movement_ingredient'
+        LEFT JOIN stated t0_k1 ON t0_k1.subject_id = r.subject_id
+                            AND t0_k1.slot = 'sorella:movement_into'
+        LEFT JOIN stated t0_m ON t0_m.subject_id = r.subject_id
+                            AND t0_m.slot = 'sorella:movement_quantity'
+        GROUP BY 1, 2
+    ),
+    total_1 AS (   -- the same, grouped by 'sorella:movement_out_of'
+        ... AS "ingredient_out" ...
+    ),
+    grouping AS (
+        SELECT "ingredient_on_hand", "ingredient_where" FROM total_0
+        UNION
+        SELECT "ingredient_on_hand", "ingredient_where" FROM total_1
+    )
+    SELECT g."ingredient_on_hand" AS "ingredient_on_hand",
+           g."ingredient_where" AS "ingredient_where",
+           coalesce(total_0."ingredient_in", 0) AS "ingredient_in",
+           coalesce(total_1."ingredient_out", 0) AS "ingredient_out",
+           (coalesce(total_0."ingredient_in", 0)
+            - coalesce(total_1."ingredient_out", 0)) AS "ingredient_on_hand_net"
+    FROM grouping g
+    LEFT JOIN total_0 ON total_0."ingredient_on_hand"
+                             IS NOT DISTINCT FROM g."ingredient_on_hand"
+                     AND total_0."ingredient_where"
+                             IS NOT DISTINCT FROM g."ingredient_where"
+    LEFT JOIN total_1 ON ...
+    ORDER BY 1, 2;
+
+Every identifier and every literal in it came out of the map. `movement_into`
+and `movement_out_of` appear once each, inside a string, because the `by` map
+put them there; the subtraction is the map's `{ingredient_in} -
+{ingredient_out}` with each name replaced by the SQL for that column.
+
+Three pieces of it are worth naming. **`::numeric`** is the cast item one said
+would be needed, and its type is the range of the slot the operator names, not a
+guess. **`IS NOT DISTINCT FROM`** is what carries the group keyed on nothing
+through the join; `=` would drop it. **`coalesce(..., 0)`** is the empty sum: a
+group one total makes and the other does not is nought on the missing side, not
+unknown. That is not the compiler taking a view — the map's own
+`ingredient_on_hand_net` description says a place a thing left but never arrived
+at "reads below nought", which is only true if the absent arrival is nought.
+
+**`make compile`, and the hand computation.**
+
+| Location | in | out | net |
+|---|---|---|---|
+| Dry store | 37 | 10 | **27** |
+| Severn Catering Supplies | 0 | 37 | **−37** |
+| *no location* | 10 | 0 | **10** |
+
+37 is 17 + 20, two rows summed, which is what item one's Monday-only seed could
+not exercise. 27 packs on the dry store shelf: 17 counted on Monday, less the
+ten Rekha took, plus the twenty Severn dropped on Thursday. Severn is −37
+because 37 packs left it and none arrived. The three nets total nought.
+`p_ingredient_on_hand` holds exactly those three rows.
+
+**The same table at an earlier clock.** `--valid-at 2026-06-16T00:00:00+00:00`
+gives 17/10/**7**, 0/17/**−17**, 10/0/**10** — item one's hand computation,
+reproduced without being told about it, because the 18 June movement's
+`valid_from` is after that clock. Two runs of one rule at two clocks, which is
+the thing the substrate is for.
+
+**Surprising, and now a T3.** `p_gelato_on_hand` is not empty. Its three `by`
+slots are `movement_flavour`, `movement_format` and `movement_into`, and the
+three digestive movements state neither of the first two — so they group under
+(null, null, place) and the gelato balance reads 37 / −37 / 10 in packs of
+biscuits. The map's own `GelatoOnHand` description claims a line without a
+flavour is "in no group at all"; it is in a group keyed on nothing, and that
+group is indistinguishable from a real one. A `WHERE` would fix it and would be
+the compiler deciding which rows a balance counts, which is the failure
+`CLAUDE.md` calls passing by cheating, so it stands as written and `OPEN.md`
+carries it as a T3 beside the no-place one. Emptiness on a *classifying*
+dimension is a different problem from emptiness on a place: one makes a row
+nobody asked for, the other makes a row about the wrong thing entirely.
+
+Two `# TODO`s left, both appended to `OPEN.md` as T1: `equals_expression` is
+read as arithmetic over `{slot}` names and anything else is refused, and two
+aggregates on one class must group by the same set. No test today tells either
+choice from its alternative.
+
+`make test` 65 passed. `make check` not re-run: nothing this touched is in it,
+and the compiler reads the working log, which `check` deliberately does not.
+No test was written for the compiler — the done condition asks for a table, a
+number and a grep, and all three are above.
