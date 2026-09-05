@@ -65,6 +65,12 @@ system can be used, not that it is better.
   computation: Dry store 27, Severn Catering Supplies −37, no location 10. The
   same rule at an earlier `--valid-at` gives 7 / −17 / 10, which is two runs of
   one rule at two clocks — the thing the substrate is for. `LOG.md`, same date.
+- **6 Sep** — the working log was rejected as the trial's substrate. About
+  1,300 of its 1,742 assertions are master data stamped with one adoption date
+  that is wrong wherever the profile gives a real one, and about 300 belong to
+  Marlow. It is kept as evidence and stops being carried; the trial moves to a
+  log seeded from everything 16 June touches — milestone one's own day, so the
+  seed is milestone-one work rather than a detour. `NEXT.md` carries it.
 - **6 Sep** — the first three stages of the trial ran, and one of their results
   was re-read. `p_ingredient_on_hand` reading 5.32 against a hand computation of
   6 was recorded as a missing mechanism and is not one: adding `movement_unit`

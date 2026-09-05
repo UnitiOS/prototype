@@ -119,7 +119,18 @@ scope split, both of which the build predates.
 - Reading a value applies the range the map declares. The caster lives in the
   unnamed seam inside `generate.py`, not in `ontology` · 1 Sep, correcting an
   entry made the same day
-- Master data is valid from the adoption date and recorded today · 4 Sep
+- Master data is valid from the adoption date and recorded today, **but only
+  where the profile gives no date**; where it gives one, that is what is
+  written · 4 Sep, narrowed 6 Sep after the blanket produced a wrong date on
+  ~1,300 assertions
+- A seed is chosen by a rule stated before the data, whose justification is
+  independent of what the trial hopes to show, and it keeps the cases expected
+  to fail. A seed script is stupid: every literal quotable from the profile, no
+  branch on business identity, no knowledge of what is being tested · 6 Sep
+- The trial runs on a log built for it. The old working log is not deleted and
+  nothing in it is revoked — it is evidence, and it stops being carried · 6 Sep
+- A log cannot be rebuilt from a map and a set of facts: `seal()` is the only
+  door into an empty log and it always publishes a version · 6 Sep
 - `resolve_version` returning `None` before a map's `sealed_at` is correct, not
   a defect: the hole is only on the diagonal · 4 Sep, closing 31 Aug
 
@@ -393,3 +404,49 @@ browsed.
              had asked it only of place. Calling a dimension a mechanism does
              two harms — it inflates what the PoC thinks it has learned, and
              it hides work that could be done today.
+
+2026-09-06 · The 4 Sep rule "master data is valid from the adoption date and
+             recorded today" is narrowed rather than reversed: the adoption
+             date is used only where the profile gives no date, and where it
+             gives one, that is what is written. Applied as a blanket it
+             asserts something the profile contradicts — pistachio's price took
+             effect in February 2026 and the log says 15 June — and the wrong
+             date then wins at every clock in the operational period, taking
+             the row's missing `authority` with it. About 1,300 of the working
+             log's 1,742 assertions carry that one date, so this was a
+             convention producing a defect at scale rather than one bad row.
+2026-09-06 · The trial moves to a log built for it, and the working log stops
+             being carried. It is not deleted and nothing in it is revoked: it
+             is append-only and it is evidence, and it goes the way
+             `CLAUDE.md` sends `history/`. The reason is not tidiness — a seed
+             of this size can be read from end to end by a person, and 1,742
+             assertions of unknown provenance can only be hoped about. What is
+             wrong is the master data and not the way anything is written: all
+             six movements are dated by the day they happened and cite their
+             profile section, and that convention carries over unchanged.
+2026-09-06 · A seed is chosen by a rule stated before the data, and the rule
+             for this one is everything Tuesday 16 June 2026 touches plus each
+             of those things' opening position. Its justification is
+             independent of the trial — 16 June is milestone one's own day — so
+             the seed cannot have been picked to make a result come out. This
+             is the third basket, passing by cheating, arriving where the "no
+             business term under `components/`" rule does not look: `scripts/`
+             is allowed to know the business, so the bias enters through which
+             rows are chosen rather than through a branch. A seed script must
+             therefore be stupid — every literal quotable from the profile with
+             its section in the note, no branch on business identity, no
+             knowledge of what the trial tests, and a row that cannot be
+             recorded written up as a finding rather than skipped. The rule
+             drags in the cases expected to fail, which is the point: gelato
+             movements carrying flavour and format, units that do not add, a
+             till list that does not account for its own takings, a day on
+             which nobody wrote a confidence, and the one rule the profile says
+             moved while anybody was recording.
+2026-09-06 · A log cannot be rebuilt from a map and a set of facts. `seal()` is
+             the only door into an empty log — it registers `uniti:uri` and
+             every slot URI — and it always writes a version file, refusing one
+             that exists, so bootstrapping a fresh log from `v2` today would
+             mint a `v3` describing nothing new. For a ledger the
+             irreproducibility may be correct; for a trial it blocks the door,
+             and `seal` gains a way to register a sealed version's URIs into a
+             log without publishing a version.
