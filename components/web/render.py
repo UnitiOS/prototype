@@ -123,8 +123,10 @@ def _carried(valid_at, as_of):
 def index_html(forms, tables, *, valid_at, as_of):
     """Every class with a form and every class with a compiled table.
 
-    Both lists are read from the map by the caller. This prints what it is
-    handed, in the order it is handed it.
+    `forms` is a list of (heading, classes) pairs and the headings came out of
+    the caller, which read the grouping off the map. This prints what it is
+    handed, in the order it is handed it, and decides nothing about which class
+    belongs where.
     """
     carried = _carried(valid_at, as_of)
     out = ["<h1>What the map declares</h1>"]
@@ -133,12 +135,16 @@ def index_html(forms, tables, *, valid_at, as_of):
         "with a form is one the log can say an entity is; a class with a table "
         "is one the map gives a rule that fills it.</p>"
     )
-    out.append(f"<h2>{len(forms)} with a form</h2>")
-    out.append('<ul class="classes">')
-    for name in forms:
-        out.append(
-            f'<li><a href="/form/{escape(name)}?{carried}">{escape(name)}</a></li>')
-    out.append("</ul>")
+    for heading, group in forms:
+        if not group:
+            continue
+        out.append(f"<h2>{escape(heading)} — {len(group)} with a form</h2>")
+        out.append('<ul class="classes">')
+        for name in group:
+            out.append(
+                f'<li><a href="/form/{escape(name)}?{carried}">'
+                f"{escape(name)}</a></li>")
+        out.append("</ul>")
     out.append(f"<h2>{len(tables)} with a table</h2>")
     out.append('<ul class="classes">')
     for name in tables:

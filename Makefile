@@ -31,7 +31,8 @@ OPS_DB := uniti_ops
 # The port `make serve` listens on.
 PORT   := 8000
 
-.PHONY: check venv schema test replay check-profile build compile serve
+.PHONY: check venv schema test replay check-profile build compile serve \
+        demo-seed demo-serve
 
 # The one command: environment, schema, tests, and a replay that must come out
 # byte-identical twice. Exits non-zero if the tests fail or the two differ.
@@ -123,3 +124,47 @@ serve: venv
 	    "SELECT 1 FROM pg_database WHERE datname = '$(TRIAL_OPS_DB)'" | grep -q 1 \
 	    || $(DC) exec -T db createdb -U uniti $(TRIAL_OPS_DB)
 	PYTHONIOENCODING=utf-8 $(PY) components/web/serve.py $(MAP) --port $(PORT)
+
+# ---- the demonstration business -------------------------------------------
+# Its own map, its own log and its own operational store, so that seeding it
+# from empty touches neither the working log nor the trial one. The seed is
+# dated in the past and rerunnable: it drops the three tables and writes them
+# again through the same write gate a form writes through.
+DEMO_BUSINESS := sorella_demo
+DEMO_MAP      := business/$(DEMO_BUSINESS)/v1.yaml
+DEMO_DB       := uniti_demo
+DEMO_OPS_DB   := uniti_demo_ops
+DEMO_DSN      := postgresql://uniti:uniti@localhost:5433/$(DEMO_DB)
+DEMO_OPS_DSN  := postgresql://uniti:uniti@localhost:5433/$(DEMO_OPS_DB)
+# What the compiler printed, kept where a person looks at what came out.
+DEMO_RENDER   := build/$(DEMO_BUSINESS)/v1/tables.txt
+
+# Seed, then compile — in that order and both here, because the forms read
+# their choices out of the operational store and a store nothing has filled
+# offers nothing. `compile.py` with no class named fills every table the map
+# can fill: the two groupings, and one list per class the log can say an
+# entity is of.
+demo-seed: export UNITI_DSN     := $(DEMO_DSN)
+demo-seed: export UNITI_OPS_DSN := $(DEMO_OPS_DSN)
+demo-seed: venv
+	$(DC) up -d
+	@$(DC) exec -T db psql -U uniti -d postgres -tAc \
+	    "SELECT 1 FROM pg_database WHERE datname = '$(DEMO_DB)'" | grep -q 1 \
+	    || $(DC) exec -T db createdb -U uniti $(DEMO_DB)
+	@$(DC) exec -T db psql -U uniti -d postgres -tAc \
+	    "SELECT 1 FROM pg_database WHERE datname = '$(DEMO_OPS_DB)'" | grep -q 1 \
+	    || $(DC) exec -T db createdb -U uniti $(DEMO_OPS_DB)
+	mkdir -p $(dir $(DEMO_RENDER))
+	PYTHONIOENCODING=utf-8 $(PY) scripts/seed_demo.py
+	PYTHONIOENCODING=utf-8 $(PY) components/compiler/compile.py $(DEMO_MAP) \
+	    > $(DEMO_RENDER)
+	@echo "demo-seed: $(DEMO_DB), tables in $(DEMO_OPS_DB), $(DEMO_RENDER)"
+
+demo-serve: export UNITI_DSN     := $(DEMO_DSN)
+demo-serve: export UNITI_OPS_DSN := $(DEMO_OPS_DSN)
+demo-serve: venv
+	$(DC) up -d
+	@$(DC) exec -T db psql -U uniti -d postgres -tAc \
+	    "SELECT 1 FROM pg_database WHERE datname = '$(DEMO_OPS_DB)'" | grep -q 1 \
+	    || $(DC) exec -T db createdb -U uniti $(DEMO_OPS_DB)
+	PYTHONIOENCODING=utf-8 $(PY) components/web/serve.py $(DEMO_MAP) --port $(PORT)

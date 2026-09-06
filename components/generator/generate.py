@@ -28,6 +28,11 @@ A form is the same slots, asked for rather than reported. `submit()` turns the
 entered values into one `perform()` call — one form submission is one intent —
 and the value comes straight back out of `resolve_single()`.
 
+    the store  the choices a field over a class range offers, where the
+               operational store holds a projection of that class. A form
+               reads the operational database; the read of the kernel beside
+               it is the fallback for a class nothing has compiled.
+
 Run:
     generate.py table  business/v1.yaml Material --out build/material.txt
     generate.py table  business/v1.yaml Material --verify
@@ -37,10 +42,13 @@ Run:
 """
 
 import argparse
+import os
+import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+import psycopg
 from linkml_runtime import SchemaView
 from psycopg.rows import dict_row
 
@@ -56,6 +64,16 @@ from seal import URI_PREDICATE  # noqa: E402
 # Someone typing into a form is stating something. The kernel's vocabulary.
 FORM_SOURCE = "human_stated"
 MINT_SOURCE = "system_derived"
+
+# The operational store. Read here for one thing only — the choices a field
+# over a class range offers — and never written.
+OPS_DSN = os.environ.get(
+    "UNITI_OPS_DSN", "postgresql://uniti:uniti@localhost:5433/uniti_ops"
+)
+
+# The column a projection of entities carries its subject's URI in. It is the
+# compiler's, not the map's, and it is here because both sides need the name.
+IDENTITY_COLUMN = "entity_uri"
 
 # Every URI the log has ever registered, both ways round.
 _REGISTRY_SQL = """
@@ -153,6 +171,17 @@ def columns(map_, class_name):
             }
         )
     return out
+
+
+def table_name(class_name):
+    """What a class is called in the operational store.
+
+    One rule, in one place, because two components need the same answer: the
+    compiler names the table it fills, and a form asks the store for the
+    choices a field offers. It is a transliteration of the class's own name and
+    knows nothing else.
+    """
+    return "p_" + re.sub(r"(?<!^)(?=[A-Z])", "_", str(class_name)).lower()
 
 
 def _identifier(map_, class_name):
@@ -311,7 +340,28 @@ def form(conn, map_, class_name, *, valid_at=None, as_of=None):
 
 
 def _options(conn, map_, class_name, *, valid_at, as_of):
-    """Every entity the log says is of a class, as (uri, label) pairs."""
+    """The choices a field over a class range offers, as (uri, label) pairs.
+
+    Two paths, and the first one is the one that should exist. Where the
+    operational store holds a projection of that class the choices are read
+    from it, which is what every other read a form does is meant to be: forms
+    read the operational database, never the log.
+
+    The second path reads the kernel, and it is here because a class with no
+    projection would otherwise have an empty list rather than a wrong one. It
+    is the read path `CLAUDE.md` forbids and `OPEN.md` has carried since 6 Sep;
+    it closes for a map when every class its ref fields range over is
+    compiled.
+
+    The two do not answer at the same clocks and cannot: the store stands at
+    whatever pair it was last filled at, and the kernel is read at the pair
+    asked for here. That is what deriving the store means, not a discrepancy
+    to be repaired by reaching back into the log.
+    """
+    projected = _projected_options(map_, class_name)
+    if projected is not None:
+        return projected
+
     by_uri, by_id = _registry(conn)
     identifier = _identifier(map_, class_name)
     label_id = by_uri.get(identifier.slot_uri) if identifier else None
@@ -327,6 +377,46 @@ def _options(conn, map_, class_name, *, valid_at, as_of):
         out.append((by_id.get(subject_id, f"<{subject_id}>"), label))
     out.sort()
     return out
+
+
+def _projected_options(map_, class_name):
+    """The same pairs, out of the operational store, or None if it has none.
+
+    None is the answer whenever the store cannot supply them — no table for
+    this class, or no store at all — and it is not an error: the caller falls
+    back to the log, and a map whose classes are all compiled never reaches
+    that branch.
+    """
+    identifier = _identifier(map_, class_name)
+    label = str(identifier.name) if identifier else None
+    table = table_name(class_name)
+    try:
+        with psycopg.connect(OPS_DSN) as ops, ops.cursor() as cur:
+            cur.execute("SELECT to_regclass(%s)", (table,))
+            (exists,) = cur.fetchone()
+            if exists is None:
+                return None
+            cur.execute(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_name = %s",
+                (table,),
+            )
+            held = {name for (name,) in cur.fetchall()}
+            if IDENTITY_COLUMN not in held:
+                return None
+            if label not in held:
+                label = None
+            cur.execute(
+                'SELECT "{}", {} FROM "{}"'.format(
+                    IDENTITY_COLUMN,
+                    '"' + label.replace('"', '""') + '"' if label else "NULL",
+                    table,
+                )
+            )
+            return sorted((uri, "" if name is None else str(name))
+                          for uri, name in cur.fetchall())
+    except psycopg.Error:
+        return None
 
 
 def _NOW():

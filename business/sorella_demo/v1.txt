@@ -1,0 +1,202 @@
+SORELLA GELATO — WHAT THE KITCHEN HOLDS, AND HOW IT IS WRITTEN DOWN
+A description of the business, for whoever has to build the thing that records it.
+
+
+WHO THEY ARE
+
+Sorella Gelato makes gelato in a production kitchen in Bristol and sells it from
+two shops and to about thirty wholesale accounts. This description covers one
+corner of it and no more: the ingredients the kitchen buys, where they sit, and
+the three pieces of paper that say what came in, what went out and what was
+found on the shelf. Nothing here is about flavours, recipes, batches, prices to
+customers or the wholesale book. Those exist and are described elsewhere; a
+person reading this one should be able to build what is in it without knowing
+any of that.
+
+Three people appear on the paper. Dan Farrugia is the head gelatiere and signs
+for most deliveries. Marina Devlin owns the business and does the ordering and
+the monthly count. Aoife Byrne manages the Cotham shop and fills in a waste
+sheet when something is thrown away. Each of them is written on a document as a
+name and nothing else, and each has a job that the business describes in a
+phrase rather than a title: "head gelatiere, four days" is what Marina would
+say if asked what Dan does. So a person is a name and a role, and that is all
+the system needs to hold about one.
+
+
+WHAT IS COUNTED
+
+Eight things are bought and counted in this corner of the business:
+
+  Whole milk, kitchen             counted in bags      GBP 8.90 a 10 L bag-in-box
+  Whipping cream 38%              counted in cans      GBP 14.60 a 5 L jerry can
+  Caster sugar (sucrose)          counted in sacks     GBP 24.50 a 25 kg sack
+  Dextrose                        counted in sacks     GBP 41.00 a 25 kg sack
+  Skimmed milk powder             counted in bags      GBP 62.00 a 25 kg bag
+  Base 50 stabiliser              counted in cartons   GBP 276.00 a carton of 10 x 2 kg
+  Sicilian pistachio paste        counted in tins      GBP 203.00 a 3.5 kg tin
+  Cocoa 22/24                     counted in bags      GBP 41.00 a 5 kg bag
+
+Each of them is one thing the kitchen uses, with a name that the staff use in
+conversation and that identifies it — nobody says "item 4471", they say "the
+dextrose". Each has a supplier it is bought from, a price per pack as the pack
+arrives, and a unit it is counted in. Some of them carry a note about their
+unit, because the unit is the single most persistent source of confusion here:
+a bag of milk is ten litres and a bag of cocoa is five kilograms, and the word
+is the same word. Base 50 is the worst of it. It arrives as a carton of ten
+two-kilogram bags, and the kitchen counts cartons in the dry store and bags at
+the bench, so the same stabiliser is two numbers in two units on the same day
+and nobody converts between them out loud.
+
+That is why a unit is a thing in its own right and not a word typed into a box.
+The units that appear here are bags, cans, sacks, tins, cartons and kilos, and
+each of them means something particular in this business that the word alone
+does not say. Kilos appear because a bin bag is weighed rather than counted:
+what is thrown away is written in kilograms whatever the thing was bought in.
+
+Three of the eight have a level at which Marina reorders them, and she is clear
+that the other five have none — not a level of zero, but nothing written down
+at all. Pistachio paste is reordered at two tins, dextrose at one sack, and
+whole milk at four bags. Everything else is ordered when it looks low.
+
+Prices are per pack as at 15 June 2026 and they move. Pistachio paste has been
+three different prices in two years. Whoever holds this number has to be able
+to say what it was in March as well as what it is today, because the value of
+what is standing in the store on a Tuesday in March is that Tuesday's price
+times that Tuesday's count.
+
+
+WHERE THINGS SIT
+
+There are two places inside the business in this corner of it. The dry store is
+ambient, and holds the sugar, the dextrose, the powder, the cartons of Base 50,
+the cocoa and the pistachio. The walk-in chiller is kept between two and four
+degrees and holds the milk and the cream. Each is a place with a name that
+identifies it and a sentence saying what it is; the temperature is written the
+way the business writes it, which is a range for the chiller and the word
+ambient for the store.
+
+Three suppliers deliver. Terra Nostra Ingredients brings the dry goods, the
+pastes and the stabiliser, on a Tuesday, and takes two working days from an
+order. Whitehall Dairy brings milk and cream three mornings a week and takes
+one day. Severn Catering Supplies brings the sugar and the powder and most
+general kitchen goods weekly on a Thursday, and takes three days.
+
+A supplier is a place. That is the part of this description that surprises
+people, and it is deliberate: the milk is the dairy's until the driver puts it
+in the chiller, so the delivery is a movement out of Whitehall Dairy and into
+the walk-in chiller, and the two ends are the same kind of thing. Terra Nostra
+is in Watford and Whitehall Dairy is in Somerset; where a supplier is is
+recorded as coarsely as that, because a town is all anybody ever says.
+
+There are three more places, and they are outside the business rather than in
+it. The kitchen bin is where waste goes. Staff is where a thing goes when
+somebody takes it home, which is allowed and is written down. Tastings is where
+a thing goes when it is opened for a trade customer or a school visit and never
+comes back. None of these is a room and none of them holds anything anybody
+counts; they are where stock stops being the business's, and they are places
+for exactly that reason. So every place — inside, supplier, or one of these
+three — has a name and a description, and only the ones inside have a
+temperature and only the suppliers have a town, a lead time and a sentence
+saying what they bring.
+
+
+THE FIVE WAYS STOCK MOVES
+
+Everything that happens to a thing in this corner of the business is one of
+five, and each of them has a name the staff use, a sentence saying what
+actually happens, and a note of what gets filled in on paper:
+
+  Delivery in            A driver arrives, someone counts the packs against the
+                         note and signs it. The duplicate delivery note is the
+                         document, and it is the only one of the five that a
+                         person outside the business also holds.
+
+  Transfer between       A thing moves from the dry store to the chiller or
+  stores                 back, usually because it was put in the wrong one or
+                         because it has been opened. Nothing is written down.
+
+  Thrown away            A bag, a pail or an opened tin goes in the bin,
+                         because it is out of date, split, or was left out
+                         overnight. It goes on the waste sheet and is weighed,
+                         not counted.
+
+  Taken by staff         Somebody takes a bag or a tin home, with permission.
+                         It goes on the waste sheet too, in the pack it was in.
+
+  Used for tastings      A tin is opened for a trade customer or a school
+                         visit. Whoever opened it weighs what went and writes
+                         it on the waste sheet if they remember.
+
+The five are master data. Nobody retypes "the driver fills it in and the
+customer signs it" on every delivery; it is a property of that way of moving,
+written once. What kind of movement a particular movement was is a field on the
+movement, pointing at one of these five rows.
+
+
+THE THREE DOCUMENTS
+
+Everything above is what the business is. What follows is what it writes.
+
+A movement is one thing moving from one place to another, once. Whatever the
+paper is, the shape underneath it is the same: what kind of movement it was,
+where it came from, where it went, which thing moved, how much and in what
+unit, the date on the paper, who wrote it, and whatever was written in words
+rather than in a column. A delivery adds and a bin subtracts, and nothing has
+to say so: the direction falls out of the two ends, because a supplier is a
+place and a bin is a place and the movement names both.
+
+Almost everything on it can be missing. Somebody weighs the bin without noting
+what was in it. A tin is opened for a tasting and nobody writes who did it.
+There is a bag on the floor and nobody knows which delivery it came off. The
+paper is filled in by people who are also making gelato, and a system that
+refuses a line because a column is empty is a system they will stop using.
+
+The count sheet is the second document. Marina counts once a month, on a blank
+ruled sheet with a date at the head and her name on it. It has no number of its
+own and nothing in the business identifies one; two counts on the same day by
+two people are two counts, and if they disagree that is a fact about the
+business rather than a problem to be resolved before writing it down. At the
+foot she writes notes in sentences.
+
+Each line on the sheet is the third document, or rather part of it: a line
+names the sheet it is on, the item as she wrote it — "Base 50, cartons",
+"Dextrose" — the thing that resolves to, where she was standing when she
+counted it, the number, and the unit. The paper has no column for where; she
+walks through the building and it is obvious to her which store she is in, so
+it has to be asked for on screen even though the sheet never asks. A line may
+carry a note: one broken into, part used, or that she struck it through when
+she could not find the thing. An item that has run out simply has no line, and
+that is not the same as a line saying nought.
+
+
+WHAT ANYBODY ACTUALLY WANTS TO KNOW
+
+Two questions, and they are the reason for all of it.
+
+The first is what is standing. For each thing, in each place, in each unit it
+was written in: everything that arrived, everything that left, and the
+difference between the two. Arrived and left are the same sum over the same
+movements, grouped once by where the movement went and once by where it came
+from — a pallet is an arrival at the dry store and a departure from Terra
+Nostra in the same breath. The difference is what is there. It goes negative
+for a supplier, and that is right: Terra Nostra's own dextrose is drawn down by
+every delivery it makes to us.
+
+Nothing is converted. A carton of Base 50 and a bag of Base 50 are two rows,
+because adding them would state a conversion nobody in the business has ever
+written down.
+
+Beside the difference, two numbers that are not summed from anything: the level
+at which the thing is reordered, and the price per pack. Both are facts
+somebody stated on a day about the thing itself, and both are empty where
+nobody stated them. The two together give the third: what is standing here, at
+what it cost, which is the difference times the price. Marina asks for this in
+March and in September and expects March's answer to use March's price.
+
+The second question is what the count sheets found. The same shape — per thing,
+per place, per unit — totalled off the count lines instead of off the
+movements. Marina reads the two side by side and takes the difference in her
+head, and where they disagree, that is the interesting part of the month. She
+does not want the system to subtract them for her and present one number,
+because the two are answers to different questions: one is what the paper says
+should be there and the other is what she found.

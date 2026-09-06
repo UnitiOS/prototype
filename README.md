@@ -37,7 +37,7 @@ make check
 
 One command from a clean clone: virtualenv, schema, tests, and a replay that
 must come out byte-identical twice. It exits non-zero if either half fails.
-**65 tests today.**
+**69 tests today.**
 
 `check`, `schema`, `test` and `replay` run against a throwaway database,
 `uniti_check`, created on the first run and wiped on every one — `make` resets
@@ -48,7 +48,23 @@ entered lives.
 ```
 make build      render the sealed map into build/sorella/v1/
 make compile    run the map's own rules into the operational store
+make serve      the loop in a browser, over business/sorella/v3.yaml
 ```
+
+The demonstration business is a second one, `business/sorella_demo/`, with a
+log and an operational store of its own — `uniti_demo` and `uniti_demo_ops` —
+so seeding it touches nothing else. Both targets create their databases on the
+first run.
+
+```
+make demo-seed    seven weeks of paper into uniti_demo, then compile it
+make demo-serve   the same four routes over the demonstration map
+```
+
+`demo-seed` drops the three kernel tables and writes them again, every row
+through `generate.submit`, so it is rerunnable and lands the same count twice.
+It compiles afterwards because a form reads its choices out of the operational
+store, and a store nothing has filled offers nothing.
 
 The rest of this section is `check` by hand, against the working database, for
 when one step needs to be run alone.
@@ -70,7 +86,7 @@ rewritten into a Windows one. The script drops and recreates: it is re-runnable.
 ```
 python -m venv .venv
 .venv/Scripts/python.exe -m pip install "psycopg[binary]" pytest linkml
-.venv/Scripts/python.exe -m pytest tests -q          # expect 65 passed
+.venv/Scripts/python.exe -m pytest tests -q          # expect 69 passed
 ```
 
 Connection string comes from `UNITI_DSN`, defaulting to
@@ -143,7 +159,8 @@ them — a restated rule drifts from the one it restates.
 | Can I really not UPDATE a row? | `tests/kernel/test_append_only.py`, `components/kernel/002_guard_test.sql` |
 | What is undecided, or known-broken and left alone? | `OPEN.md` (typed `[T1]`/`[T2]`/`[T3]`) |
 | What does a projection look like, and why is it never stored? | `scripts/project.py` |
-| Where does the demo data come from? | `scripts/seed_200.py` (one RNG seed, deterministic) |
+| Where does the replay data come from? | `scripts/seed_200.py` (one RNG seed, deterministic) |
+| Where does the demonstration business come from? | `business/sorella_demo/draft.txt`, and `scripts/seed_demo.py` fills it |
 | What does the smallest possible write look like? | `scripts/write_three.py` |
 | What was run, and what was surprising? | `LOG.md` |
 

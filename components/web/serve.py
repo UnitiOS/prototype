@@ -24,13 +24,16 @@ holds both, because rebuilding a table is exactly the act of reading the log
 through the map and filling the store — which is what the compiler is, and the
 compiler is the only thing allowed to do it.
 
-Nothing here knows what a class or a slot is called. The two lists on the
-front page are read out of the map: a class has a form when the map flags one
-of its slots `designates_type`, and a table when the map gives one of them an
-aggregate.
+Nothing here knows what a class or a slot is called. The lists on the front
+page are read out of the map: a class has a form when the map flags one of its
+slots `designates_type`, and a table when the map gives one of them an
+aggregate. The forms are grouped in two by whether the map gives the class an
+identifier — a thing somebody names, or an event nothing does — which is the
+map's own distinction and not a business's.
 
 Run:
     make serve
+    make demo-serve
     UNITI_DSN=... UNITI_OPS_DSN=... serve.py business/sorella/v3.yaml --port 8000
 """
 
@@ -52,7 +55,8 @@ sys.path.insert(0, str(ROOT / "components" / "web"))
 
 import render  # noqa: E402
 from compile import OPS_DSN, _aggregate_classes, compile_class  # noqa: E402
-from generate import MapError, _type_slot, form, read_map, submit  # noqa: E402
+from generate import MapError, _identifier, _type_slot  # noqa: E402
+from generate import form, read_map, submit  # noqa: E402
 from perform import DSN as KERNEL_DSN  # noqa: E402
 from perform import connect as connect_kernel  # noqa: E402
 
@@ -96,9 +100,28 @@ def _clocks(query):
 
 
 def _form_classes(map_):
-    """Every class the log can say an entity is one of."""
-    return sorted(str(name) for name in map_["view"].all_classes()
-                  if _type_slot(map_, name) is not None)
+    """Every class the log can say an entity is one of, in two groups.
+
+    The split is the map's own and carries no knowledge of any business: a
+    class one of its slots identifies is a thing somebody names — a place, a
+    unit, a person — and its rows are written once and referred to afterwards.
+    A class nothing identifies is an event, written down as it happens and
+    identified by nothing but the fact that it happened — the paper it was
+    written on carries no number, and the map says so by giving it no
+    identifier.
+
+    Returned as (heading, classes) pairs so that the page prints what it is
+    handed. Nineteen links in one list is a menu; these are two lists.
+    """
+    named, unnamed = [], []
+    for name in sorted(str(name) for name in map_["view"].all_classes()):
+        if _type_slot(map_, name) is None:
+            continue
+        (named if _identifier(map_, name) else unnamed).append(name)
+    return [
+        ("what gets written down", unnamed),
+        ("what it refers to", named),
+    ]
 
 
 def _table_classes(map_):
@@ -270,7 +293,7 @@ def main(argv=None):
         print(f"not served: {exc}", file=sys.stderr)
         return 2
 
-    forms = _form_classes(Handler.map_)
+    forms = [name for _, group in _form_classes(Handler.map_) for name in group]
     tables = _table_classes(Handler.map_)
     print(f"{args.map} ({Handler.map_['version']}): "
           f"{len(forms)} classes with a form, {len(tables)} with a table")

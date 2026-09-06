@@ -1084,3 +1084,133 @@ moment it is written. `happened_on` is a fact about the movement and
 second silently. `OPEN.md` has carried that question since 4 Sep as a `[T3]`,
 and the interface turns it from a question about recording into the reason the
 demonstration cannot tell its own story.
+
+## 2026-09-07 — the demonstration business: a narrow map, its own log, and the dropdown's read into the kernel closed
+
+`NEXT.md` demo item one, all six done conditions. Nothing of the surface and
+nothing of the agent: this is the business the next two items stand on.
+
+**The map.** `business/sorella_demo/draft.yaml`, hand-authored, sealed as `v1`
+with `--into business/sorella_demo`. 12 classes, 51 slots, 52 URIs registered,
+52 assertions, one intent. Nine classes are what the business is, three are
+what it writes, two are computed. Every slot that means what a slot of
+`business/sorella/v3.yaml` means carries that slot's `slot_uri` unchanged under
+the `sorella:` prefix; only `CountedOnHand`'s four declare `sorella_demo:` URIs,
+because v3 has no class for them. `draft.txt` is the business in prose, 200
+lines, and stands on its own — it names every class and every slot the map
+declares without pointing at `profile.md` or at this repository.
+
+`CountedOnHand` is the new one: an `aggregate` over `StockCountLine`, summing
+`count_line_quantity` by ingredient, place and unit. It compiled first time.
+Whether the two tables can be subtracted in one expression was not tried; they
+stand side by side, as the item says.
+
+**The seed.** `make demo-seed` into `uniti_demo`, from empty, every write
+through `generate.submit`, no `INSERT` anywhere in `scripts/seed_demo.py`.
+
+    31 master rows, 190 movements, 18 count lines on 2 sheets
+    241 intents and 2,185 assertions from the seed
+    242 intents, 2,237 assertions, 292 entities in the log with `register`
+
+Run twice from empty: the same three numbers both times.
+
+**The store.** `make demo-seed` compiles afterwards, and `compile.py` with no
+class named now fills a table for every class the map can fill — 12 of them:
+`p_ingredient_on_hand` (59 rows), `p_counted_on_hand` (10), and ten lists of
+entities. That second shape is new: a class the map gives no aggregate but that
+the log can say an entity is of compiles to one row per entity, one column per
+slot, and a first column `entity_uri` carrying the URI the log registered it
+under.
+
+**Four routes, on port 8100.** The index lists **3 forms under "what gets
+written down"** — `StockCount`, `StockCountLine`, `StockMovement` — **7 under
+"what it refers to"**, and **2 tables**. The grouping is read off the map and
+is not a list of business names: a class one of its slots *identifies* is a
+thing somebody names; a class nothing identifies is an event. The three
+documents are exactly the three classes this map gives no identifier.
+
+**The clock, moved.** `/table/IngredientOnHand`:
+
+    valid_at                    rows
+    now (2026-09-06T22:2x)        59
+    2026-08-10                    57
+    2026-08-09                    54
+
+    row                                            in    out   net    price    value
+    dextrose, dry store, sacks   at now            20      8    12    41.00   492.00
+    dextrose, dry store, sacks   at 2026-08-10      6      8    -2    41.00   -82.00
+    pistachio, dry store, tins   at now            36      8    28   214.00  5992.00
+    pistachio, dry store, tins   at 2026-08-10     19      7    12   214.00  2568.00
+    pistachio, dry store, tins   at 2026-08-09     19      6    13   203.00  2639.00
+
+The last two lines are the parameter's own history executing. The seed states
+the pistachio price twice — 203.00 from 13 July, 214.00 from 10 August, neither
+revoking the other — and the table asked at 9 August multiplies by 203.00 and
+asked at 10 August by 214.00. Nothing in the map or the compiler knows a price
+changed; both rows stand and the clock picks one.
+
+**The dropdowns, out of the operational store.** Every select on the three
+document forms is filled:
+
+    StockMovement   movement_kind 5, movement_out_of 8, movement_into 8,
+                    movement_ingredient 8, movement_unit 6, written_by 3
+    StockCount      written_by 3
+    StockCountLine  line_count 2, count_line_ingredient 8,
+                    count_line_where 8, count_line_unit 6
+
+Proved to come from the store rather than the log by inserting one row into
+`p_unit` that no assertion says anything about — `probe:unit_only_in_the_store`
+— and reloading the form: `movement_unit` offered 7, the seventh being the
+probe. `p_unit` was recompiled afterwards and is 6 rows again.
+
+**The loop.** `POST /form/StockMovement`, form-encoded, 5 sacks of dextrose out
+of Terra Nostra into the dry store: one intent, 11 assertions, 1 entity minted.
+Reloading `/table/IngredientOnHand` at the default clocks: dextrose at the dry
+store in sacks went `20 / 8 / 12` to `25 / 8 / 17`, value 492.00 to 697.00, and
+the log went 242 intents to 243, 2,237 assertions to 2,248. No script ran
+between the write and the read. The log was reseeded afterwards, so the counts
+above are the seeded ones.
+
+**`make check` ok**, 69 tests. `grep -rn -i
+"gelato\|pistachio\|movement\|stock\|ingredient\|location" components/` finds
+nothing at all — not in a live path and not in a docstring either.
+
+### Surprising
+
+**The forbidden read closed further than the item asked.** The item names four
+classes for a projection — `Ingredient`, `Unit`, `Location`, `MovementKind` —
+and expects `_options` to fall back to the kernel for the rest. It does not:
+`compile.py` with no class named fills a table for every class the log can
+classify, so `Person` and `StockCount` have one too, and for this map
+`_options` never reaches `assertion` at all. The fallback path is still there
+and is still what Sorella's map uses, because `make compile` has not been run
+against it since.
+
+**A dropdown over a class nothing identifies shows URIs.** `line_count` offers
+the two count sheets as `sorella:count_2026-08-02` and `sorella:count_2026-08-30`
+with no name beside them, because `StockCount` declares no identifier — the map
+says in its own description that nothing in the business identifies a count
+sheet. There is no input that would repair it: a name would have to be invented
+first. The store path and the kernel path behave identically here, so this is
+not a regression from the change.
+
+**Every internal place has one negative row, and it is the unit dimension
+saying so.** Waste is weighed, so it leaves in kilos, and nothing ever arrives
+in kilos — `dry store / kilos` reads −34.87 for dextrose while `dry store /
+sacks` reads +12. That is the map refusing to convert, working exactly as
+`ingredient_unit` was added to make it work, and it will read as broken data to
+anyone shown the table without that sentence. Worth knowing before item two
+puts it on a screen.
+
+**A hand-authored draft is not a machine-dumped one.** `seal` refused the first
+draft with a LinkML `ScannerError`: a plain-scalar `description:` whose
+continuation line contains `": "` is not valid YAML. Every existing map was
+written by `yaml.safe_dump`, which quotes for you, so nothing had ever hit it.
+Fixed by making every description a `>-` block.
+
+**Two notes on the environment, neither a defect of the system.** The Chrome
+extension was not connected, so the loop was closed with a form-encoded POST to
+`/form/StockMovement` — byte for byte what the browser sends — rather than
+through a browser window. And a `serve.py` from an earlier session was still
+holding port 8000 and answering with Sorella's v3 map; `make demo-serve
+PORT=8100` was used throughout, and that process is still running.

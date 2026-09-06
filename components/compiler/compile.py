@@ -33,6 +33,14 @@ NULL, never a nought: an absent rule is not a rule that says zero.
     aggregate produces and another does not still stands: the missing side is
     the operator's empty value, which for a sum is nought.
 
+A table has one of two shapes and the map decides which. A class the map gives
+an aggregate is the grouping above. A class it gives none, but that the log can
+say an entity is one of, is a **list of its entities**: one row per entity, one
+column per slot, each cell the value standing at the two clocks, and a first
+column carrying the URI the log registered it under. That second shape is what
+puts master data in the operational store, and it is why a form can offer the
+entities of a class without reading the log.
+
 The emitted SQL is the evidence. `--sql` prints it, `--into` writes it beside
 the rows, and nothing in it was written by hand: every identifier and every
 literal in it came out of the map.
@@ -60,7 +68,7 @@ sys.path.insert(0, str(ROOT / "components" / "kernel"))
 
 # The map is read exactly as the generator reads it — same induced slots, same
 # rule for which entities are of a class — so the two cannot drift apart.
-from generate import MapError, columns, read_map  # noqa: E402
+from generate import IDENTITY_COLUMN, MapError, columns, read_map, table_name  # noqa: E402
 from generate import _grid as grid  # noqa: E402
 from generate import _type_slot as type_slot  # noqa: E402
 from perform import connect as connect_kernel  # noqa: E402
@@ -114,10 +122,6 @@ def _lit(text):
 
 def _ident(name):
     return '"' + str(name).replace('"', '""') + '"'
-
-
-def _table_name(class_name):
-    return "p_" + re.sub(r"(?<!^)(?=[A-Z])", "_", class_name).lower()
 
 
 def _annotation(slot, name):
@@ -298,8 +302,9 @@ def plan(map_, class_name):
         planned.append({**col, "kind": kind, "type": _sql_type(map_, col["range"])})
 
     return {
+        "shape": "grouped",
         "class": class_name,
-        "table": _table_name(class_name),
+        "table": table_name(class_name),
         "columns": planned,
         "keys": keys,
         "aggregates": aggregates,
@@ -307,6 +312,73 @@ def plan(map_, class_name):
         "expressions": expressions,
         "version": map_["version"],
     }
+
+
+def plan_entities(map_, class_name):
+    """What a table of one class's entities is, for a class no rule derives.
+
+    The other plan is a grouping: rows are combinations of values, and which
+    combinations exist is decided by the rows underneath them. This one is a
+    list — one row per entity the log says is of this class or of one below it,
+    one column per slot the class induces, and each cell the value standing at
+    the two clocks.
+
+    It exists so that a class a rule *reads* has a table too. A field over a
+    class range has to offer the entities of that class, and until every such
+    class was in the store the only place to read them was the log, which is
+    the one read path a form may not have.
+
+    The first column is the entity's URI, under a name the map does not supply
+    and cannot: a value naming an entity is written as its URI everywhere else
+    in the store, and a row nothing could name could not be pointed at. A class
+    that declares a slot of that name is refused rather than shadowed.
+    """
+    if type_slot(map_, class_name) is None:
+        raise MapError(
+            f"{class_name} has no slot carrying designates_type, so nothing in "
+            f"the log can say an entity is one and it has no rows to project"
+        )
+    cols = columns(map_, class_name)
+    if any(col["name"] == IDENTITY_COLUMN for col in cols):
+        raise MapError(
+            f"{class_name} declares a slot called {IDENTITY_COLUMN!r}, which is "
+            f"the column a projection carries its subject's URI in"
+        )
+
+    planned = [{
+        "name": IDENTITY_COLUMN, "uri": None, "range": "string",
+        "required": True, "multivalued": False, "ref": False,
+        "description": "The URI the log registered this entity under.",
+        "kind": "identity", "type": "text",
+    }]
+    planned += [
+        {**col, "kind": "stated", "type": _sql_type(map_, col["range"])}
+        for col in cols
+    ]
+
+    return {
+        "shape": "entities",
+        "class": class_name,
+        "table": table_name(class_name),
+        "columns": planned,
+        "keys": [],
+        "aggregates": {},
+        "parameters": {},
+        "expressions": {},
+        "version": map_["version"],
+    }
+
+
+def plan_for(map_, class_name):
+    """Which of the two shapes this class's table is, read off the map.
+
+    A class the map gives an aggregate is a grouping; anything else the log can
+    say an entity is, is a list of them. Nothing else decides it.
+    """
+    for slot in map_["view"].class_induced_slots(class_name):
+        if _annotation(slot, "aggregate"):
+            return plan(map_, class_name)
+    return plan_entities(map_, class_name)
 
 
 # ---- emitting the SQL -----------------------------------------------------
@@ -450,6 +522,48 @@ def _column_sql(plan_, name, aliases, stack=()):
     ) + ")"
 
 
+def emit_entities(map_, plan_):
+    """The DDL, and the one SELECT that lists the class's entities.
+
+    One LEFT JOIN per column into the same `stated` CTE every other cell is
+    read from, so a slot the log says nothing under is NULL and a slot naming
+    another entity is that entity's URI.
+    """
+    ddl = [
+        f"DROP TABLE IF EXISTS {_ident(plan_['table'])}",
+        "CREATE TABLE {} (\n{}\n)".format(
+            _ident(plan_["table"]),
+            ",\n".join(
+                f"    {_ident(c['name'])} {c['type']}" for c in plan_["columns"]
+            ),
+        ),
+    ]
+
+    selects = [f"e.uri AS {_ident(IDENTITY_COLUMN)}"]
+    joins = ["FROM source_0 r", "JOIN registry e ON e.entity_id = r.subject_id"]
+    for i, col in enumerate(plan_["columns"]):
+        if col["kind"] != "stated":
+            continue
+        alias = f"c{i}"
+        selects.append(f"({alias}.value)::{col['type']} AS {_ident(col['name'])}")
+        joins.append(
+            f"LEFT JOIN stated {alias} ON {alias}.subject_id = r.subject_id\n"
+            f"                        AND {alias}.slot = {_lit(col['uri'])}"
+        )
+
+    select = (
+        "WITH "
+        + ",\n".join([_STANDING, _REGISTRY, _STATED,
+                       _source_cte(map_, plan_["class"], "source_0")])
+        + "\nSELECT "
+        + ",\n       ".join(selects)
+        + "\n"
+        + "\n".join(joins)
+        + "\nORDER BY 1"
+    )
+    return ddl, select
+
+
 def emit(map_, plan_):
     """The DDL that makes the table, and the one SELECT that fills it."""
     table, keys = plan_["table"], plan_["keys"]
@@ -524,8 +638,9 @@ def emit(map_, plan_):
 
 def compile_class(kernel, ops, map_, class_name, *, valid_at, as_of):
     """Read the log through the map's rules; drop and rebuild one table."""
-    plan_ = plan(map_, class_name)
-    ddl, select = emit(map_, plan_)
+    plan_ = plan_for(map_, class_name)
+    ddl, select = (emit(map_, plan_) if plan_["shape"] == "grouped"
+                   else emit_entities(map_, plan_))
 
     with kernel.cursor() as cur:
         cur.execute(select, {"valid_at": valid_at, "as_of": as_of,
@@ -569,7 +684,8 @@ def render(built):
     for col in plan_["columns"]:
         kinds.setdefault(col["kind"], []).append(col["name"])
     out += ["", f"{len(built['rows'])} rows, {len(headers)} columns"]
-    for kind in ("key", "aggregate", "parameter", "expression", "unfilled"):
+    for kind in ("identity", "key", "stated", "aggregate", "parameter",
+                 "expression", "unfilled"):
         if kind in kinds:
             out.append(f"{kind}: {', '.join(kinds[kind])}")
     return "\n".join(out) + "\n"
@@ -603,12 +719,23 @@ def _aggregate_classes(map_):
     return out
 
 
+def _entity_classes(map_):
+    """Every other class the log can say an entity is one of.
+
+    A class with an aggregate is not here: its table is that grouping, and a
+    list of its entities would be a second table under one name.
+    """
+    grouped = set(_aggregate_classes(map_))
+    return [str(name) for name in map_["view"].all_classes()
+            if str(name) not in grouped and type_slot(map_, name) is not None]
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(
         description="Compile a sealed map's rules into the operational store.")
     parser.add_argument("map", help="a sealed version file")
     parser.add_argument("klass", nargs="*", metavar="CLASS",
-                        help="default: every class the map gives an aggregate")
+                        help="default: every class the map can fill a table for")
     parser.add_argument("--valid-at", default=None)
     parser.add_argument("--as-of", default=None)
     parser.add_argument("--sql", action="store_true", help="print the emitted SQL")
@@ -621,9 +748,11 @@ def main(argv=None):
 
     try:
         map_ = read_map(args.map)
-        classes = args.klass or _aggregate_classes(map_)
+        classes = args.klass or (_aggregate_classes(map_) + _entity_classes(map_))
         if not classes:
-            raise MapError(f"{args.map} declares no aggregate anywhere")
+            raise MapError(
+                f"{args.map} declares neither an aggregate nor a class the log "
+                f"can say an entity is one of")
 
         with connect_kernel() as kernel, psycopg.connect(OPS_DSN) as ops:
             for class_name in classes:
