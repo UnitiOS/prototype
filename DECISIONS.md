@@ -13,8 +13,8 @@ did is the failure this index exists to prevent.
 
 Built 2026-09-04 from 203 entries, of which 52 carried a reversal. Extended
 2026-09-05 with the rule-corpus entries and 2026-09-06 with the dimension-and-
-scope split, the executed crossing and the turn to an interface, none of which
-the build predates.
+scope split, the executed crossing and the turn to an interface, and 2026-09-07 with the
+demo lap, none of which the build predates.
 
 ### What is being proven
 
@@ -39,6 +39,11 @@ the build predates.
 - The interface comes before any more mechanism, and is the smallest whole
   loop: a form writing to the kernel, a dashboard reading the operational
   store, two clocks on every page · 6 Sep
+- A demo lap runs a second business, `sorella_demo`, narrow enough to be shown
+  and still a prefix of milestone one. Sorella's `v3` is untouched · 7 Sep
+- The agent reads the kernel for provenance only, never to compute a number.
+  This narrows the first of the four properties in `CLAUDE.md` · 7 Sep
+- No SQL baseline is built, so claim F stays unproven by the demo lap · 7 Sep
 
 ### The two stores
 
@@ -515,3 +520,37 @@ browsed.
              dropdowns would make the interface unusable for the one thing it
              exists to demonstrate. It is exposed rather than created, and
              `OPEN.md` carries it.
+
+## 2026-09-07 — The demo is a business of its own, not a version of Sorella
+
+Narrowing Sorella to ten classes by sealing `v4` would make v3-era data
+unreadable at its own clocks, and it is not a definition change — it is a change
+of scope wearing one's clothes, in the exact place the premise is later to be
+tested. `business/sorella_demo/` gets its own version store, its own log and its
+own operational database. Sorella's `v3` is untouched.
+
+## 2026-09-07 — The demo lap is a prefix of milestone one, not a detour
+
+Three documents — a delivery note, a waste sheet, a count sheet — are goods in,
+goods out, and what was actually found. The difference between the first two and
+the third is the shrinkage report, which is the definition of done. The demo is
+therefore the shortest chain toward it rather than work spent beside it. A demo
+scope chosen for being easy to show would have been a detour; this one is
+measured against the same target.
+
+## 2026-09-07 — The agent reads the kernel, for provenance only
+
+Reverses nothing; narrows the first of the four properties in `CLAUDE.md`, which
+said only the compiler reads the kernel. The agent's strongest claims — who said
+this and on what authority, and a correction that withdraws rather than
+overwrites — are about the log itself, and no projection can carry them without
+becoming the log. The exception is bounded: provenance, never a number.
+`CLAUDE.md` amended the same day.
+
+## 2026-09-07 — No SQL baseline is built for the agent comparison
+
+Claim F is that an agent answers better from the graph than from tables.
+Building the tables to answer from would be honest and would cost an item. The
+difference is spoken over the demonstration instead, and the claim stays
+unproven by this lap. Recorded so that a later reading does not mistake the
+demonstration for evidence.

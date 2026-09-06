@@ -12,160 +12,130 @@ broadly is `ROADMAP.md`.
 
 ## The question this answers
 
-**Is there anything a person can use?** Not "does a mechanism work" — that was
-the last three items and the answer was yes. This one asks whether the system
-has a surface, and it is measured by one thing: somebody who has not read this
-repository opens a browser, types a movement, and watches a number change.
+**Is there something a person can be shown?** The loop runs in a browser and
+that was the last item's answer to "is there anything a person can use". This
+one is different: nineteen forms and two tables is a menu, not a story, and a
+form over a table looks like every generated CRUD screen ever built. Nothing on
+screen shows what is actually being claimed.
 
-The PoC has widened for two weeks without producing anything that can be shown.
-This item produces it, and it is the whole of the item.
-
-### What is already there, and it is most of it
-
-The interface is **three renderers and a server** away, not a component away.
-The data structures already exist and are already right:
-
-| Already returns a structure | What it holds |
-|---|---|
-| `generate.form(conn, map_, CLASS)` | fields, types, required, description, and **live dropdown options read from the log at two clocks** |
-| `generate.submit(conn, map_, CLASS, …)` | one intent, N assertions, through the one write gate |
-| `compile.compile_class(kernel, ops, map_, CLASS, valid_at, as_of)` | rebuilds one operational table at a pair of clocks and **returns the stored rows** |
-
-Only the renderers are text. Nineteen classes of `v3.yaml` carry
-`designates_type` and so have a form; `IngredientOnHand` and `GelatoOnHand`
-have compiled tables. Nothing under `components/` renders HTML today, and there
-is no HTML anywhere in the repository.
-
-`compile_class` returning `stored` is what makes the clocks work in a browser:
-a dashboard at a new pair of clocks is a rebuild of that one table, and
-`CLAUDE.md` already says the operational database may be dropped whole and
-rebuilt. The page reads the operational database, never the log.
+The demo lap fixes that in three items and `ROADMAP.md` names all three. **This
+is item one, and it builds none of the surface and none of the agent.** It
+builds the business they will stand on: a narrow map, two stores of its own, and
+a seed large enough that the tables look like a working system rather than a
+fixture.
 
 ---
 
-## Open: the loop, in a browser
+## Open: the demo business
 
-Four parts. Additive throughout — **nothing under `components/generator/` or
-`components/compiler/` is edited**, because both already return what a web
-component needs.
+### 1 · `business/sorella_demo/` — the map, narrow
 
-### 1 · Eight classifications, so the dropdowns are not empty
+Authored by hand and sealed through `seal`, exactly as Sorella's was. The
+interview stage stays deferred (`DECISIONS.md`, 29 Aug).
 
-`uniti_trial` holds six items and thirteen movements, and every movement names
-a place and a unit **as a reference** — but nothing in the log says what those
-references are. `entity_class` is a fact like any other and it was never
-stated, so `StockMovement`'s form today offers six ingredients and nothing
-else:
+Eleven classes, drawn from Sorella's twenty-one and carrying the same
+`slot_uri`s wherever a slot means the same thing — a slot's identity is its URI
+and renaming the business must not mint new ones:
 
-    movement_out_of offers nothing: the log holds no Location
-    movement_unit   offers nothing: the log holds no Unit
-
-Eight entities, every one of them already a `value_ref` in the log, stated
-through `generate.py submit` in a script beside `scripts/state_six_items.sh`.
-This completes the six-item seed rather than widening it.
-
-| URI | class | name |
-|---|---|---|
-| `sorella:loc_dry_store` | `InternalLocation` | `location_name` "Dry store" |
-| `sorella:loc_terra_nostra_ingredients` | `Supplier` | `location_name` "Terra Nostra Ingredients" |
-| `sorella:unit_tin` | `Unit` | `unit_name` "tin" |
-| `sorella:unit_bag` | `Unit` | `unit_name` "bag" |
-| `sorella:unit_carton` | `Unit` | `unit_name` "carton" |
-| `sorella:unit_sack` | `Unit` | `unit_name` "sack" |
-| `sorella:unit_box` | `Unit` | `unit_name` "box" |
-| `sorella:unit_kilogram` | `Unit` | `unit_name` "kilogram" |
-
-`Supplier is_a Location`, so a `Location`-ranged field offers both. Valid from
-the adoption date `2026-06-15T00:00:00Z`, and no `--authority`: nobody "set"
-what a place is.
-
-### 2 · `components/web/render.py` — the same structures, as HTML
-
-A new component. Two functions and one page shell, and **no logic**: it is
-handed what `form()` and `compile_class()` already return.
-
-- `form_html(built, *, valid_at, as_of, message=None)` — a `<form method=post>`
-  over `built["fields"]`. A `ref` field is a `<select>` filled from
-  `f["options"]`, labelled by `label or uri`; anything else is an `<input>`.
-  Two inputs the map does not give: `subject`, a URI — `submit()` mints one it
-  has not seen — and `actor`.
-- `table_html(built, *, valid_at, as_of)` — a `<table>` over `built["rows"]`,
-  with each column's `kind` shown under its name, so a reader sees which cells
-  the graph computed, which it read out of the kernel as a parameter, and which
-  are keys.
-- `page(title, body, *, valid_at, as_of)` — one inline `<style>` block, and the
-  **two clock inputs**, which appear on every page and are the point of the
-  whole item.
-
-No CSS framework, no JavaScript beyond the browser's own form submission, no
-build step. One file.
-
-### 3 · `components/web/serve.py` — four routes
-
-`http.server.ThreadingHTTPServer` from the standard library. No dependency is
-added; if it is ever too small it is swapped then, not now.
-
-| Route | What it does |
+| Class | Why it is here |
 |---|---|
-| `GET /` | every class with a form, every class with a compiled table |
-| `GET /form/<Class>` | `form()` at the clocks, rendered |
-| `POST /form/<Class>` | `submit()`, then back to the form showing what was written |
-| `GET /table/<Class>` | `compile_class()` at the clocks, rendered from the rows it returns |
+| `Ingredient` | the things counted |
+| `Unit` | what they are counted in |
+| `Location`, `InternalLocation`, `Supplier` | both ends of a movement; direction falls out of them |
+| `MovementKind` | which of the ways stock moves this was |
+| `Person` | who wrote it down |
+| `StockMovement` | the delivery note and the waste sheet, one class |
+| `StockCount`, `StockCountLine` | the count sheet |
+| `IngredientOnHand` | arrivals, departures, net, and value from a kernel parameter |
+| `CountedOnHand` | what the count sheets found, aggregated the same way |
 
-`?valid_at=` and `?as_of=` on every GET, defaulting to now, and carried through
-every link and through the POST redirect.
+`CountedOnHand` is new to this map: an `aggregate` over `StockCountLine` by
+ingredient and place. Whether the two can be subtracted in one expression across
+two classes is **not this item's question** — the two tables stand side by side
+and a reader takes the difference. If it turns out the compiler already does it,
+that is a `[T1]` to try in thirty minutes, not a thing to build here.
 
-Two connections, and the separation is visible in which one each route holds:
-`UNITI_DSN`, the kernel, for the form and the write; `UNITI_OPS_DSN` for the
-table. They are different databases, so a page cannot join across them.
+**The transcript, `draft.txt`, stands on its own.** It is not a pointer into
+`profile.md` and not a fabricated chat log — a faked interview would be
+`CLAUDE.md`'s third basket, passing by cheating. It is the business described in
+prose, readable by somebody who has never opened this repository, and long
+enough that every class and every slot in the map has a sentence somewhere that
+asks for it. Item two puts it on screen beside the map it became.
 
-### 4 · `make serve`
+### 2 · Two stores, and a seed that fills them
 
-    serve: export UNITI_DSN     := …/uniti_trial
-    serve: export UNITI_OPS_DSN := …/uniti_trial_ops
+| Database | What |
+|---|---|
+| `uniti_demo` | the kernel. Its own log, so nothing here touches `uniti`, `uniti_trial` or `uniti_check` |
+| `uniti_demo_ops` | the operational store. Derived, dropped and rebuilt |
 
-A **separate** operational store from `uniti_ops`, which `make compile` builds
-from the working log; the two must not collide. Created on first run the way
-`make compile` creates `uniti_ops`. `MAP` is `business/sorella/v3.yaml`.
+`scripts/seed_demo.py`, and **every write goes through `generate.submit`** —
+one `intent` and N `assertion` per action. A direct `INSERT` would make the one
+write gate a fiction on the very data the demonstration is about.
+
+What it seeds, sized so the tables read as real:
+
+- 6–8 ingredients under their real names from `profile.md` §1.6
+- 2 internal locations and 3 suppliers, and the units they are counted in
+- the movement kinds the three documents use
+- **6–8 weeks of movements, roughly 200**, ending before today, so that moving
+  `valid_at` backwards changes both the row count and the numbers
+- 2 count sheets inside that window
+
+Dated in the past on purpose: a write through the form lands at now, later than
+every seeded row, so the loop still moves a balance and the clock still rewinds.
+A backdated entry is the one thing that cannot be shown, and `OPEN.md` carries
+why.
+
+### 3 · Four projections for the ref fields
+
+`generate._options` reads `assertion` to fill a dropdown, which is the read path
+`CLAUDE.md` forbids; it was knowingly left open on 6 Sep because closing it
+needed a projection for every class a ref field ranges over and only two classes
+had one. This map ranges its ref fields over four — `Ingredient`, `Unit`,
+`Location` and `MovementKind` — so each gets a projection and `_options` reads
+the operational store instead.
+
+Additive: `generate._options` gains a path, it does not lose one. Sorella's map
+still resolves the old way where no projection exists.
+
+### 4 · `make demo-seed` and `make demo-serve`
+
+    DEMO_DB     := uniti_demo
+    DEMO_OPS_DB := uniti_demo_ops
+
+Built on the pattern `serve` already uses: bring the container up, create the
+database if it is absent, then run. `MAP` is `business/sorella_demo/v1.yaml`.
 
 ---
 
-### Done when all five hold
+### Done when all six hold
 
-1. `make serve`, then `http://localhost:8000/` lists **19 classes with a form**
-   and **2 with a table**.
-2. `/form/StockMovement` offers **2 places and 6 units by name** in dropdowns —
-   not empty ones, and not raw URIs.
-3. `/table/IngredientOnHand` at `valid_at=2026-06-16` shows **16 rows**;
-   changing the clock box to `2026-06-15` and reloading shows **12 rows**, with
-   pistachio at 2 tins rather than 6. Nothing else on the page is touched.
-   *(Both numbers verified 6 Sep by running `compile.py` directly.)*
-4. **The loop.** A new `StockMovement` is submitted through the browser form
-   under a subject URI of its own; the kernel gains one `intent` and N
-   `assertion`; reloading `/table/IngredientOnHand` at a clock that includes it
-   shows the balance moved. No script is run between the two — the page
-   rebuilds the table itself.
-5. `make check` exits 0, and
-   `grep -rn -i "pistachio\|movement\|stock\|ingredient\|location" components/web/`
-   finds no business term in a live code path. The web component reads class
-   and slot names from the map like every other component.
+1. `seal` produces `business/sorella_demo/v1.yaml` from the draft, and
+   `make demo-seed` fills `uniti_demo` from empty. Rerunning `demo-seed` from
+   empty produces the same assertion count.
+2. `make demo-serve`, then `http://localhost:8000/` lists the **three document
+   forms** — `StockMovement`, `StockCount`, `StockCountLine` — grouped apart
+   from master data, and **two tables**.
+3. `/table/IngredientOnHand` shows **more than 50 rows**, and moving `valid_at`
+   back four weeks changes both the row count and at least one balance. The
+   numbers at the two clocks are written into `LOG.md`.
+4. Every dropdown on the three forms is filled with names, and
+   `grep -n "assertion" components/generator/generate.py` shows `_options`
+   reaching the operational store for the four projected classes.
+5. **The loop.** A movement submitted through the browser adds one `intent` and
+   N `assertion` to `uniti_demo`; reloading `/table/IngredientOnHand` at the
+   default clocks shows the balance moved. No script runs between the two.
+6. `make check` exits 0, and
+   `grep -rn -i "gelato\|pistachio\|movement\|stock\|ingredient\|location" components/`
+   finds no business term in a live code path.
 
 ### Not in this item
 
-No authentication, no styling beyond one inline `<style>`, no JavaScript
-framework, no deployment. No entity-list page: a page listing every `Location`
-would have to read the kernel, and only the two compiled tables are a
-legitimate read path. No new projection classes. No constraint work and no
-`report`. Anything found on the way is written into `LOG.md` as a finding and
-left alone.
-
-### One thing that is knowingly wrong, and is not fixed here
-
-A form's dropdown options are read from the kernel by `generate._options`,
-which is a read path from a form to `assertion` and is the thing `CLAUDE.md`
-forbids. It is pre-existing, this item exposes it rather than creating it, and
-closing it needs projections for classes that have none. `OPEN.md` carries it.
-Build the form with its dropdowns and leave the defect where it is.
+No navigation redesign, no graph view, no transcript page, no provenance
+drill-down — that is demo item two. No MCP and no agent — item three. No
+shrinkage column. No fix to `happened_on`. Anything found on the way is written
+into `LOG.md` as a finding and left alone.
 
 ---
 

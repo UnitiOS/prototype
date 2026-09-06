@@ -23,7 +23,9 @@ Compacted 2026-09-04 from 150 items. The full text is
   which is a read path from a form to `assertion` — the one `CLAUDE.md`
   forbids. Closing it needs a projection for every class a ref field ranges
   over, and only two classes have one. Knowingly left open 6 Sep so the
-  interface can be built · blocks: generation
+  interface can be built. The demo map ranges its ref fields over four classes,
+  so a projection for each is cheap — demo item one may close this rather than
+  expose it · blocks: generation
 - Constraint is the one kind of rule with no mechanism: computation and
   parameter both execute, and what a map writes to say what is refused has
   never been asked · blocks: generation
@@ -41,7 +43,10 @@ Compacted 2026-09-04 from 150 items. The full text is
 - Whether a document's date slot is how a form sets `valid_from`, or a fact
   standing beside it. No longer theoretical: the browser form shows
   `happened_on` and sets `valid_from` to now silently, so a movement entered as
-  16 June is absent from 16 June's balance · blocks: recording
+  16 June is absent from 16 June's balance. Deliberately deferred for the demo
+  lap 7 Sep: the seed is dated in the past and a write through the form lands at
+  now, so the clock rewinds correctly and only a backdated entry cannot be shown
+  · blocks: recording
 - Whether a correction carried on a different document is a retraction, an
   independent assertion, or a relation the map must state · blocks: kernel
 - One log holds two businesses and cannot say which: `ontology_version` is

@@ -43,9 +43,14 @@ The design of record is the 31 August diagram,
 
 Four properties hold the three apart, and each is a claim the PoC is testing.
 
-- **Nothing but the compiler reads the kernel.** Forms, lists and dashboards
-  read the operational database, never the log. A read path that reaches
-  `assertion` from a form defeats the separation.
+- **Only the compiler and the agent read the kernel.** Forms, lists and
+  dashboards read the operational database, never the log. A read path that
+  reaches `assertion` from a form defeats the separation. The agent is the one
+  exception and only for provenance — who said this, when, on what authority,
+  and what was later withdrawn. It never reads the kernel to compute a number;
+  a number comes from the operational database like everything else. Decided
+  7 Sep: provenance is the one thing the operational database cannot carry
+  without becoming the log.
 - **The operational database is derived.** Its schema comes from the graph, its
   rows from the kernel. It may be dropped whole and rebuilt, it is never a
   source of truth, and nothing writes to it directly. It is a database of its
@@ -95,7 +100,7 @@ one stage needs several components. Which of these exist today is in
 | `business/` | map versions and their transcripts. Files, no code | — | — |
 | `interview` | a skill: a conversation that produces a draft | — | a draft |
 | `report` | the same report under two definitions, and the difference | operational database | nothing |
-| `agent` | an MCP surface over the graph and the operational database | graph, operational database | the kernel, through the write gate |
+| `agent` | an MCP surface over the graph and the operational database | graph, operational database, kernel (provenance only) | the kernel, through the write gate |
 
 `business/` is one directory per business, holding one flat file per sealed
 version with its transcript beside it. It is written by `seal` and read by
