@@ -19,6 +19,13 @@ Compacted 2026-09-04 from 150 items. The full text is
 
 ## T3 — discuss to a conclusion
 
+- The demo seed spans 13 July to 30 August 2026, so a clock before it renders
+  an empty table saying only "No rows at these clocks". 16 June, the date
+  milestone one names and this repository types by habit, is one of them
+  · blocks: live use
+- A form's `subject` is required and is not minted when left blank, while the
+  field's own help text says one is. An empty subject returns 200 and writes
+  nothing · blocks: generation
 - A form's dropdown options are read from the kernel by `generate._options`,
   which is a read path from a form to `assertion` — the one `CLAUDE.md`
   forbids. Closing it needs a projection for every class a ref field ranges

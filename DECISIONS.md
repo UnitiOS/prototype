@@ -41,8 +41,10 @@ demo lap, none of which the build predates.
   store, two clocks on every page · 6 Sep
 - A demo lap runs a second business, `sorella_demo`, narrow enough to be shown
   and still a prefix of milestone one. Sorella's `v3` is untouched · 7 Sep
-- The agent reads the kernel for provenance only, never to compute a number.
-  This narrows the first of the four properties in `CLAUDE.md` · 7 Sep
+- The kernel is read by the compiler and by `provenance`, which serves both a
+  page and the agent's MCP. Provenance only, never to compute a number. This
+  narrows the first of the four properties in `CLAUDE.md` · 7 Sep, extended the
+  same day
 - No SQL baseline is built, so claim F stays unproven by the demo lap · 7 Sep
 
 ### The two stores
@@ -554,3 +556,20 @@ Building the tables to answer from would be honest and would cost an item. The
 difference is spoken over the demonstration instead, and the claim stays
 unproven by this lap. Recorded so that a later reading does not mistake the
 demonstration for evidence.
+
+## 2026-09-07 — Provenance is a surface with two doors, not a privilege of the agent
+
+Extends "The agent reads the kernel, for provenance only", same date. Writing
+the demo lap's second item found the flaw: a page that opens a cell and shows
+the assertions behind it is a dashboard reading the log, which the amendment
+that morning did not admit — it admitted the agent. Widening the property a
+second time in a week for a second reader would say the property is not holding
+anything.
+
+So the reader is named rather than the caller. `components/provenance/` reads
+the kernel; a page and the agent's MCP are two doors onto one implementation.
+`CLAUDE.md`'s first property and its component table are amended the same day.
+
+The reason is not tidiness. Demo item three, the agent, is the one most likely
+to slip, and building provenance in item two leaves item three holding transport
+rather than mechanism.

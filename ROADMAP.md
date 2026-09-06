@@ -8,7 +8,7 @@ the one being kept current.
 What is being worked on right now is `NEXT.md`. This file is the horizon
 behind it.
 
-Last reviewed: 2026-09-07.
+Last reviewed: 2026-09-07 (twice).
 
 ## Definition of done
 
@@ -73,8 +73,8 @@ demonstration walks.
 
 | Item | What it produces | Status |
 |---|---|---|
-| One — the business | the narrow map, both stores, and a seed large enough to look real | `NEXT.md` |
-| Two — the surface | navigation by stage, the transcript beside the map, the graph behind a column, and a cell that opens its own assertions | not started |
+| One — the business | the narrow map, both stores, and a seed large enough to look real | done 7 Sep, validated the same day |
+| Two — the surface | navigation by stage, the transcript beside the map, the graph behind a column, and a cell that opens its own assertions | `NEXT.md` |
 | Three — the agent | an MCP over the graph, the operational database and provenance, and a correction that does not destroy what it corrects | not started |
 
 Item three carries claim F — *an agent answering better from the graph than from
@@ -94,10 +94,24 @@ comparison is spoken.
 | `business/` | in use | Not code. Sorella's `v1.yaml` is sealed at `b8de674` — 21 classes, 101 slots |
 | `interview` | prose only | `components/interview/SKILL.md`. Not installed as a skill; the stage is deferred and the file predates the per-business version store |
 | `report` | not built | |
-| `agent` | not built | Reads the kernel for provenance, an exception decided 7 Sep. Demo lap item three |
+| `provenance` | not built | Every assertion about one subject and predicate. The one kernel reader outside the compiler, behind two doors. Demo lap item two |
+| `agent` | not built | An MCP over the graph, the store and `provenance`. Demo lap item three |
 
 ## What has landed recently
 
+- **7 Sep** — demo item one ran and was validated. `business/sorella_demo/v1`
+  is 12 classes; `uniti_demo` holds 242 intents and 2,237 assertions from a seed
+  written entirely through the write gate; `p_ingredient_on_hand` reads 59 rows
+  at now, 54 at 9 August, 4 at 13 July, and the pistachio price multiplies by
+  203.00 asked at 9 August and 214.00 at 10 August with neither row revoking the
+  other. The loop closes through the form. Validation found four visible
+  defects, none of them mechanism, and they are carried into item two.
+  `LOG.md` and `OPEN.md`, same date.
+- **7 Sep** — provenance became a surface rather than a privilege. A page that
+  opens a cell reads the kernel, which the morning's amendment admitted only for
+  the agent; naming the reader instead of the caller keeps the property holding
+  something. `components/provenance/` serves both doors. `CLAUDE.md` and
+  `DECISIONS.md`, same date.
 - **7 Sep** — the demo lap was designed. A second business, `sorella_demo`,
   narrow enough to be shown and still a prefix of milestone one; the agent
   gains the right to read the kernel for provenance, which amends the first of
