@@ -64,15 +64,35 @@ def _now():
     return datetime.now(timezone.utc).isoformat()
 
 
+class ClockError(ValueError):
+    """A clock on the URL that is not a time."""
+
+
+def _clock(fields, name):
+    """One clock off the query string, checked here rather than in Postgres.
+
+    A value that is not a time is the reader's mistake and belongs in a 400
+    naming the field, not in a 500 quoting the database. Checking it costs one
+    parse and it is thrown away: what goes to the query is the text as written,
+    so nothing about how a clock is spelled is decided here.
+    """
+    written = (fields.get(name, [""])[0] or "").strip()
+    if not written:
+        return _now()
+    try:
+        datetime.fromisoformat(written)
+    except ValueError:
+        raise ClockError(
+            f"{name} is {written!r}, which is not a time. Write it as "
+            f"2026-06-16, or as 2026-06-16T00:00:00+00:00."
+        ) from None
+    return written
+
+
 def _clocks(query):
-    """The pair on the URL, or now. Nothing is validated here: a clock the
-    database refuses comes back as the database's own complaint, which says
-    more than a guess at what was meant."""
+    """The pair on the URL, or now."""
     fields = parse_qs(query)
-    valid_at = (fields.get("valid_at", [""])[0] or "").strip()
-    as_of = (fields.get("as_of", [""])[0] or "").strip()
-    now = _now()
-    return valid_at or now, as_of or now
+    return _clock(fields, "valid_at"), _clock(fields, "as_of")
 
 
 def _form_classes(map_):
@@ -116,7 +136,11 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         parts, query = self._route()
-        valid_at, as_of = _clocks(query)
+        try:
+            valid_at, as_of = _clocks(query)
+        except ClockError as exc:
+            now = _now()
+            return self._refuse("Not a clock", str(exc), now, now, 400)
         try:
             if not parts:
                 return self._index(valid_at, as_of)
@@ -135,7 +159,11 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         parts, query = self._route()
-        valid_at, as_of = _clocks(query)
+        try:
+            valid_at, as_of = _clocks(query)
+        except ClockError as exc:
+            now = _now()
+            return self._refuse("Not a clock", str(exc), now, now, 400)
         if len(parts) != 2 or parts[0] != "form":
             return self._refuse("Not a page", f"Nothing accepts a write at "
                                 f"{self.path}.", valid_at, as_of, 404)

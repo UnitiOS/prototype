@@ -39,7 +39,9 @@ Compacted 2026-09-04 from 150 items. The full text is
   stops being the unit of supersession, or a collection gets its own subject
   · blocks: recording
 - Whether a document's date slot is how a form sets `valid_from`, or a fact
-  standing beside it · blocks: recording
+  standing beside it. No longer theoretical: the browser form shows
+  `happened_on` and sets `valid_from` to now silently, so a movement entered as
+  16 June is absent from 16 June's balance · blocks: recording
 - Whether a correction carried on a different document is a retraction, an
   independent assertion, or a relation the map must state · blocks: kernel
 - One log holds two businesses and cannot say which: `ontology_version` is

@@ -1015,3 +1015,72 @@ The web component has **no test**. `make check`'s 69 are the 69 that were there
 before; the done condition asked for five checks against a running server and
 those were run by hand. The interface is the least-covered component in the
 repository.
+
+---
+
+## 2026-09-06 — Every link the app builds was broken, and nothing found it
+
+A check of the previous entry's item, run by following the application's own
+links rather than by typing URLs at it.
+
+**What was wrong.** `render._carried()` built the query string that every link
+and every page header carries:
+
+    return f"valid_at={escape(str(valid_at))}&amp;as_of={escape(str(as_of))}"
+
+`escape()` is HTML escaping. An offset-aware clock ends in `+00:00`, and a `+`
+in a query string means a space to every reader of one, so `parse_qs` on the
+next request produced `2026-09-06T10:48:52.177118 00:00` and Postgres refused
+it. Eleven of the twenty-two links the index page renders returned **500**.
+
+Which eleven is the shape that made it look intermittent: a form 500s if and
+only if it has a `ref` field, because only a ref field calls `_options`, and
+only `_options` puts a timestamp into a query. `Unit`, `Business`, `Flavour`,
+`Person` and five others have none and rendered fine; `StockMovement`,
+`Ingredient`, `Recipe` and five others 500'd, and so did both tables.
+
+**Why the previous session's five done conditions all passed.** Every check in
+that entry was a `curl` against a hand-written URL:
+
+    curl GET /table/IngredientOnHand?valid_at=2026-06-16&as_of=2026-09-06
+
+`2026-06-16` contains no `+`, so it round-trips. Not one check followed a link
+the application generated, so the defect was invisible to a test suite that
+covered every route. **The route was never the untested thing; the link was.**
+
+**Two changes.** `_carried()` now percent-encodes before it HTML-escapes, via
+`urlencode`, which writes the offset `%2B00%3A00`. And `_clocks()` in
+`serve.py`, which had a docstring saying it validated nothing on purpose, now
+parses each clock with `datetime.fromisoformat` and raises `ClockError`. A
+clock that is not a time is a 400 naming the field, not a 500 quoting
+Postgres. The parse is thrown away; what reaches the query is still the text as
+written.
+
+**After, by crawling.** A script that reads `GET /` and follows every `href` it
+finds:
+
+    22 links followed, 0 broken
+
+with `/table/IngredientOnHand` at **16 rows** and `/table/GelatoOnHand` at 3.
+
+**The clock box, submitted as a browser submits it.** `valid_at=2026-06-15` is
+**12 rows**, `valid_at=2026-06-16` is **16 rows**, pistachio 2 tins against 6.
+
+**The loop, closed again.** A `StockMovement` POSTed to `/form/StockMovement`
+with quantity 5: one intent, 8 assertions, 1 entity minted. Dextrose at the dry
+store then read `in 12, out 0, net 12` at the default clocks — 4 from the seed,
+3 from the previous session's own test write, 5 from this one. No script ran
+between the write and the read.
+
+`make check` ok. `grep -rn -i "pistachio\|movement\|stock\|ingredient\|location"
+components/web/` finds nothing in a live code path.
+
+**Surprising.** The write does not appear at the clock its own `happened_on`
+names. A movement submitted through the form with `happened_on 2026-06-16` is
+absent from the table at `valid_at 2026-06-16` and present at now, because the
+form has no `valid_from` field and every assertion it writes is valid from the
+moment it is written. `happened_on` is a fact about the movement and
+`valid_from` is a fact about the claim; the form shows the first and sets the
+second silently. `OPEN.md` has carried that question since 4 Sep as a `[T3]`,
+and the interface turns it from a question about recording into the reason the
+demonstration cannot tell its own story.

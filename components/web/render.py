@@ -24,6 +24,7 @@ is a rebuild of the table.
 """
 
 from html import escape
+from urllib.parse import urlencode
 
 # One block, no framework, no build step. Enough to read a table and fill in a
 # form and no more.
@@ -109,8 +110,14 @@ def page(title, body, *, valid_at, as_of):
 
 
 def _carried(valid_at, as_of):
-    """The clocks, as a query string to hang on a link."""
-    return f"valid_at={escape(str(valid_at))}&amp;as_of={escape(str(as_of))}"
+    """The clocks, as a query string to hang on a link.
+
+    Percent-encoded before it is HTML-escaped, and the order matters. An
+    offset-aware clock ends in `+00:00`, and a `+` in a query string means a
+    space to every reader of one — so a link built by escaping alone hands the
+    next request a clock it cannot parse. `urlencode` writes it `%2B`.
+    """
+    return escape(urlencode({"valid_at": str(valid_at), "as_of": str(as_of)}))
 
 
 def index_html(forms, tables, *, valid_at, as_of):
