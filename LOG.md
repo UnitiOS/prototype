@@ -1214,3 +1214,123 @@ extension was not connected, so the loop was closed with a form-encoded POST to
 through a browser window. And a `serve.py` from an earlier session was still
 holding port 8000 and answering with Sorella's v3 map; `make demo-serve
 PORT=8100` was used throughout, and that process is still running.
+## 2026-09-07 — demo item two: the surface, and the log behind a cell
+
+`NEXT.md` item two, run to its seven done conditions. Four new things exist:
+`components/provenance/`, `components/web/diagram.py`, four routes on
+`serve.py`, and `tests/provenance/`. No mechanism was widened — every number on
+every page still comes out of the operational store, and the one page that
+reads the log reads it for provenance and computes nothing.
+
+### The seven conditions
+
+**1 · the port and the walk.** `make demo-serve` binds **8100**, from
+`DEMO_PORT` in the Makefile rather than the shared `PORT`. `/` is six cards in
+stage order — *What was said*, *What it became*, *What was recorded*, *What was
+generated*, *Live use*, *Definition change* — and the sixth is drawn dead, with
+"not built yet" where the link would be. The eleven forms and two tables moved
+to `/classes`, which cards four and five enter at `#forms` and `#tables`.
+
+**2 · `/said`.** 36 paragraphs of `v1.txt` on the left, `v1.yaml` on the right,
+and **12 of 12 classes linked** to a paragraph. Spot-checked, every one of the
+twelve lands on the sentence that asked for it: `InternalLocation` → "There are
+two places inside the business in this corner of it", `Supplier` → "A supplier
+is a place. That is the part of this description that surprises people",
+`StockCountLine` → "Each line on the sheet is the third document".
+
+**3 · `/graph`.** The class diagram is 12 classes, 2 inheritance edges and 19
+relations, generated as Mermaid text from the map. Every column header of a
+grouped table links to `/graph?class=…&column=…`;
+`IngredientOnHand.ingredient_stock_value` draws six column nodes and nine
+source nodes — the expression `{ingredient_on_hand_net} * {ingredient_pack_price}`,
+below it `{ingredient_in} - {ingredient_out}`, below those **both aggregates**
+(`sum of StockMovement.sorella:movement_quantity by ingredient_on_hand =
+sorella:movement_ingredient, ingredient_unit = sorella:movement_unit,
+ingredient_where = sorella:movement_into`, and the same into
+`movement_out_of`), and beside them the **parameter**, `sorella:item_pack_price`
+of the entity `ingredient_on_hand` names, reading "the log — stated, never
+computed".
+
+**4 · the window.** `/table/IngredientOnHand?valid_at=2026-06-16&as_of=2026-09-07`
+still says "No rows at these clocks" and now says what it is outside of: *The
+log holds 2,237 assertions under 242 intents. Nothing in it is valid before
+2026-07-13 00:00:00+00:00, and the latest anything is valid from is
+2026-08-30 00:00:00+00:00.* The window is one query in `provenance.window()`.
+
+**5 · a blank subject.** `POST /form/StockMovement` with `subject=` empty, form
+encoded, ten fields: **200, one intent, 10 assertions, 1 entity minted**, and
+the page says *The subject was left blank, so one was minted for it:
+`sorella_demo:stockmovement_af5d49f16eab`*. The URI is the map's own
+`default_prefix`, the class name the form came from, and 12 hex digits. The log
+was reseeded afterwards, so the counts elsewhere in this entry are the seeded
+ones.
+
+**6 · `/why` for the pack price.** `sorella:item_sicilian_pistachio_paste` /
+`sorella:item_pack_price` returns **two** assertions, neither revoking the
+other:
+
+    203.00  valid_from 2026-07-13  human_stated  authority Marina Devlin
+    214.00  valid_from 2026-08-10  human_stated  authority Terra Nostra
+                                                 invoice, 10 August
+
+Both carry actor `marina`, action `submit_Ingredient` and their intent id. Every
+`parameter` cell in a grouped table and every `stated` cell in an entity table
+links to its own pair — 79 such links on `/table/IngredientOnHand` alone.
+
+**7 · the two checks.** `make check` ok, **74 tests** (69 before; the five new
+ones are `tests/provenance/`). `grep -rn -i
+"gelato\|pistachio\|movement\|stock\|ingredient\|location" components/` finds
+exactly one line, `components/interview/SKILL.md:89`, which is prose in a skill
+file and predates this item. No live code path names a business term, the new
+files included.
+
+### The fix to the form's own note
+
+`render.form_html` told the reader the dropdown choices "were read out of the
+log". `generate._options` now returns *(pairs, source)* and the page prints the
+source it was handed: for this map it says **"read out of the operational
+store"** for all six ref fields, with no "and the log", because every class the
+demo map's ref fields range over is compiled.
+
+### Surprising
+
+**Blank lines inside a block scalar closed the section.** `/said` linked 6 of
+12 classes on the first run, and the six missing were the last six in the file.
+The scan for the `classes:` block treated any line not starting with a space as
+a new top-level key, and `v1.yaml` has blank lines at 104, 147 and 167 — inside
+`description:` blocks. A blank line is inside whatever contains it; the fix is
+one condition.
+
+**The bridge from the map to the transcript is the description, not the name.**
+Matching paragraphs on the words of the class name alone linked 6 of 12 and put
+`Ingredient` on a paragraph about something else. `Location` and
+`InternalLocation` matched nothing at all, because the transcript never uses the
+word "location" — it says "place". Scoring the class's *description* as well,
+each word worth `1/(paragraphs containing it)` and a name word worth six times a
+description word, links all twelve and lands every one correctly. The
+description is where the business's own words survive into the map, so it is
+what a transcript can be matched against. The weight was tried at 3 (Ingredient
+wrong) and 10 (StockCount wrong) before 6.
+
+**Two servers held port 8100 at once.** Windows accepted a second bind on a port
+already listening, so the first probe run was answered by the process from the
+previous session and every result looked unchanged. Both had to be stopped by
+pid before the new code served anything. `netstat -ano | grep 8100` showing two
+LISTENING lines is the tell.
+
+**A `#` ends the URL.** The stage cards were built as `/classes#forms` plus the
+carried clocks and came out `/classes#forms?valid_at=…`, which is a fragment
+called `forms?valid_at=…` and a request with no clocks on it. The clocks go
+before the fragment.
+
+**The most persuasive page needed the least code.** `/graph`'s formula view is
+about sixty lines over `compile.plan()`, because the plan already holds every
+column's kind, its aggregate, its parameter and its expression — it is what the
+compiler emits SQL from. Drawing it is a second rendering of a structure that
+was already there, which is exactly the claim being made about it.
+
+**Not verified: the drawing itself.** The Chrome extension is not connected, so
+the Mermaid *text* was checked against the map — 12 classes, both aggregates,
+the parameter — and the rendered picture was not. If the CDN is unreachable the
+`<div class="mermaid">` shows that text instead of a diagram, which is legible
+but is not the page as intended.

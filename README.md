@@ -37,7 +37,7 @@ make check
 
 One command from a clean clone: virtualenv, schema, tests, and a replay that
 must come out byte-identical twice. It exits non-zero if either half fails.
-**69 tests today.**
+**74 tests today.**
 
 `check`, `schema`, `test` and `replay` run against a throwaway database,
 `uniti_check`, created on the first run and wiped on every one — `make` resets
@@ -58,7 +58,24 @@ first run.
 
 ```
 make demo-seed    seven weeks of paper into uniti_demo, then compile it
-make demo-serve   the same four routes over the demonstration map
+make demo-serve   the walk, on port 8100, over the demonstration map
+```
+
+`demo-serve` binds **8100** and `serve` binds 8000, so the two can be up at
+once and a URL says which is which.
+
+Eight routes, and `/` is a walk through the stages rather than a menu:
+
+```
+/            the stages, one card each, in the order they happen
+/said        the description of the business beside the map it became
+/graph       the map drawn; with ?class= and ?column=, the rule behind one
+             column of one table
+/why         every assertion ever made about one subject and one predicate.
+             The one page that reads the log
+/classes     every class with a form, every class with a table
+/form/<C>    the form, and the POST that writes through the one gate
+/table/<C>   the map's rules, run, and read back out of the store
 ```
 
 `demo-seed` drops the three kernel tables and writes them again, every row
@@ -153,6 +170,8 @@ them — a restated rule drifts from the one it restates.
 | What may be written, and what is deliberately not validated? | docstring of `components/kernel/perform.py` |
 | How does a table or a form come out of the map? | docstring of `components/generator/generate.py` |
 | How does a rule in the map become SQL that runs? | docstring of `components/compiler/compile.py` |
+| What has ever been said about one subject and predicate? | docstring of `components/provenance/provenance.py` |
+| Which routes exist, and which of them reads the log? | docstring of `components/web/serve.py` |
 | What are the columns, constraints and append-only guards? | `components/kernel/001_schema.sql` |
 | What must be true, exactly? | `tests/` — the tests are the spec |
 | What does a correction look like, versus a change? | `tests/kernel/test_bitemporal.py` fixtures |

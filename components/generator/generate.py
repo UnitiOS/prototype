@@ -71,6 +71,11 @@ OPS_DSN = os.environ.get(
     "UNITI_OPS_DSN", "postgresql://uniti:uniti@localhost:5433/uniti_ops"
 )
 
+# Where a dropdown's choices were read. The operational store is the read a
+# form is meant to make; the log is the fallback and is named as one.
+STORE = "the operational store"
+LOG = "the log"
+
 # The column a projection of entities carries its subject's URI in. It is the
 # compiler's, not the map's, and it is here because both sides need the name.
 IDENTITY_COLUMN = "entity_uri"
@@ -330,9 +335,9 @@ def form(conn, map_, class_name, *, valid_at=None, as_of=None):
     fields = []
     for col in cols:
         field = dict(col)
-        field["options"] = (
+        field["options"], field["options_from"] = (
             _options(conn, map_, col["range"], valid_at=valid_at, as_of=as_of)
-            if col["ref"] else []
+            if col["ref"] else ([], None)
         )
         fields.append(field)
     return {"class": class_name, "fields": fields, "version": map_["version"],
@@ -340,7 +345,12 @@ def form(conn, map_, class_name, *, valid_at=None, as_of=None):
 
 
 def _options(conn, map_, class_name, *, valid_at, as_of):
-    """The choices a field over a class range offers, as (uri, label) pairs.
+    """The choices a field over a class range offers, and where they came from.
+
+    Returned as (pairs, source), where source is `STORE` or `LOG`. Which of the
+    two answered is not an implementation detail a page may round off: one of
+    them is the read this system claims to make and the other is the read it
+    forbids, so the caller is told which happened and can say so on the page.
 
     Two paths, and the first one is the one that should exist. Where the
     operational store holds a projection of that class the choices are read
@@ -360,7 +370,7 @@ def _options(conn, map_, class_name, *, valid_at, as_of):
     """
     projected = _projected_options(map_, class_name)
     if projected is not None:
-        return projected
+        return projected, STORE
 
     by_uri, by_id = _registry(conn)
     identifier = _identifier(map_, class_name)
@@ -376,7 +386,7 @@ def _options(conn, map_, class_name, *, valid_at, as_of):
             label = (row or {}).get("value_literal") or ""
         out.append((by_id.get(subject_id, f"<{subject_id}>"), label))
     out.sort()
-    return out
+    return out, LOG
 
 
 def _projected_options(map_, class_name):

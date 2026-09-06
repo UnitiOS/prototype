@@ -74,7 +74,7 @@ demonstration walks.
 | Item | What it produces | Status |
 |---|---|---|
 | One — the business | the narrow map, both stores, and a seed large enough to look real | done 7 Sep, validated the same day |
-| Two — the surface | navigation by stage, the transcript beside the map, the graph behind a column, and a cell that opens its own assertions | `NEXT.md` |
+| Two — the surface | navigation by stage, the transcript beside the map, the graph behind a column, and a cell that opens its own assertions | done 7 Sep, all seven conditions checked |
 | Three — the agent | an MCP over the graph, the operational database and provenance, and a correction that does not destroy what it corrects | not started |
 
 Item three carries claim F — *an agent answering better from the graph than from
@@ -90,15 +90,22 @@ comparison is spoken.
 | `seal` | built | The gate a draft passes to become a version |
 | `generator` | built | Tables and forms from a sealed map |
 | `compiler` | built 5 Sep, extended 6 Sep | Aggregates, expressions and now parameters from the map, executed as SQL. Its `aggregate` still cannot say which rows a balance counts — `p_gelato_on_hand` is three rows about nothing |
-| `web` | built 6 Sep | Four routes over the map, the log and the store, with the two clocks on every page. No test of its own |
+| `web` | built 6 Sep, widened 7 Sep | Eight routes over the map, the log and the store, with the two clocks on every page. `/` is a walk through the stages; `/said`, `/graph` and `/why` are the three that say what the other pages cannot. No test of its own |
 | `business/` | in use | Not code. Sorella's `v1.yaml` is sealed at `b8de674` — 21 classes, 101 slots |
 | `interview` | prose only | `components/interview/SKILL.md`. Not installed as a skill; the stage is deferred and the file predates the per-business version store |
 | `report` | not built | |
-| `provenance` | not built | Every assertion about one subject and predicate. The one kernel reader outside the compiler, behind two doors. Demo lap item two |
+| `provenance` | built 7 Sep | Every assertion about one subject and predicate, and what the log holds at all. The one kernel reader outside the compiler. One door built — `/why`; the agent's MCP is the other. Five tests |
 | `agent` | not built | An MCP over the graph, the store and `provenance`. Demo lap item three |
 
 ## What has landed recently
 
+- **7 Sep** — demo item two ran: the surface. `/` is six stage cards, `/said`
+  puts the transcript beside the map with all twelve classes linked to the
+  paragraph that asked for them, `/graph` draws the twelve classes and — from
+  any column header — the rule that fills that column, and `/why` shows every
+  assertion ever made about one pair. `components/provenance/` is the one
+  kernel reader outside the compiler. `make demo-serve` binds 8100. 74 tests.
+  `LOG.md`, same date.
 - **7 Sep** — demo item one ran and was validated. `business/sorella_demo/v1`
   is 12 classes; `uniti_demo` holds 242 intents and 2,237 assertions from a seed
   written entirely through the write gate; `p_ingredient_on_hand` reads 59 rows

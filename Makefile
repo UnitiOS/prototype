@@ -136,6 +136,9 @@ DEMO_DB       := uniti_demo
 DEMO_OPS_DB   := uniti_demo_ops
 DEMO_DSN      := postgresql://uniti:uniti@localhost:5433/$(DEMO_DB)
 DEMO_OPS_DSN  := postgresql://uniti:uniti@localhost:5433/$(DEMO_OPS_DB)
+# A port of its own. `make serve` holds 8000, and a demonstration answering on
+# the same one as the thing it replaces is indistinguishable from it by URL.
+DEMO_PORT     := 8100
 # What the compiler printed, kept where a person looks at what came out.
 DEMO_RENDER   := build/$(DEMO_BUSINESS)/v1/tables.txt
 
@@ -167,4 +170,4 @@ demo-serve: venv
 	@$(DC) exec -T db psql -U uniti -d postgres -tAc \
 	    "SELECT 1 FROM pg_database WHERE datname = '$(DEMO_OPS_DB)'" | grep -q 1 \
 	    || $(DC) exec -T db createdb -U uniti $(DEMO_OPS_DB)
-	PYTHONIOENCODING=utf-8 $(PY) components/web/serve.py $(DEMO_MAP) --port $(PORT)
+	PYTHONIOENCODING=utf-8 $(PY) components/web/serve.py $(DEMO_MAP) --port $(DEMO_PORT)

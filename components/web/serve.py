@@ -4,13 +4,25 @@ The whole of the interface. It builds nothing and derives nothing: each route
 calls a function that already exists, hands what comes back to `render`, and
 writes the result out.
 
-    GET  /                every class the map gives a form, every class it
+    GET  /                the stages, in the order they happen, one card each
+    GET  /classes         every class the map gives a form, every class it
                           gives a table
+    GET  /said            the description of the business beside the map it
+                          became, one linked to the other
+    GET  /graph           the map drawn, or — with `class` and `column` — the
+                          rule that fills one column, drawn
+    GET  /why             every assertion ever made about one subject and one
+                          predicate. The one page that reads the log
     GET  /form/<Class>    `generate.form()` at the clocks
     POST /form/<Class>    `generate.submit()` — one intent, N assertions —
                           then the same form again, saying what was written
     GET  /table/<Class>   `compile.compile_class()` at the clocks, rendered
                           from the rows it read back out of the store
+
+Three databases would be one too many, so there are two, and `/why` reads the
+log through `provenance` — the one reader outside the compiler, named in
+`CLAUDE.md`. It computes nothing: every number on every other page came out of
+the operational store.
 
 `?valid_at=` and `?as_of=` sit on every URL and default to now. They are
 carried through every link and through the POST, so a page is always at a
@@ -38,8 +50,10 @@ Run:
 """
 
 import argparse
+import re
 import sys
 import traceback
+import uuid
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -52,9 +66,13 @@ sys.path.insert(0, str(ROOT / "components" / "compiler"))
 sys.path.insert(0, str(ROOT / "components" / "generator"))
 sys.path.insert(0, str(ROOT / "components" / "kernel"))
 sys.path.insert(0, str(ROOT / "components" / "web"))
+sys.path.insert(0, str(ROOT / "components" / "provenance"))
 
+import diagram  # noqa: E402
+import provenance  # noqa: E402
 import render  # noqa: E402
 from compile import OPS_DSN, _aggregate_classes, compile_class  # noqa: E402
+from compile import plan_for  # noqa: E402
 from generate import MapError, _identifier, _type_slot  # noqa: E402
 from generate import form, read_map, submit  # noqa: E402
 from perform import DSN as KERNEL_DSN  # noqa: E402
@@ -97,6 +115,125 @@ def _clocks(query):
     """The pair on the URL, or now."""
     fields = parse_qs(query)
     return _clock(fields, "valid_at"), _clock(fields, "as_of")
+
+
+# The stages of `CLAUDE.md`, in the order they happen, and where each one is
+# on this server. A stage with no page is drawn as one rather than left off:
+# an absence a viewer can see is worth more than a menu that hides it.
+STAGES = [
+    ("What was said", "The business described in the words somebody used, "
+     "beside the sealed map that description became. Neither file was "
+     "written twice.", "/said"),
+    ("What it became", "Every class the map declares and what refers to what "
+     "— and, from any column of any table, the rule that fills it.", "/graph"),
+    ("What was recorded", "The log: what was stated, by whom, when, on what "
+     "authority, and what was later withdrawn. Nothing in it is ever edited.",
+     "/why"),
+    ("What was generated", "A form for every class the log can say an entity "
+     "is, and a table for every class the map gives a rule. No screen here "
+     "was written by hand.", "/classes#forms"),
+    ("Live use", "Fill one in. The write becomes one intent and N assertions "
+     "through the one gate, and the table rebuilds itself from the log the "
+     "next time it is asked for.", "/classes#tables"),
+    ("Definition change", "A definition moves, and the same question is asked "
+     "again under both. Nothing here reaches it yet.", None),
+]
+
+
+def _mint_uri(map_, class_name):
+    """A URI for a subject nobody named, from the map's own prefix.
+
+    A form asks for the thing being written about, and for an event nobody
+    names there is nothing to type: the delivery note has no number on it. The
+    field says a URI it has not seen is minted, and this is what is minted —
+    the map's default prefix, the class the form came from, and enough
+    randomness that two of them never collide.
+    """
+    prefix = str(map_["view"].schema.default_prefix or "uniti")
+    return f"{prefix}:{str(class_name).lower()}_{uuid.uuid4().hex[:12]}"
+
+
+def _transcript_path(map_):
+    """The file the map's own annotations name, beside the map."""
+    for key, annotation in (map_["view"].schema.annotations or {}).items():
+        if str(key) == "transcript" and annotation.value:
+            return map_["path"].parent / str(annotation.value)
+    return map_["path"].with_suffix(".txt")
+
+
+# What a word of the class's own name is worth against a word of its
+# description. Six, because the name is the strongest signal there is and the
+# description is a paragraph of ordinary English around it. Tried at 3, which
+# sends a class the transcript names only in passing to a paragraph its
+# description happens to rhyme with, and at 10, which lets a two-word name
+# outvote everything the description says.
+NAME_WEIGHT = 6
+
+
+def _words(text):
+    """A name or a sentence, as the words it is made of."""
+    return [word.lower() for word
+            in re.findall(r"[A-Z]+(?![a-z])|[A-Z][a-z]+|[a-z]+", str(text))
+            if len(word) > 3]
+
+
+def _matched(paragraphs, name, described):
+    """Which paragraph of the prose asked for this class, or None.
+
+    Scored, not looked up. The words are the class's own name and the map's
+    own description of it, and a word is worth what it is rare: one appearing
+    in half the transcript separates nothing, and one appearing in a single
+    paragraph very nearly names it. A class the business calls something else
+    entirely still lands, because the description the map carries uses the
+    words the business used.
+
+    Nothing here is told what any class is called or what a business is. The
+    words come off the map, the counts come off the transcript, and this
+    weighs one against the other.
+    """
+    wanted = [(word, NAME_WEIGHT) for word in _words(name)]
+    wanted += [(word, 1) for word in dict.fromkeys(_words(described))]
+    if not wanted:
+        return None
+    lowered = [text.lower() for text in paragraphs]
+    best, score = None, 0.0
+    for number, text in enumerate(lowered):
+        here = 0.0
+        for word, weight in wanted:
+            pattern = rf"\b{re.escape(word)}"
+            if not re.search(pattern, text):
+                continue
+            common = sum(1 for other in lowered if re.search(pattern, other))
+            here += weight / common
+        if here > score:
+            best, score = number, here
+    return best
+
+
+def _said(map_):
+    """The transcript in paragraphs, and the map's own file with its anchors."""
+    prose = _transcript_path(map_).read_text(encoding="utf-8")
+    paragraphs = [block.strip() for block in re.split(r"\n\s*\n", prose)
+                  if block.strip()]
+    view = map_["view"]
+    anchors = {
+        str(name): _matched(paragraphs, name,
+                            view.get_class(name).description or "")
+        for name in view.all_classes()
+    }
+
+    lines, inside = [], False
+    for line in map_["path"].read_text(encoding="utf-8").splitlines(keepends=True):
+        # A blank line inside a block scalar is still inside it. Only a line
+        # that starts a key of its own ends the section.
+        if line.strip() and not line.startswith((" ", "\t")):
+            inside = line.startswith("classes:")
+        declared = re.match(r"^  ([A-Za-z_][A-Za-z0-9_]*):\s*$", line)
+        anchor = None
+        if inside and declared and declared.group(1) in anchors:
+            anchor = anchors[declared.group(1)]
+        lines.append((line, anchor))
+    return paragraphs, lines
 
 
 def _form_classes(map_):
@@ -166,7 +303,15 @@ class Handler(BaseHTTPRequestHandler):
             return self._refuse("Not a clock", str(exc), now, now, 400)
         try:
             if not parts:
+                return self._home(valid_at, as_of)
+            if parts == ["classes"]:
                 return self._index(valid_at, as_of)
+            if parts == ["said"]:
+                return self._said(valid_at, as_of)
+            if parts == ["graph"]:
+                return self._graph(query, valid_at, as_of)
+            if parts == ["why"]:
+                return self._why(query, valid_at, as_of)
             if len(parts) == 2 and parts[0] == "form":
                 return self._form(parts[1], valid_at, as_of)
             if len(parts) == 2 and parts[0] == "table":
@@ -207,6 +352,78 @@ class Handler(BaseHTTPRequestHandler):
 
     # ---- what each one does -----------------------------------------------
 
+    def _home(self, valid_at, as_of):
+        body = render.home_html(STAGES, valid_at=valid_at, as_of=as_of)
+        self._send(render.page("uniti", body, valid_at=valid_at, as_of=as_of))
+
+    def _said(self, valid_at, as_of):
+        paragraphs, lines = _said(self.map_)
+        body = render.said_html(paragraphs, lines,
+                                source=self.map_["path"].name,
+                                transcript=_transcript_path(self.map_).name)
+        self._send(render.page("what was said", body,
+                               valid_at=valid_at, as_of=as_of))
+
+    def _graph(self, query, valid_at, as_of):
+        """The whole map, or the rule behind one column of one table."""
+        fields = parse_qs(query)
+        class_name = (fields.get("class", [""])[0] or "").strip()
+        column = (fields.get("column", [""])[0] or "").strip()
+        carried = render._carried(valid_at, as_of)
+        if not class_name:
+            classes = sorted(str(name) for name in self.map_["view"].all_classes())
+            body = render.graph_html(
+                "The map",
+                f"{len(classes)} classes, drawn from "
+                f"{self.map_['path'].name}. An arrow is a slot whose range is "
+                "another class, labelled with the slot's own name; a hollow "
+                "arrow is one class standing below another. Nothing here was "
+                "drawn by hand.",
+                diagram.script(diagram.classes(self.map_), height="46rem"))
+            return self._send(render.page("the map", body,
+                                          valid_at=valid_at, as_of=as_of))
+        plan_ = plan_for(self.map_, class_name)
+        try:
+            drawing = diagram.formula(self.map_, plan_, column)
+        except KeyError:
+            return self._refuse(
+                "No such column",
+                f"{class_name} has no column {column!r} — it has "
+                f"{[col['name'] for col in plan_['columns']]}.",
+                valid_at, as_of, 404)
+        body = render.graph_html(
+            f"{class_name}.{column}",
+            f"What the map says fills this column, and what that reads in "
+            f"turn. Every box is something {self.map_['path'].name} states: an "
+            "expression, an aggregate, or a fact the log is read for. The "
+            "compiler turns exactly this into SQL, and nothing about it is "
+            "written in the code.",
+            diagram.script(drawing),
+            back=f'<a href="/table/{class_name}?{carried}">'
+                 f"back to {class_name}</a>")
+        self._send(render.page(f"{class_name}.{column}", body,
+                               valid_at=valid_at, as_of=as_of))
+
+    def _why(self, query, valid_at, as_of):
+        """Every assertion ever made about one pair. The one kernel reader."""
+        fields = parse_qs(query)
+        subject = (fields.get("subject", [""])[0] or "").strip()
+        predicate = (fields.get("predicate", [""])[0] or "").strip()
+        with connect_kernel() as kernel:
+            if not (subject and predicate):
+                body = render.ask_html(provenance.window(kernel),
+                                       valid_at=valid_at, as_of=as_of)
+                return self._send(render.page("what was recorded", body,
+                                              valid_at=valid_at, as_of=as_of))
+            try:
+                built = provenance.history(kernel, subject=subject,
+                                           predicate=predicate)
+            except provenance.UnknownURI as exc:
+                return self._refuse("Never registered", str(exc),
+                                    valid_at, as_of, 404)
+        body = render.why_html(built, valid_at=valid_at, as_of=as_of)
+        self._send(render.page("why", body, valid_at=valid_at, as_of=as_of))
+
     def _index(self, valid_at, as_of):
         body = render.index_html(_form_classes(self.map_),
                                  _table_classes(self.map_),
@@ -245,15 +462,20 @@ class Handler(BaseHTTPRequestHandler):
         actor = (entered.pop("actor", "") or "").strip()
         values = {name: value for name, value in entered.items()
                   if str(value).strip()}
-        if not subject or not actor:
+        if not actor:
             return self._form(
                 class_name, valid_at, as_of,
                 values=self._prefill(class_name, {**entered,
                                                   "subject": subject,
                                                   "actor": actor}),
-                message="Both a subject and an actor are needed: the first "
-                        "says what is being written about, the second who is "
-                        "writing it.", bad=True)
+                message="An actor is needed: the intent records who is writing "
+                        "this, and there is nobody else to record.", bad=True)
+        # A subject nobody typed is minted here rather than refused. The field
+        # says a URI the log has not seen is minted, and an event nothing
+        # names has no URI to type.
+        minted_subject = not subject
+        if minted_subject:
+            subject = _mint_uri(self.map_, class_name)
 
         with connect_kernel() as kernel:
             result = submit(kernel, self.map_, class_name, subject=subject,
@@ -266,16 +488,26 @@ class Handler(BaseHTTPRequestHandler):
             f"{len(result['minted'])} entities minted, under {subject}.\n"
             f"Fields: {written}."
         )
+        if minted_subject:
+            message += (f"\nThe subject was left blank, so one was minted for "
+                        f"it: {subject}")
         # The form comes back empty apart from the class, so the next one is a
         # fresh statement rather than an edit of the last.
         self._form(class_name, valid_at, as_of,
                    values=self._prefill(class_name), message=message)
 
     def _table(self, class_name, valid_at, as_of):
+        held = None
         with connect_kernel() as kernel, psycopg.connect(OPS_DSN) as ops:
             built = compile_class(kernel, ops, self.map_, class_name,
                                   valid_at=valid_at, as_of=as_of)
-        body = render.table_html(built, valid_at=valid_at, as_of=as_of)
+            # No rows is two different answers, and a reader cannot tell them
+            # apart: nothing stands at these clocks, or nothing was ever
+            # written down this early. The log itself says which.
+            if not built["rows"]:
+                held = provenance.window(kernel)
+        body = render.table_html(built, valid_at=valid_at, as_of=as_of,
+                                 window=held)
         self._send(render.page(f"{class_name} — table", body,
                                valid_at=valid_at, as_of=as_of))
 
