@@ -19,6 +19,15 @@ Compacted 2026-09-04 from 150 items. The full text is
 
 ## T3 — discuss to a conclusion
 
+- The demo log was recorded in one second, so `as_of` is a cliff and not an
+  axis, and it holds no `revokes` at all. Half of what `CLAUDE.md` calls the
+  product — a correction as distinct from a change — has no data to be shown
+  with. Missing information, not missing mechanism: `perform.py` already takes
+  `recorded_at` and `resolve.py` already names the backfilled case
+  · blocks: live use
+- A projection renders a ref cell as its URI and a column as its slot name,
+  while a form renders both by name. The map already declares five identifier
+  slots and carries no `title` on any of its 51 · blocks: generation
 - The demo seed spans 13 July to 30 August 2026, so a clock before it renders
   an empty table saying only "No rows at these clocks". 16 June, the date
   milestone one names and this repository types by habit, is one of them

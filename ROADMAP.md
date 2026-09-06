@@ -75,7 +75,8 @@ demonstration walks.
 |---|---|---|
 | One — the business | the narrow map, both stores, and a seed large enough to look real | done 7 Sep, validated the same day |
 | Two — the surface | navigation by stage, the transcript beside the map, the graph behind a column, and a cell that opens its own assertions | done 7 Sep, all seven conditions checked |
-| Three — the agent | an MCP over the graph, the operational database and provenance, and a correction that does not destroy what it corrects | not started |
+| Two and a half — the data | a seed with both clocks alive and corrections in it, names instead of URIs, and a table that can be sorted and filtered | `NEXT.md` |
+| Three — the agent | an MCP over the graph, the operational database and provenance, and a correction that does not destroy what it corrects | not started. Waits on two and a half: its strongest demonstration needs corrections in the log, and there are none |
 
 Item three carries claim F — *an agent answering better from the graph than from
 tables* — and is the one most likely to slip. No SQL baseline is built; the
@@ -99,6 +100,15 @@ comparison is spoken.
 
 ## What has landed recently
 
+- **7 Sep** — demo item two ran and was validated. All seven conditions hold:
+  six stage cards, `/said` linking 12 of 12 classes to the sentence that asked
+  for them, `/graph` drawing the map and the formula behind a column,
+  `components/provenance/` behind `/why`, and 74 tests. Validation then found
+  what the item did not ask about: the whole log was recorded in one second and
+  holds no `revokes`, so `as_of` is a cliff rather than an axis and a correction
+  cannot be shown at all. Missing information, not missing mechanism, and it
+  puts an item between the surface and the agent. `LOG.md` and `OPEN.md`, same
+  date.
 - **7 Sep** — demo item two ran: the surface. `/` is six stage cards, `/said`
   puts the transcript beside the map with all twelve classes linked to the
   paragraph that asked for them, `/graph` draws the twelve classes and — from
