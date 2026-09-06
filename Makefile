@@ -28,7 +28,10 @@ GRAPH    := build/$(BUSINESS)/$(VERSION)/graph/$(BUSINESS)-$(VERSION)
 # discouraged. It is derived, so it is dropped and rebuilt on every run.
 OPS_DB := uniti_ops
 
-.PHONY: check venv schema test replay check-profile build compile
+# The port `make serve` listens on.
+PORT   := 8000
+
+.PHONY: check venv schema test replay check-profile build compile serve
 
 # The one command: environment, schema, tests, and a replay that must come out
 # byte-identical twice. Exits non-zero if the tests fail or the two differ.
@@ -104,3 +107,19 @@ compile: venv
 	mkdir -p $(RENDER)/tables $(RENDER)/log
 	PYTHONIOENCODING=utf-8 $(PY) components/compiler/compile.py $(MAP) \
 	    --into $(RENDER)/tables 2> $(RENDER)/log/compile.err
+
+# The loop, in a browser. Four routes over the map, the trial log and an
+# operational store of its own — deliberately not $(OPS_DB), which `make
+# compile` drops and rebuilds from the working log; a page rebuilding a table
+# on every load must not collide with it. Created on first run, like that one.
+TRIAL_DB     := uniti_trial
+TRIAL_OPS_DB := uniti_trial_ops
+
+serve: export UNITI_DSN     := postgresql://uniti:uniti@localhost:5433/$(TRIAL_DB)
+serve: export UNITI_OPS_DSN := postgresql://uniti:uniti@localhost:5433/$(TRIAL_OPS_DB)
+serve: venv
+	$(DC) up -d
+	@$(DC) exec -T db psql -U uniti -d postgres -tAc \
+	    "SELECT 1 FROM pg_database WHERE datname = '$(TRIAL_OPS_DB)'" | grep -q 1 \
+	    || $(DC) exec -T db createdb -U uniti $(TRIAL_OPS_DB)
+	PYTHONIOENCODING=utf-8 $(PY) components/web/serve.py $(MAP) --port $(PORT)

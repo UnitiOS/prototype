@@ -915,3 +915,103 @@ The 97 is the whole v2 vocabulary, because `uniti_check` had been wiped by the
 previous `make check`; the 4 is the real number of new names in v3. Sealing
 against a throwaway log and registering into the real one keeps those two
 numbers apart, which is what `--register` was built for on 6 Sep.
+
+---
+
+## 2026-09-06 — The loop, in a browser
+
+`NEXT.md`'s "Open: the loop, in a browser", all four parts, against the trial
+log `uniti_trial` and a store of its own, `uniti_trial_ops`.
+
+**What was run.**
+
+    scripts/state_places_and_units.sh                 8 submissions
+    make serve                                        v3, port 8000
+    curl GET  /                                       19 forms, 2 tables
+    curl GET  /form/StockMovement
+    curl GET  /table/IngredientOnHand?valid_at=2026-06-16&as_of=2026-09-06
+    curl GET  /table/IngredientOnHand?valid_at=2026-06-15&as_of=2026-09-06
+    curl POST /form/StockMovement                     one movement
+    curl GET  /table/IngredientOnHand                 at now
+    grep -rn -i "pistachio|movement|stock|ingredient|location" components/web/
+    make check
+
+Three files added and one edited: `scripts/state_places_and_units.sh`,
+`components/web/render.py`, `components/web/serve.py`, and a `serve` target in
+the `Makefile`. Nothing under `components/generator/` or `components/compiler/`
+was touched.
+
+**The eight classifications.** Eight submissions through `generate.py submit`,
+**0 entities minted** in all eight: every one of the eight URIs was already in
+the registry, put there as a `value_ref` by the movements that name it. What
+was missing was only what each one *is*. `uniti_trial` went 274 → 290
+assertions, 35 → 43 intents, and stayed at 139 entities.
+
+**Done condition 1. Holds.** `GET /` lists 19 classes with a form and 2 with a
+table, both counted out of the map: 19 is every class carrying a
+`designates_type` slot, 2 is every class carrying an `aggregate`.
+
+**Done condition 2. Holds.** `/form/StockMovement` before the eight
+submissions: `movement_out_of` and `movement_into` offered nothing,
+`movement_unit` offered nothing. After: 2 places — "Dry store" and "Terra
+Nostra Ingredients", the second reached because `Supplier is_a Location` — and
+6 units, "bag box carton kilogram sack tin", each by its name and not its URI.
+`movement_ingredient` still offers its 6 by URI alone: `Ingredient`'s
+identifier slot holds no value for them, which is a fact about the seed and
+not about the renderer.
+
+**Done condition 3. Holds.** `/table/IngredientOnHand` at `valid_at=2026-06-16`
+is **16 rows**, pistachio at the dry store 6 tins. The same URL at
+`valid_at=2026-06-15` is **12 rows**, pistachio 2 tins. Nothing but the clock
+box changed, and each load is a full drop and rebuild of `ingredient_on_hand`
+in `uniti_trial_ops`.
+
+**Done condition 4. Holds — the loop closed.** Before the write, dextrose at
+the dry store in sacks read `in 4, out 0, net 4`. One POST to
+`/form/StockMovement`, the request the rendered form makes, under a subject the
+log had never seen, `sorella:mov_2026_09_06_web_dextrose`, 3 sacks from Terra
+Nostra Ingredients into the dry store. The page came back saying **1 intent, 9
+assertions, 1 entity minted**, and the log moved 43 → 44 intents, 290 → 299
+assertions, 139 → 140 entities. Reloading `/table/IngredientOnHand` at the
+default clocks: dextrose at the dry store reads `in 7, out 0, net 7`, and the
+supplier side `out 7, net −7`. **No script was run between the two loads.** The
+page rebuilt the table itself.
+
+The write went through `generate.submit()` and nowhere else, and the reload
+through `compile.compile_class()` and nowhere else — the interface added no
+write path and no read path of its own.
+
+**Done condition 5. Holds.** `grep -rn -i
+"pistachio\|movement\|stock\|ingredient\|location" components/web/` returns
+nothing, exit 1. `make check`: ok, **69 tests**, replay byte-identical twice.
+
+**Surprising.**
+
+`Location` is a **business word and an HTTP header**. The obvious shape for a
+POST is a 303 back to the form, and `Location:` in the response would have
+tripped the very grep the item is checked by. The route re-renders the form at
+status 200 instead, which is a better page anyway — it can say what was
+written. The constraint picked the design.
+
+The two clocks needed **no code**. `page()` puts them in a `<form method=get
+action="">`, which the browser submits back to the URL it is on, so one form
+serves all four routes and every page is at a stated pair of clocks without a
+single line deciding what to do with them.
+
+`render.py` is **252 lines and holds no `if` over any name**. Everything it
+prints — nineteen class names, thirteen slot names, five column kinds, which
+field is a dropdown and which a box — arrived inside the structure it was
+handed. The only table it carries is `INPUT_TYPE`, six LinkML primitive ranges
+to six HTML input types, which is a fact about LinkML and the browser and about
+no business.
+
+`entity_class` had to be **prefilled**, and it is read from the map, not
+guessed: `_type_slot(map_, CLASS)` names the slot and the class name fills it.
+Without it a person filling the form by hand writes an entity nothing can ever
+say the class of — a subject with facts on it and no table it belongs to. The
+form's own defect and the map's own answer, in one line.
+
+The web component has **no test**. `make check`'s 69 are the 69 that were there
+before; the done condition asked for five checks against a running server and
+those were run by hand. The interface is the least-covered component in the
+repository.
