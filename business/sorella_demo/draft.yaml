@@ -205,6 +205,7 @@ classes:
 slots:
 
   entity_class:
+    title: Class
     slot_uri: sorella:entity_class
     designates_type: true
     range: string
@@ -213,6 +214,7 @@ slots:
       clocks, never guessed from which columns happen to be filled.
 
   location_name:
+    title: Place
     slot_uri: sorella:location_name
     identifier: true
     range: string
@@ -220,6 +222,7 @@ slots:
       What the staff call this place, and what identifies it.
 
   location_description:
+    title: What it is
     slot_uri: sorella:location_description
     range: string
     description: >-
@@ -227,6 +230,7 @@ slots:
       goes in it; for an outside place it is usually where ownership passes.
 
   location_temperature:
+    title: Kept at
     slot_uri: sorella:location_temperature
     range: string
     description: >-
@@ -235,6 +239,7 @@ slots:
       store.
 
   outside_where:
+    title: Where they are
     slot_uri: sorella:outside_where
     range: string
     description: >-
@@ -242,6 +247,7 @@ slots:
       anybody says.
 
   supplier_brings:
+    title: Brings
     slot_uri: sorella:supplier_brings
     range: string
     description: >-
@@ -250,12 +256,14 @@ slots:
       name their own supplier.
 
   supplier_rhythm:
+    title: Comes
     slot_uri: sorella:supplier_rhythm
     range: string
     description: >-
       How often they come, and on which days.
 
   supplier_lead_time:
+    title: Lead time
     slot_uri: sorella:supplier_lead_time
     range: string
     description: >-
@@ -263,6 +271,7 @@ slots:
       uses rather than as a number of days.
 
   person_name:
+    title: Name
     slot_uri: sorella:person_name
     identifier: true
     range: string
@@ -270,6 +279,7 @@ slots:
       What the business calls this person, and what identifies them.
 
   person_role:
+    title: Job
     slot_uri: sorella:person_role
     range: string
     description: >-
@@ -277,6 +287,7 @@ slots:
       carries the hours.
 
   unit_name:
+    title: Unit
     slot_uri: sorella:unit_name
     identifier: true
     range: string
@@ -285,6 +296,7 @@ slots:
       does not say how much.
 
   unit_meaning:
+    title: What it means
     slot_uri: sorella:unit_meaning
     range: string
     description: >-
@@ -292,6 +304,7 @@ slots:
       disambiguates it.
 
   item_name:
+    title: Thing
     slot_uri: sorella:item_name
     identifier: true
     range: string
@@ -300,6 +313,7 @@ slots:
       4471; they say the dextrose.
 
   item_counted_in:
+    title: Counted in
     slot_uri: sorella:item_counted_in
     range: Unit
     description: >-
@@ -309,12 +323,14 @@ slots:
       amounts.
 
   item_supplier:
+    title: Bought from
     slot_uri: sorella:item_supplier
     range: Supplier
     description: >-
       Who it is bought from.
 
   item_pack_price:
+    title: Price a pack
     slot_uri: sorella:item_pack_price
     range: decimal
     description: >-
@@ -323,6 +339,7 @@ slots:
       log's, not this slot's.
 
   item_reorder_level:
+    title: Reorder at
     slot_uri: sorella:item_reorder_level
     range: decimal
     description: >-
@@ -331,6 +348,7 @@ slots:
       which is not a level of nought.
 
   item_note:
+    title: Note
     slot_uri: sorella:item_note
     range: string
     description: >-
@@ -338,6 +356,7 @@ slots:
       bags, that a bag is volume and a recipe is mass.
 
   kind_name:
+    title: Kind of movement
     slot_uri: sorella:kind_name
     identifier: true
     range: string
@@ -345,6 +364,7 @@ slots:
       What the staff call this way of moving stock, and what identifies it.
 
   kind_happens:
+    title: What happens
     slot_uri: sorella:kind_happens
     range: string
     description: >-
@@ -352,6 +372,7 @@ slots:
       place the act is described rather than the paper.
 
   kind_document:
+    title: On paper
     slot_uri: sorella:kind_document
     range: string
     description: >-
@@ -360,6 +381,7 @@ slots:
       repaired.
 
   movement_kind:
+    title: Kind
     slot_uri: sorella:movement_kind
     range: MovementKind
     description: >-
@@ -368,6 +390,7 @@ slots:
       differing in nothing but a word.
 
   movement_out_of:
+    title: Out of
     slot_uri: sorella:movement_out_of
     range: Location
     description: >-
@@ -375,6 +398,7 @@ slots:
       place is inside the business or outside it.
 
   movement_into:
+    title: Into
     slot_uri: sorella:movement_into
     range: Location
     description: >-
@@ -382,6 +406,7 @@ slots:
       staff, a tasting.
 
   movement_ingredient:
+    title: Thing
     slot_uri: sorella:movement_ingredient
     range: Ingredient
     description: >-
@@ -389,6 +414,7 @@ slots:
       was weighed and nobody wrote down what was in it.
 
   movement_quantity:
+    title: How many
     slot_uri: sorella:movement_quantity
     range: decimal
     description: >-
@@ -396,6 +422,7 @@ slots:
       down.
 
   movement_unit:
+    title: Written in
     slot_uri: sorella:movement_unit
     range: Unit
     description: >-
@@ -403,6 +430,7 @@ slots:
       counted in — a bin bag is weighed whatever the thing arrived as.
 
   happened_on:
+    title: Dated
     slot_uri: sorella:happened_on
     range: date
     description: >-
@@ -411,6 +439,7 @@ slots:
       log learned it.
 
   written_by:
+    title: Written by
     slot_uri: sorella:written_by
     range: Person
     description: >-
@@ -418,12 +447,14 @@ slots:
       assert that somebody was there.
 
   movement_note:
+    title: Note
     slot_uri: sorella:movement_note
     range: string
     description: >-
       Anything written in words rather than in a column.
 
   count_note:
+    title: Notes at the foot
     slot_uri: sorella:count_note
     range: string
     description: >-
@@ -431,12 +462,14 @@ slots:
       counter writes what a column could not hold.
 
   line_count:
+    title: On sheet
     slot_uri: sorella:line_count
     range: StockCount
     description: >-
       Which sheet this line is on.
 
   count_line_written_as:
+    title: Written as
     slot_uri: sorella:count_line_written_as
     range: string
     description: >-
@@ -444,12 +477,14 @@ slots:
       is found and not read off a list.
 
   count_line_ingredient:
+    title: Thing
     slot_uri: sorella:count_line_ingredient
     range: Ingredient
     description: >-
       Which thing the line is about, where the cell resolves to one.
 
   count_line_where:
+    title: Counted at
     slot_uri: sorella:count_line_where
     range: Location
     description: >-
@@ -457,6 +492,7 @@ slots:
       count runs through the building.
 
   count_line_quantity:
+    title: Counted
     slot_uri: sorella:count_line_quantity
     range: decimal
     description: >-
@@ -464,6 +500,7 @@ slots:
       of one read off by eye.
 
   count_line_unit:
+    title: Written in
     slot_uri: sorella:count_line_unit
     range: Unit
     description: >-
@@ -471,6 +508,7 @@ slots:
       everywhere else — cartons and bags of one thing on one sheet.
 
   count_line_note:
+    title: Note
     slot_uri: sorella:count_line_note
     range: string
     description: >-
@@ -478,6 +516,7 @@ slots:
       where a line was struck through, that it was.
 
   ingredient_on_hand:
+    title: Thing
     slot_uri: sorella:ingredient_on_hand
     range: Ingredient
     description: >-
@@ -485,6 +524,7 @@ slots:
       stated.
 
   ingredient_where:
+    title: Place
     slot_uri: sorella:ingredient_where
     range: Location
     description: >-
@@ -492,6 +532,7 @@ slots:
       stated.
 
   ingredient_unit:
+    title: Unit
     slot_uri: sorella:ingredient_unit
     range: Unit
     description: >-
@@ -501,6 +542,7 @@ slots:
       conversion nobody has written down.
 
   ingredient_in:
+    title: Arrived
     slot_uri: sorella:ingredient_in
     range: decimal
     description: >-
@@ -518,6 +560,7 @@ slots:
             ingredient_unit: movement_unit
 
   ingredient_out:
+    title: Left
     slot_uri: sorella:ingredient_out
     range: decimal
     description: >-
@@ -536,6 +579,7 @@ slots:
             ingredient_unit: movement_unit
 
   ingredient_on_hand_net:
+    title: Standing
     slot_uri: sorella:ingredient_on_hand_net
     range: decimal
     equals_expression: '{ingredient_in} - {ingredient_out}'
@@ -546,6 +590,7 @@ slots:
       delivery they make.
 
   ingredient_reorder_level:
+    title: Reorder at
     slot_uri: sorella:ingredient_reorder_level
     range: decimal
     annotations:
@@ -559,6 +604,7 @@ slots:
       stated it is empty rather than nought.
 
   ingredient_pack_price:
+    title: Price a pack
     slot_uri: sorella:ingredient_pack_price
     range: decimal
     annotations:
@@ -573,6 +619,7 @@ slots:
       resolved at.
 
   ingredient_stock_value:
+    title: What it is worth
     slot_uri: sorella:ingredient_stock_value
     range: decimal
     equals_expression: '{ingredient_on_hand_net} * {ingredient_pack_price}'
@@ -582,6 +629,7 @@ slots:
       and the map names both.
 
   counted_ingredient:
+    title: Thing
     slot_uri: sorella_demo:counted_ingredient
     range: Ingredient
     description: >-
@@ -589,6 +637,7 @@ slots:
       group, never stated.
 
   counted_where:
+    title: Counted at
     slot_uri: sorella_demo:counted_where
     range: Location
     description: >-
@@ -596,6 +645,7 @@ slots:
       was standing when the line was written.
 
   counted_unit:
+    title: Unit
     slot_uri: sorella_demo:counted_unit
     range: Unit
     description: >-
@@ -603,6 +653,7 @@ slots:
       for the same reason: two units of one thing are two rows.
 
   counted_quantity:
+    title: Counted
     slot_uri: sorella_demo:counted_quantity
     range: decimal
     description: >-
@@ -620,5 +671,5 @@ slots:
             counted_unit: count_line_unit
 
 annotations:
-  valid_from: '2026-07-13T00:00:00+00:00'
+  valid_from: '2026-03-02T00:00:00+00:00'
   transcript: draft.txt

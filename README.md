@@ -57,12 +57,17 @@ so seeding it touches nothing else. Both targets create their databases on the
 first run.
 
 ```
-make demo-seed    seven weeks of paper into uniti_demo, then compile it
+make demo-seed    six months of paper into uniti_demo, then compile it
 make demo-serve   the walk, on port 8100, over the demonstration map
 ```
 
 `demo-serve` binds **8100** and `serve` binds 8000, so the two can be up at
 once and a URL says which is which.
+
+`demo-seed` prints what it put in the log — how many assertions, how many of
+them withdraw an earlier one, how many days the log learned things on, and the
+span of each of the two clocks. That is the seed's own done condition, and it
+is printed rather than described so it can be read off the run.
 
 Eight routes, and `/` is a walk through the stages rather than a menu:
 

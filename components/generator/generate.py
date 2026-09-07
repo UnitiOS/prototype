@@ -151,7 +151,10 @@ def columns(map_, class_name):
 
     Each column carries what the map says about it and nothing more. `ref` is
     the same test `seal` makes when it decides which column a value lands in:
-    a class range means the value names another entity.
+    a class range means the value names another entity. `title` is what the
+    map says this slot is called for a reader, falling back to the slot's own
+    name where the map states none — a header is printed from it, and nothing
+    in the code decides what a column is called.
     """
     view = map_["view"]
     if class_name not in view.all_classes():
@@ -173,6 +176,7 @@ def columns(map_, class_name):
                 "multivalued": bool(slot.multivalued),
                 "ref": slot.range in classes,
                 "description": slot.description or "",
+                "title": str(slot.title) if slot.title else str(slot.name),
             }
         )
     return out
@@ -434,7 +438,7 @@ def _NOW():
 
 
 def submit(conn, map_, class_name, *, subject, values, actor_id,
-           valid_from=None, recorded_at=None,
+           valid_from=None, recorded_at=None, revokes=None, source=None,
            authority=None, confidence=None, reason_code=None, note=None):
     """One form submission: one intent, N assertions.
 
@@ -442,6 +446,19 @@ def submit(conn, map_, class_name, *, subject, values, actor_id,
     URI never seen before — the subject, or the entity a ref field names — is
     registered under `uniti:uri` exactly as `seal` registers one, so the form
     and the seal put the same entity in the log rather than two.
+
+    `revokes` is keyed by field name too, and each value is the id of an
+    earlier assertion this submission withdraws. A field in both `values` and
+    `revokes` is a correction: what replaces the earlier row names it rather
+    than shadowing it. A field in `revokes` alone is a pure retraction — an
+    assertion carrying no value at all, which is how "we were wrong and have
+    nothing to put in its place" is said. Neither is the same act as a later
+    `valid_from` under the same predicate, which says the world moved, and the
+    two are told apart by nothing but this argument.
+
+    `source` is where the statement came from, in the kernel's own vocabulary.
+    It defaults to a person typing into a form, because that is what a form is;
+    a caller writing down what a document said passes its own.
 
     `authority` is who says so and `confidence` how sure they are; both land on
     every assertion the submission states, and both default to NULL, because
@@ -451,18 +468,26 @@ def submit(conn, map_, class_name, *, subject, values, actor_id,
 
     `reason_code` and `note` land on the intent — one act, one reason. `note`
     replaces the default description of the submission when it is given.
+
+    `stated` in the result is field name -> the id of the assertion that field
+    wrote. A correction needs the id of the row it withdraws, and this is where
+    a caller gets it.
     """
     fields = {c["name"]: c for c in columns(map_, class_name)}
-    unknown = sorted(set(values) - set(fields))
+    revokes = dict(revokes or {})
+    unknown = sorted((set(values) | set(revokes)) - set(fields))
     if unknown:
         raise MapError(
             f"{class_name} has no field {unknown} — it has {sorted(fields)}"
         )
-    if not values:
+    if not values and not revokes:
         raise MapError(f"nothing entered for {subject}")
 
+    withdrawn = [name for name in revokes if name not in values]
+
     by_uri, _ = _registry(conn)
-    named = [subject] + [f["uri"] for f in fields.values() if f["name"] in values]
+    named = [subject] + [f["uri"] for f in fields.values()
+                         if f["name"] in values or f["name"] in revokes]
     named += [str(v) for name, v in values.items() if fields[name]["ref"]]
 
     minting = []
@@ -484,11 +509,23 @@ def submit(conn, map_, class_name, *, subject, values, actor_id,
             **({"ref": ref(str(value))} if fields[name]["ref"]
                else {"value": str(value)}),
             "valid_from": valid_from,
-            "source": FORM_SOURCE,
+            "source": source or FORM_SOURCE,
             "authority": authority,
             "confidence": confidence,
+            "revokes": revokes.get(name),
         }
         for name, value in values.items()
+    ] + [
+        {
+            "subject": ref(subject),
+            "predicate": ref(fields[name]["uri"]),
+            "valid_from": valid_from,
+            "source": source or FORM_SOURCE,
+            "authority": authority,
+            "confidence": confidence,
+            "revokes": revokes[name],
+        }
+        for name in withdrawn
     ]
 
     intent_id, names, assertion_ids = perform(
@@ -504,9 +541,12 @@ def submit(conn, map_, class_name, *, subject, values, actor_id,
         recorded_at=recorded_at,
     )
     entities = {**by_uri, **names}
+    written = list(values) + withdrawn
     return {"intent_id": intent_id, "subject_id": entities[subject],
-            "predicates": {name: entities[fields[name]["uri"]] for name in values},
-            "assertions": assertion_ids, "minted": names}
+            "predicates": {name: entities[fields[name]["uri"]]
+                           for name in written},
+            "assertions": assertion_ids, "minted": names,
+            "stated": dict(zip(written, assertion_ids[len(minting):]))}
 
 
 # ---- rendering ------------------------------------------------------------

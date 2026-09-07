@@ -15,7 +15,8 @@ function is handed a built structure and turns it into markup:
     table_html   what `compile.compile_class()` returns: the rows it stored,
                  with each column's kind under its name, so a reader can see
                  which cells the graph computed and which it read as a
-                 parameter
+                 parameter — sortable, filterable, and printing what the
+                 business calls a thing wherever the caller handed it a name
     page         the shell both sit in: one inline style block and the two
                  clock boxes, which appear on every page
 
@@ -26,7 +27,12 @@ of the map.
 The two clocks are the point. They are on every page as a plain GET form
 submitting to the page it is on, so changing one and pressing the button is a
 reload of the same page at a different pair of clocks — and for a table that
-is a rebuild of the table.
+is a rebuild of the table. They are date boxes rather than text boxes: a clock
+that has to be typed as an ISO timestamp is a clock nobody moves.
+
+Sorting and filtering are links and a `<select>`, and the page they lead to is
+the same page with more on its query string. Nothing on it is JavaScript, and
+there is no state anywhere but the URL.
 """
 
 from html import escape
@@ -112,6 +118,13 @@ table.why tr.gone td { color: #8a8078; text-decoration: line-through; }
            overflow: auto; }
 a.why { text-decoration: none; border-bottom: 1px dotted #1c4f8b; }
 th a { color: #1c4f8b; }
+a.sort { text-decoration: none; font-size: .8rem; opacity: .55; }
+a.sort.on { opacity: 1; }
+form.filters { display: flex; gap: .75rem; align-items: baseline;
+               flex-wrap: wrap; margin: 0 0 1rem; padding: .7rem .85rem;
+               background: #fff; border: 1px solid #e2ded7; border-radius: 4px; }
+form.filters label { font-size: .8rem; color: #6b6259; }
+form.filters select { max-width: 15rem; }
 """
 
 # A range the map declares becomes an input the browser knows how to check.
@@ -128,15 +141,34 @@ INPUT_TYPE = {
 STEP = {"decimal": "any", "float": "any", "double": "any"}
 
 
+# What a filter and a sort are called on a URL. The prefix is what keeps a
+# column of any map from colliding with a clock, or with the other control.
+ONLY, SORT, DIRECTION = "only.", "sort", "dir"
+
+
 def _clocks(valid_at, as_of):
-    """The two boxes, submitting to the page they are on."""
+    """The two boxes, submitting to the page they are on.
+
+    Date boxes, so a clock is moved with the browser's own picker rather than
+    typed as an ISO timestamp. A clock that carries a time is shown to the day
+    it falls in, and moving it then writes a day back — which is what the
+    server reads a bare date as: the whole of that day.
+    """
     return (
         '<form class="clocks" method="get" action="">'
-        '<label>valid_at<br><input name="valid_at" value="{}"></label>'
-        '<label>as_of<br><input name="as_of" value="{}"></label>'
+        '<label>valid_at<br><input type="date" name="valid_at" value="{}">'
+        "</label>"
+        '<label>as_of<br><input type="date" name="as_of" value="{}"></label>'
         '<label><br><input type="submit" value="at these clocks"></label>'
         "</form>"
-    ).format(escape(str(valid_at)), escape(str(as_of)))
+    ).format(escape(str(valid_at)[:10]), escape(str(as_of)[:10]))
+
+
+def _query(params):
+    """A query string out of the parameters a page is at, safe in an href."""
+    return escape(urlencode(
+        {key: str(value) for key, value in params.items()
+         if value not in (None, "")}))
 
 
 def page(title, body, *, valid_at, as_of):
@@ -426,7 +458,9 @@ def form_html(built, *, valid_at, as_of, values=None, message=None, bad=False):
     return "\n".join(out)
 
 
-def table_html(built, *, valid_at, as_of, window=None):
+def table_html(built, *, valid_at, as_of, window=None, labels=None,
+               choices=None, chosen=None, sort=None, direction="asc",
+               held=None):
     """What `compile_class()` returns, as a table.
 
     The rows are the ones it read back out of the operational store after
@@ -441,22 +475,52 @@ def table_html(built, *, valid_at, as_of, window=None):
     assertion ever made under that pair — the value in the cell is the one
     standing at these clocks, and the others are on the other page.
 
+    A header prints the column's `title`, which is the map's, and a cell whose
+    value names another entity prints what `labels` calls that URI, which the
+    caller read out of the operational store. Where either is missing the name
+    underneath comes through unchanged, so a map that says neither still
+    renders — with the slot names and the URIs it had before.
+
+    `choices` is the values each filterable column actually holds and `chosen`
+    is which of them the reader picked; `sort` and `direction` are the column
+    the rows are in the order of. All four are the caller's, and all four live
+    on the URL, so a sorted and filtered table is a link somebody can send.
+
     `window` is what the log holds, and it is passed only when there are no
     rows: "nothing here" and "nothing was ever written down this early" are
     different answers and a reader cannot tell them apart from an empty table.
+    `held` is how many rows there were before the filter, said only when one
+    is on.
     """
     plan_ = built["plan"]
     cols = plan_["columns"]
+    labels = labels or {}
+    chosen = {name: value for name, value in (chosen or {}).items() if value}
+    choices = choices or {}
     carried = _carried(valid_at, as_of)
     class_name = str(plan_["class"])
+    titles = {str(col["name"]): str(col.get("title") or col["name"])
+              for col in cols}
+
+    # Everything the page is at, so that a sort link keeps the filter and a
+    # filter keeps the sort. The clocks are in it for the same reason.
+    state = {"valid_at": str(valid_at), "as_of": str(as_of)}
+    state.update({ONLY + name: value for name, value in chosen.items()})
+    if sort:
+        state.update({SORT: sort, DIRECTION: direction})
+
     out = [f"<h1>{escape(class_name)}</h1>"]
+    counted = (f"{len(built['rows'])} of {held} rows" if held is not None
+               else f"{len(built['rows'])} rows")
     out.append(
         f'<p class="note">{escape(str(plan_["table"]))}, '
-        f'{escape(str(plan_["version"]))} — {len(built["rows"])} rows, '
+        f'{escape(str(plan_["version"]))} — {counted}, '
         f"{len(cols)} columns, rebuilt at valid_at {escape(str(valid_at))}, "
         f"as_of {escape(str(as_of))}. Read back out of the operational store "
         "this page just filled; the log itself is not on this page.</p>"
     )
+    if choices:
+        out.append(_filters_html(titles, labels, choices, chosen, state))
 
     index = {str(col["name"]): i for i, col in enumerate(cols)}
     identity = next((i for i, col in enumerate(cols)
@@ -464,14 +528,20 @@ def table_html(built, *, valid_at, as_of, window=None):
 
     head = []
     for col in cols:
-        name = escape(str(col["name"]))
-        shown = name
+        name = str(col["name"])
+        shown = escape(titles[name])
         if plan_["shape"] == "grouped":
             shown = (f'<a href="/graph?class={escape(class_name)}'
-                     f'&amp;column={name}&amp;{carried}" '
-                     f'title="what the map says fills this column">{name}</a>')
-        head.append(f'<th>{shown}'
-                    f'<span class="kind">{escape(str(col["kind"]))}</span></th>')
+                     f'&amp;column={escape(name)}&amp;{carried}" '
+                     f'title="what the map says fills this column">{shown}</a>')
+        turned = "desc" if (sort == name and direction == "asc") else "asc"
+        arrow = "\u2195" if sort != name else (
+            "\u2191" if direction == "asc" else "\u2193")
+        link = _query({**state, SORT: name, DIRECTION: turned})
+        head.append(
+            f'<th>{shown} <a class="sort{" on" if sort == name else ""}" '
+            f'href="?{link}" title="sort by {escape(titles[name])}">{arrow}</a>'
+            f'<span class="kind">{escape(str(col["kind"]))}</span></th>')
 
     def opens(col, row):
         """The pair of URIs behind one cell, where the map reads a fact."""
@@ -492,7 +562,8 @@ def table_html(built, *, valid_at, as_of, window=None):
             if cell is None:
                 cells.append('<td class="empty"></td>')
                 continue
-            shown = escape(str(cell))
+            named = labels.get(str(cell), cell) if col["ref"] else cell
+            shown = escape(str(named))
             pair = opens(col, row)
             if pair:
                 shown = (f'<a class="why" href="/why?subject={_q(pair[0])}'
@@ -508,6 +579,37 @@ def table_html(built, *, valid_at, as_of, window=None):
         out.append('<p class="note">No rows at these clocks.</p>')
         out.append(_window_html(window))
     return "\n".join(out)
+
+
+def _filters_html(titles, labels, choices, chosen, state):
+    """One `<select>` per column whose values name something, as a GET form.
+
+    Which columns are here was decided by the caller and the values in each
+    are the ones the table actually holds, so a choice never returns nothing.
+    The clocks and the sort ride along as hidden fields: picking a filter must
+    not throw away the clock the reader set.
+    """
+    hidden = "".join(
+        f'<input type="hidden" name="{escape(key)}" value="{escape(value)}">'
+        for key, value in state.items() if not key.startswith(ONLY))
+    controls = []
+    for name, values in choices.items():
+        options = ['<option value="">any</option>']
+        for value in values:
+            selected = " selected" if chosen.get(name) == value else ""
+            shown = labels.get(str(value), value)
+            options.append(f'<option value="{escape(str(value))}"{selected}>'
+                           f"{escape(str(shown))}</option>")
+        controls.append(
+            f'<label>{escape(titles.get(name, name))}<br>'
+            f'<select name="{escape(ONLY + name)}">{"".join(options)}</select>'
+            "</label>")
+    clear = _query({key: value for key, value in state.items()
+                    if not key.startswith(ONLY)})
+    return ('<form class="filters" method="get" action="">' + hidden
+            + "".join(controls)
+            + '<label><br><button type="submit">show</button></label>'
+            + f'<label><br><a href="?{clear}">clear</a></label></form>')
 
 
 def _window_html(window):

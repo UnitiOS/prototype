@@ -24,9 +24,16 @@ log through `provenance` — the one reader outside the compiler, named in
 `CLAUDE.md`. It computes nothing: every number on every other page came out of
 the operational store.
 
-`?valid_at=` and `?as_of=` sit on every URL and default to now. They are
+`?valid_at=` and `?as_of=` sit on every URL and default to today. They are
 carried through every link and through the POST, so a page is always at a
-stated pair of clocks and moving one is a reload.
+stated pair of clocks and moving one is a reload. A clock written as a bare
+date means the whole of that day, which is what makes a date picker a usable
+control: `as_of=2026-09-07` includes what was recorded this afternoon, where
+midnight would have excluded it.
+
+A table also carries `sort`, `dir` and one `only.<column>` per filter. All of
+them live on the URL and nowhere else, so a table somebody sorted and filtered
+is a link they can send.
 
 Two databases, and which one a route holds is the separation made visible.
 `UNITI_DSN` is the log: the form reads it and the write gate writes it.
@@ -73,8 +80,8 @@ import provenance  # noqa: E402
 import render  # noqa: E402
 from compile import OPS_DSN, _aggregate_classes, compile_class  # noqa: E402
 from compile import plan_for  # noqa: E402
-from generate import MapError, _identifier, _type_slot  # noqa: E402
-from generate import form, read_map, submit  # noqa: E402
+from generate import MapError, _identifier, _projected_options  # noqa: E402
+from generate import _type_slot, form, read_map, submit  # noqa: E402
 from perform import DSN as KERNEL_DSN  # noqa: E402
 from perform import connect as connect_kernel  # noqa: E402
 
@@ -82,8 +89,29 @@ from perform import connect as connect_kernel  # noqa: E402
 MAX_BODY = 1 << 20
 
 
-def _now():
-    return datetime.now(timezone.utc).isoformat()
+def _today():
+    """The default for both clocks, and a value a date box can hold."""
+    return datetime.now(timezone.utc).date().isoformat()
+
+
+def _instant(clock):
+    """One clock as the moment a query is asked at.
+
+    A bare date is the whole of that day, not the midnight at the start of it.
+    That is what lets the clocks be date boxes: a reader who sets `as_of` to
+    today means everything the log knows today, and midnight would answer with
+    everything it knew last night. A clock that carries a time is passed
+    through untouched — somebody who wrote one meant it.
+    """
+    written = str(clock)
+    if len(written) != 10:
+        return written
+    try:
+        day = datetime.fromisoformat(written)
+    except ValueError:
+        return written
+    return day.replace(hour=23, minute=59, second=59, microsecond=999999,
+                       tzinfo=timezone.utc).isoformat()
 
 
 class ClockError(ValueError):
@@ -100,7 +128,7 @@ def _clock(fields, name):
     """
     written = (fields.get(name, [""])[0] or "").strip()
     if not written:
-        return _now()
+        return _today()
     try:
         datetime.fromisoformat(written)
     except ValueError:
@@ -266,6 +294,68 @@ def _table_classes(map_):
     return sorted(_aggregate_classes(map_))
 
 
+def _labels(map_, cols):
+    """URI -> what the business calls it, for every class a column ranges over.
+
+    Read out of the operational store, one query per class, through the same
+    function a form reads its choices with: the identifier the map declares for
+    that class, off the projection of it. A class with no identifier, or none
+    compiled, contributes nothing and its cells stay the URIs they were.
+
+    Nothing here knows what any class is called. The ranges came off the map,
+    the identifier came off the map, and the values came out of the store.
+    """
+    out = {}
+    for range_ in sorted({str(col["range"]) for col in cols if col["ref"]}):
+        for uri, label in _projected_options(map_, range_) or []:
+            if label:
+                out[uri] = label
+    return out
+
+
+def _choices(rows, cols):
+    """The values each filterable column actually holds, in order.
+
+    A column is filterable when its value names another entity — the map's own
+    test, the same one that decides a form field is a `<select>`. The values
+    are read off the rows rather than out of the store, so a choice always
+    returns something.
+    """
+    out = {}
+    for i, col in enumerate(cols):
+        if not col["ref"]:
+            continue
+        held = sorted({str(row[i]) for row in rows if row[i] is not None})
+        if held:
+            out[str(col["name"])] = held
+    return out
+
+
+def _only(rows, cols, chosen):
+    """The rows a reader asked to keep. An empty choice keeps everything."""
+    index = {str(col["name"]): i for i, col in enumerate(cols)}
+    for name, value in chosen.items():
+        if value:
+            rows = [row for row in rows if str(row[index[name]]) == value]
+    return rows
+
+
+def _in_order(rows, cols, name, descending):
+    """The rows by one column, numbers as numbers and blanks always last."""
+    index = [str(col["name"]) for col in cols].index(name)
+
+    def key(row):
+        cell = row[index]
+        if cell is None:
+            return (-1 if descending else 1, 0.0, "")
+        try:
+            return (0, float(cell), "")
+        except (TypeError, ValueError):
+            return (0, 0.0, str(cell).lower())
+
+    return sorted(rows, key=key, reverse=descending)
+
+
 class Handler(BaseHTTPRequestHandler):
     server_version = "uniti"
     map_ = None
@@ -299,8 +389,8 @@ class Handler(BaseHTTPRequestHandler):
         try:
             valid_at, as_of = _clocks(query)
         except ClockError as exc:
-            now = _now()
-            return self._refuse("Not a clock", str(exc), now, now, 400)
+            today = _today()
+            return self._refuse("Not a clock", str(exc), today, today, 400)
         try:
             if not parts:
                 return self._home(valid_at, as_of)
@@ -315,7 +405,7 @@ class Handler(BaseHTTPRequestHandler):
             if len(parts) == 2 and parts[0] == "form":
                 return self._form(parts[1], valid_at, as_of)
             if len(parts) == 2 and parts[0] == "table":
-                return self._table(parts[1], valid_at, as_of)
+                return self._table(parts[1], query, valid_at, as_of)
             return self._refuse("Not a page", f"There is no {self.path} here.",
                                 valid_at, as_of, 404)
         except MapError as exc:
@@ -330,8 +420,8 @@ class Handler(BaseHTTPRequestHandler):
         try:
             valid_at, as_of = _clocks(query)
         except ClockError as exc:
-            now = _now()
-            return self._refuse("Not a clock", str(exc), now, now, 400)
+            today = _today()
+            return self._refuse("Not a clock", str(exc), today, today, 400)
         if len(parts) != 2 or parts[0] != "form":
             return self._refuse("Not a page", f"Nothing accepts a write at "
                                 f"{self.path}.", valid_at, as_of, 404)
@@ -433,7 +523,7 @@ class Handler(BaseHTTPRequestHandler):
     def _built_form(self, class_name, valid_at, as_of):
         with connect_kernel() as kernel:
             return form(kernel, self.map_, class_name,
-                        valid_at=valid_at, as_of=as_of)
+                        valid_at=_instant(valid_at), as_of=_instant(as_of))
 
     def _prefill(self, class_name, entered=None):
         """The class's own name, in the slot the map flags as carrying it.
@@ -496,18 +586,39 @@ class Handler(BaseHTTPRequestHandler):
         self._form(class_name, valid_at, as_of,
                    values=self._prefill(class_name), message=message)
 
-    def _table(self, class_name, valid_at, as_of):
-        held = None
+    def _table(self, class_name, query, valid_at, as_of):
+        window = None
         with connect_kernel() as kernel, psycopg.connect(OPS_DSN) as ops:
             built = compile_class(kernel, ops, self.map_, class_name,
-                                  valid_at=valid_at, as_of=as_of)
+                                  valid_at=_instant(valid_at),
+                                  as_of=_instant(as_of))
             # No rows is two different answers, and a reader cannot tell them
             # apart: nothing stands at these clocks, or nothing was ever
             # written down this early. The log itself says which.
             if not built["rows"]:
-                held = provenance.window(kernel)
-        body = render.table_html(built, valid_at=valid_at, as_of=as_of,
-                                 window=held)
+                window = provenance.window(kernel)
+
+        cols = built["plan"]["columns"]
+        labels = _labels(self.map_, cols)
+        choices = _choices(built["rows"], cols)
+        fields = parse_qs(query)
+        chosen = {name: (fields.get(render.ONLY + name, [""])[0] or "").strip()
+                  for name in choices}
+        held = len(built["rows"])
+        built["rows"] = _only(built["rows"], cols, chosen)
+        sort = (fields.get(render.SORT, [""])[0] or "").strip()
+        direction = (fields.get(render.DIRECTION, ["asc"])[0] or "asc").strip()
+        if sort in {str(col["name"]) for col in cols}:
+            built["rows"] = _in_order(built["rows"], cols, sort,
+                                      direction == "desc")
+        else:
+            sort = ""
+
+        body = render.table_html(
+            built, valid_at=valid_at, as_of=as_of, window=window,
+            labels=labels, choices=choices, chosen=chosen, sort=sort,
+            direction=direction,
+            held=held if len(built["rows"]) != held else None)
         self._send(render.page(f"{class_name} — table", body,
                                valid_at=valid_at, as_of=as_of))
 

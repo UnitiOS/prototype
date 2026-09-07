@@ -131,7 +131,7 @@ serve: venv
 # dated in the past and rerunnable: it drops the three tables and writes them
 # again through the same write gate a form writes through.
 DEMO_BUSINESS := sorella_demo
-DEMO_MAP      := business/$(DEMO_BUSINESS)/v1.yaml
+DEMO_MAP      := business/$(DEMO_BUSINESS)/v2.yaml
 DEMO_DB       := uniti_demo
 DEMO_OPS_DB   := uniti_demo_ops
 DEMO_DSN      := postgresql://uniti:uniti@localhost:5433/$(DEMO_DB)
@@ -140,7 +140,7 @@ DEMO_OPS_DSN  := postgresql://uniti:uniti@localhost:5433/$(DEMO_OPS_DB)
 # the same one as the thing it replaces is indistinguishable from it by URL.
 DEMO_PORT     := 8100
 # What the compiler printed, kept where a person looks at what came out.
-DEMO_RENDER   := build/$(DEMO_BUSINESS)/v1/tables.txt
+DEMO_RENDER   := build/$(DEMO_BUSINESS)/v2/tables.txt
 
 # Seed, then compile — in that order and both here, because the forms read
 # their choices out of the operational store and a store nothing has filled

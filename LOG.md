@@ -1334,3 +1334,161 @@ the Mermaid *text* was checked against the map — 12 classes, both aggregates,
 the parameter — and the rendered picture was not. If the CDN is unreachable the
 `<div class="mermaid">` shows that text instead of a diagram, which is legible
 but is not the page as intended.
+
+## 2026-09-07 — Demo item three: both clocks alive, corrections in the log, a table that can be read
+
+`NEXT.md`'s six conditions, each run.
+
+### What was changed
+
+**The write gate takes a correction.** `generate.submit()` gains `revokes`
+(field name -> the assertion id it withdraws), `source`, and a `stated` key in
+its result giving field name -> the id that field wrote, which is how a caller
+gets the id it later revokes. A field in `values` and `revokes` together is a
+correction; a field in `revokes` alone writes an assertion with no value at
+all, which the kernel's `value_exactly_one` constraint has always allowed and
+nothing had ever written. No schema change: the column list is untouched.
+
+**The map got titles and an earlier adoption date.** `business/sorella_demo/`
+was resealed as **v2**: all 51 slots carry a `title`, and `valid_from` moved
+from 13 July to 2 March. Not one `slot_uri` moved and not one slot name
+changed, so every predicate is the predicate it was. `make demo-seed` and
+`make demo-serve` point at v2; v1 stays where it is.
+
+**The seed states both clocks.** `scripts/seed_demo.py` rewritten: 26 weeks,
+20 ingredients, 5 suppliers, 3 internal places, and `recorded_at` passed on
+every submission from §3.2's own *lag* column — a pallet note signed at the
+door lands the same day, a dairy note left on the chiller shelf lands three
+days later, Kingsdown's text that evening, a till receipt after a fortnight,
+the waste sheet one to six days later from memory. `source` and `confidence`
+come off the same table. A stated `LEARNED_BY = 2026-09-05` clamps the tail, so
+nothing is recorded in the future and two runs still agree.
+
+**The table renders names and can be used.** `render.table_html` prints a
+column's `title` and, for a cell whose value names another entity, what the
+operational store calls it — read through the same `_projected_options` a form
+reads its dropdowns with, one query per class, keyed off the identifier the map
+declares. Sorting is a link, filtering is a `<select>` per ref column, and both
+live on the URL. The clock boxes became `type="date"`, and `serve._instant()`
+reads a bare date as the whole of that day, so `as_of=today` includes what was
+written this afternoon.
+
+### 1 · The seed, twice from empty
+
+`make demo-seed`, and the same numbers both runs (`diff` clean):
+
+```
+1074 intents, 9684 assertions
+assertions              9736
+carrying revokes        32
+distinct recorded days  184
+valid_from              2026-03-02 to 2026-08-30 (181 days)
+recorded_at             2026-03-02 to 2026-09-07
+  Ingredient 20   InternalLocation 3   Location 3   MovementKind 5
+  Person 3   StockCount 6   StockCountLine 126   StockMovement 859
+  Supplier 5   Unit 11
+```
+
+Against the targets: 20 ingredients (asked 20), 859 movements (asked 800),
+181 days (asked ~180), 184 distinct recorded days (asked 20), 32 revoking
+assertions (asked 30), 6 count sheets. Was 8 / 190 / 48 days / **1** / **0**.
+
+### 2 · One `valid_at`, three `as_of`
+
+`/table/IngredientOnHand?valid_at=2026-08-30`, three `as_of`:
+
+| as_of | rows | Cocoa 22/24, Dry store, bags — Standing | Price a pack |
+|---|---|---|---|
+| 2026-04-15 | 119 | 15 | 41.00 |
+| 2026-06-15 | 152 | 31 | 41.00 |
+| 2026-09-05 | 164 | 32 | 41.00 |
+
+Three different answers to one question about one day. The sharper pair is
+either side of the price correction, same `valid_at`:
+
+| as_of | Standing | Price a pack | What it is worth |
+|---|---|---|---|
+| 2026-03-10 | 7 | **4.10** | 28.70 |
+| 2026-03-23 | 14 | **41.00** | 574.00 |
+
+The world did not change between those two rows. What changed is what the log
+knew about it.
+
+### 3 · `/why` shows the withdrawal
+
+`/why?subject=sorella:item_cocoa_22_24&predicate=sorella:item_pack_price`,
+two rows, one `<tr class="gone">`:
+
+```
+4.10   valid_from 2026-03-02  recorded_at 2026-03-02  human_stated       high  Marina Devlin                        revoked by c6670548
+41.00  valid_from 2026-03-02  recorded_at 2026-03-23  document_extracted high  Terra Nostra invoice, checked …      revokes 1b2669d0
+```
+
+Beside it, the other two shapes, on the same page under other subjects:
+
+```
+sea salt   11.50                          recorded 2026-03-02   revoked by 66f2169c
+sea salt   retraction — carries no value  recorded 2026-04-14   revokes 4cd85d5b
+pistachio  203.00  valid_from 2026-03-02  recorded 2026-03-02   (nothing)
+pistachio  214.00  valid_from 2026-06-08  recorded 2026-06-08   (nothing)
+```
+
+A correction, a pure retraction, and a change. The log tells the three apart
+without being asked to, which is `CLAUDE.md`'s first settled finding with data
+under it for the first time.
+
+### 4 · Names, not URIs
+
+Scraping every `<td>` of `/table/IngredientOnHand`: **0 cells carry a URI**
+(164 rows × 9 columns). Headers read
+`Thing · Place · Unit · Arrived · Left · Standing · Reorder at · Price a pack ·
+What it is worth`. Both came out of the map — the titles are the map's, the
+names are the identifier slot of whatever class the column ranges over, read
+out of the operational store.
+
+### 5 · Sort, filter, clock
+
+- unsorted: `Base 50 stabiliser … (blank)`; by Thing descending:
+  `Whole milk, kitchen … (blank)` — reordered, blanks last either way.
+- by What it is worth, descending: `13248.00, 10285.00, 9855.96`.
+- 164 rows; one thing 7; one place 34; both together 2.
+- the clock is two `<input type="date">`.
+
+### 6 · `make check`, and the grep
+
+`make check` exits 0 — **74 tests**, replay byte-identical twice
+(5,334 bytes). The grep over `components/` for six business terms finds one
+line: `components/interview/SKILL.md:89`, prose in a skill, in a sentence about
+what an interviewer should listen for. No `.py` and no `.sql` matches.
+
+### Surprising
+
+**Two stale servers held port 8100 again.** Same failure as 6 Sep, same tell: a
+freshly started server bound the port, curl was answered by a v1 process from
+the previous session, and the first probe reported the old markup as though
+nothing had changed. Windows accepts the second bind silently. It cost a whole
+probe run and it is the second time; the check before believing any page is
+`Get-CimInstance Win32_Process` for `serve.py`, not `curl`.
+
+**A date is not a clock until it is the whole day.** Making the clock boxes
+`type="date"` is one line, and on its own it breaks the loop: `as_of=today`
+would parse as midnight, and a write made an hour ago would be invisible on the
+page that had just written it. So a bare date is read as the *end* of that day,
+which is what makes a date picker a usable control. Checked rather than
+reasoned about: a POST to `/form/StockMovement` came back listed on the same
+page at `as_of=2026-09-07`. It is a widening of what a clock means on a URL, and
+in the web layer only — the compiler's CLI still reads `--as-of 2026-06-16` as
+midnight.
+
+**The whole seed runs in seven and a half seconds.** 1,074 `perform()` calls,
+each its own transaction, each preceded by a full registry read — 9,736
+assertions through the same write gate a form writes through. The cost that was
+paid deliberately turns out not to be a cost.
+
+**The net column sums to zero and always will.** Summing `Standing` over every
+row of the balance gives exactly 0.00 at every clock, because every movement is
+counted at both ends and the supplier's side is the negative of ours. It is
+correct, and it makes the whole-table total useless as evidence — the row is
+the unit, not the table. `OPEN.md` already carries the question of whether a
+balance is scoped to internal places; this is what the absence of that scoping
+looks like arithmetically.
