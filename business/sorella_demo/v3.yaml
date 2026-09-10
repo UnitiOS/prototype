@@ -1,0 +1,554 @@
+id: https://uniti.example/sorella_demo
+name: sorella_gelato_demo
+version: v3
+title: Sorella Gelato — what the kitchen holds
+description: 'One corner of Sorella Gelato: the things the kitchen buys, the places
+  they sit in, the three pieces of paper that say what came in, what went out and
+  what was found on the shelf, and the two totals a person reads off them.
+
+  It is Sorella narrowed and not Sorella changed. Every slot that means what a slot
+  of business/sorella/v3.yaml means carries that slot''s own `slot_uri` under the
+  `sorella:` prefix, because a slot''s identity is its URI: the same fact stated here
+  and there is a fact under one predicate. Only the count total, which v3 has no class
+  for, declares URIs of its own.
+
+  Twelve classes. Nine of them are what the business is and three are what it writes:
+  a movement, a count sheet and a line on one. Two more are computed and stated by
+  nobody — what the movements say is standing, and what the count sheets found — and
+  they are deliberately two tables rather than one subtraction, because they answer
+  different questions and the reader takes the difference.
+
+  It states vocabulary only. Not one fact is here: the eight things, the eight places,
+  the five ways stock moves, the three people, the movements and the count sheets
+  are rows a generated form writes.'
+prefixes:
+  linkml: https://w3id.org/linkml/
+  sorella: https://uniti.example/sorella/
+  sorella_demo: https://uniti.example/sorella_demo/
+default_prefix: sorella_demo
+imports:
+- linkml:types
+default_range: string
+classes:
+  Location:
+    description: 'One place a thing can be. The plain case is a place that is not
+      inside the business and is not a supplier either: the kitchen bin, staff, and
+      tastings. Nothing is counted at one of them; they are where stock stops being
+      the business''s, and they are places for exactly that reason.'
+    slots:
+    - entity_class
+    - location_name
+    - location_description
+  InternalLocation:
+    is_a: Location
+    description: 'A place inside the business. Two of them here: the dry store, which
+      is ambient, and the walk-in chiller, which is kept between two and four degrees.
+      These are the ones that hold a stock anybody counts.'
+    slots:
+    - location_temperature
+  Supplier:
+    is_a: Location
+    description: 'One company the business buys from, and a place before it is anything
+      else: the milk is the dairy''s until the driver puts it in the chiller, so a
+      delivery is a movement out of the dairy and into the chiller and the two ends
+      are the same kind of thing.'
+    slots:
+    - outside_where
+    - supplier_brings
+    - supplier_rhythm
+    - supplier_lead_time
+  Person:
+    description: 'Someone who works in the business and puts their name on a document.
+      A name and a job written as a phrase, and nothing else: what the paper carries
+      is all anybody has.'
+    slots:
+    - entity_class
+    - person_name
+    - person_role
+  Unit:
+    description: What a quantity is counted in, and a thing in its own right rather
+      than a word typed into a box. A bag of milk is ten litres and a bag of cocoa
+      is five kilograms, so the word alone does not say how much and the meaning is
+      carried beside it.
+    slots:
+    - entity_class
+    - unit_name
+    - unit_meaning
+  Ingredient:
+    description: One thing the kitchen buys and counts. Its name is what the staff
+      call it and what identifies it; beside that it carries who it is bought from,
+      what one pack costs as it arrives, what a count of it is written in, and the
+      level at which it is reordered where anybody has stated one.
+    slots:
+    - entity_class
+    - item_name
+    - item_counted_in
+    - item_supplier
+    - item_pack_price
+    - item_reorder_level
+    - item_note
+  MovementKind:
+    description: 'One of the ways stock moves, written once rather than retyped on
+      every document: what it is called, what actually happens, and what gets filled
+      in on paper. Which of them a particular movement was is a field on the movement.'
+    slots:
+    - entity_class
+    - kind_name
+    - kind_happens
+    - kind_document
+  StockMovement:
+    description: 'One thing moving from one place to another, once. A delivery adds
+      and a bin subtracts and nothing has to say so: the direction falls out of the
+      two ends, because a supplier is a place and a bin is a place and the movement
+      names both.
+
+      Almost everything on it is optional. Somebody weighs the bin without noting
+      what was in it, a tin is opened for a tasting and nobody writes who did it,
+      and a system that refuses the line is a system they stop using.'
+    slots:
+    - entity_class
+    - movement_kind
+    - movement_out_of
+    - movement_into
+    - movement_ingredient
+    - movement_quantity
+    - movement_unit
+    - happened_on
+    - written_by
+    - movement_note
+  StockCount:
+    description: 'One count sheet: a blank ruled sheet, monthly, with a date at the
+      head and who counted. It has no number on it and nothing in the business identifies
+      one, so it carries no key — two counts of one store on one day are two counts,
+      and a disagreement between them is a fact rather than a tie to be broken.'
+    slots:
+    - entity_class
+    - happened_on
+    - written_by
+    - count_note
+  StockCountLine:
+    description: 'One line on a count sheet: the sheet it is on, the item as it was
+      written, the thing that resolves to, where the counter was standing, the number
+      and the unit. The paper has no column for where, and the count runs through
+      the building, so it is asked for here although the sheet never asks.'
+    slots:
+    - entity_class
+    - line_count
+    - count_line_written_as
+    - count_line_ingredient
+    - count_line_where
+    - count_line_quantity
+    - count_line_unit
+    - count_line_note
+  IngredientOnHand:
+    description: 'What arrived and what left, per thing, per place and per unit it
+      was written in. Nobody states a row of this: every value on it is computed from
+      the movements at a stated pair of clocks.
+
+      The two totals are the same sum over the same movements grouped two different
+      ways, one by where a movement went and one by where it came from, so a pallet
+      is an arrival at the dry store and a departure from the supplier in the same
+      breath. Nothing carries a sign; the subtraction beside them is where the sign
+      lives.'
+    slots:
+    - ingredient_on_hand
+    - ingredient_where
+    - ingredient_unit
+    - ingredient_in
+    - ingredient_out
+    - ingredient_on_hand_net
+    - ingredient_reorder_level
+    - ingredient_pack_price
+    - ingredient_stock_value
+  CountedOnHand:
+    description: 'What the count sheets found, per thing, per place and per unit:
+      the same shape as IngredientOnHand, totalled off the count lines instead of
+      off the movements.
+
+      It is a second table and not a column on the first. The two answer different
+      questions — what the paper says should be there, and what somebody found when
+      they looked — and the reader takes the difference.'
+    slots:
+    - counted_ingredient
+    - counted_where
+    - counted_unit
+    - counted_quantity
+slots:
+  entity_class:
+    title: Class
+    slot_uri: sorella:entity_class
+    designates_type: true
+    range: string
+    description: Which class this entity is an instance of. Stated as a fact with
+      both clocks, never guessed from which columns happen to be filled.
+  location_name:
+    title: Place
+    slot_uri: sorella:location_name
+    identifier: true
+    range: string
+    description: What the staff call this place, and what identifies it.
+  location_description:
+    title: What it is
+    slot_uri: sorella:location_description
+    range: string
+    description: What it is, in the words the business uses. For a store that is what
+      goes in it; for an outside place it is usually where ownership passes.
+  location_temperature:
+    title: Kept at
+    slot_uri: sorella:location_temperature
+    range: string
+    description: How cold it is kept, stated the way the business states it, which
+      is a range of two numbers for the chiller and the word ambient for the dry store.
+  outside_where:
+    title: Where they are
+    slot_uri: sorella:outside_where
+    range: string
+    description: The town or county it is in. Coarser than an address, and that is
+      all anybody says.
+  supplier_brings:
+    title: Brings
+    slot_uri: sorella:supplier_brings
+    range: string
+    description: What this supplier brings, in one phrase rather than a list of items,
+      because that is how the business says it and because the items already name
+      their own supplier.
+  supplier_rhythm:
+    title: Comes
+    slot_uri: sorella:supplier_rhythm
+    range: string
+    description: How often they come, and on which days.
+  supplier_lead_time:
+    title: Lead time
+    slot_uri: sorella:supplier_lead_time
+    range: string
+    description: How long between ordering and arriving, in the sentence the business
+      uses rather than as a number of days.
+  person_name:
+    title: Name
+    slot_uri: sorella:person_name
+    identifier: true
+    range: string
+    description: What the business calls this person, and what identifies them.
+  person_role:
+    title: Job
+    slot_uri: sorella:person_role
+    range: string
+    description: Their job, as the business writes it, which is a phrase and sometimes
+      carries the hours.
+  unit_name:
+    title: Unit
+    slot_uri: sorella:unit_name
+    identifier: true
+    range: string
+    description: The word — bag, can, sack, tin, carton, kilo. The word alone often
+      does not say how much.
+  unit_meaning:
+    title: What it means
+    slot_uri: sorella:unit_meaning
+    range: string
+    description: What the word means in this business, which is the only thing that
+      disambiguates it.
+  item_name:
+    title: Thing
+    slot_uri: sorella:item_name
+    identifier: true
+    range: string
+    description: What the business calls it, and what identifies it. Nobody says item
+      4471; they say the dextrose.
+  item_counted_in:
+    title: Counted in
+    slot_uri: sorella:item_counted_in
+    range: Unit
+    description: What a count of it is written in. It is a thing a fact points at
+      rather than a unit fixed on this slot, because items disagree about which unit
+      they are counted in and the same word means different amounts.
+  item_supplier:
+    title: Bought from
+    slot_uri: sorella:item_supplier
+    range: Supplier
+    description: Who it is bought from.
+  item_pack_price:
+    title: Price a pack
+    slot_uri: sorella:item_pack_price
+    range: decimal
+    description: What one pack costs as it arrives. It has a history — the pistachio
+      paste has been three prices in two years — and the history is the log's, not
+      this slot's.
+  item_reorder_level:
+    title: Reorder at
+    slot_uri: sorella:item_reorder_level
+    range: decimal
+    description: The level at which this thing is reordered, in what it is counted
+      in. Three of the eight have one; the other five have nothing written down, which
+      is not a level of nought.
+  item_note:
+    title: Note
+    slot_uri: sorella:item_note
+    range: string
+    description: What the business says about this thing's units — that a carton is
+      ten bags, that a bag is volume and a recipe is mass.
+  kind_name:
+    title: Kind of movement
+    slot_uri: sorella:kind_name
+    identifier: true
+    range: string
+    description: What the staff call this way of moving stock, and what identifies
+      it.
+  kind_happens:
+    title: What happens
+    slot_uri: sorella:kind_happens
+    range: string
+    description: What actually happens, in the business's own words. It is the only
+      place the act is described rather than the paper.
+  kind_document:
+    title: On paper
+    slot_uri: sorella:kind_document
+    range: string
+    description: What gets filled in and by whom. For two of the five the answer is
+      that nothing is written down, and the word is recorded rather than repaired.
+  movement_kind:
+    title: Kind
+    slot_uri: sorella:movement_kind
+    range: MovementKind
+    description: 'Which of the five ways this movement was. The kind lives here rather
+      than in a class per kind: five movement classes would be five forms differing
+      in nothing but a word.'
+  movement_out_of:
+    title: Out of
+    slot_uri: sorella:movement_out_of
+    range: Location
+    description: Where it came from, drawn from the same list of places whether the
+      place is inside the business or outside it.
+  movement_into:
+    title: Into
+    slot_uri: sorella:movement_into
+    range: Location
+    description: 'Where it went. The outside destinations are places too: the bin,
+      staff, a tasting.'
+  movement_ingredient:
+    title: Thing
+    slot_uri: sorella:movement_ingredient
+    range: Ingredient
+    description: Which thing moved, where the movement is of one. Empty when the bin
+      was weighed and nobody wrote down what was in it.
+  movement_quantity:
+    title: How many
+    slot_uri: sorella:movement_quantity
+    range: decimal
+    description: How many, or how much. Empty whenever the business did not write
+      one down.
+  movement_unit:
+    title: Written in
+    slot_uri: sorella:movement_unit
+    range: Unit
+    description: What the number on this line is in. Not always what the thing is
+      counted in — a bin bag is weighed whatever the thing arrived as.
+  happened_on:
+    title: Dated
+    slot_uri: sorella:happened_on
+    range: date
+    description: 'The date written on the paper. A person fills it in, which is why
+      it is a slot: it is what the document says about the world, not when the log
+      learned it.'
+  written_by:
+    title: Written by
+    slot_uri: sorella:written_by
+    range: Person
+    description: Who put their name on it. Often nobody did, and a required one would
+      assert that somebody was there.
+  movement_note:
+    title: Note
+    slot_uri: sorella:movement_note
+    range: string
+    description: Anything written in words rather than in a column.
+  count_note:
+    title: Notes at the foot
+    slot_uri: sorella:count_note
+    range: string
+    description: The notes at the foot of the count sheet, in sentences. It is where
+      a counter writes what a column could not hold.
+  line_count:
+    title: On sheet
+    slot_uri: sorella:line_count
+    range: StockCount
+    description: Which sheet this line is on.
+  count_line_written_as:
+    title: Written as
+    slot_uri: sorella:count_line_written_as
+    range: string
+    description: The cell as it stands on the paper, because the item is written as
+      it is found and not read off a list.
+  count_line_ingredient:
+    title: Thing
+    slot_uri: sorella:count_line_ingredient
+    range: Ingredient
+    description: Which thing the line is about, where the cell resolves to one.
+  count_line_where:
+    title: Counted at
+    slot_uri: sorella:count_line_where
+    range: Location
+    description: Where the line was counted. The sheet has no column for it and the
+      count runs through the building.
+  count_line_quantity:
+    title: Counted
+    slot_uri: sorella:count_line_quantity
+    range: decimal
+    description: The counted column. It can be a number of sealed packs or a fraction
+      of one read off by eye.
+  count_line_unit:
+    title: Written in
+    slot_uri: sorella:count_line_unit
+    range: Unit
+    description: What the number is in, where the cell says. The same mismatch as
+      everywhere else — cartons and bags of one thing on one sheet.
+  count_line_note:
+    title: Note
+    slot_uri: sorella:count_line_note
+    range: string
+    description: What is written beside the number — one broken into, part used —
+      and, where a line was struck through, that it was.
+  ingredient_on_hand:
+    title: Thing
+    slot_uri: sorella:ingredient_on_hand
+    range: Ingredient
+    description: The thing a row is about. A dimension of a computed group, never
+      stated.
+  ingredient_where:
+    title: Place
+    slot_uri: sorella:ingredient_where
+    range: Location
+    description: The place a row is about. A dimension of a computed group, never
+      stated.
+  ingredient_unit:
+    title: Unit
+    slot_uri: sorella:ingredient_unit
+    range: Unit
+    description: What the number on the movement was written in, and the third dimension
+      because the map converts between units nowhere. A carton of Base 50 and a bag
+      of it are two rows, and adding them would state a conversion nobody has written
+      down.
+  ingredient_in:
+    title: Arrived
+    slot_uri: sorella:ingredient_in
+    range: decimal
+    description: Everything of this thing that arrived at this place, summed over
+      the movements at whatever pair of clocks the question is asked at. Computed,
+      never stated.
+    annotations:
+      aggregate:
+        value:
+          over: StockMovement
+          sum: movement_quantity
+          by:
+            ingredient_on_hand: movement_ingredient
+            ingredient_where: movement_into
+            ingredient_unit: movement_unit
+          where:
+            movement_into:
+              is_a: InternalLocation
+            movement_ingredient:
+              is_a: Ingredient
+  ingredient_out:
+    title: Left
+    slot_uri: sorella:ingredient_out
+    range: decimal
+    description: Everything of this thing that left this place. The same sum over
+      the same movements as ingredient_in, grouped by where they came from instead
+      of where they went, which is the whole of what direction means here.
+    annotations:
+      aggregate:
+        value:
+          over: StockMovement
+          sum: movement_quantity
+          by:
+            ingredient_on_hand: movement_ingredient
+            ingredient_where: movement_out_of
+            ingredient_unit: movement_unit
+          where:
+            movement_out_of:
+              is_a: InternalLocation
+            movement_ingredient:
+              is_a: Ingredient
+  ingredient_on_hand_net:
+    title: Standing
+    slot_uri: sorella:ingredient_on_hand_net
+    range: decimal
+    equals_expression: '{ingredient_in} - {ingredient_out}'
+    description: 'What is standing at this place, of this thing, in this unit: everything
+      that arrived less everything that left, scoped to internal storage locations.'
+  ingredient_reorder_level:
+    title: Reorder at
+    slot_uri: sorella:ingredient_reorder_level
+    range: decimal
+    annotations:
+      parameter:
+        value:
+          of: ingredient_on_hand
+          slot: item_reorder_level
+    description: The level stated for the thing this row is about, read off the log
+      at the same pair of clocks as everything beside it. Where nothing is stated
+      it is empty rather than nought.
+  ingredient_pack_price:
+    title: Price a pack
+    slot_uri: sorella:ingredient_pack_price
+    range: decimal
+    annotations:
+      parameter:
+        value:
+          of: ingredient_on_hand
+          slot: item_pack_price
+    description: The price per pack of the thing this row is about, read off the log
+      the same way the level is. The history needs no machinery here, because the
+      clocks the question is asked at are the clocks the fact is resolved at.
+  ingredient_stock_value:
+    title: What it is worth
+    slot_uri: sorella:ingredient_stock_value
+    range: decimal
+    equals_expression: '{ingredient_on_hand_net} * {ingredient_pack_price}'
+    description: What is standing here, at what it cost. The left half is summed out
+      of the movements and the right half is a number somebody stated on a day, and
+      the map names both.
+  counted_ingredient:
+    title: Thing
+    slot_uri: sorella_demo:counted_ingredient
+    range: Ingredient
+    description: The thing a row of CountedOnHand is about. A dimension of a computed
+      group, never stated.
+  counted_where:
+    title: Counted at
+    slot_uri: sorella_demo:counted_where
+    range: Location
+    description: The place a row of CountedOnHand is about, which is where the counter
+      was standing when the line was written.
+  counted_unit:
+    title: Unit
+    slot_uri: sorella_demo:counted_unit
+    range: Unit
+    description: 'What the count was written in. The same dimension as the balance''s,
+      for the same reason: two units of one thing are two rows.'
+  counted_quantity:
+    title: Counted
+    slot_uri: sorella_demo:counted_quantity
+    range: decimal
+    description: Everything the count sheets found of this thing, at this place, in
+      this unit. Two sheets that counted the same shelf both land in it, which is
+      what a total off the paper means.
+    annotations:
+      aggregate:
+        value:
+          over: StockCountLine
+          sum: count_line_quantity
+          by:
+            counted_ingredient: count_line_ingredient
+            counted_where: count_line_where
+            counted_unit: count_line_unit
+          where:
+            count_line_where:
+              is_a: InternalLocation
+            count_line_ingredient:
+              is_a: Ingredient
+annotations:
+  valid_from: '2026-03-02T00:00:00+00:00'
+  sealed_at: '2026-09-09T00:06:26.420303+00:00'
+  supersedes: v2
+  transcript: v3.txt

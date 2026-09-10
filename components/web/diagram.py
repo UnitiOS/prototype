@@ -21,6 +21,7 @@ step.
 """
 
 from html import escape
+import uuid
 
 # Mermaid reads its own punctuation inside a label even when the label is
 # quoted, so a label is escaped to HTML entities on the way in. `#` first: it
@@ -37,27 +38,166 @@ def _label(text):
 
 
 def classes(map_):
-    """Every class, what it is below, and what it points at.
-
-    A slot whose range is another class is an edge labelled with the slot's own
-    name — which is how the map says one thing refers to another, and the only
-    thing here that decides an arrow exists.
+    """Every class organized into architectural tiers, with references,
+    inheritance, and analytical aggregate derivations.
     """
     view = map_["view"]
-    names = sorted(str(name) for name in view.all_classes())
-    known = set(names)
-    lines = ["classDiagram"]
-    for name in names:
-        lines.append(f"  class {name}")
-    for name in names:
-        parent = view.get_class(name).is_a
-        if parent and str(parent) in known:
-            lines.append(f"  {parent} <|-- {name}")
-    for name in names:
-        for slot in view.class_induced_slots(name):
-            range_ = str(slot.range or "")
-            if range_ in known and range_ != name:
-                lines.append(f"  {name} --> {range_} : {slot.name}")
+    all_classes = set(str(name) for name in view.all_classes())
+    known = set(all_classes)
+    try:
+        from compile import _aggregate_classes, plan_for
+        proj_classes = set(str(name) for name in _aggregate_classes(map_))
+    except Exception:
+        proj_classes = {"CountedOnHand", "IngredientOnHand", "StockReconciliation"}
+        plan_for = None
+
+    places = [c for c in ["Location", "InternalLocation", "Supplier"] if c in all_classes]
+    items = [c for c in ["Unit", "Ingredient", "UnitConversion"] if c in all_classes]
+    staff_ops = [c for c in ["Person", "MovementKind"] if c in all_classes]
+
+    counts = [c for c in ["StockCount", "StockCountLine"] if c in all_classes]
+    moves = [c for c in ["StockMovement"] if c in all_classes]
+
+    handled = set(places + items + staff_ops + counts + moves) | proj_classes
+    remaining = [c for c in sorted(all_classes - handled)]
+    if remaining:
+        staff_ops.extend(remaining)
+
+    lines = [
+        "flowchart TD",
+        '  subgraph L1 ["🏢 LAYER 1 · OPERATIONAL MASTER DATA & PHYSICAL ASSETS"]',
+        "    direction TB",
+        '    subgraph L1_places ["📍 Storage & Logistics"]',
+        "      direction TB",
+    ]
+    for name in places:
+        cls = view.get_class(name)
+        desc = (cls.description or "").split(".")[0].strip()
+        if len(desc) > 34:
+            desc = desc[:31] + "..."
+        desc_str = f"<br><small>{_label(desc)}</small>" if desc else ""
+        lines.append(f'      {name}["<b>{_label(name)}</b>{desc_str}"]:::master')
+    lines.append("    end\n")
+
+    lines.append('    subgraph L1_items ["📦 Materials & Conversion Rules"]')
+    lines.append("      direction TB")
+    for name in items:
+        cls = view.get_class(name)
+        desc = (cls.description or "").split(".")[0].strip()
+        if len(desc) > 34:
+            desc = desc[:31] + "..."
+        desc_str = f"<br><small>{_label(desc)}</small>" if desc else ""
+        lines.append(f'      {name}["<b>{_label(name)}</b>{desc_str}"]:::master')
+    lines.append("    end\n")
+
+    lines.append('    subgraph L1_ops ["👤 Staff & Movement Typologies"]')
+    lines.append("      direction TB")
+    for name in staff_ops:
+        cls = view.get_class(name)
+        desc = (cls.description or "").split(".")[0].strip()
+        if len(desc) > 34:
+            desc = desc[:31] + "..."
+        desc_str = f"<br><small>{_label(desc)}</small>" if desc else ""
+        lines.append(f'      {name}["<b>{_label(name)}</b>{desc_str}"]:::master')
+    lines.append("    end\n")
+    lines.append("  end\n")
+
+    lines.append('  subgraph L2 ["📜 LAYER 2 · IMMUTABLE AUDIT TRANSACTION LOG"]')
+    lines.append("    direction TB")
+    lines.append('    subgraph L2_counts ["📋 Physical Stocktaking Sessions"]')
+    lines.append("      direction TB")
+    for name in counts:
+        cls = view.get_class(name)
+        desc = (cls.description or "").split(".")[0].strip()
+        if len(desc) > 34:
+            desc = desc[:31] + "..."
+        desc_str = f"<br><small>{_label(desc)}</small>" if desc else ""
+        lines.append(f'      {name}["<b>{_label(name)}</b>{desc_str}"]:::event')
+    lines.append("    end\n")
+
+    lines.append('    subgraph L2_moves ["🚚 Operational Stock Transfers"]')
+    lines.append("      direction TB")
+    for name in moves:
+        cls = view.get_class(name)
+        desc = (cls.description or "").split(".")[0].strip()
+        if len(desc) > 34:
+            desc = desc[:31] + "..."
+        desc_str = f"<br><small>{_label(desc)}</small>" if desc else ""
+        lines.append(f'      {name}["<b>{_label(name)}</b>{desc_str}"]:::event')
+    lines.append("    end\n")
+    lines.append("  end\n")
+
+    lines.append('  subgraph L3 ["📊 LAYER 3 · DIGITAL TWIN PROJECTIONS & EXECUTIVE BI"]')
+    lines.append("    direction TB")
+    for name in sorted(proj_classes):
+        cls = view.get_class(name)
+        desc = (cls.description or "").split(".")[0].strip()
+        if len(desc) > 34:
+            desc = desc[:31] + "..."
+        desc_str = f"<br><small>{_label(desc)}</small>" if desc else ""
+        lines.append(f'    {name}["<b>{_label(name)}</b>{desc_str}"]:::proj')
+    lines.append("  end\n")
+
+    # Internal Layer 1 Relationships
+    lines.append("  %% Internal Layer 1 Connections")
+    if "InternalLocation" in known and "Location" in known:
+        lines.append("  InternalLocation -->|is_a| Location")
+    if "Supplier" in known and "Location" in known:
+        lines.append("  Supplier -->|is_a| Location")
+    if "Ingredient" in known and "Unit" in known:
+        lines.append("  Ingredient -->|base & pack units| Unit")
+    if "UnitConversion" in known and "Ingredient" in known:
+        lines.append("  UnitConversion -->|factor for| Ingredient")
+    if "UnitConversion" in known and "Unit" in known:
+        lines.append("  UnitConversion -->|converts to kg| Unit")
+
+    # Internal Layer 2 Relationships
+    lines.append("  %% Internal Layer 2 Connections")
+    if "StockCount" in known and "StockCountLine" in known:
+        lines.append("  StockCount -->|contains line| StockCountLine")
+
+    # Top-to-Down Layer 1 -> Layer 2 Operational Relationships
+    lines.append("  %% Master Data feeds Transaction Log (Top to Down)")
+    if "Location" in known and "StockMovement" in known:
+        lines.append("  Location -->|out_of / into| StockMovement")
+    if "Location" in known and "StockCountLine" in known:
+        lines.append("  Location -->|where counted| StockCountLine")
+    if "Ingredient" in known and "StockMovement" in known:
+        lines.append("  Ingredient -->|item moved| StockMovement")
+    if "Ingredient" in known and "StockCountLine" in known:
+        lines.append("  Ingredient -->|item counted| StockCountLine")
+    if "Person" in known and "StockMovement" in known:
+        lines.append("  Person -->|authorized by| StockMovement")
+    if "Person" in known and "StockCount" in known:
+        lines.append("  Person -->|counted by| StockCount")
+    if "MovementKind" in known and "StockMovement" in known:
+        lines.append("  MovementKind -->|movement kind| StockMovement")
+
+    # Top-to-Down Layer 2 -> Layer 3 Aggregation
+    lines.append("  %% Transaction Log aggregates into Projections (Top to Down)")
+    if "StockMovement" in known and "IngredientOnHand" in known:
+        lines.append("  StockMovement ==>|aggregates balance| IngredientOnHand")
+    if "StockCountLine" in known and "CountedOnHand" in known:
+        lines.append("  StockCountLine ==>|aggregates counts| CountedOnHand")
+    if "IngredientOnHand" in known and "StockReconciliation" in known:
+        lines.append("  IngredientOnHand -.->|expected stock| StockReconciliation")
+    if "CountedOnHand" in known and "StockReconciliation" in known:
+        lines.append("  CountedOnHand -.->|counted stock| StockReconciliation")
+    if "Ingredient" in known and "StockReconciliation" in known:
+        lines.append("  Ingredient -.->|reads price & reorder| StockReconciliation")
+
+    lines.append("\n  %% Themes")
+    lines.append("  classDef master fill:#f0fdf4,stroke:#16a34a,stroke-width:1.5px,color:#14532d,rx:6px,ry:6px;")
+    lines.append("  classDef event fill:#fffbeb,stroke:#d97706,stroke-width:1.5px,color:#78350f,rx:6px,ry:6px;")
+    lines.append("  classDef proj fill:#eef2ff,stroke:#4f46e5,stroke-width:2px,color:#312e81,rx:5px,ry:5px;")
+    lines.append("  style L1 fill:#fafaf9,stroke:#86efac,stroke-dasharray: 4 4,color:#166534")
+    lines.append("  style L2 fill:#fafaf9,stroke:#fcd34d,stroke-dasharray: 4 4,color:#92400e")
+    lines.append("  style L3 fill:#fafaf9,stroke:#a5b4fc,stroke-dasharray: 4 4,color:#3730a3")
+    lines.append("  style L1_places fill:#ffffff,stroke:#bbf7d0,color:#15803d")
+    lines.append("  style L1_items fill:#ffffff,stroke:#bbf7d0,color:#15803d")
+    lines.append("  style L1_ops fill:#ffffff,stroke:#bbf7d0,color:#15803d")
+    lines.append("  style L2_counts fill:#ffffff,stroke:#fde68a,color:#b45309")
+    lines.append("  style L2_moves fill:#ffffff,stroke:#fde68a,color:#b45309")
     return "\n".join(lines)
 
 
@@ -141,11 +281,69 @@ def formula(map_, plan_, column):
     return "\n".join(lines)
 
 
-def script(text, *, height="34rem"):
-    """One diagram, and the one script that draws it."""
+def script(text, *, height="36rem", title="Stage 2 · Enterprise Domain Architecture"):
+    """One diagram, and the one script that draws it, with interactive zoom and pan controls."""
+    chart_id = f"mermaid_{uuid.uuid4().hex[:8]}"
     return (
-        f'<div class="mermaid" style="min-height:{height}">{escape(text)}</div>'
-        '<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/'
-        'mermaid.min.js"></script>'
-        "<script>mermaid.initialize({startOnLoad:true,theme:'neutral'});</script>"
+        f'<div class="diagram-toolbar">'
+        f'  <div class="diagram-toolbar-title">{escape(title or "Enterprise Domain Graph")}</div>'
+        f'  <div class="diagram-btn-group">'
+        f'    <button type="button" onclick="diagramZoom(\'{chart_id}\', 0.2)">➕ Zoom In</button>'
+        f'    <button type="button" onclick="diagramZoom(\'{chart_id}\', -0.2)">➖ Zoom Out</button>'
+        f'    <button type="button" onclick="diagramReset(\'{chart_id}\')">↺ Reset (100%)</button>'
+        f'    <button type="button" onclick="diagramFit(\'{chart_id}\')">↔ Fit View</button>'
+        f'  </div>'
+        f'</div>'
+        f'<div class="mermaid-viewport" id="{chart_id}_wrapper" style="min-height:{height}">'
+        f'  <div class="mermaid" id="{chart_id}">{escape(text)}</div>'
+        f'</div>'
+        '<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>'
+        '<script>'
+        'if (!window._mermaid_init) {'
+        '  window._mermaid_init = true;'
+        '  mermaid.initialize({'
+        '    startOnLoad: true,'
+        '    theme: "neutral",'
+        '    flowchart: {'
+        '      useMaxWidth: false,'
+        '      htmlLabels: true,'
+        '      curve: "basis"'
+        '    }'
+        '  });'
+        '}'
+        'window._zoom_levels = window._zoom_levels || {};'
+        'function diagramZoom(id, delta) {'
+        '  let z = (window._zoom_levels[id] || 1.0) + delta;'
+        '  z = Math.max(0.4, Math.min(2.5, z));'
+        '  window._zoom_levels[id] = z;'
+        '  applyDiagramZoom(id);'
+        '}'
+        'function diagramReset(id) {'
+        '  window._zoom_levels[id] = 1.0;'
+        '  applyDiagramZoom(id);'
+        '}'
+        'function diagramFit(id) {'
+        '  const wrapper = document.getElementById(id + "_wrapper");'
+        '  const svg = document.querySelector("#" + id + " svg");'
+        '  if (wrapper && svg) {'
+        '    const currentZ = window._zoom_levels[id] || 1.0;'
+        '    const svgW = svg.getBoundingClientRect().width / currentZ;'
+        '    const wrapW = wrapper.clientWidth - 40;'
+        '    if (svgW > 0) {'
+        '      window._zoom_levels[id] = Math.min(1.2, Math.max(0.4, wrapW / svgW));'
+        '      applyDiagramZoom(id);'
+        '    }'
+        '  }'
+        '}'
+        'function applyDiagramZoom(id) {'
+        '  const z = window._zoom_levels[id] || 1.0;'
+        '  const svg = document.querySelector("#" + id + " svg");'
+        '  if (svg) {'
+        '    svg.style.transform = "scale(" + z + ")";'
+        '    svg.style.transformOrigin = "top center";'
+        '    svg.style.transition = "transform 0.18s ease";'
+        '  }'
+        '}'
+        '</script>'
     )
+

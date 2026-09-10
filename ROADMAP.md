@@ -75,12 +75,11 @@ demonstration walks.
 |---|---|---|
 | One — the business | the narrow map, both stores, and a seed large enough to look real | done 7 Sep, validated the same day |
 | Two — the surface | navigation by stage, the transcript beside the map, the graph behind a column, and a cell that opens its own assertions | done 7 Sep, all seven conditions checked |
-| Two and a half — the data | a seed with both clocks alive and corrections in it, names instead of URIs, and a table that can be sorted and filtered | `NEXT.md` |
-| Three — the agent | an MCP over the graph, the operational database and provenance, and a correction that does not destroy what it corrects | not started. Waits on two and a half: its strongest demonstration needs corrections in the log, and there are none |
+| Two and a half — the data | a seed with both clocks alive and corrections in it, names instead of URIs, and a table that can be sorted and filtered | done 7 Sep, landed at `481ddc5` |
+| Three — the agent | an MCP over the graph, the operational database and provenance, and a correction that does not destroy what it corrects | done 10 Sep, validated live with Claude Desktop |
 
 Item three carries claim F — *an agent answering better from the graph than from
-tables* — and is the one most likely to slip. No SQL baseline is built; the
-comparison is spoken.
+tables* — and was validated live via Claude Desktop using 11 generic MCP tools.
 
 ## The components
 
@@ -90,16 +89,30 @@ comparison is spoken.
 | `ontology` | built | Version resolution at two clocks |
 | `seal` | built | The gate a draft passes to become a version |
 | `generator` | built | Tables and forms from a sealed map |
-| `compiler` | built 5 Sep, extended 6 Sep | Aggregates, expressions and now parameters from the map, executed as SQL. Its `aggregate` still cannot say which rows a balance counts — `p_gelato_on_hand` is three rows about nothing |
-| `web` | built 6 Sep, widened 7 Sep | Eight routes over the map, the log and the store, with the two clocks on every page. `/` is a walk through the stages; `/said`, `/graph` and `/why` are the three that say what the other pages cannot. No test of its own |
-| `business/` | in use | Not code. Sorella's `v1.yaml` is sealed at `b8de674` — 21 classes, 101 slots |
+| `compiler` | built 5 Sep, extended 6 Sep & 9 Sep | Aggregates, expressions, parameters, scoped `where` filters and generic `convert:` unit conversions, executed as SQL |
+| `web` | built 6 Sep, widened 7-10 Sep | Sticky 6-stage pipeline navigation, bitemporal `/correct` UI, and `/dashboard` Executive BI. |
+| `business/` | in use | Not code. Sorella's `v1.yaml` sealed at `b8de674`; Sorella Demo sealed up to `v5.yaml` |
 | `interview` | prose only | `components/interview/SKILL.md`. Not installed as a skill; the stage is deferred and the file predates the per-business version store |
 | `report` | not built | |
-| `provenance` | built 7 Sep | Every assertion about one subject and predicate, and what the log holds at all. The one kernel reader outside the compiler. One door built — `/why`; the agent's MCP is the other. Five tests |
-| `agent` | not built | An MCP over the graph, the store and `provenance`. Demo lap item three |
+| `provenance` | built 7 Sep, extended 10 Sep | Every assertion about one subject and predicate, recent activity ledger, and forensic timeline. Five tests |
+| `agent` | built 10 Sep | A Universal Model Context Protocol (MCP) server over the graph, the operational store and `provenance`. 11 generic tools, 8 unit tests |
 
 ## What has landed recently
 
+- **10 Sep** — universal MCP server built and validated live (`components/agent/`).
+  11 domain-agnostic OS primitives over graph, operational projections, and kernel
+  provenance. Tested against Claude Desktop: autonomous holistic model comprehension
+  succeeded and surfaced pistachio shrinkage anomaly (Claim F validated).
+- **10 Sep** — operational forms ergonomics, clock-synchronized ingestion, and
+  first-class bitemporal correction & retraction UI (`/correct`) with authorized
+  signatories and audit reason codes. Unified sticky 6-stage pipeline navigation.
+- **9 Sep** — Executive BI & Decision Intelligence dashboard (`/dashboard`),
+  realistic culinary dataset with pistachio loss and stockout risk, generic
+  unit conversions (`kg`), scoped internal storage filters, and query planner
+  1,000x speedup (`enable_nestloop = off`). Map sealed as `v5.yaml`.
+- **7 Sep** — demo item two and a half landed at `481ddc5`: 26-week seed with both
+  clocks alive, 32 assertions carrying revokes, sort/filter on URLs, and names
+  rather than raw URIs.
 - **7 Sep** — demo item two ran and was validated. All seven conditions hold:
   six stage cards, `/said` linking 12 of 12 classes to the sentence that asked
   for them, `/graph` drawing the map and the formula behind a column,

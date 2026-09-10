@@ -54,7 +54,7 @@ from generate import read_map, submit  # noqa: E402
 from perform import DSN, connect  # noqa: E402
 from seal import register  # noqa: E402
 
-MAP = ROOT / "business" / "sorella_demo" / "v2.yaml"
+MAP = ROOT / "business" / "sorella_demo" / "v5.yaml"
 SCHEMA = ROOT / "components" / "kernel" / "001_schema.sql"
 
 RNG_SEED = 20260907
@@ -111,6 +111,7 @@ OUTSIDE = [
     ("Staff", "Where a thing goes when somebody takes it home, with permission"),
     ("Tastings", "Where a thing goes when it is opened for a trade customer or "
                  "a school visit and does not come back"),
+    ("Production", "The kitchen production area: pasteuriser, batch freezers and churn bench"),
 ]
 
 # name, brings, where, rhythm, lead time — and then the paper: what the
@@ -151,6 +152,9 @@ KINDS = [
      "A thing moves from the dry store to the chiller or back, because it was "
      "opened or because it was put in the wrong one",
      "Nothing"),
+    ("Used in production",
+     "Ingredients taken from storage into production to make gelato batches",
+     "The daily production sheet, signed by Dan Farrugia"),
     ("Thrown away",
      "A bag, a pail or an opened tin goes in the bin: out of date, split, or "
      "left out overnight",
@@ -163,6 +167,10 @@ KINDS = [
      "back",
      "The waste sheet, if whoever opened it remembers"),
 ]
+
+# The kitchen production sheet is filled in daily by Dan Farrugia as batches are churned.
+PRODUCTION_PAPER = ("The daily production sheet, signed by Dan Farrugia",
+                    (0, 1), "document_extracted", "high")
 
 # The waste sheet is weekly and filled in from memory, so everything on it is
 # written down between a day and six days after it happened, by whoever was
@@ -179,44 +187,44 @@ TRANSFER_PAPER = (None, (0,), "human_stated", "low")
 ITEMS = [
     ("Whole milk, kitchen", "bags", "Whitehall Dairy", "8.90", "4",
      "A bag is ten litres, bag-in-box", "Walk-in chiller"),
-    ("Whipping cream 38%", "cans", "Whitehall Dairy", "14.60", "2",
+    ("Whipping cream 38%", "cans", "Whitehall Dairy", "14.60", "3",
      None, "Walk-in chiller"),
-    ("Caster sugar (sucrose)", "sacks", "Severn Catering Supplies", "24.50",
-     None, None, "Dry store"),
-    ("Dextrose", "sacks", "Terra Nostra Ingredients", "41.00", "1",
+    ("Caster sugar (sucrose)", "sacks", "Severn Catering Supplies", "24.50", "4",
      None, "Dry store"),
-    ("Skimmed milk powder", "bags", "Severn Catering Supplies", "62.00", None,
+    ("Dextrose", "sacks", "Terra Nostra Ingredients", "41.00", "2",
+     None, "Dry store"),
+    ("Skimmed milk powder", "bags", "Severn Catering Supplies", "62.00", "2",
      "A bag here is twenty-five kilograms, not ten litres", "Dry store"),
-    ("Base 50 stabiliser", "cartons", "Terra Nostra Ingredients", "276.00",
-     None, "A carton is ten two-kilogram bags; the dry store counts cartons "
+    ("Base 50 stabiliser", "cartons", "Terra Nostra Ingredients", "276.00", "2",
+     "A carton is ten two-kilogram bags; the dry store counts cartons "
      "and the bench counts bags", "Dry store"),
-    ("Sicilian pistachio paste", "tins", "Terra Nostra Ingredients", "203.00",
-     "2", None, "Dry store"),
-    ("Cocoa 22/24", "bags", "Terra Nostra Ingredients", "4.10", None,
-     "A bag is five kilograms", "Dry store"),
-    ("Glucose syrup", "pails", "Terra Nostra Ingredients", "58.00", "1",
-     "A pail is seven kilograms and is warmed before it pours", "Dry store"),
-    ("Inulin", "bags", "Terra Nostra Ingredients", "46.00", None,
+    ("Sicilian pistachio paste", "tins", "Terra Nostra Ingredients", "203.00", "2",
      None, "Dry store"),
-    ("Piedmont hazelnut paste", "tins", "Terra Nostra Ingredients", "187.00",
-     "2", None, "Dry store"),
+    ("Cocoa 22/24", "bags", "Terra Nostra Ingredients", "4.10", "2",
+     "A bag is five kilograms", "Dry store"),
+    ("Glucose syrup", "pails", "Terra Nostra Ingredients", "58.00", "2",
+     "A pail is seven kilograms and is warmed before it pours", "Dry store"),
+    ("Inulin", "bags", "Terra Nostra Ingredients", "46.00", "2",
+     None, "Dry store"),
+    ("Piedmont hazelnut paste", "tins", "Terra Nostra Ingredients", "187.00", "2",
+     None, "Dry store"),
     ("Vanilla paste", "tins", "Terra Nostra Ingredients", "96.00", "1",
      None, "Dry store"),
-    ("Lemons", "trays", "Kingsdown Fruit Farm", "18.00", None,
+    ("Lemons", "trays", "Kingsdown Fruit Farm", "18.00", "2",
      "A tray is about five kilograms and nobody weighs it", "Walk-in chiller"),
-    ("Strawberries", "trays", "Kingsdown Fruit Farm", "22.50", None,
+    ("Strawberries", "trays", "Kingsdown Fruit Farm", "22.50", "2",
      None, "Walk-in chiller"),
-    ("Rhubarb", "boxes", "Kingsdown Fruit Farm", "16.00", None,
+    ("Rhubarb", "boxes", "Kingsdown Fruit Farm", "16.00", "2",
      None, "Walk-in chiller"),
-    ("Raspberry purée", "tubs", "Terra Nostra Ingredients", "34.00", None,
+    ("Raspberry purée", "tubs", "Terra Nostra Ingredients", "34.00", "2",
      "Frozen. It goes straight into the ingredient freezer", "Ingredient freezer"),
     ("Free-range eggs", "trays", "Severn Catering Supplies", "9.80", "3",
      "A tray is thirty", "Walk-in chiller"),
-    ("Ricotta", "tubs", "Severn Catering Supplies", "12.40", None,
+    ("Ricotta", "tubs", "Severn Catering Supplies", "12.40", "2",
      None, "Walk-in chiller"),
-    ("Digestive biscuits", "cases", "Severn Catering Supplies", "21.00", None,
+    ("Digestive biscuits", "cases", "Severn Catering Supplies", "21.00", "2",
      "Crushed for the biscuit base", "Dry store"),
-    ("Sea salt", "sacks", "Bristol Cash & Carry", "11.50", None,
+    ("Sea salt", "sacks", "Bristol Cash & Carry", "11.50", "1",
      None, "Dry store"),
 ]
 
@@ -251,6 +259,78 @@ PRICE_TYPO = ("Cocoa 22/24", date(2026, 3, 23), "41.00",
 # to put in its place. The cell it fills goes empty rather than to nought.
 PRICE_WITHDRAWN = ("Sea salt", date(2026, 4, 14))
 
+# Conversion factors to standard base unit (kilograms).
+# Every ingredient has a conversion from its primary packaging unit to kg,
+# and Base 50 also has a conversion from loose bags (2 kg) to kg.
+# For items already measured in kg or where 1 kg = 1 kg, factor is 1.0.
+CONVERSIONS = [
+    ("Whole milk, kitchen", "bags", "10.3"),       # 10 L bag-in-box * 1.03 density = 10.3 kg
+    ("Whole milk, kitchen", "kilos", "1.0"),
+    ("Whipping cream 38%", "cans", "5.0"),        # 5 L can * 1.00 density = 5.0 kg
+    ("Whipping cream 38%", "kilos", "1.0"),
+    ("Caster sugar (sucrose)", "sacks", "25.0"),  # 25 kg sack
+    ("Caster sugar (sucrose)", "kilos", "1.0"),
+    ("Dextrose", "sacks", "25.0"),                # 25 kg sack
+    ("Dextrose", "kilos", "1.0"),
+    ("Skimmed milk powder", "bags", "25.0"),      # 25 kg bag
+    ("Skimmed milk powder", "kilos", "1.0"),
+    ("Base 50 stabiliser", "cartons", "20.0"),    # carton of 10 x 2kg bags = 20 kg
+    ("Base 50 stabiliser", "bags", "2.0"),        # bench bag = 2 kg
+    ("Base 50 stabiliser", "kilos", "1.0"),
+    ("Sicilian pistachio paste", "tins", "3.5"),   # 3.5 kg tin
+    ("Sicilian pistachio paste", "kilos", "1.0"),
+    ("Cocoa 22/24", "bags", "5.0"),               # 5 kg bag
+    ("Cocoa 22/24", "kilos", "1.0"),
+    ("Glucose syrup", "pails", "7.0"),            # 7 kg pail
+    ("Glucose syrup", "kilos", "1.0"),
+    ("Inulin", "bags", "5.0"),                    # 5 kg bag
+    ("Inulin", "kilos", "1.0"),
+    ("Piedmont hazelnut paste", "tins", "5.0"),   # 5 kg tin
+    ("Piedmont hazelnut paste", "kilos", "1.0"),
+    ("Vanilla paste", "tins", "1.0"),             # 1 kg tin
+    ("Vanilla paste", "kilos", "1.0"),
+    ("Lemons", "trays", "5.0"),                   # 5 kg tray
+    ("Lemons", "kilos", "1.0"),
+    ("Strawberries", "trays", "2.0"),             # 2 kg tray
+    ("Strawberries", "kilos", "1.0"),
+    ("Rhubarb", "boxes", "5.0"),                  # 5 kg box
+    ("Rhubarb", "kilos", "1.0"),
+    ("Raspberry purée", "tubs", "1.0"),           # 1 kg tub
+    ("Raspberry purée", "kilos", "1.0"),
+    ("Free-range eggs", "trays", "1.8"),          # 30 eggs tray = ~1.8 kg
+    ("Free-range eggs", "kilos", "1.0"),
+    ("Ricotta", "tubs", "2.0"),                   # 2 kg tub
+    ("Ricotta", "kilos", "1.0"),
+    ("Digestive biscuits", "cases", "4.8"),       # 4.8 kg case
+    ("Digestive biscuits", "kilos", "1.0"),
+    ("Sea salt", "sacks", "25.0"),                # 25 kg sack
+    ("Sea salt", "kilos", "1.0"),
+]
+
+# Standard price per kilogram for each item (pack price / kg per pack)
+ITEM_KG_PRICES = {
+    "Whole milk, kitchen": "0.86",       # 8.90 / 10.3
+    "Whipping cream 38%": "2.92",        # 14.60 / 5.0
+    "Caster sugar (sucrose)": "0.98",    # 24.50 / 25.0
+    "Dextrose": "1.64",                  # 41.00 / 25.0
+    "Skimmed milk powder": "2.48",       # 62.00 / 25.0
+    "Base 50 stabiliser": "13.80",       # 276.00 / 20.0
+    "Sicilian pistachio paste": "58.00", # 203.00 / 3.5
+    "Cocoa 22/24": "0.82",               # 4.10 / 5.0 (initial typo price)
+    "Glucose syrup": "8.29",             # 58.00 / 7.0
+    "Inulin": "9.20",                    # 46.00 / 5.0
+    "Piedmont hazelnut paste": "37.40",  # 187.00 / 5.0
+    "Vanilla paste": "96.00",            # 96.00 / 1.0
+    "Lemons": "3.60",                    # 18.00 / 5.0
+    "Strawberries": "11.25",             # 22.50 / 2.0
+    "Rhubarb": "3.20",                   # 16.00 / 5.0
+    "Raspberry purée": "34.00",          # 34.00 / 1.0
+    "Free-range eggs": "5.44",           # 9.80 / 1.8
+    "Ricotta": "6.20",                   # 12.40 / 2.0
+    "Digestive biscuits": "4.38",        # 21.00 / 4.8
+    "Sea salt": "0.46",                  # 11.50 / 25.0
+}
+
 WASTE_NOTES = [
     "Split bag", "Out of date", "Left out overnight", "Bin weighed at close",
     None, None,
@@ -259,9 +339,9 @@ WASTE_NOTES = [
 # How many of each kind of correction the six months hold. They are counts and
 # not a rate: what matters is that all three kinds are in the log and that
 # there are enough of them to find.
-TRANSPOSED = 12          # a number written down wrong, and put right
-NEVER_ARRIVED = 6        # a delivery recorded that never came
-MISCOUNTED = 2           # lines put right per count sheet
+TRANSPOSED = 15          # a number written down wrong, and put right
+NEVER_ARRIVED = 8        # a delivery recorded that never came
+MISCOUNTED = 6           # lines put right across count sheets
 
 
 def uri(prefix, name):
@@ -387,16 +467,36 @@ def master(conn, map_, counts):
               actor="marina", counts=counts, source="human_stated",
               confidence="high", authority="Marina Devlin")
 
+    for item_name, unit_name, factor in CONVERSIONS:
+        conv_key = f"{item_name}_{unit_name}"
+        state(
+            conn, map_, "UnitConversion", uri("conv", conv_key),
+            {
+                "conversion_ingredient": uri("item", item_name),
+                "conversion_unit": uri("unit", unit_name),
+                "conversion_factor": factor,
+            },
+            actor="marina", counts=counts, source="human_stated",
+            confidence="high", authority="Marina Devlin",
+            note=f"Conversion factor: 1 {unit_name} of {item_name} = {factor} kg",
+        )
+
     prices = {}
     for name, unit, supplier, price, reorder, note, _ in ITEMS:
+        kg_price = ITEM_KG_PRICES[name]
         result = state(
             conn, map_, "Ingredient", uri("item", name),
-            {"item_name": name, "item_counted_in": uri("unit", unit),
+            {"item_name": name, "item_base_unit": uri("unit", "kilos"),
+             "item_counted_in": uri("unit", unit),
              "item_supplier": uri("loc", supplier), "item_pack_price": price,
+             "item_price_per_kg": kg_price,
              "item_reorder_level": reorder, "item_note": note},
             actor="marina", counts=counts, source="human_stated",
             confidence="high", authority="Marina Devlin")
-        prices[name] = result["stated"]["item_pack_price"]
+        prices[name] = {
+            "pack_price": result["stated"]["item_pack_price"],
+            "price_per_kg": result["stated"]["item_price_per_kg"],
+        }
     return prices
 
 
@@ -411,7 +511,7 @@ def price_history(conn, map_, counts, prices):
     """
     name, when, price, why = PRICE_RISE
     state(conn, map_, "Ingredient", uri("item", name),
-          {"item_pack_price": price},
+          {"item_pack_price": price, "item_price_per_kg": "61.14"},
           actor="marina", counts=counts, when=_moment(when),
           recorded=_moment(when, 17), source="document_extracted",
           confidence="high", authority=why,
@@ -420,20 +520,30 @@ def price_history(conn, map_, counts, prices):
 
     name, when, price, why = PRICE_TYPO
     correct(conn, map_, "Ingredient", uri("item", name), "item_pack_price",
-            prices[name], value=price, actor="marina", counts=counts,
+            prices[name]["pack_price"], value=price, actor="marina", counts=counts,
             when=ADOPTED, recorded=_moment(when, 11),
             source="document_extracted", confidence="high", authority=why,
             note="Typed as four pounds ten when the description was taken "
                  "down. It was forty-one then and it is forty-one now, so this "
                  "withdraws the row rather than standing beside it")
+    correct(conn, map_, "Ingredient", uri("item", name), "item_price_per_kg",
+            prices[name]["price_per_kg"], value="8.20", actor="marina", counts=counts,
+            when=ADOPTED, recorded=_moment(when, 11),
+            source="document_extracted", confidence="high", authority=why,
+            note="Price per kg updated to match the corrected pack price")
 
     name, when = PRICE_WITHDRAWN
     correct(conn, map_, "Ingredient", uri("item", name), "item_pack_price",
-            prices[name], actor="marina", counts=counts,
+            prices[name]["pack_price"], actor="marina", counts=counts,
             when=ADOPTED, recorded=_moment(when, 16), source="human_stated",
             authority="Marina Devlin",
             note="Nobody can find a receipt for it and nobody remembers what "
                  "it cost. Withdrawn with nothing to put in its place")
+    correct(conn, map_, "Ingredient", uri("item", name), "item_price_per_kg",
+            prices[name]["price_per_kg"], actor="marina", counts=counts,
+            when=ADOPTED, recorded=_moment(when, 16), source="human_stated",
+            authority="Marina Devlin",
+            note="Price per kg withdrawn with nothing to put in its place")
 
 
 def _delivers(supplier, week, day):
@@ -447,9 +557,7 @@ def _delivers(supplier, week, day):
 
 
 def movements(conn, map_, rng, counts):
-    """Six months of the three documents, as one class of movement."""
-    # (the document, the lags, the source, the confidence) — the four the
-    # table above states about the paper each supplier leaves behind.
+    """Six months of movements: deliveries, daily gelato production, waste, tastings, and transfers."""
     by_supplier = {supplier[0]: supplier[5:] for supplier in SUPPLIERS}
     written = []
 
@@ -470,126 +578,434 @@ def movements(conn, map_, rng, counts):
                 "quantity": values["movement_quantity"],
                 "kind": kind, "happened": when, "recorded": recorded,
                 "actor": actor,
+                "ingredient": values.get("movement_ingredient"),
+                "where": values.get("movement_into"),
             })
         return result
 
     n = 0
     for week in range(WEEKS):
+        # 1. Deliveries from suppliers into internal stores
         for weekday in range(6):
             day = _weekday(week, weekday)
             for item in ITEMS:
-                supplier = item[2]
+                name, unit, supplier, price, reorder, note, store = item
                 if not _delivers(supplier, week, day):
                     continue
-                if rng.random() >= CHANCE.get(supplier, DEFAULT_CHANCE):
-                    continue
+
+                # Calibrated deliveries to maintain realistic gelato inventory:
+                if name == "Base 50 stabiliser":
+                    # Fortnightly until week 20 (11 cartons = 220 kg). August factory shut -> triggers critical reorder!
+                    if week > 20:
+                        continue
+                    qty = 1
+                elif name == "Sicilian pistachio paste":
+                    # Delivered in weeks 2, 10, 16, 22: 2 tins each = total 8 tins (28 kg)
+                    if week not in (2, 10, 16, 22):
+                        continue
+                    qty = 2
+                elif name == "Whole milk, kitchen":
+                    # Whitehall delivers Mon, Wed, Fri.
+                    # Storyline 3: In week 19 (15 July), note typed as 10 bags, later corrected to 15 bags.
+                    if week == 19 and weekday == 2:
+                        qty = 10
+                    elif weekday == 0 and week % 2 == 1:
+                        qty = 1
+                    else:
+                        qty = 2
+                elif name == "Whipping cream 38%":
+                    qty = 2 if (weekday == 4 and week in (4, 10, 16, 22)) else 1
+                elif name == "Caster sugar (sucrose)":
+                    qty = 2
+                    if week in (6, 14, 22):
+                        qty = 3
+                elif name == "Dextrose":
+                    qty = 1
+                    if week == 24:
+                        qty = 2
+                elif name == "Skimmed milk powder":
+                    if week % 2 != 0:
+                        continue
+                    qty = 1
+                    if week == 24:
+                        qty = 2
+                elif name == "Cocoa 22/24":
+                    if week % 4 != 0:
+                        continue
+                    qty = 2
+                elif name == "Glucose syrup":
+                    qty = 1
+                elif name == "Inulin":
+                    if week % 4 != 0:
+                        continue
+                    qty = 1
+                elif name == "Piedmont hazelnut paste":
+                    if week % 4 != 0:
+                        continue
+                    qty = 1
+                elif name == "Vanilla paste":
+                    if week not in (0, 14):
+                        continue
+                    qty = 1
+                elif name == "Lemons":
+                    if weekday != 1:
+                        continue
+                    qty = 2
+                elif name == "Strawberries":
+                    if weekday != 4:
+                        continue
+                    qty = 2
+                elif name == "Rhubarb":
+                    if weekday != 1:
+                        continue
+                    qty = 1
+                elif name == "Free-range eggs":
+                    if weekday != 3:
+                        continue
+                    qty = 1
+                elif name == "Ricotta":
+                    if week % 2 != 0:
+                        continue
+                    qty = 1
+                elif name == "Digestive biscuits":
+                    if week % 6 != 0:
+                        continue
+                    qty = 1
+                elif name == "Raspberry purée":
+                    if week % 4 != 0:
+                        continue
+                    qty = 2
+                elif name == "Sea salt":
+                    if week != 0:
+                        continue
+                    qty = 1
+                else:
+                    qty = 1
+
                 n += 1
                 movement(n, day, "Delivery in",
                          {"movement_out_of": uri("loc", supplier),
-                          "movement_into": uri("loc", item[6]),
-                          "movement_ingredient": uri("item", item[0]),
-                          "movement_quantity": rng.randint(3, 10),
-                          "movement_unit": uri("unit", item[1]),
+                          "movement_into": uri("loc", store),
+                          "movement_ingredient": uri("item", name),
+                          "movement_quantity": qty,
+                          "movement_unit": uri("unit", unit),
                           "written_by": uri("person", "Dan Farrugia")},
                          actor="dan", paper=by_supplier[supplier])
 
-        # Waste. Weighed, so it is in kilos whatever the thing arrived in.
-        for _ in range(7):
-            item = rng.choice(ITEMS)
+        # 2. Gelato Production Runs (Monday to Friday)
+        for weekday in range(5):
+            day = _weekday(week, weekday)
+            # Gelato base: milk & cream
+            m_qty = 2 if (weekday == 4 and week >= 14) else 1
+            n += 1
+            movement(n, day, "Used in production",
+                     {"movement_out_of": uri("loc", "Walk-in chiller"),
+                      "movement_into": uri("loc", "Production"),
+                      "movement_ingredient": uri("item", "Whole milk, kitchen"),
+                      "movement_quantity": m_qty,
+                      "movement_unit": uri("unit", "bags"),
+                      "written_by": uri("person", "Dan Farrugia")},
+                     actor="dan", paper=PRODUCTION_PAPER,
+                     note="Daily gelato base: whole milk pasteuriser run")
+
+            if weekday in (0, 2, 4):
+                n += 1
+                movement(n, day, "Used in production",
+                     {"movement_out_of": uri("loc", "Walk-in chiller"),
+                      "movement_into": uri("loc", "Production"),
+                      "movement_ingredient": uri("item", "Whipping cream 38%"),
+                      "movement_quantity": 1,
+                      "movement_unit": uri("unit", "cans"),
+                      "written_by": uri("person", "Dan Farrugia")},
+                     actor="dan", paper=PRODUCTION_PAPER)
+
+            # Dry store sugars and powders into pasteuriser
+            if weekday in (1, 3):
+                n += 1
+                movement(n, day, "Used in production",
+                         {"movement_out_of": uri("loc", "Dry store"),
+                          "movement_into": uri("loc", "Production"),
+                          "movement_ingredient": uri("item", "Caster sugar (sucrose)"),
+                          "movement_quantity": 1,
+                          "movement_unit": uri("unit", "sacks"),
+                          "written_by": uri("person", "Dan Farrugia")},
+                         actor="dan", paper=PRODUCTION_PAPER)
+
+            if weekday == 2 and week % 2 == 0:
+                n += 1
+                movement(n, day, "Used in production",
+                         {"movement_out_of": uri("loc", "Dry store"),
+                          "movement_into": uri("loc", "Production"),
+                          "movement_ingredient": uri("item", "Dextrose"),
+                          "movement_quantity": 1,
+                          "movement_unit": uri("unit", "sacks"),
+                          "written_by": uri("person", "Dan Farrugia")},
+                         actor="dan", paper=PRODUCTION_PAPER)
+
+            if weekday == 4 and week % 2 == 0:
+                n += 1
+                movement(n, day, "Used in production",
+                         {"movement_out_of": uri("loc", "Dry store"),
+                          "movement_into": uri("loc", "Production"),
+                          "movement_ingredient": uri("item", "Skimmed milk powder"),
+                          "movement_quantity": 1,
+                          "movement_unit": uri("unit", "bags"),
+                          "written_by": uri("person", "Dan Farrugia")},
+                         actor="dan", paper=PRODUCTION_PAPER)
+
+            # Base 50 stabiliser: loose 2 kg bags into pasteuriser
+            if weekday < 4:
+                if not (week in (24, 25) and weekday == 3):
+                    n += 1
+                    movement(n, day, "Used in production",
+                             {"movement_out_of": uri("loc", "Dry store"),
+                              "movement_into": uri("loc", "Production"),
+                              "movement_ingredient": uri("item", "Base 50 stabiliser"),
+                              "movement_quantity": 1,
+                              "movement_unit": uri("unit", "bags"),
+                              "written_by": uri("person", "Dan Farrugia")},
+                             actor="dan", paper=PRODUCTION_PAPER,
+                             note="Base 50 loose bag added to pasteuriser mix")
+
+            if weekday in (1, 4):
+                n += 1
+                movement(n, day, "Used in production",
+                         {"movement_out_of": uri("loc", "Dry store"),
+                          "movement_into": uri("loc", "Production"),
+                          "movement_ingredient": uri("item", "Glucose syrup"),
+                          "movement_quantity": "1.50",
+                          "movement_unit": uri("unit", "kilos"),
+                          "written_by": uri("person", "Dan Farrugia")},
+                         actor="dan", paper=PRODUCTION_PAPER)
+
+            if weekday == 3:
+                n += 1
+                movement(n, day, "Used in production",
+                         {"movement_out_of": uri("loc", "Dry store"),
+                          "movement_into": uri("loc", "Production"),
+                          "movement_ingredient": uri("item", "Inulin"),
+                          "movement_quantity": "0.50",
+                          "movement_unit": uri("unit", "kilos"),
+                          "written_by": uri("person", "Dan Farrugia")},
+                         actor="dan", paper=PRODUCTION_PAPER)
+
+            # Flavour churn batches:
+            if weekday == 0 and week % 2 == 0:
+                n += 1
+                movement(n, day, "Used in production",
+                         {"movement_out_of": uri("loc", "Dry store"),
+                          "movement_into": uri("loc", "Production"),
+                          "movement_ingredient": uri("item", "Cocoa 22/24"),
+                          "movement_quantity": "2.50",
+                          "movement_unit": uri("unit", "kilos"),
+                          "written_by": uri("person", "Dan Farrugia")},
+                         actor="dan", paper=PRODUCTION_PAPER)
+                n += 1
+                movement(n, day, "Used in production",
+                         {"movement_out_of": uri("loc", "Dry store"),
+                          "movement_into": uri("loc", "Production"),
+                          "movement_ingredient": uri("item", "Vanilla paste"),
+                          "movement_quantity": "0.05",
+                          "movement_unit": uri("unit", "kilos"),
+                          "written_by": uri("person", "Dan Farrugia")},
+                         actor="dan", paper=PRODUCTION_PAPER)
+            elif weekday == 1:
+                if week % 3 == 0:
+                    n += 1
+                    movement(n, day, "Used in production",
+                             {"movement_out_of": uri("loc", "Dry store"),
+                              "movement_into": uri("loc", "Production"),
+                              "movement_ingredient": uri("item", "Piedmont hazelnut paste"),
+                              "movement_quantity": "1.00",
+                              "movement_unit": uri("unit", "kilos"),
+                              "written_by": uri("person", "Dan Farrugia")},
+                             actor="dan", paper=PRODUCTION_PAPER)
+                # Sicilian pistachio paste used in weeks 4, 12, 18, 24 (4 tins total = 14 kg used)
+                if week in (4, 12, 18, 24):
+                    n += 1
+                    movement(n, day, "Used in production",
+                             {"movement_out_of": uri("loc", "Dry store"),
+                              "movement_into": uri("loc", "Production"),
+                              "movement_ingredient": uri("item", "Sicilian pistachio paste"),
+                              "movement_quantity": 1,
+                              "movement_unit": uri("unit", "tins"),
+                              "written_by": uri("person", "Dan Farrugia")},
+                             actor="dan", paper=PRODUCTION_PAPER,
+                             note="Sicilian pistachio batch churned")
+            elif weekday == 2 and week >= 8:
+                n += 1
+                movement(n, day, "Used in production",
+                         {"movement_out_of": uri("loc", "Walk-in chiller"),
+                          "movement_into": uri("loc", "Production"),
+                          "movement_ingredient": uri("item", "Strawberries"),
+                          "movement_quantity": "1.50",
+                          "movement_unit": uri("unit", "kilos"),
+                          "written_by": uri("person", "Dan Farrugia")},
+                         actor="dan", paper=PRODUCTION_PAPER)
+                n += 1
+                movement(n, day, "Used in production",
+                         {"movement_out_of": uri("loc", "Walk-in chiller"),
+                          "movement_into": uri("loc", "Production"),
+                          "movement_ingredient": uri("item", "Lemons"),
+                          "movement_quantity": "4.00",
+                          "movement_unit": uri("unit", "kilos"),
+                          "written_by": uri("person", "Dan Farrugia")},
+                         actor="dan", paper=PRODUCTION_PAPER)
+                n += 1
+                movement(n, day, "Used in production",
+                         {"movement_out_of": uri("loc", "Walk-in chiller"),
+                          "movement_into": uri("loc", "Production"),
+                          "movement_ingredient": uri("item", "Rhubarb"),
+                          "movement_quantity": "2.00",
+                          "movement_unit": uri("unit", "kilos"),
+                          "written_by": uri("person", "Dan Farrugia")},
+                         actor="dan", paper=PRODUCTION_PAPER)
+            elif weekday == 3:
+                if week % 2 == 0:
+                    n += 1
+                    movement(n, day, "Used in production",
+                             {"movement_out_of": uri("loc", "Walk-in chiller"),
+                              "movement_into": uri("loc", "Production"),
+                              "movement_ingredient": uri("item", "Ricotta"),
+                              "movement_quantity": "1.00",
+                              "movement_unit": uri("unit", "kilos"),
+                              "written_by": uri("person", "Dan Farrugia")},
+                             actor="dan", paper=PRODUCTION_PAPER)
+                    n += 1
+                    movement(n, day, "Used in production",
+                             {"movement_out_of": uri("loc", "Dry store"),
+                              "movement_into": uri("loc", "Production"),
+                              "movement_ingredient": uri("item", "Digestive biscuits"),
+                              "movement_quantity": "0.80",
+                              "movement_unit": uri("unit", "kilos"),
+                              "written_by": uri("person", "Dan Farrugia")},
+                             actor="dan", paper=PRODUCTION_PAPER)
+            elif weekday == 4:
+                n += 1
+                movement(n, day, "Used in production",
+                         {"movement_out_of": uri("loc", "Walk-in chiller"),
+                          "movement_into": uri("loc", "Production"),
+                          "movement_ingredient": uri("item", "Free-range eggs"),
+                          "movement_quantity": "0.90",
+                          "movement_unit": uri("unit", "kilos"),
+                          "written_by": uri("person", "Dan Farrugia")},
+                         actor="dan", paper=PRODUCTION_PAPER)
+                if week % 4 == 0:
+                    n += 1
+                    movement(n, day, "Used in production",
+                             {"movement_out_of": uri("loc", "Walk-in chiller"),
+                              "movement_into": uri("loc", "Production"),
+                              "movement_ingredient": uri("item", "Raspberry purée"),
+                              "movement_quantity": 1,
+                              "movement_unit": uri("unit", "tubs"),
+                              "written_by": uri("person", "Dan Farrugia")},
+                             actor="dan", paper=PRODUCTION_PAPER,
+                             note="Raspberry sorbet churned with thawed purée")
+
+            if weekday == 0:
+                n += 1
+                movement(n, day, "Used in production",
+                         {"movement_out_of": uri("loc", "Dry store"),
+                          "movement_into": uri("loc", "Production"),
+                          "movement_ingredient": uri("item", "Sea salt"),
+                          "movement_quantity": "0.10",
+                          "movement_unit": uri("unit", "kilos"),
+                          "written_by": uri("person", "Dan Farrugia")},
+                         actor="dan", paper=PRODUCTION_PAPER)
+
+        # 3. Waste, Tastings, Staff, and Store Transfers
+        for _ in range(2):
+            w_item = rng.choice(["Lemons", "Strawberries", "Whole milk, kitchen", "Free-range eggs"])
             n += 1
             movement(n, _weekday(week, rng.randrange(6)), "Thrown away",
-                     {"movement_out_of": uri("loc", item[6]),
+                     {"movement_out_of": uri("loc", "Walk-in chiller"),
                       "movement_into": uri("loc", "Kitchen bin"),
-                      "movement_ingredient": uri("item", item[0]),
-                      "movement_quantity": f"{rng.uniform(0.4, 6.0):.2f}",
+                      "movement_ingredient": uri("item", w_item),
+                      "movement_quantity": "0.50",
                       "movement_unit": uri("unit", "kilos"),
-                      "written_by": uri("person", rng.choice(
-                          ["Aoife Byrne", "Dan Farrugia"]))},
+                      "written_by": uri("person", rng.choice(["Aoife Byrne", "Dan Farrugia"]))},
                      actor="aoife", paper=WASTE_PAPER,
                      note=rng.choice(WASTE_NOTES))
 
-        # A tasting or two. Weighed as well.
-        for _ in range(4):
-            item = rng.choice(ITEMS)
+        if week % 2 == 0:
+            t_item = rng.choice(["Sicilian pistachio paste", "Piedmont hazelnut paste", "Strawberries"])
+            t_store = "Dry store" if "paste" in t_item else "Walk-in chiller"
             n += 1
             movement(n, _weekday(week, rng.randrange(6)), "Used for tastings",
-                     {"movement_out_of": uri("loc", item[6]),
+                     {"movement_out_of": uri("loc", t_store),
                       "movement_into": uri("loc", "Tastings"),
-                      "movement_ingredient": uri("item", item[0]),
-                      "movement_quantity": f"{rng.uniform(0.2, 3.0):.2f}",
+                      "movement_ingredient": uri("item", t_item),
+                      "movement_quantity": "0.10",
                       "movement_unit": uri("unit", "kilos")},
                      actor="dan", paper=WASTE_PAPER)
 
-        # Somebody takes a pack home. In the pack it was in — and a carton of
-        # stabiliser is never taken home, a bag out of one is.
-        for _ in range(2):
-            item = rng.choice(ITEMS)
-            unit = "bags" if item[0] == "Base 50 stabiliser" else item[1]
+        if week % 3 == 0:
+            s_item = rng.choice(["Free-range eggs", "Strawberries", "Digestive biscuits", "Whole milk, kitchen"])
+            s_store = "Dry store" if s_item == "Digestive biscuits" else "Walk-in chiller"
             n += 1
             movement(n, _weekday(week, rng.randrange(6)), "Taken by staff",
-                     {"movement_out_of": uri("loc", item[6]),
+                     {"movement_out_of": uri("loc", s_store),
                       "movement_into": uri("loc", "Staff"),
-                      "movement_ingredient": uri("item", item[0]),
+                      "movement_ingredient": uri("item", s_item),
                       "movement_quantity": 1,
-                      "movement_unit": uri("unit", unit),
-                      "written_by": uri("person", rng.choice(
-                          [p[0] for p in PEOPLE]))},
+                      "movement_unit": uri("unit", "kilos" if s_item != "Free-range eggs" else "trays"),
+                      "written_by": uri("person", "Marina Devlin")},
                      actor="marina", paper=WASTE_PAPER)
 
-        # Between our own stores, usually because something was opened.
-        for _ in range(4):
-            item = rng.choice(ITEMS)
-            other = rng.choice([place for place, *_ in INTERNAL
-                                if place != item[6]])
+        # Internal transfer: Dan moves 1 tub of raspberry purée from freezer to chiller on Thursday to thaw
+        if week % 4 == 0:
             n += 1
-            movement(n, _weekday(week, rng.randrange(6)),
-                     "Transfer between stores",
-                     {"movement_out_of": uri("loc", item[6]),
-                      "movement_into": uri("loc", other),
-                      "movement_ingredient": uri("item", item[0]),
-                      "movement_quantity": rng.randint(1, 3),
-                      "movement_unit": uri("unit", item[1])},
-                     actor="dan", paper=TRANSFER_PAPER)
-
-        # Once a week the bin is weighed and nobody wrote down what was in it.
-        n += 1
-        movement(n, _weekday(week, 5), "Thrown away",
-                 {"movement_out_of": uri("loc", "Dry store"),
-                  "movement_into": uri("loc", "Kitchen bin"),
-                  "movement_quantity": f"{rng.uniform(1.0, 9.0):.2f}",
-                  "movement_unit": uri("unit", "kilos")},
-                 actor="aoife", paper=WASTE_PAPER,
-                 note="Bin weighed at close. Nobody wrote down what was in it")
-
-    # Lines with no origin at all: a pack found on the floor and put away, and
-    # nobody knows which delivery it came off.
-    for week in (3, 9, 15, 21):
-        item = ITEMS[week % len(ITEMS)]
-        n += 1
-        movement(n, _weekday(week, 4), "Delivery in",
-                 {"movement_into": uri("loc", item[6]),
-                  "movement_ingredient": uri("item", item[0]),
-                  "movement_quantity": 1,
-                  "movement_unit": uri("unit", item[1])},
-                 actor="dan", paper=TRANSFER_PAPER,
-                 note="Found on the floor. No note with it")
+            movement(n, _weekday(week, 3), "Transfer between stores",
+                     {"movement_out_of": uri("loc", "Ingredient freezer"),
+                      "movement_into": uri("loc", "Walk-in chiller"),
+                      "movement_ingredient": uri("item", "Raspberry purée"),
+                      "movement_quantity": 1,
+                      "movement_unit": uri("unit", "tubs")},
+                     actor="dan", paper=TRANSFER_PAPER,
+                     note="Transferred 1 tub raspberry purée to chiller to thaw for Friday sorbet production")
 
     return written
 
 
 def movement_corrections(conn, map_, rng, counts, written):
-    """What the office found when the statement came in.
+    """What the office found when supplier statements and delivery dockets were reconciled."""
+    # Storyline 3: Whitehall Dairy Whole Milk delivery on 15 July 2026 (week 19).
+    # Delivery docket noted 10 bags. Whitehall invoice #WH-4491 confirmed 15 bags.
+    # Marina corrects the quantity to 15 with revokes!
+    milk_row = next((row for row in written
+                     if row["kind"] == "Delivery in"
+                     and row.get("ingredient") == uri("item", "Whole milk, kitchen")
+                     and row["happened"] == date(2026, 7, 15)), None)
+    if milk_row:
+        correct(conn, map_, "StockMovement", milk_row["subject"],
+                "movement_quantity", milk_row["assertion"], value=15,
+                actor="marina", counts=counts, when=_moment(milk_row["happened"]),
+                recorded=_learned(date(2026, 7, 20), 11),
+                source="document_extracted", confidence="high",
+                authority="Whitehall Dairy invoice #WH-4491",
+                note="Driver docket recorded 10 bags. Whitehall invoice #WH-4491 "
+                     "and crate count verify 15 bags delivered")
 
-    Two kinds, and the log tells them apart by whether the row that revokes
-    carries a value. A number transposed on the note is put right; a delivery
-    that never arrived is withdrawn and nothing replaces it, because there is
-    no true number to write — the line should not be there at all.
-    """
-    delivered = [row for row in written if row["kind"] == "Delivery in"]
-    chosen = rng.sample(delivered, TRANSPOSED + NEVER_ARRIVED)
+    # Transposed typos (15) and never arrived (8)
+    adjust_candidates = [
+        row for row in written
+        if row["kind"] == "Delivery in"
+        and row["subject"] != (milk_row["subject"] if milk_row else None)
+        and row.get("ingredient") in (
+            uri("item", "Whole milk, kitchen"),
+            uri("item", "Whipping cream 38%"),
+            uri("item", "Lemons"),
+            uri("item", "Strawberries"),
+            uri("item", "Rhubarb"),
+            uri("item", "Free-range eggs"),
+            uri("item", "Digestive biscuits"),
+            uri("item", "Caster sugar (sucrose)"),
+        )
+    ]
+    chosen = rng.sample(adjust_candidates, TRANSPOSED + NEVER_ARRIVED)
 
     for row in chosen[:TRANSPOSED]:
-        right = int(float(row["quantity"])) + rng.choice([-2, -1, 1, 2, 3])
+        right = int(float(row["quantity"])) + rng.choice([-1, 1])
         correct(conn, map_, "StockMovement", row["subject"],
                 "movement_quantity", row["assertion"], value=max(right, 1),
                 actor="marina", counts=counts, when=_moment(row["happened"]),
@@ -610,89 +1026,189 @@ def movement_corrections(conn, map_, rng, counts, written):
                      "number for a thing that did not happen")
 
 
-# The count sheet is filled in as the counter walks the building, and typed up
-# a day or two later. Six of them, one at the end of each month.
-COUNT_DAYS = [date(2026, 3, 29), date(2026, 4, 26), date(2026, 5, 31),
-              date(2026, 6, 28), date(2026, 7, 26), date(2026, 8, 30)]
-
-COUNT_NOTES = [
-    "First count under the new sheets. The chiller was still being loaded, so "
-    "the milk is what was on the shelf at six.",
-    "Counted alone. The ingredient freezer was iced up and the bottom basket "
-    "was not emptied.",
-    "Dan counted the dry store with me. Two bags of Base 50 out of an opened "
-    "carton are written as bags.",
-    "Quick count before the bank holiday. The fruit had just come in and is "
-    "counted with it.",
-    "Aoife counted the chiller. Everything in the freezer was written from the "
-    "labels rather than lifted out.",
-    "Full count. Everything opened was written as what it was opened into.",
+COUNT_SHEETS = [
+    ("dry_store", "Dry store ambient count", "Dan Farrugia",
+     date(2026, 8, 30), "Full annual audit: ambient ingredients and pastes on racking"),
+    ("chiller", "Walk-in chiller dairy and fruit count", "Aoife Byrne",
+     date(2026, 8, 30), "Full annual audit: dairy, cream, fresh fruits and eggs"),
+    ("freezer", "Ingredient freezer count", "Dan Farrugia",
+     date(2026, 8, 30), "Full annual audit: purées and frozen ingredients"),
+    ("prep_bench", "Kitchen prep bench open containers", "Marina Devlin",
+     date(2026, 8, 30), "Full annual audit: opened bags and bench containers"),
+    ("audit_pastes", "Manager verification of high-value pastes", "Marina Devlin",
+     date(2026, 8, 30), "Audit verification: pistachio, hazelnut and vanilla shelves"),
+    ("closing_review", "Annual stocktake master verification", "Marina Devlin",
+     date(2026, 8, 30), "Signed off closing stock sheet for financial year end"),
 ]
 
 
 def count_sheets(conn, map_, rng, counts):
-    """Six count sheets and their lines, and two lines a sheet put right."""
-    lines = 0
-    for sheet_no, when in enumerate(COUNT_DAYS, start=1):
-        sheet = f"sorella:count_{when.isoformat()}"
-        typed = when + timedelta(days=sheet_no % 3)
+    """Six count sheets representing physical audit zones, with recount corrections."""
+    sheet_ids = {}
+    for code, title, author, when, note in COUNT_SHEETS:
+        sheet = f"sorella:count_{code}"
+        sheet_ids[code] = sheet
         state(conn, map_, "StockCount", sheet,
               {"happened_on": when.isoformat(),
-               "written_by": uri("person", "Marina Devlin"),
-               "count_note": COUNT_NOTES[sheet_no - 1]},
+               "written_by": uri("person", author),
+               "count_note": f"{title}. {note}"},
               actor="marina", counts=counts, when=_moment(when),
-              recorded=_moment(typed, 20), source="human_confirmed",
+              recorded=_moment(when, 17), source="human_confirmed",
               confidence="high", authority="Marina Devlin")
 
-        written = []
-        for item_no, item in enumerate(ITEMS, start=1):
-            lines += 1
-            struck = (sheet_no == 1 and item[0] == "Cocoa 22/24")
-            result = state(
-                conn, map_, "StockCountLine",
-                f"sorella:count_line_{sheet_no}_{item_no:02d}",
-                {"line_count": sheet,
-                 "count_line_written_as": item[0],
-                 "count_line_ingredient": uri("item", item[0]),
-                 "count_line_where": uri("loc", item[6]),
-                 "count_line_quantity": None if struck else rng.randint(1, 12),
-                 "count_line_unit": None if struck else uri("unit", item[1]),
-                 "count_line_note": "Struck through — could not find it"
-                                    if struck else None},
-                actor="marina", counts=counts, when=_moment(when),
-                recorded=_moment(typed, 20), source="human_confirmed",
-                confidence="medium", authority="Marina Devlin")
-            if "count_line_quantity" in result["stated"]:
-                written.append((f"sorella:count_line_{sheet_no}_{item_no:02d}",
-                                result["stated"]["count_line_quantity"]))
+    # Query active expected inventory balance per ingredient and internal location
+    with conn.cursor() as cur:
+        cur.execute("""
+            WITH active_a AS (
+                SELECT * FROM assertion
+                WHERE id NOT IN (SELECT revokes FROM assertion WHERE revokes IS NOT NULL)
+            ),
+            uri_pred AS (
+                SELECT subject_id FROM active_a WHERE value_literal = 'uniti:uri' LIMIT 1
+            ),
+            conversions AS (
+                SELECT 
+                    a.subject_id,
+                    max(CASE WHEN p.value_literal = 'sorella:conversion_ingredient' THEN r.value_literal END) AS ingredient,
+                    max(CASE WHEN p.value_literal = 'sorella:conversion_unit' THEN r.value_literal END) AS unit,
+                    max(CASE WHEN p.value_literal = 'sorella:conversion_factor' THEN a.value_literal END)::numeric AS factor
+                FROM active_a a
+                JOIN active_a p ON p.subject_id = a.predicate_id AND p.predicate_id = (SELECT subject_id FROM uri_pred)
+                LEFT JOIN active_a r ON r.subject_id = a.value_ref AND r.predicate_id = (SELECT subject_id FROM uri_pred)
+                GROUP BY a.subject_id
+            ),
+            movements AS (
+                SELECT 
+                    a.subject_id,
+                    max(CASE WHEN p.value_literal = 'sorella:movement_ingredient' THEN r.value_literal END) AS ingredient,
+                    max(CASE WHEN p.value_literal = 'sorella:movement_quantity' THEN a.value_literal END)::numeric AS quantity,
+                    max(CASE WHEN p.value_literal = 'sorella:movement_unit' THEN r.value_literal END) AS unit,
+                    max(CASE WHEN p.value_literal = 'sorella:movement_into' THEN r.value_literal END) AS loc_into,
+                    max(CASE WHEN p.value_literal = 'sorella:movement_out_of' THEN r.value_literal END) AS loc_out
+                FROM active_a a
+                JOIN active_a p ON p.subject_id = a.predicate_id AND p.predicate_id = (SELECT subject_id FROM uri_pred)
+                LEFT JOIN active_a r ON r.subject_id = a.value_ref AND r.predicate_id = (SELECT subject_id FROM uri_pred)
+                GROUP BY a.subject_id
+            ),
+            ins AS (
+                SELECT m.ingredient, m.loc_into AS loc, sum(m.quantity * coalesce(c.factor, 1.0)) AS in_kg
+                FROM movements m
+                LEFT JOIN conversions c ON c.ingredient = m.ingredient AND c.unit = m.unit
+                WHERE m.loc_into IN ('sorella:loc_dry_store', 'sorella:loc_walk_in_chiller', 'sorella:loc_ingredient_freezer')
+                GROUP BY 1, 2
+            ),
+            outs AS (
+                SELECT m.ingredient, m.loc_out AS loc, sum(m.quantity * coalesce(c.factor, 1.0)) AS out_kg
+                FROM movements m
+                LEFT JOIN conversions c ON c.ingredient = m.ingredient AND c.unit = m.unit
+                WHERE m.loc_out IN ('sorella:loc_dry_store', 'sorella:loc_walk_in_chiller', 'sorella:loc_ingredient_freezer')
+                GROUP BY 1, 2
+            )
+            SELECT 
+                coalesce(i.ingredient, o.ingredient) AS ingredient,
+                coalesce(i.loc, o.loc) AS loc,
+                coalesce(i.in_kg, 0) - coalesce(o.out_kg, 0) AS expected_kg
+            FROM ins i
+            FULL OUTER JOIN outs o ON o.ingredient = i.ingredient AND o.loc = i.loc
+            WHERE coalesce(i.in_kg, 0) - coalesce(o.out_kg, 0) > 0
+            ORDER BY 1, 2;
+        """)
+        expected_rows = cur.fetchall()
 
-        # The opened carton, counted in the other unit. The same thing, twice
-        # on one sheet, and nothing converts between them.
+    lines = 0
+    written_lines = {}
+    recounts = []
+
+    store_to_sheet = {
+        uri("loc", "Dry store"): "dry_store",
+        uri("loc", "Walk-in chiller"): "chiller",
+        uri("loc", "Ingredient freezer"): "freezer",
+    }
+    item_lookup = {uri("item", item[0]): item for item in ITEMS}
+
+    for item_no, (ing_uri, loc_uri, exp_num) in enumerate(expected_rows, start=1):
+        if ing_uri not in item_lookup:
+            continue
+        item = item_lookup[ing_uri]
+        name = item[0]
+        exp_kg = float(exp_num)
+        sheet_code = store_to_sheet.get(loc_uri, "dry_store")
+        sheet = sheet_ids[sheet_code]
+        line_subj = f"sorella:count_line_{sheet_code}_{item_no:02d}"
+
+        # Storylines and calibrated physical count:
+        if name == "Sicilian pistachio paste":
+            # Storyline 2: 2 tins missing (-7.0 kg, -£428.00)
+            final_qty = round(exp_kg - 7.0, 2)
+            # Initial misread: Dan thought 1 opened tin had 2kg (total 9.0kg)
+            initial_qty = round(final_qty + 2.0, 2)
+            recount_note = "Dan estimated 9.0kg with open tin. Verified shelf count: exactly 2 tins (7.0kg). Deficit: 2 tins (-£428.00) missing from July delivery."
+            recounts.append((name, line_subj, str(final_qty), recount_note))
+        elif name == "Base 50 stabiliser":
+            # Storyline 4: 16.0 kg on shelf (< 40 kg reorder level), zero variance
+            final_qty = round(exp_kg, 2)
+            # Initial misread: Dan counted 1 full carton (20kg)
+            initial_qty = round(final_qty + 4.0, 2)
+            recount_note = "Dan counted 20kg carton. Marina noted 4kg emptied into daily bench hopper. Actual warehouse stock is 16.0kg. Below reorder threshold (40kg)."
+            recounts.append((name, line_subj, str(final_qty), recount_note))
+        elif name == "Whole milk, kitchen":
+            final_qty = round(exp_kg - 0.25, 2)
+            initial_qty = round(final_qty + 15.0, 2)
+            recount_note = "Aoife included empty crates. Re-audited full bag count: verified."
+            recounts.append((name, line_subj, str(final_qty), recount_note))
+        elif name == "Caster sugar (sucrose)":
+            final_qty = round(exp_kg - 0.25, 2)
+            initial_qty = round(final_qty - 10.0, 2)
+            recount_note = "Dan missed 1 sack behind dextrose pallet. Verified recount."
+            recounts.append((name, line_subj, str(final_qty), recount_note))
+        elif name == "Cocoa 22/24":
+            final_qty = round(exp_kg - 0.25, 2)
+            initial_qty = round(final_qty + 5.0, 2)
+            recount_note = "Rough box estimate corrected to weighed scale count."
+            recounts.append((name, line_subj, str(final_qty), recount_note))
+        elif name == "Lemons":
+            final_qty = round(exp_kg - 0.25, 2)
+            initial_qty = round(final_qty - 5.0, 2)
+            recount_note = "Aoife recounted bottom chiller shelf crates: verified."
+            recounts.append((name, line_subj, str(final_qty), recount_note))
+        elif name == "Vanilla paste":
+            final_qty = round(exp_kg - 0.05, 2)
+            initial_qty = final_qty
+        else:
+            loss = round(rng.uniform(0.15, 0.35), 2)
+            final_qty = round(exp_kg - loss, 2)
+            initial_qty = final_qty
+
         lines += 1
-        state(conn, map_, "StockCountLine",
-              f"sorella:count_line_{sheet_no}_99",
-              {"line_count": sheet,
-               "count_line_written_as": "Base 50, loose bags",
-               "count_line_ingredient": uri("item", "Base 50 stabiliser"),
-               "count_line_where": uri("loc", "Dry store"),
-               "count_line_quantity": rng.randint(2, 9),
-               "count_line_unit": uri("unit", "bags"),
-               "count_line_note": "Out of an opened carton"},
-              actor="marina", counts=counts, when=_moment(when),
-              recorded=_moment(typed, 20), source="human_confirmed",
-              confidence="medium", authority="Marina Devlin")
+        result = state(
+            conn, map_, "StockCountLine", line_subj,
+            {"line_count": sheet,
+             "count_line_written_as": name,
+             "count_line_ingredient": ing_uri,
+             "count_line_where": loc_uri,
+             "count_line_quantity": str(initial_qty),
+             "count_line_unit": uri("unit", "kilos"),
+             "count_line_note": f"Audited on {sheet_code}"},
+            actor="marina", counts=counts, when=_moment(date(2026, 8, 30), 10),
+            recorded=_moment(date(2026, 8, 30), 17), source="human_confirmed",
+            confidence="medium", authority=uri("person", "Dan Farrugia"))
 
-        # Two lines a sheet were read off the shelf wrong and found when the
-        # sheet was checked against the one before it.
-        for subject, assertion in rng.sample(written, MISCOUNTED):
-            correct(conn, map_, "StockCountLine", subject,
-                    "count_line_quantity", assertion, value=rng.randint(1, 12),
-                    actor="marina", counts=counts, when=_moment(when),
-                    recorded=_moment(typed + timedelta(days=3), 19),
+        if "count_line_quantity" in result["stated"]:
+            written_lines[name] = (line_subj, result["stated"]["count_line_quantity"])
+
+    # Now apply the 6 recount corrections on 1 September
+    for name, line_subj, correct_qty, recount_note in recounts:
+        if name in written_lines:
+            _, assertion_id = written_lines[name]
+            correct(conn, map_, "StockCountLine", line_subj,
+                    "count_line_quantity", assertion_id, value=correct_qty,
+                    actor="marina", counts=counts,
+                    when=_moment(date(2026, 8, 30), 16),
+                    recorded=_moment(date(2026, 9, 1), 10),
                     source="human_confirmed", confidence="high",
                     authority="Marina Devlin",
-                    note="Recounted against last month's sheet. The first "
-                         "figure was read off the wrong shelf")
+                    note=recount_note)
+
     return lines
 
 
@@ -766,7 +1282,7 @@ def main():
 
         movement_corrections(conn, map_, rng, counts, written)
         lines = count_sheets(conn, map_, rng, counts)
-        print(f"count lines: {lines} on {len(COUNT_DAYS)} sheets")
+        print(f"count lines: {lines} on {len(COUNT_SHEETS)} sheets")
         print(f"{counts.intents} intents, {counts.assertions} assertions")
         print()
         shape(conn)

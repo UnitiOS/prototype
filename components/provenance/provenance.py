@@ -81,6 +81,16 @@ FROM assertion
 
 _INTENTS_SQL = "SELECT count(*) AS intents FROM intent"
 
+_RECENT_SQL = """
+SELECT a.id, a.seq, a.subject_id, a.predicate_id, a.value_literal, a.value_ref,
+       a.valid_from, a.recorded_at, a.revokes,
+       i.actor_id, i.action_name, a.intent_id
+FROM assertion a
+JOIN intent i ON i.id = a.intent_id
+ORDER BY a.seq DESC
+LIMIT %(limit)s
+"""
+
 
 class UnknownURI(LookupError):
     """A URI the log has never registered. Nothing was ever said under it."""
@@ -137,7 +147,81 @@ def window(conn):
         held = cur.fetchone()
         cur.execute(_INTENTS_SQL)
         held.update(cur.fetchone())
+        cur.execute("SELECT count(*) AS revocations FROM assertion WHERE revokes IS NOT NULL")
+        held.update(cur.fetchone())
     return held
+
+
+def recent_assertions(conn, limit=40, filter_type=None, actor=None, search=None):
+    """Recent assertions recorded in the kernel, with resolved URIs and actors.
+
+    Supports filtering by:
+    - filter_type: 'all', 'revocations', 'master', 'stocktake', 'movement'
+    - actor: filter by specific actor_id
+    - search: filter by substring matching subject, predicate, or value
+    """
+    by_uri, by_id = _registry(conn)
+    clauses = ["1=1"]
+    params = {"limit": limit}
+
+    if filter_type == "revocations":
+        clauses.append("(a.revokes IS NOT NULL OR EXISTS (SELECT 1 FROM assertion r WHERE r.revokes = a.id))")
+    elif filter_type == "master":
+        clauses.append("i.action_name IN ('submit_Ingredient', 'submit_InternalLocation', 'submit_Supplier', 'submit_Person', 'submit_Unit', 'submit_UnitConversion', 'submit_MovementKind')")
+    elif filter_type == "stocktake":
+        clauses.append("i.action_name IN ('submit_StockCount', 'submit_StockCountLine')")
+    elif filter_type == "movement":
+        clauses.append("i.action_name = 'submit_StockMovement'")
+
+    if actor:
+        clauses.append("i.actor_id = %(actor)s")
+        params["actor"] = actor
+
+    where = " AND ".join(clauses)
+    query = f"""
+    SELECT a.id, a.seq, a.subject_id, a.predicate_id, a.value_literal, a.value_ref,
+           a.valid_from, a.recorded_at, a.revokes,
+           (SELECT r.id FROM assertion r WHERE r.revokes = a.id LIMIT 1) AS revoked_by,
+           i.actor_id, i.action_name, a.intent_id, i.note
+    FROM assertion a
+    JOIN intent i ON i.id = a.intent_id
+    WHERE {where}
+    ORDER BY a.seq DESC
+    LIMIT %(limit)s
+    """
+    with conn.cursor(row_factory=dict_row) as cur:
+        cur.execute(query, params)
+        rows = cur.fetchall()
+
+    out = []
+    for r in rows:
+        sub = by_id.get(r["subject_id"], str(r["subject_id"]))
+        pred = by_id.get(r["predicate_id"], str(r["predicate_id"]))
+        val = (by_id.get(r["value_ref"], str(r["value_ref"]))
+               if r["value_ref"] else r["value_literal"])
+
+        if search:
+            s_low = search.lower()
+            if (s_low not in sub.lower() and s_low not in pred.lower()
+                    and (val is None or s_low not in str(val).lower())):
+                continue
+
+        out.append({
+            "id": r["id"],
+            "seq": r["seq"],
+            "subject": sub,
+            "predicate": pred,
+            "value": val,
+            "valid_from": r["valid_from"],
+            "recorded_at": r["recorded_at"],
+            "actor_id": r["actor_id"],
+            "action_name": r["action_name"],
+            "intent_id": r["intent_id"],
+            "note": r["note"],
+            "revokes": r["revokes"],
+            "revoked_by": r["revoked_by"],
+        })
+    return out
 
 
 def _print_history(built):

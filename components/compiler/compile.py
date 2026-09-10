@@ -16,10 +16,10 @@ The map declares rules. This turns one kind of rule into SQL and runs it.
 Two connections and no join between them: nothing that reads the operational
 store can reach an `assertion` row, because it is not in the same database.
 
-**Nothing here knows what the map is about.** It reads six words — `over`,
-the operator, `by`, `equals_expression`, `parameter` and its `of` and `slot` —
-and emits SQL. A column whose name it recognised would be a defect: point it at
-another map and another table comes out.
+**Nothing here knows what the map is about.** It reads eight words — `over`,
+the operator, `by`, `where` and its `is_a`, `convert`, `equals_expression`,
+`parameter` and its `of` and `slot` — and emits SQL. A column whose name it
+recognised would be a defect: point it at another map and another table comes out.
 
 A `parameter` column is the fourth kind: not computed from the rows at all, but
 one fact the log holds about the entity a key column names — a threshold
@@ -141,10 +141,10 @@ def _read_aggregate(map_, where, spec):
     """One `aggregate` annotation, checked against the map it names."""
     view = map_["view"]
     named = [key for key in spec if key in EMPTY]
-    unknown = set(spec) - set(named) - {"over", "by"}
+    unknown = set(spec) - set(named) - {"over", "by", "where", "convert"}
     if len(named) != 1 or unknown:
         raise MapError(
-            f"{where}: an aggregate is `over`, `by` and one operator of "
+            f"{where}: an aggregate is `over`, `by`, optional `where`, optional `convert` and one operator of "
             f"{sorted(EMPTY)} — this one has {sorted(spec)}"
         )
     operator = named[0]
@@ -176,12 +176,109 @@ def _read_aggregate(map_, where, spec):
     if not by:
         raise MapError(f"{where}: an aggregate with no `by` groups nothing")
 
+    where_block = as_dict(spec.get("where") or {})
+    parsed_where = []
+    for slot_name, cond in where_block.items():
+        cond_dict = as_dict(cond) if cond else {}
+        if set(cond_dict) != {"is_a"}:
+            raise MapError(
+                f"{where}: a `where` condition must be `is_a` — got {sorted(cond_dict)}"
+            )
+        target_class = str(cond_dict["is_a"])
+        if target_class not in view.all_classes():
+            raise MapError(
+                f"{where}: `where` names {target_class!r}, which is not a class"
+            )
+        target_slot = named_slot(slot_name, "where")
+        t_slot = type_slot(map_, target_class)
+        if t_slot is None or not t_slot.slot_uri:
+            raise MapError(
+                f"{where}: {target_class} has no slot carrying designates_type"
+            )
+        descendants = list(view.class_descendants(target_class))
+        parsed_where.append({
+            "slot_name": str(slot_name),
+            "slot_uri": target_slot.slot_uri,
+            "type_slot_uri": t_slot.slot_uri,
+            "descendants": descendants,
+        })
+
+    convert_block = dict(as_dict(spec.get("convert") or {}))
+    parsed_convert = None
+    if convert_block:
+        # In YAML 1.1, unquoted `on:` parses as boolean True.
+        if True in convert_block:
+            convert_block["on"] = convert_block.pop(True)
+        elif "True" in convert_block:
+            convert_block["on"] = convert_block.pop("True")
+        expected = {"using", "on", "factor"}
+        if set(convert_block) != expected:
+            raise MapError(
+                f"{where}: a `convert` block must have `using`, `on`, and `factor` — got {sorted(str(k) for k in convert_block)}"
+            )
+        using_class = str(convert_block["using"])
+        if using_class not in view.all_classes():
+            raise MapError(
+                f"{where}: `convert.using` names {using_class!r}, which is not a class"
+            )
+        using_slots = {slot.name: slot for slot in view.class_induced_slots(using_class)}
+
+        factor_name = str(convert_block["factor"])
+        factor_slot = using_slots.get(factor_name)
+        if factor_slot is None:
+            raise MapError(
+                f"{where}: `convert.factor` names {factor_name!r}, which {using_class} has no slot for"
+            )
+        factor_type = _sql_type(map_, factor_slot.range)
+        if factor_type not in SUMMABLE:
+            raise MapError(
+                f"{where}: `convert.factor` is over {factor_name}, whose range "
+                f"{factor_slot.range} is {factor_type} and cannot be totalled"
+            )
+
+        t_slot = type_slot(map_, using_class)
+        if t_slot is None or not t_slot.slot_uri:
+            raise MapError(
+                f"{where}: {using_class} has no slot carrying designates_type"
+            )
+
+        on_block = as_dict(convert_block["on"])
+        if not on_block:
+            raise MapError(f"{where}: `convert.on` mapping cannot be empty")
+
+        parsed_on = []
+        for conv_slot_name, src_slot_name in on_block.items():
+            c_slot = using_slots.get(str(conv_slot_name))
+            if c_slot is None:
+                raise MapError(
+                    f"{where}: `convert.on` names {conv_slot_name!r}, which {using_class} has no slot for"
+                )
+            if not c_slot.slot_uri:
+                raise MapError(
+                    f"{where}: {using_class}.{conv_slot_name} declares no slot_uri"
+                )
+            s_slot = named_slot(src_slot_name, "convert.on")
+            parsed_on.append({
+                "conv_slot_uri": c_slot.slot_uri,
+                "source_slot_uri": s_slot.slot_uri,
+            })
+
+        parsed_convert = {
+            "using": using_class,
+            "type_slot_uri": t_slot.slot_uri,
+            "descendants": list(view.class_descendants(using_class)),
+            "factor_slot_uri": factor_slot.slot_uri,
+            "on": parsed_on,
+        }
+
     return {
         "operator": operator,
         "over": over,
         "measure_uri": measure.slot_uri,
         "measure_type": measure_type,
         "by": {str(key): named_slot(value, "by").slot_uri for key, value in by.items()},
+        "where": parsed_where,
+        "convert": parsed_convert,
     }
 
 
@@ -453,9 +550,63 @@ def _aggregate_cte(spec, column, alias, source_alias, keys, prefix):
             f"    LEFT JOIN stated {k} ON {k}.subject_id = r.subject_id\n"
             f"                        AND {k}.slot = {_lit(spec['by'][key])}"
         )
+    for j, w in enumerate(spec.get("where") or []):
+        w_val = f"{prefix}w{j}_v"
+        w_reg = f"{prefix}w{j}_r"
+        w_cls = f"{prefix}w{j}_c"
+        descendants = ", ".join(_lit(name) for name in w["descendants"])
+        joins.append(
+            f"    JOIN stated {w_val} ON {w_val}.subject_id = r.subject_id\n"
+            f"                       AND {w_val}.slot = {_lit(w['slot_uri'])}\n"
+            f"    JOIN registry {w_reg} ON {w_reg}.uri = {w_val}.value\n"
+            f"    JOIN stated {w_cls} ON {w_cls}.subject_id = {w_reg}.entity_id\n"
+            f"                       AND {w_cls}.slot = {_lit(w['type_slot_uri'])}\n"
+            f"                       AND {w_cls}.value = ANY (ARRAY[{descendants}])"
+        )
+    if spec.get("convert"):
+        cv = spec["convert"]
+        c_descendants = ", ".join(_lit(name) for name in cv["descendants"])
+        sub_selects = ["cv_c.subject_id"]
+        sub_joins = []
+        on_clauses = []
+        for c_idx, on_item in enumerate(cv["on"]):
+            c_alias = f"cv_{c_idx}"
+            s_alias = f"{prefix}cv_s{c_idx}"
+            joins.append(
+                f"    LEFT JOIN stated {s_alias} ON {s_alias}.subject_id = r.subject_id\n"
+                f"                                AND {s_alias}.slot = {_lit(on_item['source_slot_uri'])}"
+            )
+            sub_selects.append(f"{c_alias}.value AS match_{c_idx}")
+            sub_joins.append(
+                f"        JOIN stated {c_alias} ON {c_alias}.subject_id = cv_c.subject_id\n"
+                f"                             AND {c_alias}.slot = {_lit(on_item['conv_slot_uri'])}"
+            )
+            on_clauses.append(f"{prefix}cv.match_{c_idx} = {s_alias}.value")
+
+        f_alias = f"{prefix}cv_f"
+        sub_selects.append(f"({f_alias}.value)::numeric AS factor")
+        sub_joins.append(
+            f"        JOIN stated {f_alias} ON {f_alias}.subject_id = cv_c.subject_id\n"
+            f"                               AND {f_alias}.slot = {_lit(cv['factor_slot_uri'])}"
+        )
+
+        sub_query = (
+            f"    LEFT JOIN (\n"
+            f"        SELECT " + ", ".join(sub_selects) + "\n"
+            f"        FROM stated cv_c\n"
+            + "\n".join(sub_joins) + "\n"
+            f"        WHERE cv_c.slot = {_lit(cv['type_slot_uri'])}\n"
+            f"          AND cv_c.value = ANY (ARRAY[{c_descendants}])\n"
+            f"    ) {prefix}cv ON " + "\n                AND ".join(on_clauses)
+        )
+        joins.append(sub_query)
+        measure_expr = f"(({prefix}m.value)::{spec['measure_type']} * coalesce({prefix}cv.factor, 1))"
+    else:
+        measure_expr = f"(({prefix}m.value)::{spec['measure_type']})"
+
     m = f"{prefix}m"
     selects.append(
-        f"           {spec['operator']}(({m}.value)::{spec['measure_type']}) "
+        f"           {spec['operator']}({measure_expr}) "
         f"AS {_ident(column)}"
     )
     joins.append(
@@ -643,6 +794,8 @@ def compile_class(kernel, ops, map_, class_name, *, valid_at, as_of):
                    else emit_entities(map_, plan_))
 
     with kernel.cursor() as cur:
+        # Prevent catastrophic nested loop plans on unindexed CTEs and bypass LLVM JIT overhead
+        cur.execute("SET enable_nestloop = off; SET jit = off")
         cur.execute(select, {"valid_at": valid_at, "as_of": as_of,
                              "uri_predicate": URI_PREDICATE})
         rows = cur.fetchall()

@@ -25,6 +25,9 @@ Compacted 2026-09-04 from 150 items. The full text is
   with. Missing information, not missing mechanism: `perform.py` already takes
   `recorded_at` and `resolve.py` already names the backfilled case
   · blocks: live use
+- Graph traversal asymmetry: `kernel_trace_provenance` only queries `WHERE subject_id = %s`,
+  missing inbound relations where an entity is `value_ref`, and `graph_get_schema` lacks
+  reverse `referenced_by` slot mappings · blocks: agent traversal
 - A projection renders a ref cell as its URI and a column as its slot name,
   while a form renders both by name. The map already declares five identifier
   slots and carries no `title` on any of its 51 · blocks: generation
@@ -57,18 +60,16 @@ Compacted 2026-09-04 from 150 items. The full text is
   stops being the unit of supersession, or a collection gets its own subject
   · blocks: recording
 - Whether a document's date slot is how a form sets `valid_from`, or a fact
-  standing beside it. No longer theoretical: the browser form shows
-  `happened_on` and sets `valid_from` to now silently, so a movement entered as
-  16 June is absent from 16 June's balance. Deliberately deferred for the demo
-  lap 7 Sep: the seed is dated in the past and a write through the form lands at
-  now, so the clock rewinds correctly and only a backdated entry cannot be shown
-  · blocks: recording
+  standing beside it. Answered 10 Sep: `serve.py` synchronizes `valid_from` with the
+  active `valid_at` browsing clock when submitting via forms or `/correct`, so
+  backdated entries immediately appear in the temporal projection being inspected.
 - Whether a correction carried on a different document is a retraction, an
   independent assertion, or a relation the map must state · blocks: kernel
 - One log holds two businesses and cannot say which: `ontology_version` is
   unique only within a store nothing in the log names · blocks: report
 - Whether a balance is scoped to internal places, or an outside place is marked
-  as one, or a reader simply ignores those rows · blocks: report
+  as one, or a reader simply ignores those rows · blocks: report · answered 9 Sep:
+  scoped to internal places via `where: {movement_into: {is_a: InternalLocation}}`
 - Whether an empty picker and an unfillable class can be told apart in a
   rendered form · blocks: generation
 - Whether a movement carries a clock time, or `happened_on` becomes a datetime
@@ -87,11 +88,11 @@ Compacted 2026-09-04 from 150 items. The full text is
   or data-vs-definition decomposition is enough · blocks: report
 - A movement may name no place at one end, and the seed now holds one:
   whether a group under no location is a row of the balance, is dropped, or
-  is named · blocks: generation
+  is named · blocks: generation · answered 9 Sep: dropped by the scope filter join
 - An `aggregate` cannot say which rows a balance counts, so `p_gelato_on_hand`
   and `p_ingredient_on_hand` are numerically identical and one of them is about
-  nothing. Diagnosed as a missing mechanism 5 Sep, `DECISIONS.md` same date; the
-  question left is what a map writes to say it · blocks: generation
+  nothing. Diagnosed as a missing mechanism 5 Sep, `DECISIONS.md` same date;
+  answered 9 Sep: the `where` block with `is_a` constraints provides this mechanism
 - A rule the business states about a class is recorded on one row: "minimum
   flavours in a cabinet, 12" sits on `loc_cotham_cabinet` alone and Gloucester
   Road's carries nothing. Assert it per cabinet, give the map a class the rule

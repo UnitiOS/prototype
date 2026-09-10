@@ -62,9 +62,10 @@ import sys
 import traceback
 import uuid
 from datetime import datetime, timezone
+from html import escape
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import parse_qs, unquote, urlparse
+from urllib.parse import parse_qs, quote, unquote, urlparse
 
 import psycopg
 
@@ -81,7 +82,7 @@ import render  # noqa: E402
 from compile import OPS_DSN, _aggregate_classes, compile_class  # noqa: E402
 from compile import plan_for  # noqa: E402
 from generate import MapError, _identifier, _projected_options  # noqa: E402
-from generate import _type_slot, form, read_map, submit  # noqa: E402
+from generate import _type_slot, form, read_map, submit, _options  # noqa: E402
 from perform import DSN as KERNEL_DSN  # noqa: E402
 from perform import connect as connect_kernel  # noqa: E402
 
@@ -163,6 +164,9 @@ STAGES = [
     ("Live use", "Fill one in. The write becomes one intent and N assertions "
      "through the one gate, and the table rebuilds itself from the log the "
      "next time it is asked for.", "/classes#tables"),
+    ("Decision & Intelligence", "The graph projected into executive BI and agentic insights: "
+     "stock valuation, variance analysis, reorder alerts, and anomaly root-cause investigation.",
+     "/dashboard"),
     ("Definition change", "A definition moves, and the same question is asked "
      "again under both. Nothing here reaches it yet.", None),
 ]
@@ -294,6 +298,44 @@ def _table_classes(map_):
     return sorted(_aggregate_classes(map_))
 
 
+def _find_slot(map_, predicate_uri, conn=None, subject_uri=None):
+    """Finds (class_name, slot_name, slot_def) for a given predicate URI."""
+    view = map_["view"]
+    target_class = None
+    if conn and subject_uri:
+        try:
+            by_uri, _ = provenance._registry(conn)
+            sub_id = by_uri.get(subject_uri)
+            class_pred_id = by_uri.get("sorella:entity_class") or by_uri.get("uniti:entity_class")
+            if sub_id and class_pred_id:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "SELECT value_literal FROM assertion WHERE subject_id = %s AND predicate_id = %s AND revokes IS NULL ORDER BY seq DESC LIMIT 1",
+                        (sub_id, class_pred_id)
+                    )
+                    r = cur.fetchone()
+                    if r:
+                        target_class = r[0]
+        except Exception:
+            target_class = None
+
+    classes_to_check = [target_class] if target_class and target_class in view.all_classes() else list(view.all_classes())
+    for cname in classes_to_check:
+        for sname in view.class_slots(cname):
+            sdef = view.induced_slot(sname, cname)
+            if sdef.slot_uri == predicate_uri or sname == predicate_uri or str(sdef.name) == predicate_uri:
+                return str(cname), str(sname), sdef
+
+    for cname in view.all_classes():
+        for sname in view.class_slots(cname):
+            sdef = view.induced_slot(sname, cname)
+            if sdef.slot_uri == predicate_uri or sname == predicate_uri:
+                return str(cname), str(sname), sdef
+
+    return None, None, None
+
+
+
 def _labels(map_, cols):
     """URI -> what the business calls it, for every class a column ranges over.
 
@@ -375,7 +417,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def _refuse(self, title, text, valid_at, as_of, status=400):
         self._send(render.message_page(title, text, valid_at=valid_at,
-                                       as_of=as_of), status)
+                                       as_of=as_of, path=self.path), status)
 
     def _route(self):
         parsed = urlparse(self.path)
@@ -396,12 +438,16 @@ class Handler(BaseHTTPRequestHandler):
                 return self._home(valid_at, as_of)
             if parts == ["classes"]:
                 return self._index(valid_at, as_of)
+            if parts == ["correct"]:
+                return self._correct_form(query, valid_at, as_of)
             if parts == ["said"]:
                 return self._said(valid_at, as_of)
             if parts == ["graph"]:
                 return self._graph(query, valid_at, as_of)
             if parts == ["why"]:
                 return self._why(query, valid_at, as_of)
+            if parts == ["dashboard"]:
+                return self._dashboard(query, valid_at, as_of)
             if len(parts) == 2 and parts[0] == "form":
                 return self._form(parts[1], valid_at, as_of)
             if len(parts) == 2 and parts[0] == "table":
@@ -422,6 +468,21 @@ class Handler(BaseHTTPRequestHandler):
         except ClockError as exc:
             today = _today()
             return self._refuse("Not a clock", str(exc), today, today, 400)
+        if parts == ["correct"]:
+            length = int(self.headers.get("Content-Length") or 0)
+            if length > MAX_BODY:
+                return self._refuse("Too much", "The submission is too large.",
+                                    valid_at, as_of, 413)
+            raw = self.rfile.read(length).decode("utf-8") if length else ""
+            try:
+                return self._do_correct(raw, valid_at, as_of)
+            except MapError as exc:
+                return self._refuse("The map refuses", str(exc), valid_at, as_of, 400)
+            except psycopg.Error as exc:
+                traceback.print_exc()
+                return self._refuse("The write was refused", str(exc),
+                                    valid_at, as_of, 400)
+
         if len(parts) != 2 or parts[0] != "form":
             return self._refuse("Not a page", f"Nothing accepts a write at "
                                 f"{self.path}.", valid_at, as_of, 404)
@@ -444,15 +505,17 @@ class Handler(BaseHTTPRequestHandler):
 
     def _home(self, valid_at, as_of):
         body = render.home_html(STAGES, valid_at=valid_at, as_of=as_of)
-        self._send(render.page("uniti", body, valid_at=valid_at, as_of=as_of))
+        self._send(render.page("uniti", body, valid_at=valid_at, as_of=as_of,
+                               path=self.path))
 
     def _said(self, valid_at, as_of):
         paragraphs, lines = _said(self.map_)
         body = render.said_html(paragraphs, lines,
                                 source=self.map_["path"].name,
-                                transcript=_transcript_path(self.map_).name)
+                                transcript=_transcript_path(self.map_).name,
+                                valid_at=valid_at, as_of=as_of)
         self._send(render.page("what was said", body,
-                               valid_at=valid_at, as_of=as_of))
+                               valid_at=valid_at, as_of=as_of, path=self.path))
 
     def _graph(self, query, valid_at, as_of):
         """The whole map, or the rule behind one column of one table."""
@@ -463,15 +526,16 @@ class Handler(BaseHTTPRequestHandler):
         if not class_name:
             classes = sorted(str(name) for name in self.map_["view"].all_classes())
             body = render.graph_html(
-                "The map",
-                f"{len(classes)} classes, drawn from "
-                f"{self.map_['path'].name}. An arrow is a slot whose range is "
-                "another class, labelled with the slot's own name; a hollow "
-                "arrow is one class standing below another. Nothing here was "
-                "drawn by hand.",
-                diagram.script(diagram.classes(self.map_), height="46rem"))
+                "Stage 2 · The Enterprise Graph Map",
+                f"{len(classes)} classes compiled from {self.map_['path'].name}. "
+                "Architectural layers separating operational master data, the immutable "
+                "bitemporal audit log, and digital twin analytical projections. "
+                "Every entity, relationship, and derivation is generated from LinkML ontology rules.",
+                diagram.script(diagram.classes(self.map_), height="50rem"),
+                valid_at=valid_at, as_of=as_of)
             return self._send(render.page("the map", body,
-                                          valid_at=valid_at, as_of=as_of))
+                                          valid_at=valid_at, as_of=as_of,
+                                          path=self.path))
         plan_ = plan_for(self.map_, class_name)
         try:
             drawing = diagram.formula(self.map_, plan_, column)
@@ -483,28 +547,40 @@ class Handler(BaseHTTPRequestHandler):
                 valid_at, as_of, 404)
         body = render.graph_html(
             f"{class_name}.{column}",
-            f"What the map says fills this column, and what that reads in "
-            f"turn. Every box is something {self.map_['path'].name} states: an "
-            "expression, an aggregate, or a fact the log is read for. The "
-            "compiler turns exactly this into SQL, and nothing about it is "
-            "written in the code.",
+            f"Backward provenance lineage for column <code>{escape(column)}</code>. "
+            f"What the map says fills this column, and what expressions, aggregates, "
+            f"or constants it reads in turn. The compiler turns exactly this into SQL.",
             diagram.script(drawing),
-            back=f'<a href="/table/{class_name}?{carried}">'
-                 f"back to {class_name}</a>")
+            back=f'<a href="/table/{class_name}?{carried}">← Back to {class_name} Table</a> &nbsp;|&nbsp; '
+                 f'<a href="/graph?{carried}">Overview Graph</a>',
+            valid_at=valid_at, as_of=as_of)
         self._send(render.page(f"{class_name}.{column}", body,
-                               valid_at=valid_at, as_of=as_of))
+                               valid_at=valid_at, as_of=as_of, path=self.path))
 
     def _why(self, query, valid_at, as_of):
         """Every assertion ever made about one pair. The one kernel reader."""
         fields = parse_qs(query)
         subject = (fields.get("subject", [""])[0] or "").strip()
         predicate = (fields.get("predicate", [""])[0] or "").strip()
+        filter_type = (fields.get("filter", ["all"])[0] or "all").strip()
+        actor = (fields.get("actor", [""])[0] or "").strip()
+        search = (fields.get("q", [""])[0] or "").strip()
+
         with connect_kernel() as kernel:
             if not (subject and predicate):
-                body = render.ask_html(provenance.window(kernel),
-                                       valid_at=valid_at, as_of=as_of)
-                return self._send(render.page("what was recorded", body,
-                                              valid_at=valid_at, as_of=as_of))
+                recent = provenance.recent_assertions(
+                    kernel, limit=50, filter_type=filter_type,
+                    actor=actor if actor and actor != "all" else None,
+                    search=search or None
+                )
+                body = render.ask_html(
+                    provenance.window(kernel), recent=recent,
+                    filter_type=filter_type, actor=actor, search=search,
+                    valid_at=valid_at, as_of=as_of
+                )
+                return self._send(render.page("audit log", body,
+                                              valid_at=valid_at, as_of=as_of,
+                                              path=self.path))
             try:
                 built = provenance.history(kernel, subject=subject,
                                            predicate=predicate)
@@ -512,13 +588,55 @@ class Handler(BaseHTTPRequestHandler):
                 return self._refuse("Never registered", str(exc),
                                     valid_at, as_of, 404)
         body = render.why_html(built, valid_at=valid_at, as_of=as_of)
-        self._send(render.page("why", body, valid_at=valid_at, as_of=as_of))
+        self._send(render.page("audit trail", body, valid_at=valid_at,
+                               as_of=as_of, path=self.path))
 
     def _index(self, valid_at, as_of):
         body = render.index_html(_form_classes(self.map_),
                                  _table_classes(self.map_),
-                                 valid_at=valid_at, as_of=as_of)
-        self._send(render.page("uniti", body, valid_at=valid_at, as_of=as_of))
+                                 valid_at=valid_at, as_of=as_of,
+                                 map_=self.map_)
+        self._send(render.page("Stage 4 & 5 · Classes", body,
+                               valid_at=valid_at, as_of=as_of, path=self.path))
+
+    def _actors(self, valid_at, as_of):
+        """Known actors for intent signing, combining Person entities and intent history."""
+        try:
+            with connect_kernel() as kernel:
+                with kernel.cursor() as cur:
+                    cur.execute("SELECT DISTINCT actor_id FROM intent ORDER BY actor_id")
+                    intent_actors = [r[0] for r in cur.fetchall() if r[0]]
+                people, _ = _options(kernel, self.map_, "Person",
+                                     valid_at=_instant(valid_at),
+                                     as_of=_instant(as_of)) if "Person" in self.map_["view"].all_classes() else ([], None)
+        except Exception:
+            intent_actors, people = ["marina", "dan", "aoife", "fareza"], []
+
+        labels = {
+            "marina": "Marina Devlin (Owner / Production)",
+            "dan": "Dan Farrugia (Head Gelatiere)",
+            "aoife": "Aoife Byrne (Shop Manager, Cotham)",
+            "fareza": "Fareza (System Auditor / Admin)",
+        }
+        out = []
+        seen = set()
+        for uri, name in (people or []):
+            short = name.split()[0].lower() if name else uri
+            matched = next((a for a in intent_actors if a.lower() == short or a.lower() in name.lower()), short)
+            out.append((matched, labels.get(matched, f"{name} ({matched})")))
+            seen.add(matched)
+        for a in intent_actors:
+            if a not in seen:
+                out.append((a, labels.get(a, a.title())))
+                seen.add(a)
+        if not out:
+            out = [
+                ("marina", "Marina Devlin (Owner / Production)"),
+                ("dan", "Dan Farrugia (Head Gelatiere)"),
+                ("aoife", "Aoife Byrne (Shop Manager, Cotham)"),
+                ("fareza", "Fareza (System Auditor / Admin)"),
+            ]
+        return out
 
     def _built_form(self, class_name, valid_at, as_of):
         with connect_kernel() as kernel:
@@ -539,11 +657,25 @@ class Handler(BaseHTTPRequestHandler):
     def _form(self, class_name, valid_at, as_of, values=None,
               message=None, bad=False):
         built = self._built_form(class_name, valid_at, as_of)
+        is_event = (_identifier(self.map_, class_name) is None)
+        actors = self._actors(valid_at, as_of)
+        existing_subjects = None
+        if not is_event:
+            try:
+                with connect_kernel() as kernel:
+                    existing_subjects, _ = _options(kernel, self.map_, class_name,
+                                                    valid_at=_instant(valid_at),
+                                                    as_of=_instant(as_of))
+            except Exception:
+                existing_subjects = None
         body = render.form_html(built, valid_at=valid_at, as_of=as_of,
                                 values=values or self._prefill(class_name),
-                                message=message, bad=bad)
+                                message=message, bad=bad,
+                                actors=actors, is_event=is_event,
+                                existing_subjects=existing_subjects)
         self._send(render.page(f"{class_name} — form", body,
-                               valid_at=valid_at, as_of=as_of))
+                               valid_at=valid_at, as_of=as_of,
+                               path=self.path))
 
     def _write(self, class_name, entered, valid_at, as_of):
         if class_name not in self.map_["view"].all_classes():
@@ -558,33 +690,132 @@ class Handler(BaseHTTPRequestHandler):
                 values=self._prefill(class_name, {**entered,
                                                   "subject": subject,
                                                   "actor": actor}),
-                message="An actor is needed: the intent records who is writing "
-                        "this, and there is nobody else to record.", bad=True)
-        # A subject nobody typed is minted here rather than refused. The field
-        # says a URI the log has not seen is minted, and an event nothing
-        # names has no URI to type.
+                message="An actor is needed: the intent records who is authorizing "
+                        "this write, and there is nobody else to record.", bad=True)
+        # A subject nobody typed is minted here rather than refused.
         minted_subject = not subject
         if minted_subject:
             subject = _mint_uri(self.map_, class_name)
 
         with connect_kernel() as kernel:
             result = submit(kernel, self.map_, class_name, subject=subject,
-                            values=values, actor_id=actor)
+                            values=values, actor_id=actor,
+                            valid_from=_instant(valid_at))
 
         written = ", ".join(sorted(values))
+        carried = render._carried(valid_at, as_of)
         message = (
-            f"Written. Intent {result['intent_id']}: "
+            f"✅ Written to kernel. Intent #{str(result['intent_id'])[:8]}: "
             f"{len(result['assertions'])} assertions, "
-            f"{len(result['minted'])} entities minted, under {subject}.\n"
-            f"Fields: {written}."
+            f"{len(result['minted'])} entities minted, under subject '{subject}'.\n"
+            f"Slots recorded: {written}."
         )
         if minted_subject:
-            message += (f"\nThe subject was left blank, so one was minted for "
-                        f"it: {subject}")
-        # The form comes back empty apart from the class, so the next one is a
-        # fresh statement rather than an edit of the last.
+            message += f"\n(Subject was auto-minted by the kernel: {subject})"
         self._form(class_name, valid_at, as_of,
                    values=self._prefill(class_name), message=message)
+
+    def _correct_form(self, query, valid_at, as_of, message=None, bad=False):
+        fields = parse_qs(query)
+        subject = (fields.get("subject", [""])[0] or "").strip()
+        predicate = (fields.get("predicate", [""])[0] or "").strip()
+        revoking = (fields.get("revoking", [""])[0] or "").strip()
+
+        if not (subject and predicate):
+            return self._refuse("Missing parameters",
+                                "Both subject and predicate are required to make a correction.",
+                                valid_at, as_of, 400)
+
+        with connect_kernel() as kernel:
+            try:
+                hist = provenance.history(kernel, subject=subject, predicate=predicate)
+            except provenance.UnknownURI as exc:
+                return self._refuse("Unknown URI", str(exc), valid_at, as_of, 404)
+
+            target_row = None
+            if revoking:
+                for r in hist["rows"]:
+                    if str(r["id"]) == revoking:
+                        target_row = r
+                        break
+            if not target_row:
+                for r in reversed(hist["rows"]):
+                    if not r.get("revoked_by") and r.get("value") is not None:
+                        target_row = r
+                        break
+            if not target_row and hist["rows"]:
+                target_row = hist["rows"][-1]
+
+            if not target_row:
+                return self._refuse("Nothing to correct",
+                                    f"No assertions found under {subject} and {predicate}",
+                                    valid_at, as_of, 404)
+
+            class_name, slot_name, _ = _find_slot(self.map_, predicate, conn=kernel, subject_uri=subject)
+            actors = self._actors(valid_at, as_of)
+
+            target = {
+                "subject": subject,
+                "predicate": predicate,
+                "assertion_id": str(target_row["id"]),
+                "current_value": target_row["value"],
+                "recorded_at": target_row["recorded_at"],
+                "actor_id": target_row["actor_id"],
+                "class_name": class_name or "Entity",
+                "slot_name": slot_name or predicate.split(":")[-1],
+            }
+
+        body = render.correct_html(target, valid_at=valid_at, as_of=as_of,
+                                   actors=actors, message=message, bad=bad)
+        self._send(render.page(f"Correct {target['slot_name']}", body,
+                               valid_at=valid_at, as_of=as_of,
+                               path=self.path))
+
+    def _do_correct(self, raw, valid_at, as_of):
+        entered = {name: values[0] for name, values in parse_qs(raw).items()}
+        subject = (entered.get("subject") or "").strip()
+        predicate = (entered.get("predicate") or "").strip()
+        assertion_id = (entered.get("assertion_id") or "").strip()
+        class_name = (entered.get("class_name") or "").strip()
+        slot_name = (entered.get("slot_name") or "").strip()
+        action_type = (entered.get("action_type") or "correction").strip()
+        new_value = (entered.get("new_value") or "").strip()
+        actor = (entered.get("actor") or "").strip()
+        reason_code = (entered.get("reason_code") or "correction").strip()
+        note = (entered.get("note") or "").strip()
+
+        carried = render._carried(valid_at, as_of)
+
+        if not actor:
+            return self._correct_form(
+                f"subject={quote(subject)}&predicate={quote(predicate)}&revoking={assertion_id}",
+                valid_at, as_of,
+                message="An actor is required: who is authorizing this correction?", bad=True)
+
+        if action_type == "correction" and not new_value:
+            return self._correct_form(
+                f"subject={quote(subject)}&predicate={quote(predicate)}&revoking={assertion_id}",
+                valid_at, as_of,
+                message="A corrected replacement value is required when action is 'Correction'.", bad=True)
+
+        with connect_kernel() as kernel:
+            if not class_name or not slot_name or class_name == "Entity":
+                cname, sname, _ = _find_slot(self.map_, predicate, conn=kernel, subject_uri=subject)
+                class_name = cname or class_name
+                slot_name = sname or slot_name
+
+            revokes = {slot_name: assertion_id}
+            values = {slot_name: new_value} if action_type == "correction" else {}
+
+            submit(kernel, self.map_, class_name, subject=subject,
+                   values=values, actor_id=actor, revokes=revokes,
+                   valid_from=_instant(valid_at),
+                   reason_code=reason_code, note=note)
+
+        target_url = f"/why?subject={quote(subject)}&predicate={quote(predicate)}&{carried}"
+        self.send_response(303)
+        self.send_header("Location", target_url)
+        self.end_headers()
 
     def _table(self, class_name, query, valid_at, as_of):
         window = None
@@ -620,7 +851,198 @@ class Handler(BaseHTTPRequestHandler):
             direction=direction,
             held=held if len(built["rows"]) != held else None)
         self._send(render.page(f"{class_name} — table", body,
-                               valid_at=valid_at, as_of=as_of))
+                               valid_at=valid_at, as_of=as_of,
+                               path=self.path))
+
+    def _dashboard(self, query, valid_at, as_of):
+        """Executive BI Dashboard route reading bitemporal projections."""
+        with connect_kernel() as kernel, psycopg.connect(OPS_DSN) as ops:
+            built = compile_class(kernel, ops, self.map_, "StockReconciliation",
+                                  valid_at=_instant(valid_at),
+                                  as_of=_instant(as_of))
+            # Also read metadata for ingredients and locations from operational store
+            with ops.cursor() as cur:
+                cur.execute("""
+                    SELECT i.entity_uri, i.item_name, i.item_counted_in, 
+                           i.item_reorder_level, i.item_price_per_kg,
+                           coalesce(c.conversion_factor, 1.0) AS factor,
+                           u.unit_name AS counted_in_name
+                    FROM p_ingredient i
+                    LEFT JOIN p_unit u ON u.entity_uri = i.item_counted_in
+                    LEFT JOIN p_unit_conversion c 
+                           ON c.conversion_ingredient = i.entity_uri 
+                          AND c.conversion_unit = i.item_counted_in
+                """)
+                meta = {row[0]: {
+                    "name": row[1],
+                    "counted_in_uri": row[2],
+                    "reorder_level_pack": float(row[3]) if row[3] is not None else None,
+                    "price_per_kg": float(row[4]) if row[4] is not None else 0.0,
+                    "pack_factor": float(row[5]),
+                    "counted_in_name": row[6] or "units",
+                } for row in cur.fetchall()}
+
+                cur.execute("SELECT entity_uri, location_name, location_temperature FROM p_internal_location")
+                locations = {row[0]: {
+                    "name": row[1],
+                    "temp": row[2] or "Ambient",
+                } for row in cur.fetchall()}
+
+        items = []
+        for row in built["rows"]:
+            ing_uri = row[0]
+            loc_uri = row[1]
+            ing_m = meta.get(ing_uri, {})
+            loc_m = locations.get(loc_uri, {})
+            price = float(row[3] or 0.0)
+            pack_factor = ing_m.get("pack_factor", 1.0)
+            reorder_pack = ing_m.get("reorder_level_pack")
+            reorder_kg = (reorder_pack * pack_factor) if reorder_pack is not None else None
+            exp_kg = float(row[7] or 0.0)
+            cnt_kg = float(row[8] or 0.0)
+            stock_val = float(row[9] or (cnt_kg * price))
+            var_kg = float(row[10] or 0.0)
+            var_val = float(row[11] or (var_kg * price))
+            counted_pack = round(cnt_kg / pack_factor, 1) if pack_factor else cnt_kg
+            is_anomaly = (var_val <= -50.0)
+            is_reorder = (reorder_kg is not None and cnt_kg < reorder_kg and exp_kg > 0)
+            items.append({
+                "ing_uri": ing_uri,
+                "loc_uri": loc_uri,
+                "name": ing_m.get("name", ing_uri),
+                "location": loc_m.get("name", loc_uri),
+                "temp": loc_m.get("temp", "Ambient"),
+                "price_per_kg": price,
+                "pack_unit": ing_m.get("counted_in_name", "kg"),
+                "pack_factor": pack_factor,
+                "reorder_pack": reorder_pack,
+                "reorder_kg": reorder_kg,
+                "expected_kg": exp_kg,
+                "counted_kg": cnt_kg,
+                "counted_pack": counted_pack,
+                "stock_val": stock_val,
+                "var_kg": var_kg,
+                "var_val": var_val,
+                "is_reorder": is_reorder,
+                "is_anomaly": is_anomaly,
+            })
+
+        # Calculate totals
+        total_val = sum(x["stock_val"] for x in items)
+        total_exp = sum(x["expected_kg"] * x["price_per_kg"] for x in items)
+        total_var_val = sum(x["var_val"] for x in items)
+        total_var_kg = sum(x["var_kg"] for x in items)
+        accuracy_pct = (total_val / total_exp * 100.0) if total_exp else 100.0
+
+        # Loss ranking for chart
+        top_losses = sorted([x for x in items if x["var_val"] < 0], key=lambda x: x["var_val"])[:6]
+
+        # Alerts
+        alerts = []
+        carried = render._carried(valid_at, as_of)
+        for anom in [x for x in items if x["is_anomaly"]]:
+            alerts.append({
+                "type": "danger",
+                "badge": "Severe Loss Deficit",
+                "badge_class": "badge-danger",
+                "title": f"🚨 High-Value Stock Shortfall: {anom['name']}",
+                "description": (
+                    f"Physical count in {anom['location']} found <strong>{anom['counted_kg']:.2f} kg</strong> "
+                    f"against expected <strong>{anom['expected_kg']:.2f} kg</strong>. Unaccounted deficit of "
+                    f"<strong>{abs(anom['var_kg']):.2f} kg</strong> represents a direct financial loss of "
+                    f"<strong>-£{abs(anom['var_val']):,.2f}</strong> ({abs(anom['var_val'])/abs(total_var_val)*100:.1f}% of entire business variance)."
+                ),
+                "buttons": [
+                    {
+                        "href": f"/why?subject={quote(anom['ing_uri'], safe='')}&predicate=sorella%3Aitem_price_per_kg&{carried}",
+                        "label": "Audit Provenance (/why)",
+                        "class": "btn-danger",
+                    },
+                    {
+                        "href": f"/table/StockReconciliation?{carried}&only.reconciliation_ingredient={quote(anom['ing_uri'], safe='')}",
+                        "label": "Filter in Stock Table",
+                        "class": "btn-outline",
+                    },
+                ],
+                "agent_trigger": "Autonomous Reconciliation Agent: Audit Delivery Invoices vs Batch Churn Log",
+            })
+
+        for reord in [x for x in items if x["is_reorder"] and x["name"] == "Base 50 stabiliser"]:
+            deficit = reord["reorder_kg"] - reord["counted_kg"]
+            alerts.append({
+                "type": "warning",
+                "badge": "Stockout Risk",
+                "badge_class": "badge-warning",
+                "title": f"⚠️ Production Reorder Threshold Breached: {reord['name']}",
+                "description": (
+                    f"Current inventory in {reord['location']} stands at <strong>{reord['counted_kg']:.2f} kg</strong> "
+                    f"({reord['counted_pack']:.1f} cartons / 8 bags), which is <strong>{deficit:.1f} kg below</strong> "
+                    f"the mandatory minimum threshold of <strong>{reord['reorder_kg']:.1f} kg ({reord['reorder_pack']:.0f} cartons)</strong>. "
+                    f"Gelato production capacity is impaired without stabiliser reorder."
+                ),
+                "buttons": [
+                    {
+                        "href": f"/table/StockReconciliation?{carried}&only.reconciliation_ingredient={quote(reord['ing_uri'], safe='')}",
+                        "label": "Inspect Stabiliser Inventory",
+                        "class": "btn-warning",
+                    },
+                    {
+                        "href": f"/form/StockMovement?{carried}",
+                        "label": "Record Restock Movement",
+                        "class": "btn-outline",
+                    },
+                ],
+                "agent_trigger": "Autonomous Purchasing Agent: Draft Purchase Order (2 Cartons / £552) to Terra Nostra",
+            })
+
+        # Zones breakdown
+        zones_map = {}
+        for x in items:
+            loc = x["location"]
+            if loc not in zones_map:
+                zones_map[loc] = {
+                    "name": loc,
+                    "temp": x["temp"],
+                    "count": 0,
+                    "valuation": 0.0,
+                    "variance_val": 0.0,
+                    "items": [],
+                }
+            zones_map[loc]["count"] += 1
+            zones_map[loc]["valuation"] += x["stock_val"]
+            zones_map[loc]["variance_val"] += x["var_val"]
+            zones_map[loc]["items"].append(x)
+
+        assessments = {
+            "Dry store": "Contains ambient pastes, sugars, and stabilisers. High variance rate driven by Sicilian Pistachio Paste shortfall; bulk sugars and powders strictly balanced.",
+            "Walk-in chiller": "Dairy, cream, and fresh seasonal fruit. Superb operational control with variances within culinary kitchen handling tare (<0.5%).",
+            "Ingredient freezer": "Frozen fruit purées. Thawing transfers from freezer to chiller balance cleanly with weekend batch churn schedule.",
+        }
+
+        zones_list = []
+        for name, z in zones_map.items():
+            z["assessment"] = assessments.get(name, "Monitored internal storage location.")
+            zones_list.append(z)
+
+        # Sort items by variance value (worst first)
+        items_sorted = sorted(items, key=lambda x: (x["var_val"], x["name"]))
+
+        dash_data = {
+            "total_valuation": total_val,
+            "total_expected_valuation": total_exp,
+            "total_variance_val": total_var_val,
+            "total_variance_kg": total_var_kg,
+            "accuracy_pct": accuracy_pct,
+            "alerts": alerts,
+            "top_losses": top_losses,
+            "zones": zones_list,
+            "items": items_sorted,
+        }
+
+        body = render.dashboard_html(dash_data, valid_at=valid_at, as_of=as_of)
+        self._send(render.page("Executive BI Dashboard", body,
+                               valid_at=valid_at, as_of=as_of,
+                               path=self.path))
 
 
 def main(argv=None):

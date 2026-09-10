@@ -32,7 +32,7 @@ OPS_DB := uniti_ops
 PORT   := 8000
 
 .PHONY: check venv schema test replay check-profile build compile serve \
-        demo-seed demo-serve
+        demo-seed demo-serve mcp-serve
 
 # The one command: environment, schema, tests, and a replay that must come out
 # byte-identical twice. Exits non-zero if the tests fail or the two differ.
@@ -131,7 +131,7 @@ serve: venv
 # dated in the past and rerunnable: it drops the three tables and writes them
 # again through the same write gate a form writes through.
 DEMO_BUSINESS := sorella_demo
-DEMO_MAP      := business/$(DEMO_BUSINESS)/v2.yaml
+DEMO_MAP      := business/$(DEMO_BUSINESS)/v5.yaml
 DEMO_DB       := uniti_demo
 DEMO_OPS_DB   := uniti_demo_ops
 DEMO_DSN      := postgresql://uniti:uniti@localhost:5433/$(DEMO_DB)
@@ -140,7 +140,7 @@ DEMO_OPS_DSN  := postgresql://uniti:uniti@localhost:5433/$(DEMO_OPS_DB)
 # the same one as the thing it replaces is indistinguishable from it by URL.
 DEMO_PORT     := 8100
 # What the compiler printed, kept where a person looks at what came out.
-DEMO_RENDER   := build/$(DEMO_BUSINESS)/v2/tables.txt
+DEMO_RENDER   := build/$(DEMO_BUSINESS)/v5/tables.txt
 
 # Seed, then compile — in that order and both here, because the forms read
 # their choices out of the operational store and a store nothing has filled
@@ -171,3 +171,10 @@ demo-serve: venv
 	    "SELECT 1 FROM pg_database WHERE datname = '$(DEMO_OPS_DB)'" | grep -q 1 \
 	    || $(DC) exec -T db createdb -U uniti $(DEMO_OPS_DB)
 	PYTHONIOENCODING=utf-8 $(PY) components/web/serve.py $(DEMO_MAP) --port $(DEMO_PORT)
+
+# Run the generic Model Context Protocol (MCP) server over stdio
+mcp-serve: export UNITI_DSN     := $(DEMO_DSN)
+mcp-serve: export UNITI_OPS_DSN := $(DEMO_OPS_DSN)
+mcp-serve: venv
+	PYTHONIOENCODING=utf-8 $(PY) components/agent/server.py
+

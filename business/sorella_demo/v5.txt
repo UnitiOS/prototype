@@ -1,0 +1,117 @@
+SORELLA GELATO — WHAT THE KITCHEN HOLDS, AND HOW IT IS WRITTEN DOWN
+A description of the business, for whoever has to build the thing that records it.
+
+
+WHO THEY ARE
+
+Sorella Gelato makes artisan Italian gelato and sorbetto in a production kitchen in Bristol and sells it from two retail scoop shops and to thirty wholesale hospitality accounts. This description covers the kitchen inventory: the ingredients the kitchen buys, where they sit across temperature zones, and the documents that record what came in, what was churned or discarded, and what was found on the shelves. Nothing here is about customer retail receipts or wholesale customer billing; those are recorded elsewhere. A person reading this specification should be able to construct the digital twin without needing those external systems.
+
+Three people appear on the documents. Dan Farrugia is the head gelatiere and signs for incoming deliveries and batch churn logs. Marina Devlin owns the business and handles supplier purchasing, recipe formulations, and monthly physical stocktaking. Aoife Byrne manages the retail scoop shops and fills in waste sheets and shop transfers. Each person is identified on paper by their name and role in the kitchen. So a Person is a name and a job role, and that is what the system records.
+
+
+WHAT IS COUNTED
+
+Twenty ingredients are purchased and counted across the kitchen operations:
+
+  Whole milk, kitchen             counted in bags      GBP 8.90 a 10 L bag-in-box
+  Whipping cream 38%              counted in cans      GBP 14.60 a 5 L jerry can
+  Caster sugar (sucrose)          counted in sacks     GBP 24.50 a 25 kg sack
+  Dextrose                        counted in sacks     GBP 41.00 a 25 kg sack
+  Skimmed milk powder             counted in bags      GBP 62.00 a 25 kg bag
+  Base 50 stabiliser              counted in cartons   GBP 276.00 a carton of 10 x 2 kg
+  Sicilian pistachio paste        counted in tins      GBP 203.00 a 3.5 kg tin
+  Cocoa 22/24                     counted in bags      GBP 41.00 a 5 kg bag
+  Piedmont hazelnut paste         counted in pails     GBP 184.00 a 5 kg pail
+  Raspberry purée                 counted in tubs      GBP 94.00 a 10 kg tub
+  Inulin                          counted in bags      GBP 184.00 a 20 kg bag
+  Glucose syrup                   counted in pails     GBP 58.00 a 25 kg pail
+  Vanilla paste                   counted in jars      GBP 85.00 a 1 kg jar
+  Ricotta                         counted in tubs      GBP 24.00 a 3 kg tub
+  Strawberries                    counted in crates    GBP 18.00 a 5 kg crate
+  Rhubarb                         counted in crates    GBP 16.00 a 5 kg crate
+  Lemons                          counted in crates    GBP 22.00 a 10 kg crate
+  Free-range eggs                 counted in packs     GBP 15.00 a pack of 60
+  Digestive biscuits              counted in boxes     GBP 12.00 a 2 kg box
+  Sea salt                        counted in tubs      GBP 8.50 a 1 kg tub
+
+Each ingredient is one physical good the kitchen uses, with a common name the staff use in conversation — nobody says "item 4471", they say "the pistachio paste" or "the dextrose". Each Ingredient has an approved supplier it is bought from, a purchase price per pack as delivered, a standard price per kilogram, a unit it is counted in on delivery notes, and a reorder threshold level where a minimum stock safety balance has been established.
+
+
+PACKAGING UNITS AND BASE CONVERSIONS
+
+The unit a quantity is written in is a persistent source of confusion in kitchen operations. A bag of milk is ten litres, a bag of cocoa is five kilograms, and a bag of stabiliser is two kilograms inside a ten-bag carton. The kitchen counts cartons in the dry store, bags at the churn station, and weighs waste in kilograms.
+
+That is why a Unit is a distinct entity in its own right and not a free-text string. The units that appear in the business include bags, cans, sacks, tins, cartons, pails, tubs, crates, packs, boxes, and kilos.
+
+Because stock arithmetic, recipe batch calculations, and inventory valuations cannot add cartons to bags, the business defines a standard base unit of mass (kilos). For every combination of ingredient and packaging unit, a UnitConversion provides the conversion factor that translates physical counts into standard kilograms. Every stock movement and stock count line is converted through these factors into uniform kilograms.
+
+
+WHERE THINGS SIT
+
+There are three storage locations inside the business. Each InternalLocation has a name, a description, and an operational temperature regime:
+- The Dry store is kept at ambient temperature and holds dry sugars, stabilisers, powders, ambient nut pastes, cocoa, biscuits, and salt.
+- The Walk-in chiller is kept between 2 and 4 degrees and holds fresh milk, whipping cream, fresh seasonal fruits, eggs, and ricotta.
+- The Ingredient freezer is kept at -18 degrees and stores frozen fruit purées such as raspberry purée.
+
+Four approved suppliers deliver to the kitchen. Each Supplier is treated as a location because ownership transfers when stock moves out of the supplier and into the kitchen storage:
+- Terra Nostra Ingredients (Watford) supplies artisan nut pastes, purees, and Base 50 stabilisers on Tuesdays with a two-day lead time.
+- Whitehall Dairy (Somerset) delivers farm-fresh whole milk and whipping cream three mornings a week.
+- Severn Catering Supplies (Bristol) brings bulk sugars, dextrose, and skimmed milk powder weekly on Thursdays.
+- Total Produce (Bristol) delivers fresh seasonal British produce, lemons, berries, and free-range eggs twice weekly.
+
+Three outside destinations represent where stock leaves the ownership of the business:
+- Kitchen bin is where waste, floor spills, split packs, and expired stock go.
+- Staff is where permitted staff allowances are taken home.
+- Tastings is where ingredients or finished tubs are consumed during customer tastings, wholesale trade visits, and masterclasses.
+
+Every Location — whether internal, supplier, or outside destination — has an identifier name and description.
+
+
+THE FIVE WAYS STOCK MOVES
+
+Stock movements in the kitchen follow five established operational patterns, represented by MovementKind:
+- Delivery in: An external supplier driver arrives with ordered stock. Staff verify the delivery docket, inspect the goods, and transfer the packs into the dry store, chiller, or freezer.
+- Transfer between stores: Items move between internal stores, such as thawing frozen raspberry purée from the freezer into the chiller before batch production, or moving cocoa to the preparation bench.
+- Thrown away: Ingredients that are out of date, dropped, spoiled, or damaged are discarded into the kitchen bin. Waste is weighed on kitchen scales and recorded in kilograms on the kitchen waste sheet.
+- Taken by staff: Staff members take ingredients home with management approval, recorded on the waste sheet in the original pack units.
+- Used for tastings: Ingredients opened for trade demonstrations, wholesale customer sampling, or culinary development.
+
+Every StockMovement records what kind of movement it was, the origin location (movement_out_of), the destination location (movement_into), the ingredient, the quantity, the unit written on paper, the date of the movement (happened_on), and who authorised or recorded it (written_by).
+
+
+THE PHYSICAL COUNT DOCUMENTS
+
+In addition to day-to-day stock movements, physical inventory counts are conducted periodically on paper count sheets.
+
+A StockCount represents one complete physical stocktake session. It records the date of the count (happened_on), the author who performed the count (written_by, typically Marina Devlin), and summary notes at the foot of the sheet describing operational conditions.
+
+Each line on the count sheet is a StockCountLine. It records which count sheet it belongs to, the ingredient counted, where the counter was standing (count_line_where, such as the walk-in chiller or dry store), the counted quantity, the packaging unit observed, and any notes regarding opened tins, partial sacks, or broken seals.
+
+
+WHAT ANYBODY ACTUALLY WANTS TO KNOW: THE THREE PROJECTIONS
+
+The reason for recording movements and physical stocktakes is to answer three fundamental operational questions:
+
+Question 1: What is standing according to recorded movements?
+The IngredientOnHand projection aggregates all arrivals (ingredient_in) less all departures (ingredient_out) across internal storage locations, converted through UnitConversion into uniform kilograms. It displays net standing stock (ingredient_on_hand_net), the reorder threshold, unit pack price, price per kg, and total financial inventory valuation in pounds sterling.
+
+Question 2: What did physical stocktaking actually find?
+The CountedOnHand projection aggregates physical count lines from StockCountLine across internal stores, converted to standard kilograms (counted_quantity). It represents what was physically on the shelves on the stocktake date.
+
+Question 3: What is the variance, valuation, and operational health of the inventory?
+The StockReconciliation projection reconciles expected stock against physical count. It computes:
+- Expected stock in standard kilograms (reconciliation_expected = in - out).
+- Counted stock in standard kilograms (reconciliation_counted).
+- Physical stock variance (reconciliation_variance = counted - expected).
+- Financial variance value (reconciliation_variance_value = variance * price_per_kg).
+- Current physical stock valuation (reconciliation_stock_value = counted * price_per_kg).
+- Reorder deficit and automated stockout warnings (reconciliation_reorder_level).
+
+This reconciliation drives executive business intelligence and agentic decision workflows, identifying high-value theft shortfalls (such as missing pistachio paste) and triggering restock purchase orders before production is halted.
+
+
+FORMATTING AND BITEMPORAL DATING
+
+Every slot carries human-readable titles (Place, Thing, Standing, Expected, Counted, Variance, Stock Value) for display, while preserving canonical URIs for machine provenance.
+
+The assertions in this system are bitemporal: they record what the paper stated about the world (valid_at / valid_from) alongside the exact timestamp when the transaction was recorded into the kernel log (as_of / recorded_at). Any question asked about the kitchen can be answered at any historical pair of clocks without mutating past records.

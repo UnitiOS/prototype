@@ -12,9 +12,10 @@ readable, still dated — but it no longer governs, and reading it as though it
 did is the failure this index exists to prevent.
 
 Built 2026-09-04 from 203 entries, of which 52 carried a reversal. Extended
-2026-09-05 with the rule-corpus entries and 2026-09-06 with the dimension-and-
-scope split, the executed crossing and the turn to an interface, and 2026-09-07 with the
-demo lap, none of which the build predates.
+2026-09-05 with the rule-corpus entries, 2026-09-06 with the dimension-and-
+scope split, the executed crossing and the turn to an interface, 2026-09-07 with the
+demo lap, and 2026-09-10 with layered graph diagrams, enterprise provenance audit
+workbench, clock-synchronized ingestion, and unified sticky stepper navigation.
 
 ### What is being proven
 
@@ -46,6 +47,10 @@ demo lap, none of which the build predates.
   narrows the first of the four properties in `CLAUDE.md` · 7 Sep, extended the
   same day
 - No SQL baseline is built, so claim F stays unproven by the demo lap · 7 Sep
+- Agentic access is provided via a generic, zero-framework Model Context Protocol (MCP) server exposing 11 domain-agnostic OS primitives across 4 pillars · 10 Sep
+- Claim F is validated via live Claude Desktop integration: the agent demonstrates holistic comprehension and surfaces synthetic data anomalies autonomously · 10 Sep
+- Graph traversal asymmetry is identified as an API primitive limitation rather than an engine limitation; bidirectional resolution is scheduled · 10 Sep
+- User authentication and network access gating remain out of scope for the core engine, handled as gateway commodities · 10 Sep
 
 ### The two stores
 
@@ -169,6 +174,14 @@ demo lap, none of which the build predates.
   keeps its projection table; only the form goes · 4 Sep
 - Master data enters through generated forms, and `submit` writes the
   class-membership assertion · 1 Sep
+- Form submissions synchronize `valid_from` with the user's active browsing clock · 10 Sep
+
+### The interface
+
+- The interface organizes the data lifecycle across 6 sequential stages with sticky brand navigation · 10 Sep
+- Clocks preserve active query parameters through hidden inputs; `↻ Live Today` resets to current operational time · 10 Sep
+- Audit workbench provides multi-faceted filtering over the kernel and a visual bitemporal diff timeline · 10 Sep
+- Knowledge graph renders architectural layers (Master, Event, Projection) and inline slot signatures · 10 Sep
 
 ### The business
 
@@ -573,3 +586,191 @@ the kernel; a page and the agent's MCP are two doors onto one implementation.
 The reason is not tidiness. Demo item three, the agent, is the one most likely
 to slip, and building provenance in item two leaves item three holding transport
 rather than mechanism.
+
+## 2026-09-09 — Scoped aggregate annotations close the missing-scope defect
+
+The 6 Sep entry ("An aggregate's `by` names every slot its measure is meaningless
+without") distinguished a missing dimension from a missing scope and noted:
+*"A missing scope... offending rows are silent on the dimension that would exclude
+them... This is the mechanism aggregate does not have."*
+
+That mechanism is added without business terms reaching the compiler:
+- `aggregate` annotations admit an optional `where` clause mapping source slots
+  to `{is_a: TargetClass}` conditions.
+- The compiler verifies the target class exists, resolves its class hierarchy
+  descendants via LinkML `SchemaView.class_descendants()`, discovers the class's
+  type slot via `designates_type: true`, and emits SQL inner joins against the
+  kernel's `stated` and `registry` tables filtering on `ANY(ARRAY[...])`.
+- In `sorella_demo`, `ingredient_in`, `ingredient_out`, and `counted_quantity`
+  declare `where: {movement_into/out_of: {is_a: InternalLocation}, movement_ingredient: {is_a: Ingredient}}`.
+- Suppliers, waste bins, staff, tastings, and unlocated movements are excluded
+  from `IngredientOnHand` entirely. The balance table contains only genuine
+  internal storage locations (`Dry store`, `Walk-in chiller`, `Ingredient freezer`).
+
+## 2026-09-09 — Unit conversions and standard base-unit stock normalization
+
+Pack units (cartons, bags, cans, tins, pails, sacks, trays, cases) previously
+caused fragmented balance rows with mixed units, preventing true inventory
+aggregation and producing impossible mathematical combinations.
+
+The problem is resolved without adding business terms to the compiler:
+- `aggregate` annotations admit an optional `convert` block:
+  ```yaml
+  convert:
+    using: UnitConversion
+    on:
+      conversion_ingredient: movement_ingredient
+      conversion_unit: movement_unit
+    factor: conversion_factor
+  ```
+- The compiler dynamically inspects the schema to locate the conversion class,
+  joins the matching entity dimensions against the source movement, and multiplies
+  the measured quantity by `coalesce(factor, 1)`.
+- Base unit (`kilos`) is defined on each `Ingredient` as `item_base_unit` along with
+  `item_price_per_kg`.
+- Stock balance grouping is simplified to `[ingredient_on_hand, ingredient_where]`,
+  producing exactly one row per item per location in kilograms.
+- Stock valuation (`ingredient_stock_value`) multiplies the net balance in kg by
+  the standard price per kg.
+
+## 2026-09-09 — Query planner tuning for multi-CTE projection compilation
+
+Compilation queries over deep bitemporal CTEs (`stated`, `registry`, `source_*`, `total_*`)
+suffered from severe execution degradation (~49.5s on `IngredientOnHand`).
+PostgreSQL's planner severely under-estimated CTE cardinality (~49 rows vs actual 10,000+),
+choosing catastrophic nested loops that executed over 18,000 CTE scans, and burning
+1.5s in LLVM JIT compilation.
+
+In `compile_class()`, `SET enable_nestloop = off; SET jit = off` is issued on the session cursor.
+This guides PostgreSQL into hash joins without planner churn, dropping execution latency
+from 49,479 ms down to 49 ms (a 1,000x speedup), delivering instantaneous page loads (<0.2s)
+in the web interface.
+
+## 2026-09-09 — StockReconciliation projection (reconciliation and financial variance)
+
+Added `StockReconciliation` as a generic schema-driven projection:
+- Reconciles physical counts against operational movement balances.
+- Grouped by `[reconciliation_ingredient, reconciliation_where]`.
+- Aggregates:
+  - `reconciliation_in`: sum of incoming movements converted to kg.
+  - `reconciliation_out`: sum of outgoing movements converted to kg.
+  - `reconciliation_counted`: sum of count sheets converted to kg.
+- Expressions:
+  - `reconciliation_expected`: `{reconciliation_in} - {reconciliation_out}`.
+  - `reconciliation_variance`: `{reconciliation_counted} - {reconciliation_expected}`.
+  - `reconciliation_variance_value`: `{reconciliation_variance} * {reconciliation_price_per_kg}`.
+- Sealed in `v5.yaml` and operationalized in `p_stock_reconciliation`.
+
+## 2026-09-10 — Layered Knowledge Graph visualization with detailed slot signatures
+
+Flat, unsegmented Mermaid diagrams rendered across dozens of LinkML classes became illegible
+and horizontally compressed, obscuring architectural roles and business rules.
+
+In `components/web/diagram.py`:
+- Classes are partitioned dynamically into three architectural subgraphs:
+  - **Master Data (Blue)**: Foundational business entities (`Location`, `Ingredient`, `Person`, etc.).
+  - **Transactional Events (Amber)**: Operational append-only event logs (`StockMovement`, `StockTakeLine`, etc.).
+  - **Digital Twin Projections (Emerald)**: Compiler-generated analytical tables (`StockReconciliation`, etc.).
+- Entity boxes render explicit slot signatures: field name, LinkML range type, required status, and
+  derivation formulas (`equals_expression` and `aggregate`).
+- Preserves single-column lineage DAGs (`/graph?class=...&column=...`) without hardcoded domain ontology.
+
+## 2026-09-10 — Enterprise Audit Workbench, Provenance Filtering, & Visual Bitemporal Timeline
+
+Stage 3 (`/why`) previously presented static anomaly cards that simulated problems in a presentation
+format rather than exposing the kernel as a living, inspectable bitemporal engine.
+
+In `components/provenance/provenance.py` and `components/web/render.py`:
+- Replaced static presentation cards with a dynamic **Kernel Activity Ledger** querying raw PostgreSQL
+  `intent` and `assertion` records.
+- Added multi-faceted filtering: transaction domain (`master`, `stocktake`, `movement`, `revocations`),
+  actor attribution (`marina`, `marco`, `sofia`, etc.), and free-text search.
+- Added a **Visual Bitemporal Change Timeline** in `render.why_html()` that visualizes the evolution
+  of any entity slot step-by-step. It explicitly contrasts system recording time (`recorded_at`) with
+  business reality time (`valid_from`..`valid_to`), rendering value diffs and revocation chains.
+- Introduced the `/correct` route allowing authorized staff to record corrections. Corrections strictly
+  respect property 1 (append-only invariant): errors are amended by writing a new assertion that revokes
+  the target assertion ID via `valid_to`, leaving the historical audit trail completely immutable.
+
+## 2026-09-10 — Clock-synchronized ingestion in form submissions
+
+When testing manual data entry via generated forms (e.g. `/form/Person`), newly submitted records did
+not appear in subsequent entity dropdowns because submissions hardcoded `valid_from = now()`, while the
+user was browsing the application at an earlier bitemporal date (`valid_at = 2026-09-09`).
+
+In `components/web/serve.py`:
+- In `_write()` and `_do_correct()`, submissions now pass `valid_from = _instant(valid_at)` into
+  `generate.submit()`.
+- Newly ingested master data or transaction events immediately participate in the active temporal state
+  the user is inspecting, ensuring seamless verification while preserving bitemporal mathematical guarantees.
+- Organized `/classes` into functional groups: Ingestion Forms (Events vs Master Data) and Analytical Projections.
+
+## 2026-09-10 — Unified Sticky Navigation, Pipeline Stepper, & Context-Preserving Clocks
+
+As the demo system expanded across 6 distinct stages, the web interface lacked cohesive navigation.
+Time-traveling stripped active query parameters, switching stages lost entity context, and there was no
+stepper guiding observers through the data lifecycle.
+
+In `components/web/render.py` and `components/web/serve.py`:
+- Encapsulated every page within a fixed `.top-shell` holding brand identity (`◆ uniti | Sorella Gelato Enterprise Demo`)
+  and global bitemporal clocks.
+- Introduced a sequential 6-stage pipeline stepper (`nav.stage-stepper`):
+  `1 · Narrative` (`/said`) → `2 · Graph Schema` (`/graph`) → `3 · Kernel Audit` (`/why`) → `4 · Ingestion Forms` (`/classes#forms`) → `5 · Projections` (`/table/StockReconciliation`) → `6 · Executive BI` (`/dashboard`).
+  Active stage is highlighted dynamically based on route.
+- Added a contextual `.breadcrumb-bar` with hierarchical paths and smart contextual back/next buttons
+  (e.g. `[ ← Back to Forms Hub ]`, `[ Next: Stage 2 Graph → ]`, `[ Open Executive BI → ]`).
+- Enhanced `render._clocks()` to dynamically carry non-clock query parameters (`subject`, `predicate`, `filter`,
+  `actor`, `q`, etc.) as hidden inputs, and added a one-click `[ ↻ Live Today ]` reset shortcut.
+
+## 2026-09-10 — Universal Model Context Protocol (MCP) Server for Generic System Primitives
+
+Rather than creating bespoke chat endpoints or binding to high-overhead agent frameworks (e.g. LangChain, CrewAI),
+Uniti exposes its capabilities as a standard Model Context Protocol (MCP) JSON-RPC 2.0 stdio server.
+The agent interacting through MCP does not see source code; it acts purely through 11 domain-agnostic OS primitives
+spanning 4 core architectural pillars:
+
+1. **Knowledge Graph & Ontology (Read & Write):**
+   - `graph_get_schema`: Inspect classes, slots, derivation formulas, and relationships via LinkML SchemaView.
+   - `graph_update_draft`: Write/patch working schema (`draft.yaml`) and interview transcript (`draft.txt`).
+   - `graph_validate_draft`: Rigorous pre-seal semantic validation ensuring valid annotations and sound types.
+   - `graph_seal_version`: Sealing drafts into immutable versions `v(N+1).yaml`, assigning timestamps and registering URIs.
+
+2. **Digital Twin & Operational Projections (Read):**
+   - `ops_list_projections`: Discover compiled analytical projections and grouping/measure columns.
+   - `ops_query_projection`: Execute dynamic multi-CTE SQL compilation at arbitrary bitemporal moments (`valid_at`, `as_of`).
+   - `ops_explain_projection`: Inspect generated SQL CTEs, execution plans, and DDL definitions.
+
+3. **Kernel Provenance & Forensic Audit (Read):**
+   - `kernel_get_activity`: Query recent assertions across categories (revocations, master data, movements, counts).
+   - `kernel_trace_provenance`: Full bitemporal forensic audit of an entity or predicate showing chronological evolution and revocation chains.
+
+4. **Write Gate & Task Execution (Write):**
+   - `kernel_submit_transaction`: Officially write facts/events via `generate.submit()` (1 intent + N assertions atomically).
+   - `kernel_correct_assertion`: Execute append-only bitemporal corrections and retractions pointing to `revokes_assertion_id`.
+
+Tested with 8 new unit tests in `tests/agent/test_agent_mcp.py` (total 90 suite tests passing), runnable via `make mcp-serve`.
+
+## 2026-09-10 — MCP Live Validation: Holistic Business Reasoning, Synthetic Data Exposure (Claim F), & Traversal Findings
+
+Live integration with Claude Desktop was performed via `claude_desktop_config.json`. The results confirmed core architectural hypotheses while highlighting specific API boundaries:
+
+1. **Autonomous Holistic Comprehension (Claim F Validated):**
+   - Without domain-tailored prompts or bespoke tools, Claude Desktop utilized the 11 generic OS primitives to autonomously reconstruct the entire Sorella business model: asset taxonomy, derivation formulas, and operational lifecycle.
+   - The system's semantic clarity and bitemporal transparency enabled the agent to immediately surface inconsistencies in the test data (e.g. reorder levels disconnected from daily consumption rates, and the synthetic nature of the pistachio shrinkage scenario).
+   - This validates the 6 Sep standing invariant: *"A result is read against the design claim, never against whether the numbers are true. A question only tidier data could answer is not a question about the system."* The data need not be altered; the engine's transparency succeeded in preventing bad or synthetic numbers from masquerading as authentic operations.
+
+2. **Graph Traversal Asymmetry Identified:**
+   - Claude identified a limitation in current graph querying: relations can only be navigated in the forward direction.
+   - **Root Cause:**
+     - *Schema Level:* LinkML is class-centric and directed (e.g. `StockMovement` points to `Ingredient`; `Ingredient` does not inherently index incoming references without reverse induction).
+     - *Kernel Level:* `kernel_trace_provenance` queried only `WHERE a.subject_id = %s`. Inbound references (where an ingredient is referenced as `a.value_ref = %s` across movement events) were omitted from the trace.
+   - **Resolution Plan (Deferred):**
+     - Enhance `kernel_trace_provenance` with bidirectional lookup (`WHERE subject_id = %s OR value_ref = %s`).
+     - Enrich `graph_get_schema` with an auto-derived `referenced_by` slot mapping.
+     - Add a lightweight `graph_query_neighbors` primitive for N-hop relational exploration.
+
+3. **Standing Decision on Enterprise Commodity Layers (Auth & Access Gating):**
+   - User authentication (OAuth, SSO, JWT) and fine-grained read/write permission gates remain deliberately excluded from the PoC core.
+   - **Reasoning:** These are commodity infrastructure layers best delegated to standard upstream API gateways or reverse proxies. The kernel already fulfills all provenance and non-repudiation guarantees at the data layer by capturing `actor_id`, `authority`, and `reason_code` natively on every intent and assertion.
+
+

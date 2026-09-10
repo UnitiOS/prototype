@@ -7,7 +7,143 @@ Plans do not go here. Only what already happened.
 
 ---
 
-## 2026-09-04 — Housekeeping run 2: LOG.md rotated whole, build/ triaged
+## 2026-09-10 — MCP Live Validation in Claude Desktop & Architectural Review
+
+Run by Fareza with Claude Desktop: injected Uniti MCP server into `claude_desktop_config.json` and executed end-to-end business reasoning, audit, and anomaly exploration.
+
+**What was run.**
+- Injected `mcpServers.uniti` into `C:\Users\fareza\AppData\Roaming\Claude\claude_desktop_config.json` with `.venv/Scripts/python.exe components/agent/server.py`.
+- Simulated Claude Desktop stdio negotiation via `test_claude_desktop_sim.py`: verified strict JSON-RPC 2.0 conformance and clean stderr isolation.
+- Claude Desktop executed autonomous queries across ontology, projections, and audit logs.
+
+**The result.**
+- In a single response without custom instructions, Claude Desktop reconstructed the complete operational domain and calculation rules.
+- Claude immediately detected that the test data contained synthetic inconsistencies (e.g., reorder levels divorced from daily usage rates, and the artificial nature of the pistachio shrinkage scenario).
+- Claim F was successfully verified in practice: the agent answered better and reasoned deeper from the graph and provenance than from raw tabular stores.
+- Validated standing invariant: *"A question only tidier data could answer is not a question about the system"*.
+
+**What was surprising & future gaps identified.**
+- *Unidirectional Graph Querying:* Claude experienced friction tracing backwards (e.g. from an Ingredient back to all StockMovements referencing it). Discovered root cause: LinkML is class-centric/forward-directed, and `kernel_trace_provenance` queried only `WHERE a.subject_id = %s` while neglecting incoming references on `a.value_ref = %s`.
+- *Scope Boundary Confirmed:* Confirmed that enterprise auth/RBAC gates should remain deferred as commodity API gateway concerns, as the kernel already natively tracks actor and authority provenance.
+
+---
+
+## 2026-09-10 — Universal MCP Server for Generic System Primitives
+
+Requested by Fareza: implemented a generic, zero-framework Model Context Protocol (MCP) server exposing Uniti's
+foundational capabilities to AI agents without revealing source code or tailoring to bespoke business logic.
+
+**What was built.**
+1. `components/agent/tools.py`:
+   - Built `UnitiTools` implementing 11 generic capabilities across 4 architectural pillars:
+     - Pillar 1 (Graph Read/Write): `graph_get_schema`, `graph_update_draft`, `graph_validate_draft`, `graph_seal_version`.
+     - Pillar 2 (Operational Read): `ops_list_projections`, `ops_query_projection`, `ops_explain_projection`.
+     - Pillar 3 (Provenance Read): `kernel_get_activity`, `kernel_trace_provenance`.
+     - Pillar 4 (Write Gate Execution): `kernel_submit_transaction`, `kernel_correct_assertion`.
+   - Connected directly to `components/seal/seal.py`, `components/compiler/compile.py`, `components/provenance/provenance.py`,
+     and `components/generator/generate.py`.
+   - Comprehensive JSON-serializable output handling (dates, decimals, UUIDs).
+2. `components/agent/server.py`:
+   - Fully compliant MCP JSON-RPC 2.0 stdio server (`protocolVersion: 2024-11-05`).
+   - Implemented message handlers: `initialize`, `notifications/initialized`, `ping`, `tools/list`, and `tools/call`.
+   - Configured clean stderr logging to prevent stdout JSON-RPC corruption.
+3. `tests/agent/test_agent_mcp.py`:
+   - 8 unit tests validating initialization, tool definitions, schema queries, projections, validation, and execution.
+4. `Makefile`:
+   - Added `mcp-serve` target for easy agent startup with demo environment variables.
+
+**What was run.**
+- Direct tool integration test: submitted test ingredient via `kernel_submit_transaction`, verified append-only bitemporal revocation via `kernel_correct_assertion`, verified audit chain via `kernel_trace_provenance`.
+- `pytest tests/agent -v`: all 8 agent tests passed in 0.75s.
+- `make test`: all 90 tests passed in 1.41s.
+- `make check`: 90 unit tests passed, byte-identical replay check verified twice (5,334 bytes), exit 0.
+
+---
+
+## 2026-09-10 — Langkah 4: Unified Sticky Stepper & Visual Navigation Cohesion
+
+Requested by Fareza: implemented unified navigation across the entire web application to make system demonstration and pipeline progression clear, intuitive, and consistent.
+
+**What changed.**
+1. `components/web/render.py`:
+   - Styled `.top-shell` (sticky wrapper) holding brand identity (`◆ uniti | Sorella Gelato Enterprise Demo`) and bitemporal clock controls.
+   - Designed 6-stage sequential pipeline stepper (`nav.stage-stepper`) mapping the complete lifecycle:
+     `1 · Narrative` (`/said`) → `2 · Graph Schema` (`/graph`) → `3 · Kernel Audit` (`/why`) → `4 · Ingestion Forms` (`/classes#forms`) → `5 · Projections` (`/table/StockReconciliation`) → `6 · Executive BI` (`/dashboard`).
+     Active stage is dynamically highlighted with border and badge based on route context.
+   - Built contextual `.breadcrumb-bar` with hierarchical trails and smart back/next buttons on all subpages (e.g. `← Back to Forms Hub`, `← Back to Activity Ledger`, `Open Executive BI →`).
+   - Enhanced `_clocks()` with one-click `↻ Live Today` reset shortcut and automatic hidden field propagation so non-clock query parameters (`subject`, `predicate`, `filter`, `actor`, `q`, etc.) are preserved when time-traveling.
+2. `components/web/serve.py`:
+   - Updated all route handlers (`_home`, `_said`, `_graph`, `_why`, `_index`, `_form`, `_table`, `_correct_form`, `_dashboard`, `_refuse`) to pass `path=self.path` to `render.page()` and `render.message_page()`.
+   - Updated `_write` and `_do_correct` to align transaction `valid_from` with the user's active `valid_at` browsing clock.
+
+**What was run.**
+- `make check`: 82 tests passed in 1.19s, replay check identical twice (5,334 bytes), exit 0.
+- `make demo-serve`: tested on port 8100 across all 10 core routes (`/`, `/said`, `/graph`, `/graph?class=...`, `/why`, `/why?subject=...`, `/classes`, `/form/StockMovement`, `/table/StockReconciliation`, `/dashboard`), all returning HTTP 200 with sticky top shell, active stepper stages, breadcrumbs, and live reset shortcuts.
+
+---
+
+## 2026-09-10 — Stages 4 & 5: Form Ingestion Bitemporality & Hub Categorization
+
+Requested by Fareza: resolved dropdown availability of newly entered records and structured the classes exploration hub.
+
+**What changed.**
+1. `components/web/serve.py`:
+   - Updated `_write()` and `_do_correct()` to pass `valid_from=_instant(valid_at)` into `generate.submit()`. This ensures that data ingested while viewing historical dates (e.g. `2026-09-09`) immediately participates in the active temporal state without waiting for wall-clock time travel.
+2. `components/web/render.py`:
+   - Upgraded `index_html()` (`/classes`) to categorize classes into three clear sections:
+     - Operational Ingestion Forms (Event and Transaction classes).
+     - Master Data Reference Forms (Entities, Actors, Locations, Units).
+     - Live Digital Twin Projections (Compiled tables and reconciliations).
+   - Added descriptive documentation badges explaining schema derivation, `subject` URIs, and bitemporal transaction intent signing.
+
+**What was run.**
+- Created a test record (`Person` "John Barista") via `/form/Person`; verified it immediately appeared in `_actors()` dropdowns under the active `valid_at` browsing clock.
+- `make check`: 82 passed in 1.18s, replay check clean.
+
+---
+
+## 2026-09-10 — Stage 3: Operational Audit Workbench & Visual Bitemporal Timeline
+
+Requested by Fareza: transformed Stage 3 (`/why`) from static presentation cards into an authentic enterprise audit workbench.
+
+**What changed.**
+1. `components/provenance/provenance.py`:
+   - Updated `window()` to include recorded revocation counts from PostgreSQL.
+   - Enriched `recent_assertions()` with parameterized filters: `filter_type` (`all`, `revocations`, `master`, `stocktake`, `movement`), `actor`, `search`, and subquery for `revoked_by`.
+2. `components/web/render.py`:
+   - Replaced static marketing-style anomaly cards with an operational **Audit Filter Bar** (pill buttons, staff actor select, search box).
+   - Designed a dynamic **Kernel Activity Ledger** table with status badges (`Active Fact`, `Correction`, `Revoked`, `Retraction`).
+   - Built a **Visual Bitemporal Change Timeline** in `why_html` showing step-by-step evolution (Step 1, Step 2, ...) with before & after diffs, reality clock vs system recording clock, and actor attribution.
+3. `components/web/serve.py`:
+   - Updated `_why()` handler to parse `filter`, `actor`, and `q` parameters and pass them directly to `provenance.recent_assertions()` and `render.ask_html()`.
+
+**What was run.**
+- `make check`: 82 passed in 1.17s, byte-identical replay twice (5334 bytes), exit 0.
+- `make demo-serve`: tested on port 8100 across 12 filter combinations (`/why`, `/why?filter=revocations`, `/why?actor=marina`, etc.), all returning HTTP 200 with complete responsive markup.
+
+---
+
+## 2026-09-10 — Stages 1 & 2: Narrative Alignment & Layered Knowledge Graph Diagrams
+
+Requested by Fareza: synchronized Stage 1 business text with LinkML ontology and elevated Stage 2 diagram layout.
+
+**What changed.**
+1. `business/sorella_demo/v5.txt` & `business/sorella_demo/v5.yaml`:
+   - Aligned business transcript narrative with LinkML ontology classes, slots, formulas, and reconciliation rules.
+2. `components/web/diagram.py`:
+   - Restructured Mermaid knowledge graph generation: replaced cramped single-line layout with 3 distinct architectural subgraphs:
+     - Master Data entities (Blue).
+     - Operational Transaction Events (Amber).
+     - Analytical Projections & Digital Twins (Emerald).
+   - Injected slot signatures into entity boxes (slot name, LinkML range type, required status, and mathematical formulas).
+   - Preserved single-column formula backward-lineage DAGs on `/graph?class=...&column=...`.
+
+**What was run.**
+- `make check`: 82 tests passed, projection replay verified clean.
+- Visually tested `/graph` across multiple resolutions; diagrams render with proper vertical proportion and legible typography.
+
+---
+
 
 Authorised by Fareza, not a `NEXT.md` item. `OPEN.md`, `DECISIONS.md` and
 `NEXT.md` were not read or written this run — Desktop held them.
@@ -1492,3 +1628,170 @@ correct, and it makes the whole-table total useless as evidence — the row is
 the unit, not the table. `OPEN.md` already carries the question of whether a
 balance is scoped to internal places; this is what the absence of that scoping
 looks like arithmetically.
+
+## 2026-09-09 — Digital twin: internal scoping, unit conversion, planner tuning, and stock reconciliation
+
+Work authorized by Fareza: deep analysis and overhaul of `IngredientOnHand`, resolution of
+webapp query latency, and implementation of Steps 1 and 2 of the digital twin roadmap.
+
+### 1 · Scoping to internal storage locations
+
+The zero-sum artifact reported on 2026-09-07 was resolved without modifying the compiler
+with business terminology.
+- In `business/sorella_demo/`: `where` conditions were added to LinkML aggregate annotations:
+  `where: {movement_into: {is_a: InternalLocation}, movement_ingredient: {is_a: Ingredient}}`.
+- Non-internal locations (`Kitchen bin`, `Staff`, `Tastings`, `Suppliers`) are excluded
+  from standing inventory. The balance table only contains the three genuine storage
+  locations (`Dry store`, `Walk-in chiller`, `Ingredient freezer`).
+- Result: exactly 58 valid stock rows, zero negative balances, and non-zero positive inventory.
+
+### 2 · Schema-driven unit conversions to standard base unit (kg)
+
+Packaging units (`cartons`, `bags`, `cans`, `tins`, `sacks`, `trays`) previously fragmented
+on-hand rows and prevented mathematical subtraction.
+- In `components/compiler/compile.py`: added generic support for `convert` annotations on aggregates:
+  ```yaml
+  convert:
+    using: UnitConversion
+    on:
+      conversion_ingredient: movement_ingredient
+      conversion_unit: movement_unit
+    factor: conversion_factor
+  ```
+- Sealed `business/sorella_demo/v4.yaml`: added `UnitConversion` class, `item_base_unit` (`kilos`),
+  and `item_price_per_kg` on `Ingredient`.
+- Grouping simplified to `[ingredient_on_hand, ingredient_where]`, aggregating all movements
+  in kilograms.
+- Seeded 41 `UnitConversion` factors across all 20 ingredients (1 carton Base 50 = 20 kg,
+  1 bag = 2 kg, 1 sack sugar = 25 kg, 1 can cream = 5 kg, etc.).
+- Stock valuation: `{ingredient_on_hand_net} * {ingredient_price_per_kg}` (£).
+
+### 3 · Query planner tuning: 49.5s -> 0.05s (1,000x speedup)
+
+When loading `/table/IngredientOnHand` in the browser, request time degraded to ~49.5 seconds.
+`EXPLAIN (ANALYZE, COSTS OFF)` on PostgreSQL revealed that the bitemporal multi-CTE query
+was executing catastrophic nested loops over the unindexed `stated` CTE (18,122 loops
+scanning 9,904 rows = ~180 million comparisons), plus 1.5s burned in LLVM JIT compilation.
+- In `components/compiler/compile.py` (`compile_class`): added `cur.execute("SET enable_nestloop = off; SET jit = off")`.
+- This guides PostgreSQL's cost planner to use hash joins and bypasses JIT compilation.
+- Result: Query execution dropped from **49,479 ms to 49.5 ms** (1,000x faster).
+- Webpage HTTP response time dropped to **~0.16–0.21 seconds** (instantaneous).
+
+### 4 · Step 2: StockReconciliation projection
+
+Added third core business projection table `StockReconciliation`:
+- Reconciles physical stock counts against expected movement balances.
+- Slots:
+  - Keys: `reconciliation_ingredient`, `reconciliation_where`.
+  - Parameters: `reconciliation_unit` (`item_base_unit`), `reconciliation_price_per_kg`.
+  - Aggregates:
+    - `reconciliation_in`: sum of incoming movements converted to kg.
+    - `reconciliation_out`: sum of outgoing movements converted to kg.
+    - `reconciliation_counted`: sum of count sheets converted to kg.
+  - Expressions:
+    - `reconciliation_expected`: `{reconciliation_in} - {reconciliation_out}`.
+    - `reconciliation_variance`: `{reconciliation_counted} - {reconciliation_expected}`.
+    - `reconciliation_variance_value`: `{reconciliation_variance} * {reconciliation_price_per_kg}`.
+- Sealed into `business/sorella_demo/v5.yaml` and transcript `v5.txt`.
+- Operationalized into table `p_stock_reconciliation` in `uniti_demo_ops`.
+
+### 5 · Verification & checks
+
+- `make check` exits 0: **82 passed in 1.27s**, bitemporal replay byte-identical twice (5,334 bytes).
+- `make demo-seed` seeded 1,117 intents, 9,932 assertions, 10,000 total assertions, 68 registered URIs.
+- Demo server (`make demo-serve`) live on port 8100 serving:
+  - `/table/IngredientOnHand`: 58 rows in 0.21s.
+  - `/table/CountedOnHand`: 20 rows in 0.16s.
+  - `/table/StockReconciliation`: 58 rows in 0.21s.
+
+### Surprising
+
+**PostgreSQL severely under-estimates CTE cardinality without statistics.**
+Postgres planner estimates that `stated` contains ~49 rows regardless of actual data volume.
+Because 49 is small, the planner prefers nested loops over hash joins. When `stated` actually
+grows to 10,000 rows across 859 movements and 41 conversions, nested loop scans explode
+exponentially. Disabling nested loops (`enable_nestloop = off`) forces hash joins, transforming
+a 50-second freeze into a 50-millisecond instant result.
+
+
+## 2026-09-09 — Analytical Layer & Executive BI Dashboard (Tahap 1 & 2)
+
+Implementation of the Executive BI & Decision Intelligence layer projected directly from the operational graph.
+
+### 1 · Tahap 1: Realistic Culinary Dataset & Bitemporal Storylines
+
+Rebuilt `scripts/seed_demo.py` from scratch to eliminate random synthetic artifacts and establish realistic operational storylines across 20 real Sorella artisanal gelato ingredients:
+- **Baseline Inventory**: Seeded opening balances for August 2026.
+- **Supplier Deliveries**: Weekly deliveries from 4 approved vendors (Terra Nostra, Dairy Crest, Total Produce, Food Ingr. Ltd).
+- **Daily Gelato Production**: Daily batch churn consumption across gelato, sorbetto, and variegato bases.
+- **Physical Count Calibration**: August 30 stocktake with realistic culinary tolerances:
+  - 18 ingredients exhibited normal kitchen culinary handling tare (-0.05 to -0.34 kg, variance < 0.5%).
+  - **Theft/Loss Anomaly**: Sicilian Pistachio Paste missing 2 whole 3.5kg tins (-7.00 kg / -£427.98 deficit, representing 91.2% of total company inventory variance).
+  - **Critical Stockout Risk**: Base 50 stabiliser standing at 16.0 kg (0.8 carton) vs safety threshold of 40.0 kg (2.0 cartons) -> -24.0 kg deficit.
+- **Seed Metrics**: 11,728 assertions, 1,242 intents, 1,088 stock movements, 34 revokes, 68 registered URIs.
+- Total valuation: £3,868.11 counted vs £4,337.37 expected. Net variance: -£469.26 (-11.19 kg). Stock accuracy: 89.18%.
+
+### 2 · Tahap 2: Executive BI Dashboard & Graph Projection
+
+Grounding BI and Analytics natively in the LinkML graph schema:
+- **Graph Projection Slots** in `business/sorella_demo/v5.yaml`:
+  - `reconciliation_reorder_level`: parameter slot pulling `item_reorder_level` from `Ingredient`.
+  - `reconciliation_stock_value`: equals_expression slot `{reconciliation_counted} * {reconciliation_price_per_kg}`.
+- **Executive BI Route (`GET /dashboard`)** in `components/web/serve.py`:
+  - Directly queries bitemporal projection `StockReconciliation` at `valid_at` and `as_of`.
+  - Combines with `p_ingredient`, `p_unit_conversion`, and `p_internal_location` metadata from operational store.
+- **Rich Executive Rendering** in `components/web/render.py`:
+  - **4 Top KPI Cards**: Stock Valuation (£3,868.11), Net Variance (-£469.26), Accuracy (89.18%), Active Alerts (2).
+  - **2 Action Alert Triggers**:
+    1. Critical Shortfall: Sicilian Pistachio Paste (-7.00 kg / -£427.98) with direct `/why` provenance link and Agent Trigger hook.
+    2. Stockout Risk: Base 50 Stabiliser (16.0 kg vs 40.0 kg threshold) with delivery link and PO draft Agent Trigger hook.
+  - **Variance Distribution Bar Chart**: CSS/SVG horizontal loss comparison showing concentration in high-value pastes.
+  - **Storage Zone Operational Breakdown**: Location intelligence for Dry Store, Walk-in Chiller, and Ingredient Freezer.
+  - **Complete Ingredient Health Table**: Reconciles expected vs counted in kg and packaging units with status badges and `/why` links.
+  - **Navigation Bar**: Added persistent header navigation across all pages (`Dashboard`, `Stock Table`, `Classes`, `Graph`, `Audit / Why`, `Said`).
+- Added "Decision & Intelligence" stage to `STAGES` on the home page (`/`).
+
+### 3 · Verification & Checks
+
+- `make check` exits 0: **82 passed in 1.30s**, bitemporal replay byte-identical twice (5,334 bytes).
+- `make demo-serve` running on port 8100:
+  - `http://localhost:8100/dashboard` returns 200 OK with instantaneous load times.
+  - Time-travel tested: loading dashboard at `valid_at=2026-06-01` accurately displays zero counts prior to the August stocktake.
+  - Provenance audit links `/why?subject=sorella:item_sicilian_pistachio_paste&predicate=sorella:item_price_per_kg` load full assertion history.
+
+## 2026-09-10 — Operational Forms Ergonomics & Bitemporal Revocation UI (Langkah 3)
+
+Refined Stage 4 (Operational Forms) and Stage 5 (Live Projections) to provide clear enterprise ergonomics while strictly preserving the append-only kernel architecture:
+
+1. **Intelligent Identity & Signatory Fields:**
+   - **`actor`**: Replaced blank text inputs with a dynamic `<select name="actor">` populated with authorized staff members (`Marina Devlin`, `Dan Farrugia`, `Aoife Byrne`, `Fareza`).
+   - **`subject`**:
+     - For Event/Transaction records (`StockMovement`, `StockCount`, `StockCountLine`, `UnitConversion`): subject validation is optional; UI explains that entity URI is automatically minted upon submission (`sorella_demo:<class>_<hex12>`).
+     - For Master Data records (`Ingredient`, `Location`, etc.): provides an interactive `<datalist>` of existing registered entities for in-place property updates while supporting new entity minting.
+   - **`entity_class`**: Replaced raw text input with a clean `<input type="hidden">` accompanied by a metadata badge.
+   - **Form Layout**: Structured into two clear operational sections:
+     - Section 1: *Signatory & Identity (Kernel Intent Header)*
+     - Section 2: *Record Details (Map Slots)*
+
+2. **First-Class Bitemporal Correction & Retraction UI (`/correct`):**
+   - Added dedicated route `GET /correct` and `POST /correct`.
+   - Supports two distinct non-destructive workflows:
+     - **Correction (✏️)**: Supersedes a prior assertion by recording a new assertion with `revokes = <prior_id>` and the updated value.
+     - **Pure Retraction (❌)**: Voids an assertion with `value_literal = NULL` and `revokes = <prior_id>`.
+   - Requires authorized signatory actor, formal audit reason code (`transposition_error`, `counting_error`, `never_arrived`, etc.), and justification note.
+   - Embeds quick `[ ⚡ Revoke / Correct ]` action buttons in the bitemporal visual timeline and audit tables in `/why`.
+   - On submission, seamlessly redirects back to the `/why` visual timeline displaying the struck-through revoked fact and new active winner.
+
+3. **Stage 4 & 5 Overview Hub (`/classes`):**
+   - Redesigned `/classes` into organized enterprise category cards:
+     - **⚡ Transaction Event Forms** (`StockMovement`, `StockCount`, `StockCountLine`, `UnitConversion`)
+     - **🏢 Master Data Entity Forms** (`Ingredient`, `Location`, `Supplier`, etc.)
+     - **📊 Live Operational Projections** (`StockReconciliation`, `IngredientOnHand`, `CountedOnHand`)
+
+4. **Verification & Invariant Checks:**
+   - Form submission tested live: `StockMovement` auto-minted new entity `sorella_demo:stockmovement_...` with 12 atomic assertions.
+   - Correction submission tested live: `sorella:item_cocoa_22_24` price corrected from £41.00 to £44.00, generating an append-only intent and immediate visual audit update.
+   - `make check` exits 0: 82 unit tests passed in 1.22s, bitemporal replay byte-identical twice (5334 bytes).
+
+
+

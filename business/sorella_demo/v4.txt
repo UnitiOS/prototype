@@ -201,11 +201,6 @@ does not want the system to subtract them for her and present one number,
 because the two are answers to different questions: one is what the paper says
 should be there and the other is what she found.
 
-The third question is the reconciliation: what was expected from movements
-beside what was physically counted, the variance in standard kilograms, and the
-financial value of that variance in pounds sterling. It puts the paper's
-discrepancies in front of the business in the same breath as its stock value.
-
 ---
 
 Later, reading a generated table over her shoulder: the column headings are the
