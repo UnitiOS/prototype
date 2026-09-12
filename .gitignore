@@ -15,9 +15,14 @@ venv/
 .idea/
 Thumbs.db
 desktop.ini
+.DS_Store
+*.swp
+*.swo
 
-# Local Claude Code settings
-.claude/settings.local.json
+# Local tooling & context
+.claude/
+*.log
 
 # Build output
 build/
+

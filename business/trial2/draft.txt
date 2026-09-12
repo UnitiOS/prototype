@@ -1,5 +1,0 @@
-Not a conversation. `seal` requires a transcript beside every draft, so this
-file exists to satisfy that contract and says only what the draft is for: a
-trial of one computation declared in a map and run against the log at a stated
-pair of clocks. Four movements across two places, one of them stating no
-quantity. No business was described.
