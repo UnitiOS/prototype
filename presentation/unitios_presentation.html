@@ -1,0 +1,1267 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UnitiOS — The Living Digital Twin & Immutable Brain for Modern Business</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #090d16;
+      --bg-card: #111726;
+      --bg-card-subtle: #161f33;
+      --border: #1e293b;
+      --border-accent: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --cyan: #38bdf8;
+      --emerald: #34d399;
+      --indigo: #818cf8;
+      --amber: #fbbf24;
+      --rose: #f43f5e;
+      --purple: #c084fc;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg);
+      color: var(--text-main);
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Deck Layout */
+    .deck-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px 80px;
+      gap: 50px;
+    }
+
+    .slide {
+      width: 1280px;
+      height: 720px;
+      background: radial-gradient(circle at 80% 20%, rgba(56, 189, 248, 0.05) 0%, transparent 40%),
+                  radial-gradient(circle at 20% 80%, rgba(129, 140, 248, 0.05) 0%, transparent 40%),
+                  var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 56px 64px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.03);
+      page-break-after: always;
+      page-break-inside: avoid;
+    }
+
+    /* Header */
+    .slide-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 24px;
+    }
+
+    .badge-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 9999px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      border: 1px solid;
+    }
+
+    .badge-cyan { background: rgba(56, 189, 248, 0.1); color: var(--cyan); border-color: rgba(56, 189, 248, 0.25); }
+    .badge-emerald { background: rgba(52, 211, 153, 0.1); color: var(--emerald); border-color: rgba(52, 211, 153, 0.25); }
+    .badge-rose { background: rgba(244, 63, 94, 0.1); color: var(--rose); border-color: rgba(244, 63, 94, 0.25); }
+    .badge-amber { background: rgba(251, 191, 36, 0.1); color: var(--amber); border-color: rgba(251, 191, 36, 0.25); }
+    .badge-indigo { background: rgba(129, 140, 248, 0.1); color: var(--indigo); border-color: rgba(129, 140, 248, 0.25); }
+
+    .slide-title {
+      font-size: 2.2rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      margin-top: 8px;
+    }
+
+    .slide-title span {
+      background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .slide-subtitle {
+      font-size: 1.05rem;
+      color: var(--text-muted);
+      margin-top: 6px;
+      font-weight: 400;
+      max-width: 900px;
+    }
+
+    .slide-number {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      color: var(--text-dim);
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+
+    /* Content Area */
+    .slide-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 24px;
+    }
+
+    /* Footer */
+    .slide-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 18px;
+      border-top: 1px solid var(--border);
+      font-size: 0.82rem;
+      color: var(--text-dim);
+    }
+
+    .slide-footer strong {
+      color: var(--text-muted);
+    }
+
+    /* Common Card Styles */
+    .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+
+    .card {
+      background: var(--bg-card-subtle);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      transition: all 0.2s ease;
+    }
+
+    .card-accent-cyan { border-top: 3px solid var(--cyan); }
+    .card-accent-emerald { border-top: 3px solid var(--emerald); }
+    .card-accent-rose { border-top: 3px solid var(--rose); }
+    .card-accent-amber { border-top: 3px solid var(--amber); }
+    .card-accent-indigo { border-top: 3px solid var(--indigo); }
+
+    .card-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .card-p {
+      font-size: 0.92rem;
+      color: var(--text-muted);
+      line-height: 1.55;
+    }
+
+    .card-list {
+      list-style: none;
+      margin-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .card-list li {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      line-height: 1.4;
+    }
+
+    .card-list li::before {
+      content: "•";
+      color: var(--cyan);
+      font-weight: bold;
+      font-size: 1.2rem;
+      line-height: 1;
+    }
+
+    /* Visual Diagram Elements */
+    .flow-stepper {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      position: relative;
+    }
+
+    .step-box {
+      flex: 1;
+      background: var(--bg-card-subtle);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 22px 18px;
+      position: relative;
+      text-align: center;
+    }
+
+    .step-box.active {
+      border-color: var(--cyan);
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.15);
+    }
+
+    .step-num {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--border);
+      color: var(--cyan);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 0.9rem;
+      margin: 0 auto 12px;
+    }
+
+    .step-arrow {
+      color: var(--text-dim);
+      font-size: 1.5rem;
+      padding: 0 8px;
+    }
+
+    /* KPI Highlights */
+    .kpi-row {
+      display: flex;
+      gap: 20px;
+      width: 100%;
+    }
+
+    .kpi-card {
+      flex: 1;
+      background: var(--bg-card-subtle);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px 24px;
+    }
+
+    .kpi-val {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: var(--text-main);
+      font-family: 'JetBrains Mono', monospace;
+      margin: 4px 0;
+    }
+
+    .kpi-sub {
+      font-size: 0.82rem;
+      color: var(--text-dim);
+    }
+
+    /* Anomaly Card Special */
+    .anomaly-box {
+      background: rgba(244, 63, 94, 0.08);
+      border: 1px solid rgba(244, 63, 94, 0.35);
+      border-radius: 14px;
+      padding: 24px;
+    }
+
+    /* Navigation bar for interactive presentation */
+    .nav-floating {
+      position: fixed;
+      bottom: 24px;
+      background: rgba(17, 23, 38, 0.85);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      padding: 10px 20px;
+      border-radius: 9999px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      z-index: 100;
+    }
+
+    .nav-btn {
+      background: var(--border);
+      border: none;
+      color: var(--text-main);
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s ease;
+    }
+
+    .nav-btn:hover { background: var(--border-accent); }
+
+    .nav-info {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    /* Print styles for high-res PDF generation */
+    @media print {
+      body {
+        background: #090d16 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .deck-container {
+        padding: 0 !important;
+        gap: 0 !important;
+      }
+      .slide {
+        width: 100vw !important;
+        height: 100vh !important;
+        margin: 0 !important;
+        border: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        page-break-after: always !important;
+        page-break-inside: avoid !important;
+      }
+      .nav-floating {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Floating Navigation Controls -->
+  <div class="nav-floating">
+    <button class="nav-btn" onclick="prevSlide()">← Prev</button>
+    <div class="nav-info" id="slideIndicator">Slide 1 / 12</div>
+    <button class="nav-btn" onclick="nextSlide()">Next →</button>
+    <button class="nav-btn" onclick="window.print()" style="background: rgba(56, 189, 248, 0.2); color: var(--cyan);">🖨️ Print / Save PDF</button>
+  </div>
+
+  <div class="deck-container">
+
+    <!-- ========================================== -->
+    <!-- SLIDE 1: COVER                             -->
+    <!-- ========================================== -->
+    <div class="slide" id="slide-1">
+      <div class="slide-header">
+        <span class="badge-label badge-cyan">Executive Vision &amp; Platform Overview</span>
+        <span class="slide-number">01 / 12</span>
+      </div>
+      <div class="slide-body" style="align-items: flex-start; justify-content: center; gap: 32px;">
+        <div style="max-width: 950px;">
+          <h1 style="font-size: 4rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1.05; margin-bottom: 20px;">
+            <span>UnitiOS</span><br>
+            The Living Digital Twin &amp; Immutable Brain for Modern Business
+          </h1>
+          <p style="font-size: 1.35rem; color: var(--text-muted); line-height: 1.5; max-width: 850px;">
+            Mengubah seluruh logika, aset, dan operasional bisnis menjadi <strong>graf yang hidup</strong>, terbukti secara <strong>abadi tanpa manipulasi</strong>, dan dapat beroperasi otomatis bersama AI Agent tanpa perlu coding ulang.
+          </p>
+        </div>
+
+        <div style="display: flex; gap: 28px; margin-top: 12px;">
+          <div style="display: flex; align-items: center; gap: 12px; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.2); padding: 12px 20px; border-radius: 12px;">
+            <span style="font-size: 1.5rem;">🧠</span>
+            <div>
+              <div style="font-size: 0.95rem; font-weight: 700; color: var(--cyan);">The Living Graph</div>
+              <div style="font-size: 0.8rem; color: var(--text-dim);">Zero-Code Business Logic</div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 12px; background: rgba(52, 211, 153, 0.08); border: 1px solid rgba(52, 211, 153, 0.2); padding: 12px 20px; border-radius: 12px;">
+            <span style="font-size: 1.5rem;">🛡️</span>
+            <div>
+              <div style="font-size: 0.95rem; font-weight: 700; color: var(--emerald);">Append-Only Kernel</div>
+              <div style="font-size: 0.8rem; color: var(--text-dim);">Zero-Fraud Bitemporal Proof</div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 12px; background: rgba(129, 140, 248, 0.08); border: 1px solid rgba(129, 140, 248, 0.2); padding: 12px 20px; border-radius: 12px;">
+            <span style="font-size: 1.5rem;">🤖</span>
+            <div>
+              <div style="font-size: 0.95rem; font-weight: 700; color: var(--indigo);">Universal MCP Agent</div>
+              <div style="font-size: 0.8rem; color: var(--text-dim);">Safe Autonomous Co-Pilot</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <div><strong>UnitiOS</strong> · Open-Architecture Enterprise Operating System</div>
+        <div>https://github.com/UnitiOS/prototype</div>
+      </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- SLIDE 2: THE PROBLEM                       -->
+    <!-- ========================================== -->
+    <div class="slide" id="slide-2">
+      <div class="slide-header">
+        <div>
+          <span class="badge-label badge-rose">Krisis Software Bisnis Saat Ini</span>
+          <h2 class="slide-title">Mengapa Software Bisnis (ERP/CRM) Konvensional <span>Rapuh &amp; Kaku?</span></h2>
+          <p class="slide-subtitle">Sistem yang ada saat ini dibangun di atas pondasi database yang menghapus sejarah dan mengunci bisnis dalam kode program.</p>
+        </div>
+        <span class="slide-number">02 / 12</span>
+      </div>
+
+      <div class="slide-body">
+        <div class="grid-3">
+          <div class="card card-accent-rose">
+            <div>
+              <div class="card-title"><span style="color: var(--rose);">❌</span> Data Amnesia (Mutasi Merusak)</div>
+              <p class="card-p">Saat operator mengedit stok atau faktur pembelian (perintah <code>UPDATE</code> / <code>DELETE</code>), <strong>angka masa lalu langsung terhapus</strong>.</p>
+              <ul class="card-list">
+                <li>Bisnis kehilangan bukti sejarah aslinya.</li>
+                <li>Audit investigasi kecurangan menjadi mustahil.</li>
+                <li>Tidak ada bukti sah siapa yang mengubah angka.</li>
+              </ul>
+            </div>
+            <div style="margin-top: 16px; padding: 10px; background: rgba(244, 63, 94, 0.1); border-radius: 8px; font-size: 0.8rem; color: var(--rose); font-weight: 600;">
+              Risiko: Fraud internal &amp; ketidakpatuhan audit.
+            </div>
+          </div>
+
+          <div class="card card-accent-amber">
+            <div>
+              <div class="card-title"><span style="color: var(--amber);">⏳</span> Kerancuan Waktu (Single Clock)</div>
+              <p class="card-p">Database biasa mencampuradukkan <em>kapan peristiwa terjadi di lapangan</em> dengan <em>kapan admin sempat mengetiknya ke komputer</em>.</p>
+              <ul class="card-list">
+                <li>Koreksi faktur bulan Januari yang baru masuk di bulan Maret merusak laporan keuangan penutupan buku.</li>
+                <li>Manajemen tidak bisa merekonstruksi apa yang sebenarnya diketahui pada tanggal tertentu di masa lalu.</li>
+              </ul>
+            </div>
+            <div style="margin-top: 16px; padding: 10px; background: rgba(251, 191, 36, 0.1); border-radius: 8px; font-size: 0.8rem; color: var(--amber); font-weight: 600;">
+              Risiko: Laporan laba rugi dan stok yang bias.
+            </div>
+          </div>
+
+          <div class="card card-accent-indigo">
+            <div>
+              <div class="card-title"><span style="color: var(--indigo);">🔒</span> Logika Kaku (Code Lock-in)</div>
+              <p class="card-p">Aturan bisnis (resep, diskon, alur persetujuan, pajak) dikunci mati di dalam ribuan baris kode program aplikasi.</p>
+              <ul class="card-list">
+                <li>Setiap kali model bisnis berubah, Anda harus membayar ratusan juta dan menunggu berminggu-minggu meminta developer merombak kode.</li>
+                <li>AI Agent tidak bisa memahami aturan bisnis yang tersebar di kode.</li>
+              </ul>
+            </div>
+            <div style="margin-top: 16px; padding: 10px; background: rgba(129, 140, 248, 0.1); border-radius: 8px; font-size: 0.8rem; color: var(--indigo); font-weight: 600;">
+              Risiko: Kehilangan kelincahan pasar (slow agility).
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-footer">
+        <div><strong>Masalah:</strong> Software tradisional dirancang untuk mencatat status terakhir, bukan menjadi saksi kebenaran sejarah.</div>
+        <div>UnitiOS Architecture</div>
+      </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- SLIDE 3: PERAN CENTRAL GRAPH              -->
+    <!-- ========================================== -->
+    <div class="slide" id="slide-3">
+      <div class="slide-header">
+        <div>
+          <span class="badge-label badge-cyan">Otak Sentral Bisnis</span>
+          <h2 class="slide-title">Peran Graph: Bukan Sekadar Diagram, Ini <span>Otak &amp; Digital Twin</span></h2>
+          <p class="slide-subtitle">Dalam UnitiOS, Graph bukan dokumentasi pasif. Graph adalah mesin eksekusi yang langsung menggerakkan seluruh sistem.</p>
+        </div>
+        <span class="slide-number">03 / 12</span>
+      </div>
+
+      <div class="slide-body">
+        <div class="grid-2" style="align-items: stretch;">
+          <div style="display: flex; flex-direction: column; gap: 16px;">
+            <div class="card card-accent-cyan" style="flex: 1;">
+              <div class="card-title">🧠 1. Zero-Code Business Logic</div>
+              <p class="card-p">Resep produksi, toleransi susut bahan, formula konversi satuan (misal: 1 krat = 12 botol = 6 kg), dan rumus rekonsiliasi stok didefinisikan secara deklaratif di dalam Graph.</p>
+              <div style="margin-top: 10px; font-size: 0.85rem; color: var(--cyan); font-weight: 600;">➔ Tidak ada logika bisnis yang disembunyikan di dalam kode aplikasi.</div>
+            </div>
+
+            <div class="card card-accent-emerald" style="flex: 1;">
+              <div class="card-title">🔄 2. Self-Driving Adaptive Software</div>
+              <p class="card-p">Jika proses bisnis berubah (misalnya mulai membuka cabang baru atau meluncurkan varian produk baru), Anda <strong>cukup memperbarui peta Graph-nya</strong>.</p>
+              <div style="margin-top: 10px; font-size: 0.85rem; color: var(--emerald); font-weight: 600;">➔ Form input kasir, tabel laporan, dan validasi data otomatis beradaptasi seketika tanpa programmer!</div>
+            </div>
+
+            <div class="card card-accent-indigo" style="flex: 1;">
+              <div class="card-title">🌐 3. Bahasa Pemersatu (The Universal Semantic Bridge)</div>
+              <p class="card-p">Graph adalah satu-satunya bahasa yang dipahami secara persis oleh <strong>pemilik bisnis</strong>, <strong>database penyimpanan</strong>, dan <strong>AI Agent</strong> secara serentak tanpa risiko salah tafsir atau halusinasi.</p>
+            </div>
+          </div>
+
+          <!-- Visual Representation of Graph at Center -->
+          <div style="background: var(--bg-card-subtle); border: 1px solid var(--border); border-radius: 14px; padding: 24px; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative;">
+            <div style="position: absolute; top: 16px; left: 20px; font-size: 0.8rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase;">Graph As The Operational Sun</div>
+            
+            <svg width="380" height="320" viewBox="0 0 380 320" style="overflow: visible;">
+              <!-- Connecting lines -->
+              <line x1="190" y1="160" x2="60" y2="60" stroke="#1e293b" stroke-width="2" stroke-dasharray="4" />
+              <line x1="190" y1="160" x2="320" y2="60" stroke="#1e293b" stroke-width="2" stroke-dasharray="4" />
+              <line x1="190" y1="160" x2="60" y2="260" stroke="#1e293b" stroke-width="2" stroke-dasharray="4" />
+              <line x1="190" y1="160" x2="320" y2="260" stroke="#1e293b" stroke-width="2" stroke-dasharray="4" />
+
+              <!-- Central Graph Node -->
+              <circle cx="190" cy="160" r="54" fill="#111726" stroke="#38bdf8" stroke-width="3" filter="drop-shadow(0 0 15px rgba(56, 189, 248, 0.4))" />
+              <text x="190" y="155" text-anchor="middle" fill="#f8fafc" font-size="14" font-weight="800">ONTOLOGY</text>
+              <text x="190" y="173" text-anchor="middle" fill="#38bdf8" font-size="12" font-weight="700">GRAPH</text>
+
+              <!-- Node 1: Dynamic Forms -->
+              <rect x="10" y="35" width="100" height="50" rx="8" fill="#161f33" stroke="#818cf8" stroke-width="1.5" />
+              <text x="60" y="58" text-anchor="middle" fill="#f8fafc" font-size="11" font-weight="700">Input Forms</text>
+              <text x="60" y="73" text-anchor="middle" fill="#94a3b8" font-size="9">Auto-generated</text>
+
+              <!-- Node 2: SQL Projections -->
+              <rect x="270" y="35" width="100" height="50" rx="8" fill="#161f33" stroke="#34d399" stroke-width="1.5" />
+              <text x="320" y="58" text-anchor="middle" fill="#f8fafc" font-size="11" font-weight="700">BI Analytics</text>
+              <text x="320" y="73" text-anchor="middle" fill="#94a3b8" font-size="9">Live SQL CTEs</text>
+
+              <!-- Node 3: Kernel Invariants -->
+              <rect x="10" y="235" width="100" height="50" rx="8" fill="#161f33" stroke="#f43f5e" stroke-width="1.5" />
+              <text x="60" y="258" text-anchor="middle" fill="#f8fafc" font-size="11" font-weight="700">Data Guards</text>
+              <text x="60" y="273" text-anchor="middle" fill="#94a3b8" font-size="9">Write-Gate Rules</text>
+
+              <!-- Node 4: AI Agent Tools -->
+              <rect x="270" y="235" width="100" height="50" rx="8" fill="#161f33" stroke="#fbbf24" stroke-width="1.5" />
+              <text x="320" y="258" text-anchor="middle" fill="#f8fafc" font-size="11" font-weight="700">AI Co-Pilot</text>
+              <text x="320" y="273" text-anchor="middle" fill="#94a3b8" font-size="9">11 MCP Primitives</text>
+            </svg>
+
+            <div style="font-size: 0.85rem; color: var(--text-dim); text-align: center; margin-top: 10px;">
+              Satu Peta Graph Menggerakkan Seluruh Ekosistem Aplikasi Secara Instan
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-footer">
+        <div><strong>Hasil:</strong> Mengubah alur bisnis tidak lagi memerlukan siklus software development berbulan-bulan.</div>
+        <div>UnitiOS Graph Layer</div>
+      </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- SLIDE 4: THE GENESIS PIPELINE              -->
+    <!-- ========================================== -->
+    <div class="slide" id="slide-4">
+      <div class="slide-header">
+        <div>
+          <span class="badge-label badge-emerald">Alur Pembentukan Sistem</span>
+          <h2 class="slide-title">Dari Obrolan Santai Menjadi <span>Software Siap Pakai</span></h2>
+          <p class="slide-subtitle">Bagaimana sebuah bisnis di-onboard ke dalam UnitiOS? Cukup 4 langkah otomatis tanpa coding.</p>
+        </div>
+        <span class="slide-number">04 / 12</span>
+      </div>
+
+      <div class="slide-body">
+        <div class="flow-stepper">
+          <!-- Step 1 -->
+          <div class="step-box">
+            <div class="step-num">1</div>
+            <div style="font-size: 1.05rem; font-weight: 700; color: var(--cyan); margin-bottom: 6px;">Obrolan / Desain SME</div>
+            <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.45;">
+              Pemilik bisnis mengobrol santai dengan Chatbot AI menjelaskan alur kerjanya, <em>ATAU</em> dirancang langsung oleh Subject Matter Expert (SME).
+            </p>
+            <div style="margin-top: 10px; font-size: 0.75rem; background: rgba(56, 189, 248, 0.1); color: var(--cyan); padding: 4px 8px; border-radius: 6px; font-weight: 600;">
+              Input: Bahasa Manusia
+            </div>
+          </div>
+
+          <div class="step-arrow">➔</div>
+
+          <!-- Step 2 -->
+          <div class="step-box active">
+            <div class="step-num" style="background: var(--cyan); color: #090d16;">2</div>
+            <div style="font-size: 1.05rem; font-weight: 700; color: var(--cyan); margin-bottom: 6px;">Peta Graph Disegel</div>
+            <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.45;">
+              Obrolan diubah menjadi LinkML Ontology Graph yang memetakan entitas, relasi, satuan, dan formula. Peta ini <strong>disegel secara permanen</strong> (v1, v2).
+            </p>
+            <div style="margin-top: 10px; font-size: 0.75rem; background: rgba(52, 211, 153, 0.1); color: var(--emerald); padding: 4px 8px; border-radius: 6px; font-weight: 600;">
+              Sealed Semantic Map
+            </div>
+          </div>
+
+          <div class="step-arrow">➔</div>
+
+          <!-- Step 3 -->
+          <div class="step-box">
+            <div class="step-num">3</div>
+            <div style="font-size: 1.05rem; font-weight: 700; color: var(--indigo); margin-bottom: 6px;">Kompilasi Agnostik</div>
+            <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.45;">
+              Kompiler Uniti membaca Graph dan secara otomatis merumuskan query SQL Multi-CTE, gerbang validasi, dan relasi matematis.
+            </p>
+            <div style="margin-top: 10px; font-size: 0.75rem; background: rgba(129, 140, 248, 0.1); color: var(--indigo); padding: 4px 8px; border-radius: 6px; font-weight: 600;">
+              Zero-Human Coding
+            </div>
+          </div>
+
+          <div class="step-arrow">➔</div>
+
+          <!-- Step 4 -->
+          <div class="step-box">
+            <div class="step-num">4</div>
+            <div style="font-size: 1.05rem; font-weight: 700; color: var(--emerald); margin-bottom: 6px;">Sistem Langsung Aktif</div>
+            <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.45;">
+              Dalam hitungan detik, formulir digital, tabel rekonsiliasi, dashboard eksekutif, dan sensor untuk AI Agent langsung siap digunakan.
+            </p>
+            <div style="margin-top: 10px; font-size: 0.75rem; background: rgba(52, 211, 153, 0.1); color: var(--emerald); padding: 4px 8px; border-radius: 6px; font-weight: 600;">
+              Live Enterprise Ready
+            </div>
+          </div>
+        </div>
+
+        <div style="background: rgba(56, 189, 248, 0.05); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 12px; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 14px;">
+            <span style="font-size: 1.8rem;">💡</span>
+            <div style="font-size: 0.92rem; color: var(--text-main);">
+              <strong>Kelebihan Eksklusif:</strong> Waktu implementasi software bisnis dipangkas dari <strong>6–12 bulan</strong> menjadi <strong>beberapa jam</strong> saja.
+            </div>
+          </div>
+          <span class="badge-label badge-cyan">90% Lebih Cepat</span>
+        </div>
+      </div>
+
+      <div class="slide-footer">
+        <div><strong>Pipeline:</strong> Transkrip Narasi ➔ LinkML Schema ➔ Compiler CTE ➔ Live System.</div>
+        <div>UnitiOS Genesis</div>
+      </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- SLIDE 5: 3-LAYER SYSTEM ANATOMY            -->
+    <!-- ========================================== -->
+    <div class="slide" id="slide-5">
+      <div class="slide-header">
+        <div>
+          <span class="badge-label badge-indigo">Arsitektur Inti</span>
+          <h2 class="slide-title">Anatomi 3 Lapisan: <span>Pondasi Sistem yang Kokoh</span></h2>
+          <p class="slide-subtitle">Memisahkan antara apa aturan bisnisnya, di mana buktinya disimpan, dan bagaimana data disajikan.</p>
+        </div>
+        <span class="slide-number">05 / 12</span>
+      </div>
+
+      <div class="slide-body">
+        <div class="grid-3" style="gap: 24px;">
+          <!-- Layer 1 -->
+          <div class="card card-accent-cyan" style="background: rgba(56, 189, 248, 0.03);">
+            <div>
+              <div style="font-size: 0.8rem; font-weight: 700; color: var(--cyan); text-transform: uppercase;">Lapisan 1 · Aturan</div>
+              <div class="card-title" style="margin-top: 4px;">The Blueprint (Graph)</div>
+              <p class="card-p">Tempat di mana model bisnis dideklarasikan.</p>
+              <ul class="card-list" style="margin-top: 14px;">
+                <li><strong>Entitas:</strong> Bahan baku, pemasok, staf, dan gudang.</li>
+                <li><strong>Relasi:</strong> Siapa memasok apa, resep produk.</li>
+                <li><strong>Konversi Satuan:</strong> Karton, kaleng, ember ke kilogram baku.</li>
+                <li><strong>Invarian:</strong> Larangan menulis data di luar aturan.</li>
+              </ul>
+            </div>
+            <div style="padding: 10px; background: rgba(56, 189, 248, 0.1); border-radius: 8px; font-size: 0.8rem; color: var(--cyan); font-weight: 600; margin-top: 16px;">
+              Peran: Menentukan bagaimana dunia bekerja.
+            </div>
+          </div>
+
+          <!-- Layer 2 -->
+          <div class="card card-accent-emerald" style="background: rgba(52, 211, 153, 0.03);">
+            <div>
+              <div style="font-size: 0.8rem; font-weight: 700; color: var(--emerald); text-transform: uppercase;">Lapisan 2 · Bukti Abadi</div>
+              <div class="card-title" style="margin-top: 4px;">The Black Box (Kernel)</div>
+              <p class="card-p">Gudang bukti murni PostgreSQL dengan 3 tabel tertutup.</p>
+              <ul class="card-list" style="margin-top: 14px;">
+                <li><strong>Append-Only:</strong> Tidak ada tombol hapus / edit. Triggers database memblokir setiap upaya manipulasi.</li>
+                <li><strong>Intent Header:</strong> Mencatat siapa aktor yang menandatangani transaksi dan alasan bisnisnya.</li>
+                <li><strong>Dua Jam Waktu:</strong> Menampung waktu fakta vs waktu rekam.</li>
+              </ul>
+            </div>
+            <div style="padding: 10px; background: rgba(52, 211, 153, 0.1); border-radius: 8px; font-size: 0.8rem; color: var(--emerald); font-weight: 600; margin-top: 16px;">
+              Peran: Menyimpan kebenaran yang tak terbantahkan.
+            </div>
+          </div>
+
+          <!-- Layer 3 -->
+          <div class="card card-accent-indigo" style="background: rgba(129, 140, 248, 0.03);">
+            <div>
+              <div style="font-size: 0.8rem; font-weight: 700; color: var(--indigo); text-transform: uppercase;">Lapisan 3 · Aksi &amp; Layar</div>
+              <div class="card-title" style="margin-top: 4px;">Operational Twin</div>
+              <p class="card-p">Layar kerja pengguna dan jembatan ke dunia luar.</p>
+              <ul class="card-list" style="margin-top: 14px;">
+                <li><strong>Input Forms:</strong> Formulir transaksi kasir &amp; gudang.</li>
+                <li><strong>Live Projections:</strong> Tabel rekonsiliasi dinamis berkecepatan tinggi (0,05s).</li>
+                <li><strong>Executive BI:</strong> Dashboard keputusan manajemen.</li>
+                <li><strong>11 MCP Tools:</strong> Antarmuka resmi untuk AI Agent.</li>
+              </ul>
+            </div>
+            <div style="padding: 10px; background: rgba(129, 140, 248, 0.1); border-radius: 8px; font-size: 0.8rem; color: var(--indigo); font-weight: 600; margin-top: 16px;">
+              Peran: Melayani operasional tanpa merusak bukti.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-footer">
+        <div><strong>Prinsip:</strong> Pemisahan total antara Logika (Graph), Bukti (Kernel), dan Tampilan (Operational).</div>
+        <div>UnitiOS Architecture</div>
+      </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- SLIDE 6: BITEMPORAL TIME TRAVEL            -->
+    <!-- ========================================== -->
+    <div class="slide" id="slide-6">
+      <div class="slide-header">
+        <div>
+          <span class="badge-label badge-cyan">Mesin Waktu Bisnis</span>
+          <h2 class="slide-title">Bitemporal Dual-Clock: <span>Menembus Waktu Tanpa Distorsi</span></h2>
+          <p class="slide-subtitle">Menghilangkan kebingungan antara peristiwa di lapangan dan saat sistem baru mengetahuinya.</p>
+        </div>
+        <span class="slide-number">06 / 12</span>
+      </div>
+
+      <div class="slide-body">
+        <div class="grid-2" style="gap: 32px; align-items: center;">
+          <div style="display: flex; flex-direction: column; gap: 20px;">
+            <div style="background: var(--bg-card-subtle); border-left: 4px solid var(--cyan); padding: 18px 20px; border-radius: 8px;">
+              <div style="font-size: 1.1rem; font-weight: 700; color: var(--cyan); margin-bottom: 4px;">⏰ 1. Waktu Lapangan (Valid Time · <code>valid_from</code>)</div>
+              <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.45;">
+                Kapan suatu peristiwa secara nyata berlangsung di dunia fisik (misal: pengiriman susu tiba di dapur pada tanggal 10 Januari).
+              </p>
+            </div>
+
+            <div style="background: var(--bg-card-subtle); border-left: 4px solid var(--indigo); padding: 18px 20px; border-radius: 8px;">
+              <div style="font-size: 1.1rem; font-weight: 700; color: var(--indigo); margin-bottom: 4px;">⏱️ 2. Waktu Rekam Sistem (Recorded Time · <code>recorded_at</code>)</div>
+              <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.45;">
+                Kapan staf atau auditor baru sempat mencatat atau mengoreksi data tersebut ke dalam sistem komputer (misal: baru diinput 15 Maret).
+              </p>
+            </div>
+
+            <div style="background: rgba(52, 211, 153, 0.08); border: 1px solid rgba(52, 211, 153, 0.25); padding: 18px 20px; border-radius: 8px;">
+              <div style="font-size: 1rem; font-weight: 700; color: var(--emerald); margin-bottom: 4px;">🎯 Manfaat Nyata untuk Direksi &amp; Auditor:</div>
+              <p style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.45;">
+                Anda dapat memutar waktu mundur ke tanggal berapa pun untuk melihat laporan keuangan <strong>persis seperti apa yang diketahui perusahaan saat itu</strong>, tanpa kehilangan perbaikan data terbaru.
+              </p>
+            </div>
+          </div>
+
+          <!-- Graphic Matrix -->
+          <div style="background: var(--bg-card-subtle); border: 1px solid var(--border); border-radius: 14px; padding: 24px;">
+            <div style="font-size: 0.9rem; font-weight: 700; color: var(--text-main); margin-bottom: 16px; text-align: center;">
+              Matriks Rekonstruksi Bitemporal (4 Kombinasi Pertanyaan)
+            </div>
+            
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              <div style="background: #111726; border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;">
+                <div style="font-size: 0.85rem; color: var(--text-main);">"Berapa harga barang pada <strong>Januari</strong> menurut pengetahuan kita di <strong>Januari</strong>?"</div>
+                <span class="badge-label badge-cyan" style="font-size: 0.7rem;">Rp 10.000</span>
+              </div>
+              <div style="background: #111726; border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;">
+                <div style="font-size: 0.85rem; color: var(--text-main);">"Berapa harga barang pada <strong>Januari</strong> setelah kita tahu ada salah catat di <strong>Maret</strong>?"</div>
+                <span class="badge-label badge-rose" style="font-size: 0.7rem;">Rp 12.500 (Koreksi)</span>
+              </div>
+              <div style="background: #111726; border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;">
+                <div style="font-size: 0.85rem; color: var(--text-main);">"Berapa harga resmi yang berlaku pada <strong>April</strong>?"</div>
+                <span class="badge-label badge-emerald" style="font-size: 0.7rem;">Rp 14.000 (Harga Baru)</span>
+              </div>
+            </div>
+
+            <div style="margin-top: 16px; text-align: center; font-size: 0.78rem; color: var(--text-dim);">
+              Semua 4 kondisi menghasilkan jawaban akurat dari 1 database yang sama tanpa duplikasi tabel.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-footer">
+        <div><strong>Bitemporal:</strong> Teruji di <code>test_four_reads</code> dengan 90 unit tests passing.</div>
+        <div>UnitiOS Time-Travel</div>
+      </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- SLIDE 7: REAL CASE STUDY - SORELLA GELATO   -->
+    <!-- ========================================== -->
+    <div class="slide" id="slide-7">
+      <div class="slide-header">
+        <div>
+          <span class="badge-label badge-rose">Studi Kasus Nyata · Live Data</span>
+          <h2 class="slide-title">Misteri Susut Stok di Sorella Gelato: <span>Terungkap Otomatis</span></h2>
+          <p class="slide-subtitle">Uji coba data operasional 6 bulan: 20 bahan baku artisanal, batch churning gelato, dan 11.760 asersi bukti.</p>
+        </div>
+        <span class="slide-number">07 / 12</span>
+      </div>
+
+      <div class="slide-body">
+        <div class="kpi-row">
+          <div class="kpi-card" style="border-top: 3px solid var(--cyan);">
+            <div class="kpi-sub">Total Nilai Stok Fisik</div>
+            <div class="kpi-val" style="color: var(--cyan);">£3,868.11</div>
+            <div class="kpi-sub">Ekspektasi Buku: £4,337.37</div>
+          </div>
+
+          <div class="kpi-card" style="border-top: 3px solid var(--rose);">
+            <div class="kpi-sub">Total Selisih Varians Stok</div>
+            <div class="kpi-val" style="color: var(--rose);">-£469.26</div>
+            <div class="kpi-sub">Total Selisih Fisik: -10.74 kg</div>
+          </div>
+
+          <div class="kpi-card" style="border-top: 3px solid var(--emerald);">
+            <div class="kpi-sub">Akurasi Valuasi Inventori</div>
+            <div class="kpi-val" style="color: var(--emerald);">89.18%</div>
+            <div class="kpi-sub">Toleransi Dapur Normal: &lt;0.5%</div>
+          </div>
+
+          <div class="kpi-card" style="border-top: 3px solid var(--amber);">
+            <div class="kpi-sub">Peringatan Aksi Aktif</div>
+            <div class="kpi-val" style="color: var(--amber);">2 Alerts</div>
+            <div class="kpi-sub">1 Anomali Parah • 1 Reorder Rendah</div>
+          </div>
+        </div>
+
+        <!-- Anomaly Highlight Card -->
+        <div class="anomaly-box" style="display: flex; justify-content: space-between; align-items: center; gap: 32px;">
+          <div style="flex: 1;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+              <span class="badge-label badge-rose">🚨 Anomali Parah Ditemukan</span>
+              <strong style="font-size: 1.15rem; color: #f8fafc;">Sicilian Pistachio Paste (Pasta Pistachio Sisilia)</strong>
+            </div>
+            <p style="font-size: 0.92rem; color: var(--text-muted); line-height: 1.5;">
+              Bahan baku termahal di dapur (<strong>£61.14 / kg</strong>). Sistem mencatat seharusnya tersisa <strong>13.30 kg</strong>, namun saat stocktake fisik hanya ditemukan <strong>6.30 kg</strong>.
+              Hilang <strong>-7.00 kg senilai -£427.98</strong>.
+            </p>
+          </div>
+
+          <div style="background: rgba(17, 23, 38, 0.8); border: 1px solid rgba(244, 63, 94, 0.4); border-radius: 12px; padding: 18px 24px; text-align: center; min-width: 280px;">
+            <div style="font-size: 0.8rem; color: var(--text-dim); text-transform: uppercase; font-weight: 700;">Konsentrasi Kerugian</div>
+            <div style="font-size: 2.6rem; font-weight: 800; color: var(--rose); font-family: 'JetBrains Mono', monospace;">91.2%</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted);">Dari total seluruh kerugian toko</div>
+          </div>
+        </div>
+
+        <div style="font-size: 0.85rem; color: var(--text-dim); line-height: 1.4;">
+          *Bahan baku lain (susu, gula, buah raspberry, rhubarb) hanya mengalami susut pisau/spatula normal sebesar 0,18–0,34 kg (-£0,20 s/d -£2,00). Hanya pasta pistachio yang terbukti mengalami anomali masif yang butuh investigasi.
+        </div>
+      </div>
+
+      <div class="slide-footer">
+        <div><strong>Demo Data:</strong> Sesuai live dashboard di <code>http://localhost:8100/dashboard</code> (Database: <code>uniti_demo</code>).</div>
+        <div>Sorella Gelato Case</div>
+      </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- SLIDE 8: ZERO-FRAUD CORRECTION             -->
+    <!-- ========================================== -->
+    <div class="slide" id="slide-8">
+      <div class="slide-header">
+        <div>
+          <span class="badge-label badge-emerald">Integritas Audit &amp; Kepatuhan</span>
+          <h2 class="slide-title">Koreksi Bebas Manipulasi: <span>Zero-Fraud Guarantee</span></h2>
+          <p class="slide-subtitle">Bagaimana UnitiOS menangani salah catat atau investigasi tanpa menghapus jejak kejahatan.</p>
+        </div>
+        <span class="slide-number">08 / 12</span>
+      </div>
+
+      <div class="slide-body">
+        <div class="grid-2" style="gap: 32px;">
+          <!-- Conventional Way -->
+          <div class="card card-accent-rose">
+            <div class="card-title" style="color: var(--rose);">❌ Sistem Konvensional (Rawan Fraud)</div>
+            <div style="display: flex; flex-direction: column; gap: 14px; margin-top: 12px;">
+              <div style="background: rgba(244, 63, 94, 0.05); border: 1px solid rgba(244, 63, 94, 0.2); padding: 12px 16px; border-radius: 8px;">
+                <div style="font-weight: 700; font-size: 0.9rem; color: #f8fafc;">1. Kesalahan Ditemukan</div>
+                <div style="font-size: 0.82rem; color: var(--text-muted);">Admin menemukan ada salah catat harga faktur atau stok hilang.</div>
+              </div>
+              <div style="background: rgba(244, 63, 94, 0.05); border: 1px solid rgba(244, 63, 94, 0.2); padding: 12px 16px; border-radius: 8px;">
+                <div style="font-weight: 700; font-size: 0.9rem; color: #f8fafc;">2. Angka Ditimpa (Overwritten)</div>
+                <div style="font-size: 0.82rem; color: var(--text-muted);">Admin langsung mengedit angka di form/database. Angka lama terhapus.</div>
+              </div>
+              <div style="background: rgba(244, 63, 94, 0.05); border: 1px solid rgba(244, 63, 94, 0.2); padding: 12px 16px; border-radius: 8px;">
+                <div style="font-weight: 700; font-size: 0.9rem; color: #f8fafc;">3. Audit Gagal</div>
+                <div style="font-size: 0.82rem; color: var(--text-muted);">Auditor tidak bisa membuktikan apakah itu salah input atau penggelapan uang.</div>
+              </div>
+            </div>
+            <div style="margin-top: 16px; font-size: 0.82rem; color: var(--rose); font-weight: 600;">
+              Hasil: Rawan kolusi internal dan denda kepatuhan pajak.
+            </div>
+          </div>
+
+          <!-- UnitiOS Way -->
+          <div class="card card-accent-emerald">
+            <div class="card-title" style="color: var(--emerald);">✅ UnitiOS Append-Only Correction</div>
+            <div style="display: flex; flex-direction: column; gap: 14px; margin-top: 12px;">
+              <div style="background: rgba(52, 211, 153, 0.05); border: 1px solid rgba(52, 211, 153, 0.2); padding: 12px 16px; border-radius: 8px;">
+                <div style="font-weight: 700; font-size: 0.9rem; color: #f8fafc;">1. Angka Lama Terkunci Abadi</div>
+                <div style="font-size: 0.82rem; color: var(--text-muted);">Klaim awal tetap tersimpan di database sebagai bukti sejarah otentik.</div>
+              </div>
+              <div style="background: rgba(52, 211, 153, 0.05); border: 1px solid rgba(52, 211, 153, 0.2); padding: 12px 16px; border-radius: 8px;">
+                <div style="font-weight: 700; font-size: 0.9rem; color: #f8fafc;">2. Klaim Baru Terdaftar (Revocation)</div>
+                <div style="font-size: 0.82rem; color: var(--text-muted);">Koreksi masuk sebagai baris baru yang mencabut (<code>revokes</code>) klaim sebelumnya.</div>
+              </div>
+              <div style="background: rgba(52, 211, 153, 0.05); border: 1px solid rgba(52, 211, 153, 0.2); padding: 12px 16px; border-radius: 8px;">
+                <div style="font-weight: 700; font-size: 0.9rem; color: #f8fafc;">3. Identitas &amp; Alasan Tercatat</div>
+                <div style="font-size: 0.82rem; color: var(--text-muted);">Wajib mencantumkan siapa yang mengoreksi, tanggal rekam, dan nota alasan bisnis.</div>
+              </div>
+            </div>
+            <div style="margin-top: 16px; font-size: 0.82rem; color: var(--emerald); font-weight: 600;">
+              Hasil: 100% Audit-Ready, transparan, dan tidak dapat disangkal.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-footer">
+        <div><strong>Hukum Sistem:</strong> Tidak ada tabel yang memiliki perintah <code>DELETE</code> atau <code>UPDATE</code>.</div>
+        <div>UnitiOS Security</div>
+      </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- SLIDE 9: AUTONOMOUS AI CO-PILOT (MCP)       -->
+    <!-- ========================================== -->
+    <div class="slide" id="slide-9">
+      <div class="slide-header">
+        <div>
+          <span class="badge-label badge-amber">AI-Native from Day One</span>
+          <h2 class="slide-title">Bukan Chatbot Biasa: <span>AI Co-Pilot yang Memahami Bisnis</span></h2>
+          <p class="slide-subtitle">UnitiOS menyediakan 11 alat OS resmi (Model Context Protocol / MCP) untuk AI bekerja aman tanpa merusak data.</p>
+        </div>
+        <span class="slide-number">09 / 12</span>
+      </div>
+
+      <div class="slide-body">
+        <div class="grid-3">
+          <div class="card card-accent-cyan">
+            <div class="card-title">🗺️ 1. Graph Primitives</div>
+            <p class="card-p">AI dapat membaca dan memahami struktur perusahaan Anda sendiri.</p>
+            <ul class="card-list">
+              <li><code>graph_get_schema</code>: Mengetahui semua relasi &amp; rumus.</li>
+              <li><code>graph_update_draft</code>: Mengajukan draf model baru.</li>
+              <li><code>graph_seal_version</code>: Membantu memvalidasi aturan.</li>
+            </ul>
+          </div>
+
+          <div class="card card-accent-emerald">
+            <div class="card-title">📊 2. Digital Twin Primitives</div>
+            <p class="card-p">AI dapat menginspeksi kondisi live operasional dan menemukan anomali.</p>
+            <ul class="card-list">
+              <li><code>ops_list_projections</code>: Menemukan tabel aktif.</li>
+              <li><code>ops_query_projection</code>: Menjalankan kueri analitik.</li>
+              <li><code>ops_explain_projection</code>: Menjelaskan mengapa suatu angka bernilai demikian.</li>
+            </ul>
+          </div>
+
+          <div class="card card-accent-indigo">
+            <div class="card-title">✍️ 3. Safe Write Gate</div>
+            <p class="card-p">AI tidak bisa menulis sembarangan ke database. Wajib lewat gerbang resmi.</p>
+            <ul class="card-list">
+              <li><code>kernel_submit_transaction</code>: Mengajukan aksi terverifikasi.</li>
+              <li><code>kernel_trace_provenance</code>: Melacak akar bukti suatu klaim.</li>
+              <li><code>kernel_correct_assertion</code>: Menyiapkan usulan koreksi.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div style="background: rgba(251, 191, 36, 0.08); border: 1px solid rgba(251, 191, 36, 0.25); border-radius: 12px; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 14px;">
+            <span style="font-size: 1.6rem;">🤖</span>
+            <div style="font-size: 0.9rem; color: var(--text-main);">
+              <strong>Telah Teruji Live dengan Claude Desktop:</strong> AI Agent secara mandiri menjelajahi Graph, menemukan anomali susut pistachio £427,98 tanpa diarahkan, dan menyusun laporan audit ke manajemen!
+            </div>
+          </div>
+          <span class="badge-label badge-amber">Validated Live</span>
+        </div>
+      </div>
+
+      <div class="slide-footer">
+        <div><strong>Standar Terbuka:</strong> Menggunakan protokol resmi JSON-RPC 2.0 stdio (Model Context Protocol).</div>
+        <div>UnitiOS Agent Layer</div>
+      </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- SLIDE 10: FUTURE VISION 1 - MODULAR GRAPH  -->
+    <!-- ========================================== -->
+    <div class="slide" id="slide-10">
+      <div class="slide-header">
+        <div>
+          <span class="badge-label badge-cyan">Visi Perkembangan 1 · Skalabilitas</span>
+          <h2 class="slide-title">Modular &amp; Composable Graph: <span>Merakit Bisnis Seperti Lego</span></h2>
+          <p class="slide-subtitle">Ontologi bisnis tidak harus monolitik. Tim yang berbeda dapat membangun modulnya sendiri dan disambung secara harmonis.</p>
+        </div>
+        <span class="slide-number">10 / 12</span>
+      </div>
+
+      <div class="slide-body">
+        <div class="grid-4">
+          <div class="card card-accent-cyan" style="text-align: center; align-items: center;">
+            <span style="font-size: 2rem; margin-bottom: 8px;">📦</span>
+            <div class="card-title" style="font-size: 1rem;">Modul Inventory</div>
+            <p class="card-p" style="font-size: 0.8rem;">Stok bahan baku, pergerakan gudang, dan satuan ukur.</p>
+            <div style="margin-top: 10px; font-size: 0.72rem; color: var(--cyan);">Tim Warehouse</div>
+          </div>
+
+          <div class="card card-accent-emerald" style="text-align: center; align-items: center;">
+            <span style="font-size: 2rem; margin-bottom: 8px;">🛒</span>
+            <div class="card-title" style="font-size: 1rem;">Modul Sales / POS</div>
+            <p class="card-p" style="font-size: 0.8rem;">Transaksi kasir, varian rasa, diskon, dan struk belanja.</p>
+            <div style="margin-top: 10px; font-size: 0.72rem; color: var(--emerald);">Tim Retail</div>
+          </div>
+
+          <div class="card card-accent-indigo" style="text-align: center; align-items: center;">
+            <span style="font-size: 2rem; margin-bottom: 8px;">🤝</span>
+            <div class="card-title" style="font-size: 1rem;">Modul CRM</div>
+            <p class="card-p" style="font-size: 0.8rem;">Profil pelanggan loyal, reward poin, dan feedback rasa.</p>
+            <div style="margin-top: 10px; font-size: 0.72rem; color: var(--indigo);">Tim Marketing</div>
+          </div>
+
+          <div class="card card-accent-amber" style="text-align: center; align-items: center;">
+            <span style="font-size: 2rem; margin-bottom: 8px;">💰</span>
+            <div class="card-title" style="font-size: 1rem;">Modul Finance</div>
+            <p class="card-p" style="font-size: 0.8rem;">Faktur supplier, margin kotor, COGS, dan pajak PPN.</p>
+            <div style="margin-top: 10px; font-size: 0.72rem; color: var(--amber);">Tim Akuntansi</div>
+          </div>
+        </div>
+
+        <div style="background: var(--bg-card-subtle); border: 1px dashed var(--cyan); border-radius: 14px; padding: 22px; display: flex; align-items: center; justify-content: space-between;">
+          <div style="max-width: 850px;">
+            <div style="font-size: 1.05rem; font-weight: 700; color: var(--cyan); margin-bottom: 4px;">🧩 Disambungkan Secara Harmonis via Standar Global (LinkML <code>imports:</code>)</div>
+            <p style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.5;">
+              Setiap modul memiliki kepemilikan independen namun saling terhubung melalui URI identitas yang sama. Anda dapat memulai dari 1 modul kecil (misal Inventori saja), lalu menambahkan CRM dan Finance di masa depan tanpa merusak modul yang sudah ada.
+            </p>
+          </div>
+          <div style="text-align: right;">
+            <span class="badge-label badge-cyan">Zero Migration</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-footer">
+        <div><strong>Modularitas:</strong> Skalabel dari kedai tunggal hingga rantai waralaba ratusan gerai dan marketplace.</div>
+        <div>UnitiOS Roadmap</div>
+      </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- SLIDE 11: FUTURE VISION 2 - OLTP & OLAP    -->
+    <!-- ========================================== -->
+    <div class="slide" id="slide-11">
+      <div class="slide-header">
+        <div>
+          <span class="badge-label badge-indigo">Visi Perkembangan 2 · Kinerja Masif</span>
+          <h2 class="slide-title">Pemisahan Kernel, OLTP, dan OLAP: <span>Performa Tanpa Batas</span></h2>
+          <p class="slide-subtitle">Kernel tetap murni sebagai bukti abadi, sementara akses data dikompilasi ke database khusus untuk jutaan transaksi.</p>
+        </div>
+        <span class="slide-number">11 / 12</span>
+      </div>
+
+      <div class="slide-body">
+        <div class="grid-3" style="align-items: stretch;">
+          <!-- 1. Kernel -->
+          <div class="card card-accent-emerald">
+            <div style="font-size: 0.78rem; font-weight: 700; color: var(--emerald); text-transform: uppercase;">Pondasi Dasar</div>
+            <div class="card-title">🛡️ The Pure Kernel</div>
+            <p class="card-p">Satu-satunya sumber kebenaran bukti (Single Source of Evidence).</p>
+            <ul class="card-list" style="margin-top: 12px;">
+              <li>Append-only bitemporal ledger.</li>
+              <li>Fokus murni pada integritas, non-repudiation, dan audit compliance.</li>
+              <li>Bebas dari beban query agregasi berat.</li>
+            </ul>
+          </div>
+
+          <!-- 2. OLTP -->
+          <div class="card card-accent-cyan">
+            <div style="font-size: 0.78rem; font-weight: 700; color: var(--cyan); text-transform: uppercase;">Kecepatan Transaksi</div>
+            <div class="card-title">⚡ Compiled OLTP Store</div>
+            <p class="card-p">Database operasional transaksional super cepat untuk staf kasir dan mobile app.</p>
+            <ul class="card-list" style="margin-top: 12px;">
+              <li>Tabel terindeks khusus pencarian instan (lookup nama barang, stok live).</li>
+              <li>Formulir entri data tanpa jeda milidetik.</li>
+              <li>Dapat di-rebuild ulang otomatis kapan saja.</li>
+            </ul>
+          </div>
+
+          <!-- 3. OLAP -->
+          <div class="card card-accent-indigo">
+            <div style="font-size: 0.78rem; font-weight: 700; color: var(--indigo); text-transform: uppercase;">Kecepatan Analitik &amp; BI</div>
+            <div class="card-title">📊 Compiled OLAP Store</div>
+            <p class="card-p">Data Warehouse kolumnar (DuckDB / ClickHouse / BigQuery) untuk analisis masif.</p>
+            <ul class="card-list" style="margin-top: 12px;">
+              <li>Menganalisis jutaan baris transaksi dalam milidetik.</li>
+              <li>Dashboard eksekutif, forecast permintaan, dan AI machine learning.</li>
+              <li>Beban kueri berat tidak memperlambat kasir.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div style="background: rgba(129, 140, 248, 0.06); border: 1px solid rgba(129, 140, 248, 0.25); border-radius: 12px; padding: 14px 20px; text-align: center; font-size: 0.9rem; color: var(--text-main);">
+          <strong>Kompiler Otomatis:</strong> Mengalirkan data dari Kernel ke OLTP dan OLAP secara otomatis tanpa perlu tim data engineer menulis script ETL manual yang rapuh.
+        </div>
+      </div>
+
+      <div class="slide-footer">
+        <div><strong>Arsitektur:</strong> Menjamin skalabilitas jutaan transaksi harian dengan performa query 0,05s.</div>
+        <div>UnitiOS Enterprise Scaling</div>
+      </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- SLIDE 12: CONCLUSION & ROI                 -->
+    <!-- ========================================== -->
+    <div class="slide" id="slide-12">
+      <div class="slide-header">
+        <div>
+          <span class="badge-label badge-emerald">Kesimpulan Strategis</span>
+          <h2 class="slide-title">Mengapa UnitiOS Adalah <span>Masa Depan Business OS?</span></h2>
+          <p class="slide-subtitle">Investasi strategis untuk perusahaan yang ingin tumbuh lincah, aman dari kecurangan, dan siap di era otonom AI.</p>
+        </div>
+        <span class="slide-number">12 / 12</span>
+      </div>
+
+      <div class="slide-body">
+        <div class="grid-4">
+          <div class="card card-accent-emerald">
+            <span style="font-size: 2rem; margin-bottom: 8px;">🛡️</span>
+            <div class="card-title" style="font-size: 1.05rem;">Zero Data Loss</div>
+            <p class="card-p" style="font-size: 0.85rem;">Tidak ada manipulasi sejarah. 100% siap untuk audit pajak, perbankan, dan investor.</p>
+          </div>
+
+          <div class="card card-accent-cyan">
+            <span style="font-size: 2rem; margin-bottom: 8px;">⚡</span>
+            <div class="card-title" style="font-size: 1.05rem;">Agilitas Menit</div>
+            <p class="card-p" style="font-size: 0.85rem;">Adaptasi model bisnis baru dalam hitungan menit lewat pembaruan Graph, bukan proyek IT berbulan-bulan.</p>
+          </div>
+
+          <div class="card card-accent-amber">
+            <span style="font-size: 2rem; margin-bottom: 8px;">🤖</span>
+            <div class="card-title" style="font-size: 1.05rem;">AI-Native</div>
+            <p class="card-p" style="font-size: 0.85rem;">Pondasi data yang memang dirancang untuk agen AI bertindak aman tanpa halusinasi.</p>
+          </div>
+
+          <div class="card card-accent-indigo">
+            <span style="font-size: 2rem; margin-bottom: 8px;">📈</span>
+            <div class="card-title" style="font-size: 1.05rem;">Skalabilitas Lego</div>
+            <p class="card-p" style="font-size: 0.85rem;">Modular graph dan pemisahan OLTP/OLAP siap menampung pertumbuhan dari startup hingga enterprise.</p>
+          </div>
+        </div>
+
+        <div style="background: var(--bg-card-subtle); border: 1px solid var(--border); border-radius: 14px; padding: 24px; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="font-size: 1.2rem; font-weight: 800; color: #f8fafc; margin-bottom: 4px;">Mulai Eksplorasi Prototipe &amp; Demo Live</div>
+            <div style="font-size: 0.9rem; color: var(--text-muted);">
+              Kode sumber terbuka, demo dataset kuliner lengkap, dan pengujian unit 90/90 lolos.
+            </div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.95rem; color: var(--cyan); font-weight: 700; margin-bottom: 4px;">
+              github.com/UnitiOS/prototype
+            </div>
+            <div style="font-size: 0.8rem; color: var(--text-dim);">Open Architecture Proof-of-Concept</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-footer">
+        <div><strong>UnitiOS</strong> — The Living Digital Twin &amp; Immutable Brain for Modern Business</div>
+        <div>Terima Kasih</div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // Keyboard navigation script
+    let currentSlide = 1;
+    const totalSlides = 12;
+
+    function showSlide(index) {
+      if (index < 1) index = 1;
+      if (index > totalSlides) index = totalSlides;
+      currentSlide = index;
+      
+      const el = document.getElementById('slide-' + currentSlide);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      document.getElementById('slideIndicator').innerText = `Slide ${currentSlide} / ${totalSlides}`;
+    }
+
+    function nextSlide() {
+      if (currentSlide < totalSlides) {
+        showSlide(currentSlide + 1);
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 1) {
+        showSlide(currentSlide - 1);
+      }
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        e.preventDefault();
+        nextSlide();
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        prevSlide();
+      }
+    });
+
+    // Observe scrolling to update indicator
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const id = entry.target.id;
+          const num = parseInt(id.replace('slide-', ''));
+          if (!isNaN(num)) {
+            currentSlide = num;
+            document.getElementById('slideIndicator').innerText = `Slide ${currentSlide} / ${totalSlides}`;
+          }
+        }
+      });
+    }, { threshold: 0.6 });
+
+    for (let i = 1; i <= totalSlides; i++) {
+      const el = document.getElementById('slide-' + i);
+      if (el) observer.observe(el);
+    }
+  </script>
+</body>
+</html>

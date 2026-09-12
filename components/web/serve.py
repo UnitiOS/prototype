@@ -448,6 +448,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._why(query, valid_at, as_of)
             if parts == ["dashboard"]:
                 return self._dashboard(query, valid_at, as_of)
+            if parts == ["presentation"]:
+                return self._presentation(valid_at, as_of)
             if len(parts) == 2 and parts[0] == "form":
                 return self._form(parts[1], valid_at, as_of)
             if len(parts) == 2 and parts[0] == "table":
@@ -1043,6 +1045,14 @@ class Handler(BaseHTTPRequestHandler):
         self._send(render.page("Executive BI Dashboard", body,
                                valid_at=valid_at, as_of=as_of,
                                path=self.path))
+
+    def _presentation(self, valid_at, as_of):
+        path = ROOT / "presentation" / "unitios_presentation.html"
+        if not path.exists():
+            return self._refuse("Not found", "Presentation file not found.", valid_at, as_of, 404)
+        with open(path, "r", encoding="utf-8") as f:
+            html = f.read()
+        return self._send(html)
 
 
 def main(argv=None):
