@@ -60,7 +60,7 @@ Derivation is declared through annotations, which is the entire vocabulary the c
 
 | Annotation | Meaning |
 |---|---|
-| `aggregate:` | Scoped aggregation (`sum`, `count`) over a source class, with `by` grouping and optional `where` / `is_a` filtering |
+| `aggregate:` | Totals a numeric slot over a source class (`sum` is the only operator), grouped by `by`, with optional `where` / `is_a` filtering |
 | `convert:` | Factor conversion between measurement units, resolved through a conversion class |
 | `equals_expression:` | Closed arithmetic over other columns of the same projection |
 | `parameter:` | A single fact read off the entity a key column names |
@@ -96,16 +96,32 @@ The compiler reads the log through the map and fills a store in a **separate dat
 | `components/agent/` | MCP servers — operational primitives and Studio authoring tools |
 | `components/web/` | HTTP server, rendering, diagrams, Studio workbench handler |
 
+### Authoring a projection
+
+A class inheriting `Projection` is computed; nobody states a row of one. Each
+of its value columns carries exactly one rule, and the authoring tools write
+all three:
+
+| Rule | Shape | Fills a column with |
+|---|---|---|
+| `equals_expression` | `"{column_a} * {column_b}"` | arithmetic over other columns of the same class |
+| `aggregate` | `{over, sum, by, where?, convert?}` | a total over the rows of a source class, grouped by the key columns |
+| `parameter` | `{of, slot}` | one fact the log holds about the entity a key column names |
+
+A projection with no `aggregate` has no grouping, so it is not a table the
+compiler can fill — it is a list somebody has to type in. `LINT-006` refuses it.
+
 ### Linter rules
 
 | Rule | Severity | Checks |
 |---|---|---|
 | `LINT-000` | error | The schema and its imports resolve at all |
 | `LINT-001` | error | Every class descends from one of the five archetypes |
-| `LINT-002` | warning | Numeric slots are anchored to a standard URI |
+| `LINT-002` | error | Every slot declares a `slot_uri` — its identity in the kernel, which `seal` also requires |
 | `LINT-003` | error / warning | Commitment lifecycles are sound: declared initial state, known transitions, no deadlocked states |
 | `LINT-004` | error | Invariant expressions parse and contain only safe AST nodes, rooted at `self` or `actor` |
 | `LINT-005` | error | A projection's `equals_expression` references only slots that class actually has |
+| `LINT-006` | error | A projection computes: at least one slot carries an `aggregate`, its `over` and `by` name real classes and slots, its measure can be totalled, and all its aggregates group by the same keys |
 
 ---
 

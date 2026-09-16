@@ -220,8 +220,37 @@ def create_socratic_agent(model_override: Optional[str] = None) -> Agent[StudioA
         package_path: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Apply a proposed new class or class modification into the draft LinkML schema.
-        Must inherit from one of the 5 REA-H Archetypes: Agent, Resource, Commitment, Event, or Projection.
-        Added slots should preferably have standardized slot_uris from the semantic catalog.
+
+        Must inherit from one of the 5 REA-H Archetypes: Agent, Resource,
+        Commitment, Event, or Projection. Every slot carries a slot_uri —
+        from the semantic catalog where one matches, minted otherwise.
+
+        `slot_definitions` maps a slot name to its definition:
+            range, slot_uri, description, identifier
+
+        A **Projection** computes its columns; nobody states a row of one. Each
+        computed column carries exactly one rule, and a Projection with no such
+        column is a table somebody has to fill in by hand:
+
+          equals_expression: "{other_column} - {another_column}"
+              Arithmetic over other columns of this same class.
+
+          aggregate: {over: SourceClass, sum: source_slot,
+                      by: {this_key_slot: source_slot},
+                      where: {source_slot: {is_a: Class}},        # optional
+                      convert: {using: ConversionClass,           # optional
+                                on: {conv_slot: source_slot},
+                                factor: factor_slot}}
+              Totals `source_slot` over the rows of SourceClass, grouped by the
+              key columns named on the left of `by`. `sum` is the only
+              operator, and its slot must have a numeric range.
+
+          parameter: {of: this_key_slot, slot: slot_on_the_class_that_key_names}
+              One fact the log holds about the entity a key column names — a
+              price, a threshold, a rate.
+
+        Every aggregate on one class must group by the same set of keys, since
+        one row of the table is one combination of them.
         """
         pkg = package_path or ctx.deps.package_path
         res = ctx.deps.tools.propose_patch(
@@ -242,7 +271,7 @@ def create_socratic_agent(model_override: Optional[str] = None) -> Agent[StudioA
 
     @agent.tool
     def studio_validate_linter(ctx: RunContext[StudioAgentContext], package_path: Optional[str] = None) -> Dict[str, Any]:
-        """Run deterministic linter audits (LINT-001 through LINT-005) on the package schema to verify
+        """Run deterministic linter audits (LINT-000 through LINT-006) on the package schema to verify
         there are no archetype violations, unanchored numeric slots, state deadlocks, or unsafe invariants.
         """
         pkg = package_path or ctx.deps.package_path

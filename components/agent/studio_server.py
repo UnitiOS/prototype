@@ -88,7 +88,20 @@ TOOL_DEFINITIONS = [
                 "archetype": {"type": "string", "description": "Base archetype: Agent, Resource, Commitment, Event, or Projection."},
                 "description": {"type": "string", "description": "Human explanation of the business concept."},
                 "slots": {"type": "array", "items": {"type": "string"}, "description": "List of slot names on this class."},
-                "slot_definitions": {"type": "object", "description": "Mapping from slot_name to {range, slot_uri, description}."},
+                "slot_definitions": {
+                    "type": "object",
+                    "description": (
+                        "Mapping from slot_name to its definition. Keys: range, slot_uri, "
+                        "description, identifier, and — for a column that is derived rather "
+                        "than stated — exactly one of: equals_expression (arithmetic over "
+                        "'{other_column}' references on the same class), aggregate "
+                        "({over: SourceClass, sum: source_slot, by: {this_key_slot: "
+                        "source_slot}, optional where: {source_slot: {is_a: Class}}, "
+                        "optional convert: {using: Class, on: {conv_slot: source_slot}, "
+                        "factor: slot}}), or parameter ({of: this_key_slot, slot: "
+                        "slot_on_the_class_that_key_names})."
+                    ),
+                },
                 "invariant": {
                     "type": "object",
                     "properties": {
@@ -385,14 +398,35 @@ class StudioTools:
                         slot_definitions[s_name]["slot_uri"] = cat_matches[0]["curie"]
 
         if slot_definitions:
+            # Read every key the patcher understands. A key silently dropped
+            # here is a derivation rule the author believes they wrote: the
+            # schema would seal, the class would call itself a Projection, and
+            # the table would come out empty with nothing to explain why.
+            known = {"slot_uri", "range", "description", "identifier",
+                     "equals_expression", "aggregate", "parameter"}
             for s_name, s_meta in slot_definitions.items():
-                patcher.add_slot(
-                    name=s_name,
-                    slot_uri=s_meta.get("slot_uri"),
-                    range=s_meta.get("range", "string"),
-                    description=s_meta.get("description", ""),
-                    identifier=s_meta.get("identifier", False),
-                )
+                s_meta = dict(s_meta or {})
+                unknown = sorted(set(s_meta) - known)
+                if unknown:
+                    return {
+                        "status": "REJECTED",
+                        "error": (f"slot '{s_name}' was given {unknown}, which this "
+                                  f"gate does not write. It understands {sorted(known)}."),
+                    }
+                annotations = {key: s_meta[key] for key in ("aggregate", "parameter")
+                               if s_meta.get(key)}
+                try:
+                    patcher.add_slot(
+                        name=s_name,
+                        slot_uri=s_meta.get("slot_uri"),
+                        range=s_meta.get("range", "string"),
+                        description=s_meta.get("description", ""),
+                        identifier=s_meta.get("identifier", False),
+                        equals_expression=s_meta.get("equals_expression"),
+                        annotations=annotations or None,
+                    )
+                except ValueError as exc:
+                    return {"status": "REJECTED", "error": str(exc)}
 
         if invariant:
             patcher.add_invariant(

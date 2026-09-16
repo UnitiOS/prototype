@@ -266,4 +266,97 @@ class LinterEngine:
                                     message=f"equals_expression references '{ref}' which is not a slot of '{class_name}'."
                                 ))
 
+        # -------------------------------------------------------------
+        # Rule LINT-006: A Projection must compute
+        # -------------------------------------------------------------
+        # Nobody states a row of a Projection: every value on it is derived
+        # from the log. A class that inherits Projection and carries no
+        # `aggregate` compiles to a list of entities instead of a grouping —
+        # a table somebody has to fill in by hand, under a name that promises
+        # the opposite. The checks below mirror the compiler's own refusals so
+        # that the author is told while they are still writing.
+        SUMMABLE_RANGES = {"decimal", "integer", "float", "double"}
+
+        for class_name, class_def in all_classes.items():
+            ancestors = self._safe_class_ancestors(sv, class_name)
+            if "Projection" not in ancestors or class_name in CORE_ARCHETYPES:
+                continue
+
+            own_slots = list(class_def.slots or [])
+            groupings = set()
+            found_aggregate = False
+
+            for slot_name in own_slots:
+                s_def = all_slots.get(slot_name)
+                if s_def is None:
+                    continue
+                spec = normalize_meta((s_def.annotations or {}).get("aggregate"))
+                if not isinstance(spec, dict):
+                    continue
+                found_aggregate = True
+                target = f"{class_name}.{slot_name}"
+
+                over = spec.get("over")
+                if not over:
+                    diagnostics.append(Diagnostic(
+                        rule_id="LINT-006", severity="ERROR", target=target,
+                        message="aggregate declares no 'over', so it totals nothing.",
+                    ))
+                elif str(over) not in all_classes:
+                    diagnostics.append(Diagnostic(
+                        rule_id="LINT-006", severity="ERROR", target=target,
+                        message=f"aggregate is over '{over}', which is not a class in this schema.",
+                    ))
+
+                measure = spec.get("sum")
+                if not measure:
+                    diagnostics.append(Diagnostic(
+                        rule_id="LINT-006", severity="ERROR", target=target,
+                        message="aggregate names no operator: 'sum' is required and is the only one.",
+                    ))
+                else:
+                    m_def = all_slots.get(str(measure))
+                    if m_def is None:
+                        diagnostics.append(Diagnostic(
+                            rule_id="LINT-006", severity="ERROR", target=target,
+                            message=f"aggregate sums '{measure}', which is not a slot in this schema.",
+                        ))
+                    elif m_def.range and str(m_def.range) not in SUMMABLE_RANGES:
+                        diagnostics.append(Diagnostic(
+                            rule_id="LINT-006", severity="ERROR", target=target,
+                            message=(f"aggregate sums '{measure}', whose range "
+                                     f"'{m_def.range}' cannot be totalled."),
+                        ))
+
+                by = spec.get("by")
+                if not isinstance(by, dict) or not by:
+                    diagnostics.append(Diagnostic(
+                        rule_id="LINT-006", severity="ERROR", target=target,
+                        message="aggregate has no 'by', so it groups nothing and yields one row.",
+                    ))
+                else:
+                    groupings.add(tuple(sorted(str(k) for k in by)))
+                    for key in by:
+                        if str(key) not in own_slots:
+                            diagnostics.append(Diagnostic(
+                                rule_id="LINT-006", severity="ERROR", target=target,
+                                message=(f"aggregate groups by '{key}', which "
+                                         f"'{class_name}' has no slot for."),
+                            ))
+
+            if not found_aggregate:
+                diagnostics.append(Diagnostic(
+                    rule_id="LINT-006", severity="ERROR", target=class_name,
+                    message=(f"'{class_name}' inherits Projection but no slot carries an "
+                             f"'aggregate', so nothing computes it. A projection is derived "
+                             f"from the log; without a rule it is a table to be filled in "
+                             f"by hand."),
+                ))
+            elif len(groupings) > 1:
+                diagnostics.append(Diagnostic(
+                    rule_id="LINT-006", severity="ERROR", target=class_name,
+                    message=(f"the aggregates on '{class_name}' group by different key sets "
+                             f"{sorted(groupings)} — one row of a table has one grouping."),
+                ))
+
         return diagnostics

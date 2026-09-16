@@ -28,7 +28,38 @@ CORE PRINCIPLES:
    - Unit of measure -> slot_uri: inv:unit_of_measure (range: string)
    - Batch / Lot ID -> slot_uri: inv:batch_id (range: string)
 
-3. PROACTIVE SOCRATIC DIALOGUE & MCP WRITE GATE:
+3. A PROJECTION MUST COMPUTE (this is what makes it a Projection):
+   Nobody states a row of a Projection. Every one of its value columns is derived, and a
+   Projection whose columns carry no rule is a defect — a table somebody has to fill in by
+   hand while calling itself a digital twin. The linter refuses it.
+
+   Each computed column carries EXACTLY ONE of these, passed in `slot_definitions`:
+
+   a. `equals_expression: "{column_a} - {column_b}"`
+      Closed arithmetic over other columns of the same class. Use it for differences,
+      totals and valuations: expected = arrived - left; value = quantity * price.
+
+   b. `aggregate: {over: SourceClass, sum: source_slot, by: {key_slot: source_slot}}`
+      Totals a numeric slot over the rows of an Event class, grouped by the key columns
+      named on the LEFT of `by`. `sum` is the only operator. Optional refinements:
+        `where: {source_slot: {is_a: Class}}`  — count only rows whose slot points at
+                                                 that class or one below it
+        `convert: {using: ConversionClass, on: {conv_slot: source_slot}, factor: slot}`
+                                               — multiply by a stated factor, for unit
+                                                 conversion into a base unit
+      Every aggregate on one class MUST group by the same set of keys: one row of the
+      table is one combination of them.
+
+   c. `parameter: {of: key_slot, slot: slot_on_the_class_that_key_names}`
+      One fact the log already holds about the entity a key column names — a price, a
+      reorder threshold, an agreed rate. Not computed from the rows; read beside them.
+
+   The shape of a working Projection is almost always the same: two or three key columns
+   (the dimensions), one or more `aggregate` columns (what happened), zero or more
+   `parameter` columns (what was agreed), and `equals_expression` columns that combine
+   them into the number a person actually reads.
+
+4. PROACTIVE SOCRATIC DIALOGUE & MCP WRITE GATE:
    - When asked to initialize or start a new module or package (e.g. @community/inventory):
      Immediately call `studio_init_package` with the proper package_path and title.
    - When discussing or modeling a business concept:

@@ -57,7 +57,15 @@ class SchemaPatcher:
             existing_ann = cls_def.setdefault("annotations", {})
             existing_ann.update(annotations)
 
-    def add_slot(self, name: str, slot_uri: Optional[str] = None, range: str = "string", description: str = "", identifier: bool = False):
+    # The three ways a column can be derived rather than stated. The compiler
+    # refuses a column that declares more than one, so this refuses it first,
+    # while the author is still here to be told.
+    DERIVATION_ANNOTATIONS = ("aggregate", "parameter")
+
+    def add_slot(self, name: str, slot_uri: Optional[str] = None, range: str = "string",
+                 description: str = "", identifier: bool = False,
+                 equals_expression: Optional[str] = None,
+                 annotations: Optional[Dict[str, Any]] = None):
         """Add a slot, always carrying an explicit `slot_uri`.
 
         A slot's URI is its identity in the kernel, so `seal` refuses a slot
@@ -70,7 +78,25 @@ class SchemaPatcher:
         rename of the slot leaves it untouched. A URI derived on the fly at
         seal time would instead be recomputed from the new name and orphan
         every fact recorded under the old one.
+
+        `equals_expression` and `annotations` are how a column is *derived*
+        rather than stated: arithmetic over the columns beside it, an
+        `aggregate` over a source class, or a `parameter` read off the entity a
+        key column names. Without them a class can be called a Projection and
+        still compute nothing — a table somebody has to fill in by hand.
+
+        Annotations are written in LinkML's own shape, `{name: {value: spec}}`,
+        which is what the compiler reads and what a sealed map already holds.
         """
+        rules = [key for key in self.DERIVATION_ANNOTATIONS if (annotations or {}).get(key)]
+        if equals_expression:
+            rules.append("equals_expression")
+        if len(rules) > 1:
+            raise ValueError(
+                f"slot '{name}' declares {sorted(rules)}, and a derived column "
+                f"has exactly one rule"
+            )
+
         slots = self.data.setdefault("slots", {})
         s_def = slots.setdefault(name, {})
         if slot_uri:
@@ -83,6 +109,17 @@ class SchemaPatcher:
             s_def["description"] = description
         if identifier:
             s_def["identifier"] = True
+        if equals_expression:
+            s_def["equals_expression"] = equals_expression
+        if annotations:
+            existing = s_def.setdefault("annotations", {})
+            for key, spec in annotations.items():
+                # A caller may hand over either the bare spec or one already
+                # wrapped the way LinkML writes it; both mean the same thing.
+                if isinstance(spec, dict) and set(spec) == {"value"}:
+                    existing[key] = dict(spec)
+                else:
+                    existing[key] = {"value": spec}
 
     def add_invariant(self, class_name: str, inv_id: str, expression: str, message: str):
         classes = self.data.get("classes", {})
