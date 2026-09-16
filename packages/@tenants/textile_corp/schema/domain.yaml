@@ -1,0 +1,65 @@
+id: https://w3id.org/uniti/tenants/textile_corp
+name: tenant_textile_corp
+title: Textile Corp Schema
+description: Customizations for fabric manufacturing, yarn inventory, and loom operations.
+version: v1
+prefixes:
+  linkml: https://w3id.org/linkml/
+  uniti: https://w3id.org/uniti/core#
+  inv: https://w3id.org/uniti/vocab/inv#
+  cinv: https://w3id.org/uniti/community/inventory#
+  textile: https://w3id.org/uniti/tenants/textile_corp#
+default_prefix: textile
+default_range: string
+imports:
+- linkml:types
+- '@community/inventory'
+classes:
+  FabricRoll:
+    is_a: InventoryItem
+    description: Roll of woven fabric manufactured in the textile mill.
+    slots:
+    - fabric_grade
+    - weave_pattern
+    - roll_length_meters
+  LoomRun:
+    is_a: Event
+    description: Weaving run session on a textile loom producing fabric rolls.
+    slots:
+    - loom_id
+    - operator_name
+    - output_length_meters
+    annotations:
+      invariants:
+        value:
+        - id: min_production
+          expression: self.output_length_meters >= 1.0
+          message: Loom run production must yield at least 1.0 meter of fabric.
+slots:
+  fabric_grade:
+    slot_uri: textile:fabric_grade
+    range: string
+    description: Quality grading of the woven fabric (Grade A, B, Export).
+  weave_pattern:
+    slot_uri: textile:weave_pattern
+    range: string
+    description: Weaving construction pattern (Twill, Plain, Satin).
+  roll_length_meters:
+    slot_uri: inv:quantity
+    range: decimal
+    description: Length of fabric on the roll in meters.
+  loom_id:
+    slot_uri: textile:loom_id
+    range: string
+    description: Machine identification number of the textile loom.
+  operator_name:
+    slot_uri: textile:operator_name
+    range: string
+    description: Designated technician or machine operator on duty.
+  output_length_meters:
+    slot_uri: inv:quantity
+    range: decimal
+    description: Total woven fabric length output in meters.
+annotations:
+  valid_from: '2026-09-16T06:33:18.911288+00:00'
+  sealed_at: '2026-09-16T06:35:23.497708+00:00'

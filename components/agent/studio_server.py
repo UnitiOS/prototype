@@ -499,6 +499,9 @@ class StudioTools:
         registered_in_kernel = False
         minted_uris = []
         kernel_warning = None
+        # A refusal is the kernel judging the schema; an unreachable database is
+        # not. Only the first one means the package is not sealed.
+        kernel_refused = False
 
         try:
             import psycopg
@@ -514,7 +517,27 @@ class StudioTools:
             logger.warning(kernel_warning)
         except Exception as exc:
             kernel_warning = f"Kernel registration error: {exc}"
+            kernel_refused = True
             logger.error(kernel_warning)
+
+        # A package is sealed when the kernel holds its vocabulary, not when a
+        # file on disk says so. Reporting success on a refused registration
+        # leaves the manifest claiming SEALED while the kernel knows nothing —
+        # two answers to one question, which is the state this system exists to
+        # make impossible. The refusal is reported, and the manifest is put
+        # back the way it was.
+        if not registered_in_kernel and kernel_refused:
+            manifest_data["status"] = existing.get("status", "DRAFT")
+            manifest_data.pop("sha256", None)
+            manifest_data.pop("sealed_at", None)
+            with open(manifest_path, "w", encoding="utf-8") as f:
+                yaml.dump(manifest_data, f, sort_keys=False)
+            return {
+                "sealed": False,
+                "error": f"Kernel refused the vocabulary: {kernel_warning}",
+                "registered_in_kernel": False,
+                "kernel_dsn": p2_dsn,
+            }
 
         return {
             "sealed": True,

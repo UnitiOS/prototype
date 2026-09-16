@@ -126,15 +126,23 @@ class LinterEngine:
         # -------------------------------------------------------------
         # Rule LINT-002: Standardized URI Anchoring
         # -------------------------------------------------------------
-        for slot_name, slot_def in all_slots.items():
-            if not slot_def.slot_uri:
-                if slot_def.range in ("decimal", "integer", "float", "double"):
-                    diagnostics.append(Diagnostic(
-                        rule_id="LINT-002",
-                        severity="WARNING",
-                        target=slot_name,
-                        message=f"Numeric slot '{slot_name}' has no slot_uri anchoring to a standard prefix."
-                    ))
+        # A slot's URI is its identity in the kernel: facts are recorded against
+        # the URI, never the slot's name. `seal` refuses a slot without one, so
+        # anything softer than an error here lets a package pass the linter and
+        # then fail at the kernel — with the manifest already stamped SEALED.
+        # The linter and the kernel have to want the same thing.
+        local_slots = getattr(sv.schema, "slots", {}) or {}
+        for slot_name in local_slots:
+            slot_def = all_slots.get(slot_name)
+            if slot_def is not None and not slot_def.slot_uri:
+                diagnostics.append(Diagnostic(
+                    rule_id="LINT-002",
+                    severity="ERROR",
+                    target=slot_name,
+                    message=(f"Slot '{slot_name}' has no slot_uri, so it has no identity "
+                             f"in the kernel. Anchor it to a standard URI from the "
+                             f"catalog, or mint one under this schema's own prefix.")
+                ))
 
         # -------------------------------------------------------------
         # Rule LINT-003: State Machine Soundness (Commitments)

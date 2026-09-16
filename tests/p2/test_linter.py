@@ -46,7 +46,7 @@ slots:
     finally:
         p.unlink()
 
-def test_linter_warns_unanchored_numeric_slot(linter):
+def test_linter_refuses_slot_without_a_uri(linter):
     schema_yaml = """id: https://w3id.org/test/unanchored
 name: unanchored
 prefixes:
@@ -69,9 +69,10 @@ slots:
         p = Path(f.name)
     try:
         diagnostics = linter.lint_schema(p)
-        warns = [d for d in diagnostics if d.rule_id == "LINT-002"]
-        assert len(warns) == 1
-        assert "widget_weight" in warns[0].message
+        errs = [d for d in diagnostics if d.rule_id == "LINT-002"]
+        assert len(errs) == 1
+        assert errs[0].severity == "ERROR"
+        assert "widget_weight" in errs[0].message
     finally:
         p.unlink()
 

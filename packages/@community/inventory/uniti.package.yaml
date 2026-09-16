@@ -1,0 +1,18 @@
+name: '@community/inventory'
+version: 1.0.0
+title: Universal Community Inventory & Stock Movement Module
+description: Domain-agnostic inventory management standardizing resources, storage
+  locations, movements, and stock-on-hand projections.
+author: test_ontologist
+license: Apache-2.0
+dependencies:
+  '@uniti/core': ^1.0.0
+exports:
+  classes:
+  - InventoryItem
+  - StorageLocation
+  - StockMovement
+  - StockOnHand
+status: SEALED
+sealed_at: '2026-09-16T06:36:43.403604+00:00'
+sha256: 8c593a1a40690e3bd51f179be2e210081f8dc9b9b65568ce39b1ed388df06072

@@ -1,0 +1,117 @@
+id: https://w3id.org/uniti/community/inventory
+name: community_inventory
+title: Universal Inventory Metamodel
+description: Canonical domain-agnostic patterns for inventory tracking across any
+  enterprise.
+version: 1.0.0
+prefixes:
+  linkml: https://w3id.org/linkml/
+  uniti: https://w3id.org/uniti/core#
+  inv: https://w3id.org/uniti/vocab/inv#
+  cinv: https://w3id.org/uniti/community/inventory#
+default_prefix: cinv
+default_range: string
+imports:
+- linkml:types
+- '@uniti/core'
+- '@uniti/core/base_types'
+classes:
+  InventoryItem:
+    is_a: Resource
+    description: Commodity or valuable economic good tracked within the inventory
+      system.
+    slots:
+    - item_sku
+    - item_name
+    - inv_unit
+    - nominal_quantity
+  StorageLocation:
+    is_a: PhysicalLocation
+    description: Physical storage site (warehouse, shelf, freezer, silo) with measurable
+      capacity.
+    slots:
+    - max_capacity_units
+  StockMovement:
+    is_a: Event
+    description: Physical transfer event moving a quantity of goods from a source
+      location to a target location.
+    slots:
+    - movement_code
+    - moved_item
+    - source_location
+    - target_location
+    - quantity_moved
+    annotations:
+      invariants:
+        value:
+        - id: positive_quantity
+          expression: self.quantity_moved > 0
+          message: Physical transfer quantity must be positive (> 0).
+        - id: distinct_locations
+          expression: self.source_location != self.target_location
+          message: Source location and target location cannot be identical.
+  StockOnHand:
+    is_a: Projection
+    description: Aggregate projection of current stock balance per item per storage
+      location.
+    slots:
+    - balance_item
+    - balance_location
+    - balance_quantity
+slots:
+  item_sku:
+    slot_uri: inv:batch_id
+    identifier: true
+    range: string
+    description: Unique stock identification code (Stock Keeping Unit).
+  item_name:
+    slot_uri: uniti:resource_name
+    range: string
+    description: Canonical item name.
+  inv_unit:
+    slot_uri: inv:unit_of_measure
+    range: string
+    description: Base unit of measure (e.g., kg, pcs, meter).
+  nominal_quantity:
+    slot_uri: inv:quantity
+    range: decimal
+    description: Recorded nominal quantity.
+  max_capacity_units:
+    slot_uri: inv:quantity
+    range: decimal
+    description: Maximum capacity limit expressed in standard units.
+  movement_code:
+    slot_uri: uniti:event_id
+    identifier: true
+    range: string
+  moved_item:
+    slot_uri: cinv:moved_item
+    range: InventoryItem
+    description: Item being moved.
+  source_location:
+    slot_uri: inv:source_location
+    range: StorageLocation
+    description: Origin location from which the item is dispatched.
+  target_location:
+    slot_uri: inv:target_location
+    range: StorageLocation
+    description: Destination location where the item is received.
+  quantity_moved:
+    slot_uri: inv:quantity
+    range: decimal
+    description: Number of units transferred in this movement.
+  balance_item:
+    slot_uri: cinv:balance_item
+    range: InventoryItem
+    description: Item referenced for stock balance calculation.
+  balance_location:
+    slot_uri: cinv:balance_location
+    range: StorageLocation
+    description: Location referenced for stock balance calculation.
+  balance_quantity:
+    slot_uri: inv:quantity
+    range: decimal
+    description: Ending balance quantity at this storage location.
+annotations:
+  valid_from: '2026-09-15T05:00:49.337721+00:00'
+  sealed_at: '2026-09-16T06:36:43.393831+00:00'

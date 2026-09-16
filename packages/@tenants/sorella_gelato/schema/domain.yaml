@@ -1,0 +1,67 @@
+id: https://w3id.org/uniti/tenants/sorella_gelato
+name: tenant_sorella_gelato
+title: Sorella Gelato Schema
+description: Customizations for artisanal batch churning, tub weight, and cold-chain
+  inventory.
+version: v1
+prefixes:
+  linkml: https://w3id.org/linkml/
+  uniti: https://w3id.org/uniti/core#
+  inv: https://w3id.org/uniti/vocab/inv#
+  cinv: https://w3id.org/uniti/community/inventory#
+  gelato: https://w3id.org/uniti/tenants/sorella_gelato#
+default_prefix: gelato
+default_range: string
+imports:
+- linkml:types
+- '@community/inventory'
+classes:
+  GelatoTub:
+    is_a: InventoryItem
+    description: Stainless steel tub containing artisanal gelato ready for display
+      or distribution.
+    slots:
+    - flavor_name
+    - fat_percentage
+    - tub_net_weight_kg
+  ChurnBatch:
+    is_a: Event
+    description: Ice cream churning production process for a specific flavor batch.
+    slots:
+    - batch_number
+    - churn_machine_code
+    - produced_weight_kg
+    annotations:
+      invariants:
+        value:
+        - id: batch_churn_limit
+          expression: self.produced_weight_kg > 0 and self.produced_weight_kg <= 25.0
+          message: Batch churn production capacity must not exceed 25.0 kg per cycle.
+slots:
+  flavor_name:
+    slot_uri: gelato:flavor_name
+    range: string
+    description: Name of the gelato flavor variant (e.g., Pistachio, Stracciatella).
+  fat_percentage:
+    slot_uri: gelato:fat_percentage
+    range: decimal
+    description: Butterfat content percentage.
+  tub_net_weight_kg:
+    slot_uri: inv:quantity
+    range: decimal
+    description: Net weight of gelato in the tub container (kg).
+  batch_number:
+    slot_uri: inv:batch_id
+    range: string
+    description: Kitchen production batch code.
+  churn_machine_code:
+    slot_uri: gelato:churn_machine_code
+    range: string
+    description: Identification code of the batch freezer machine.
+  produced_weight_kg:
+    slot_uri: inv:quantity
+    range: decimal
+    description: Total weight of gelato produced in the churn cycle (kg).
+annotations:
+  valid_from: '2026-09-15T07:17:34.962455+00:00'
+  sealed_at: '2026-09-16T06:35:23.591183+00:00'
