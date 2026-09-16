@@ -230,7 +230,7 @@ TOOL_DEFINITIONS = [
         "name": "kernel_get_activity",
         "description": (
             "Fetch recent assertions from the immutable append-only kernel ledger with actor signatures, "
-            "intent notes, and status categories (revocations, master data, movements, stocktakes)."
+            "intent notes, and status categories."
         ),
         "inputSchema": {
             "type": "object",
@@ -246,13 +246,13 @@ TOOL_DEFINITIONS = [
                 },
                 "filter_type": {
                     "type": "string",
-                    "enum": ["all", "revocations", "master", "stocktake", "movement"],
+                    "enum": ["all", "revocations"],
                     "description": "Category filter.",
                     "default": "all",
                 },
                 "actor": {
                     "type": "string",
-                    "description": "Filter by actor identity (e.g. 'marina', 'agent').",
+                    "description": "Filter by actor identity.",
                 },
                 "search": {
                     "type": "string",

@@ -563,7 +563,7 @@ def get_studio_html(valid_at: str, as_of: str, active_pkg: Optional[str] = None)
 
         <div class="chat-suggestions">
           <span class="sug-chip" onclick="quickPrompt('Propose a QualityInspection event archetype for inventory batches')">+ QualityInspection Event</span>
-          <span class="sug-chip" onclick="quickPrompt('Explain the difference between StockMovement and StockCount archetypes')">StockMovement vs StockCount</span>
+          <span class="sug-chip" onclick="quickPrompt('Explain when a concept belongs to the Event archetype rather than the Commitment archetype')">Event vs Commitment</span>
           <span class="sug-chip" onclick="quickPrompt('Audit our active package against UnitiOS bitemporal rules')">Audit Package Rules</span>
         </div>
 

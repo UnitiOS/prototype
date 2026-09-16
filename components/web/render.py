@@ -41,11 +41,22 @@ from urllib.parse import parse_qs, quote, urlencode, urlparse
 
 MODE = "p1"
 SHOW_STUDIO = False
-BRAND_SUB = "Sorella Gelato Enterprise Demo"
+BRAND_SUB = "Operational Demonstration"
+
+# Which table the stage links point at. It is a class name the *map* declares,
+# handed over at startup by whoever read the map; this file never names one.
+# Empty means there is no projection to link to, and the links go to the list
+# of classes instead.
+DEFAULT_TABLE = ""
+
+# The prefix the map writes its own URIs under, used only to shorten a URI for
+# display and to fill in a placeholder. Never matched against, never assumed.
+DEFAULT_PREFIX = ""
 
 
-def set_mode(mode: str, show_studio: bool = None, brand_sub: str = None):
-    global MODE, SHOW_STUDIO, BRAND_SUB
+def set_mode(mode: str, show_studio: bool = None, brand_sub: str = None,
+             default_table: str = None, default_prefix: str = None):
+    global MODE, SHOW_STUDIO, BRAND_SUB, DEFAULT_TABLE, DEFAULT_PREFIX
     MODE = mode
     SHOW_STUDIO = show_studio if show_studio is not None else (mode == "p2")
     if brand_sub is not None:
@@ -53,7 +64,11 @@ def set_mode(mode: str, show_studio: bool = None, brand_sub: str = None):
     elif mode == "p2":
         BRAND_SUB = "Prototype 2: Modular Metamodel & Studio"
     else:
-        BRAND_SUB = "Sorella Gelato Enterprise Demo"
+        BRAND_SUB = "Operational Demonstration"
+    if default_table is not None:
+        DEFAULT_TABLE = default_table
+    if default_prefix is not None:
+        DEFAULT_PREFIX = default_prefix
 
     for mod_name in ("render", "components.web.render"):
         if mod_name in sys.modules:
@@ -61,6 +76,30 @@ def set_mode(mode: str, show_studio: bool = None, brand_sub: str = None):
             mod.MODE = MODE
             mod.SHOW_STUDIO = SHOW_STUDIO
             mod.BRAND_SUB = BRAND_SUB
+            mod.DEFAULT_TABLE = DEFAULT_TABLE
+            mod.DEFAULT_PREFIX = DEFAULT_PREFIX
+
+
+def _prefix_hint():
+    """A parenthetical naming the map's prefix, or nothing when it has none."""
+    return f' (under <code>{escape(DEFAULT_PREFIX)}:</code>)' if DEFAULT_PREFIX else ""
+
+
+def _prefix_example():
+    """A placeholder shaped like a URI of this map, naming nothing in it."""
+    return f"{DEFAULT_PREFIX}:..." if DEFAULT_PREFIX else "prefix:identifier"
+
+
+def table_link(carried):
+    """Where a "see the projections" link goes, for whatever map is loaded."""
+    return (f"/table/{quote(DEFAULT_TABLE)}?{carried}" if DEFAULT_TABLE
+            else f"/classes?{carried}")
+
+
+def short_uri(value):
+    """A URI with its prefix dropped, whatever that prefix happens to be."""
+    text = str(value or "")
+    return text.split(":", 1)[1] if ":" in text else text
 
 
 # One block, no framework, no build step. Enough to read a table and fill in a
@@ -519,7 +558,7 @@ def page(title, body, *, valid_at, as_of, path=None):
     elif p == "dashboard" or "dashboard" in t or "executive" in t:
         stage = "dashboard"
         crumbs = ["Stage 6 · Executive Decision Intelligence & BI"]
-        back_btn = (f"/table/StockReconciliation?{carried}", "&larr; Inspect Live Stock Table")
+        back_btn = (table_link(carried), "&larr; Inspect the projections")
     else:
         stage = "home"
         crumbs = ["Architecture Overview & Pipeline"]
@@ -530,7 +569,7 @@ def page(title, body, *, valid_at, as_of, path=None):
         ("graph", "2", "Graph Schema", f"/graph?{carried}", "LinkML Knowledge Graph"),
         ("why", "3", "Kernel Audit", f"/why?{carried}", "Append-Only Audit Log"),
         ("classes", "4", "Ingestion Forms", f"/classes?{carried}#forms", "Operational Ingestion"),
-        ("table", "5", "Projections", f"/table/StockReconciliation?{carried}", "Live Digital Twin"),
+        ("table", "5", "Projections", table_link(carried), "Live Digital Twin"),
         ("dashboard", "6", "Executive BI", f"/dashboard?{carried}", "Executive BI & Anomaly Signals"),
     ]
     step_items = []
@@ -574,7 +613,7 @@ def page(title, body, *, valid_at, as_of, path=None):
             if getattr(mod, "SHOW_STUDIO", False):
                 is_studio = True
             mod_sub = getattr(mod, "BRAND_SUB", None)
-            if mod_sub and mod_sub != "Sorella Gelato Enterprise Demo":
+            if mod_sub and mod_sub != BRAND_SUB:
                 sub_label = mod_sub
 
     if is_studio:
@@ -698,7 +737,7 @@ def said_html(paragraphs, lines, *, source, transcript, valid_at=None, as_of=Non
     return (
         "<h1>Stage 1 · What was said, and what it became</h1>"
         '<p class="note">On the left, the business transcript and operational specification '
-        "for Sorella Gelato. On the right, the compiled LinkML schema map derived from it. "
+        "for the business. On the right, the compiled LinkML schema map derived from it. "
         "A class link on the right jumps directly to the paragraph on the left that established it. "
         f"Nothing was authored twice: <code>{escape(str(transcript))}</code> is the business truth, and "
         f"<code>{escape(str(source))}</code> is the sealed formal ontology.</p>"
@@ -718,82 +757,70 @@ def said_html(paragraphs, lines, *, source, transcript, valid_at=None, as_of=Non
         f'</div>'
     )
 
+def graph_html(title, note, diagram, *, back=None, valid_at=None, as_of=None,
+               layers=None):
+    """One diagram, already Mermaid text wrapped by `diagram.script`.
 
-def graph_html(title, note, diagram, *, back=None, valid_at=None, as_of=None):
-    """One diagram, already Mermaid text wrapped by `diagram.script`."""
+    `layers` is what the map says its classes are, in three tiers, handed over
+    by whoever read the map: a sequence of (heading, blurb, members), where a
+    member is (class name, description, [(column, label), ...]). Every word of
+    it came out of the map, so a different map describes itself differently and
+    this file states nothing about any of them.
+    """
     carried = _carried(valid_at, as_of)
     out = [f"<h1>{escape(title)}</h1>", f'<p class="note">{note}</p>']
     if back:
         out.append(f'<p class="note">{back}</p>')
-    else:
-        out.append(
-            '<div class="arch-layers-summary">'
-            '<span class="arch-badge master">🏢 Layer 1: Master Data &amp; Assets (8 classes)</span>'
-            '<span class="arch-badge event">📜 Layer 2: Immutable Event Log (3 classes)</span>'
-            '<span class="arch-badge proj">📊 Layer 3: Digital Twin Projections &amp; BI (3 classes)</span>'
-            '</div>'
+        out.append(diagram)
+        return "\n".join(out)
+
+    tiers = list(layers or [])
+    styles = ("master", "event", "proj")
+
+    if tiers:
+        badges = "".join(
+            f'<span class="arch-badge {styles[i % 3]}">{escape(heading)} '
+            f'({len(members)} classes)</span>'
+            for i, (heading, _blurb, members) in enumerate(tiers)
         )
+        out.append(f'<div class="arch-layers-summary">{badges}</div>')
 
     out.append(diagram)
 
-    if not back:
-        out.append(
-            '<div class="arch-cards-grid">'
-            '  <div class="arch-card master">'
-            '    <h3>🏢 Layer 1 · Master Data <span class="tag">8 Classes</span></h3>'
-            '    <p class="card-desc">Foundational physical entities, actors, and conversion constants. Stored as versioned assertions.</p>'
-            '    <ul>'
-            '      <li><strong>Ingredient</strong>: 20 artisanal raw materials with unit pricing and reorder thresholds.'
-            '        <span class="slot-desc">item_name, item_supplier, item_pack_price, item_price_per_kg, item_reorder_level</span></li>'
-            '      <li><strong>InternalLocation</strong>: Kitchen storage temperature zones (is_a Location).'
-            '        <span class="slot-desc">Dry Store (ambient), Walk-in Chiller (2-4°C), Ingredient Freezer (-18°C)</span></li>'
-            '      <li><strong>Supplier</strong>: Commercial food purveyors (is_a Location).'
-            '        <span class="slot-desc">Terra Nostra, Whitehall Dairy, Severn Catering, Total Produce</span></li>'
-            '      <li><strong>Person</strong>: Kitchen personnel authorized to sign documents.'
-            '        <span class="slot-desc">Dan Farrugia (Head Gelatiere), Marina Devlin (Owner), Aoife Byrne (Manager)</span></li>'
-            '      <li><strong>Unit &amp; UnitConversion</strong>: Dimensional mass translation.'
-            '        <span class="slot-desc">Translates bags, cans, sacks, tins, pails into uniform kilograms (kg).</span></li>'
-            '      <li><strong>MovementKind</strong>: 5 operational movement typologies.'
-            '        <span class="slot-desc">Delivery in, Transfer, Thrown away, Taken by staff, Tastings.</span></li>'
-            '    </ul>'
-            '  </div>'
-            '  <div class="arch-card event">'
-            '    <h3>📜 Layer 2 · Immutable Event Log <span class="tag">3 Classes</span></h3>'
-            '    <p class="card-desc">Append-only operational transaction log. Bitemporal, strictly immutable, and audit-verifiable.</p>'
-            '    <ul>'
-            '      <li><strong>StockMovement</strong>: Physical ingredient transfer between two locations.'
-            '        <span class="slot-desc">movement_kind, movement_out_of, movement_into, movement_ingredient, movement_quantity, movement_unit, happened_on, written_by</span></li>'
-            '      <li><strong>StockCount</strong>: Paper stocktake session document header.'
-            '        <span class="slot-desc">happened_on (count date), written_by (auditor), count_note (operational notes)</span></li>'
-            '      <li><strong>StockCountLine</strong>: Individual line item recorded on a stocktake sheet.'
-            '        <span class="slot-desc">line_count, count_line_ingredient, count_line_where, count_line_quantity, count_line_unit</span></li>'
-            '    </ul>'
-            '  </div>'
-            '  <div class="arch-card proj">'
-            '    <h3>📊 Layer 3 · Digital Twin Projections <span class="tag">3 Classes</span></h3>'
-            '    <p class="card-desc">Compiled analytical queries evaluating state at any (valid_at, as_of) pair without code mutations.</p>'
-            '    <ul>'
-            '      <li><strong>IngredientOnHand</strong>: Cumulative movement ledger.'
-            '        <span class="slot-desc">Computed: arrived (kg) - left (kg) = standing (kg), with £ total valuation.</span></li>'
-            '      <li><strong>CountedOnHand</strong>: Physical audit totals.'
-            '        <span class="slot-desc">Computed: sum of count sheet lines converted to standard kilograms.</span></li>'
-            '      <li><strong>StockReconciliation</strong>: Variance, stockout, &amp; valuation intelligence.'
-            '        <span class="slot-desc">Computes expected, counted, variance (kg), and financial discrepancy (£).'
-            f'<br><a class="formula-link" href="/graph?class=StockReconciliation&amp;column=reconciliation_expected&amp;{carried}">🔍 expected formula</a>'
-            f'<a class="formula-link" href="/graph?class=StockReconciliation&amp;column=reconciliation_variance&amp;{carried}">🔍 variance formula</a>'
-            f'<a class="formula-link" href="/graph?class=StockReconciliation&amp;column=reconciliation_variance_value&amp;{carried}">🔍 variance (£)</a>'
-            f'<a class="formula-link" href="/graph?class=StockReconciliation&amp;column=reconciliation_stock_value&amp;{carried}">🔍 stock value (£)</a>'
-            '        </span></li>'
-            '    </ul>'
-            '  </div>'
-            '</div>'
-        )
-        out.append(
-            f'<div class="stage-stepper">'
-            f'<a href="/said?{carried}">← Previous: Stage 1 (Said)</a>'
-            f'<a class="primary" href="/why?{carried}">Next: Stage 3 (Audit Log / Why) →</a>'
-            f'</div>'
-        )
+    if tiers:
+        cards = []
+        for i, (heading, blurb, members) in enumerate(tiers):
+            style = styles[i % 3]
+            items = []
+            for name, description, formulas in members:
+                links = "".join(
+                    f'<a class="formula-link" href="/graph?class={quote(name)}'
+                    f'&amp;column={quote(column)}&amp;{carried}">{escape(label)}</a>'
+                    for column, label in formulas
+                )
+                detail = escape(description or "")
+                if links:
+                    detail += f"<br>{links}"
+                items.append(
+                    f'      <li><strong>{escape(name)}</strong>'
+                    f'<span class="slot-desc">{detail}</span></li>'
+                )
+            cards.append(
+                f'  <div class="arch-card {style}">'
+                f'    <h3>{escape(heading)} '
+                f'<span class="tag">{len(members)} Classes</span></h3>'
+                f'    <p class="card-desc">{escape(blurb)}</p>'
+                f'    <ul>{"".join(items)}</ul>'
+                f'  </div>'
+            )
+        out.append(f'<div class="arch-cards-grid">{"".join(cards)}</div>')
+
+    out.append(
+        f'<div class="stage-stepper">'
+        f'<a href="/said?{carried}">&larr; Previous: Stage 1 (Said)</a>'
+        f'<a class="primary" href="/why?{carried}">Next: Stage 3 (Audit Log / Why) &rarr;</a>'
+        f'</div>'
+    )
     return "\n".join(out)
 
 
@@ -947,7 +974,7 @@ def why_html(built, *, valid_at, as_of):
     return "\n".join(out)
 
 
-def ask_html(window, *, recent=None, filter_type="all", actor="", search="", valid_at, as_of, db_warning=None):
+def ask_html(window, *, recent=None, filter_type="all", actor="", search="", valid_at, as_of, db_warning=None, filters=None, actors=None):
     """Stage 3: Enterprise Kernel Audit Workbench.
 
     Presents the immutable append-only activity ledger directly from PostgreSQL,
@@ -1009,11 +1036,13 @@ def ask_html(window, *, recent=None, filter_type="all", actor="", search="", val
         )
 
     # 2. Operational Audit Filter Bar (Datadog/CloudTrail style)
-    p_all = "active" if filter_type == "all" else ""
-    p_rev = "active" if filter_type == "revocations" else ""
-    p_mst = "active" if filter_type == "master" else ""
-    p_stk = "active" if filter_type == "stocktake" else ""
-    p_mov = "active" if filter_type == "movement" else ""
+    # The pills the caller hands over. Two of them are shapes in the log and
+    # are always here; whatever follows is a grouping the map draws, named in
+    # the map's own words rather than in any business's.
+    pills = [("all", "📋 All Events"),
+             ("revocations",
+              f"⚡ Corrections &amp; Revocations ({window.get('revocations', 0)})")]
+    pills += list(filters or [])
 
     actor_param = f"&amp;actor={quote(actor)}" if actor else ""
     q_param = f"&amp;q={quote(search)}" if search else ""
@@ -1026,11 +1055,11 @@ def ask_html(window, *, recent=None, filter_type="all", actor="", search="", val
         '  <div class="audit-filter-row">'
         '    <div class="audit-pill-group">'
         '      <span style="font-size:.8rem; font-weight:600; color:#7a7066; margin-right:.25rem;">LEDGER FILTER:</span>'
-        f'      <a class="audit-pill {p_all}" href="/why?filter=all{actor_param}{q_param}&amp;{carried}">📋 All Events</a>'
-        f'      <a class="audit-pill {p_rev}" href="/why?filter=revocations{actor_param}{q_param}&amp;{carried}">⚡ Corrections &amp; Revocations ({window.get("revocations", 34)})</a>'
-        f'      <a class="audit-pill {p_mst}" href="/why?filter=master{actor_param}{q_param}&amp;{carried}">🏢 Master Data</a>'
-        f'      <a class="audit-pill {p_stk}" href="/why?filter=stocktake{actor_param}{q_param}&amp;{carried}">📦 Stocktake Audits</a>'
-        f'      <a class="audit-pill {p_mov}" href="/why?filter=movement{actor_param}{q_param}&amp;{carried}">🚚 Stock Movements</a>'
+        + "".join(
+            f'      <a class="audit-pill {"active" if filter_type == value else ""}" '
+            f'href="/why?filter={quote(value)}{actor_param}{q_param}&amp;{carried}">{text}</a>'
+            for value, text in pills
+        ) +
         '    </div>'
         '  </div>'
         '  <div class="audit-filter-row">'
@@ -1040,10 +1069,9 @@ def ask_html(window, *, recent=None, filter_type="all", actor="", search="", val
         f'      <input type="hidden" name="as_of" value="{escape(str(as_of))}">'
         '      <label for="f_actor" style="font-size:.8rem; color:#7a7066; font-weight:600;">Signatory Actor:</label>'
         '      <select name="actor" id="f_actor" onchange="this.form.submit()">'
-        f'        <option value=""{act_sel("")}>All Staff</option>'
-        f'        <option value="marina"{act_sel("marina")}>Marina Devlin (Production)</option>'
-        f'        <option value="dan"{act_sel("dan")}>Dan Farrugia (Founder)</option>'
-        f'        <option value="aoife"{act_sel("aoife")}>Aoife Byrne (Floor Ops)</option>'
+        f'        <option value=""{act_sel("")}>All actors</option>'
+        + "".join(f'<option value="{escape(a)}"{act_sel(a)}>{escape(label)}</option>'
+                  for a, label in (actors or [])) +
         '      </select>'
         f'      <input type="search" name="q" placeholder="Filter entity URI, slot, or value..." value="{escape(search)}">'
         '      <button type="submit" class="btn-action btn-outline" style="font-size:.8rem; padding:.32rem .75rem;">Search</button>'
@@ -1070,8 +1098,8 @@ def ask_html(window, *, recent=None, filter_type="all", actor="", search="", val
     )
     rows_html = []
     for r in recent:
-        sub_short = r["subject"].replace("sorella:", "")
-        pred_short = r["predicate"].replace("sorella:", "")
+        sub_short = short_uri(r["subject"])
+        pred_short = short_uri(r["predicate"])
         why_url = f'/why?subject={quote(r["subject"])}&amp;predicate={quote(r["predicate"])}&amp;{carried}'
 
         # Status badge & value display
@@ -1125,12 +1153,12 @@ def ask_html(window, *, recent=None, filter_type="all", actor="", search="", val
         f'    <input type="hidden" name="valid_at" value="{escape(str(valid_at))}">'
         f'    <input type="hidden" name="as_of" value="{escape(str(as_of))}">'
         '    <div class="field"><label for="f_subject">subject URI</label>'
-        '      <span class="hint">The URI of the entity, e.g. <code>sorella:item_sicilian_pistachio_paste</code></span>'
-        '      <input name="subject" id="f_subject" placeholder="sorella:item_sicilian_pistachio_paste">'
+        f'      <span class="hint">The URI of the entity, as the log registered it{_prefix_hint()}.</span>'
+        f'      <input name="subject" id="f_subject" placeholder="{_prefix_example()}">'
         '    </div>'
         '    <div class="field"><label for="f_predicate">predicate URI</label>'
-        '      <span class="hint">The URI of what was said about it, e.g. <code>sorella:item_pack_price</code></span>'
-        '      <input name="predicate" id="f_predicate" placeholder="sorella:item_pack_price">'
+        f'      <span class="hint">The URI of what was said about it{_prefix_hint()}.</span>'
+        f'      <input name="predicate" id="f_predicate" placeholder="{_prefix_example()}">'
         '    </div>'
         '    <button type="submit" class="btn-action btn-outline" style="font-size:.85rem; padding:.45rem .9rem;">Query Provenance History</button>'
         '  </form>'
@@ -1176,7 +1204,7 @@ def index_html(forms, tables, *, valid_at, as_of, map_=None):
         out.append('<div class="classes-category">')
         out.append(f'  <h2>{icon} {escape(heading.title())} <span class="badge badge-neutral">{len(group)} forms</span></h2>')
         if is_evt:
-            out.append('  <p class="cat-desc">Operational records created as real-world kitchen events happen (deliveries, stock movements, stocktake counts). Each submission mints a brand-new unique entity in the graph.</p>')
+            out.append('  <p class="cat-desc">Operational records written down as things happen. Each submission mints a brand-new unique entity in the graph.</p>')
         else:
             out.append('  <p class="cat-desc">Foundational master data entities referenced by operations. Submitting updates appends a new state valid_from without overwriting historical identities.</p>')
         out.append('  <div class="cards-grid">')
@@ -1198,17 +1226,12 @@ def index_html(forms, tables, *, valid_at, as_of, map_=None):
         out.append('</div>')
 
     # Stage 5 Tables
-    table_descs = {
-        "StockReconciliation": "Triple-entry variance ledger auditing physical counted stock on shelves against expected stock from movements. Identifies shrinkage, waste, and transcription errors.",
-        "IngredientOnHand": "Running balance of inventory derived from all cumulative stock movements (deliveries, usage, waste, transfers).",
-        "CountedOnHand": "Latest point-in-time physical inventory snapshot aggregated from shelf stocktake count sheets.",
-    }
     out.append('<div class="classes-category" style="margin-top:2.5rem;">')
     out.append(f'  <h2 id="tables">📊 Stage 5 · Live Operational Tables &amp; Projections <span class="badge badge-neutral">{len(tables)} tables</span></h2>')
     out.append('  <p class="cat-desc">Real-time digital twin projections compiled into PostgreSQL by translating LinkML derivation rules directly into SQL. Every cell carries clickable backward lineage back into the kernel.</p>')
     out.append('  <div class="cards-grid">')
     for name in tables:
-        desc = table_descs.get(name, f"Operational analytical projection table for {name}.")
+        desc = get_desc(name) or f"Operational analytical projection table for {name}."
         out.append(
             f'  <a class="class-card" href="/table/{escape(name)}?{carried}">'
             f'    <div>'
@@ -1227,7 +1250,7 @@ def index_html(forms, tables, *, valid_at, as_of, map_=None):
     out.append(
         f'<div class="stage-stepper" style="margin-top: 2rem;">'
         f'  <a href="/why?{carried}">← Back to Stage 3 Audit Ledger</a>'
-        f'  <a class="primary" href="/table/StockReconciliation?{carried}">Explore Stage 5 Projections →</a>'
+        f'  <a class="primary" href="{table_link(carried)}">Explore Stage 5 Projections →</a>'
         f'</div>'
     )
     return "\n".join(out)
@@ -1282,12 +1305,7 @@ def form_html(built, *, valid_at, as_of, values=None, message=None, bad=False,
     carried = _carried(valid_at, as_of)
     class_name = str(built["class"])
 
-    actors = actors or [
-        ("marina", "Marina Devlin (Owner / Production)"),
-        ("dan", "Dan Farrugia (Head Gelatiere)"),
-        ("aoife", "Aoife Byrne (Shop Manager, Cotham)"),
-        ("fareza", "Fareza (System Auditor / Admin)"),
-    ]
+    actors = actors or []
 
     out = [
         '<div class="dash-header">',
@@ -1320,15 +1338,22 @@ def form_html(built, *, valid_at, as_of, values=None, message=None, bad=False,
 
     # Actor field (Dropdown)
     actor_val = values.get("actor", "")
-    actor_opts = ['<option value="">— Select signing staff member —</option>']
-    for a_id, a_lbl in actors:
-        sel = " selected" if a_id == actor_val else ""
-        actor_opts.append(f'<option value="{escape(a_id)}"{sel}>{escape(a_lbl)}</option>')
+    # A log nobody has written to names nobody, so the field asks for a name
+    # rather than offering an empty list that cannot be submitted.
+    if actors:
+        actor_opts = ['<option value="">— Select signing actor —</option>']
+        for a_id, a_lbl in actors:
+            sel = " selected" if a_id == actor_val else ""
+            actor_opts.append(f'<option value="{escape(a_id)}"{sel}>{escape(a_lbl)}</option>')
+        control = f'        <select name="actor" id="f_actor" required>{"".join(actor_opts)}</select>'
+    else:
+        control = (f'        <input name="actor" id="f_actor" required '
+                   f'value="{escape(actor_val)}" placeholder="who is signing this">')
     out.append(
         '      <div class="field">'
         '        <label for="f_actor">Signing Actor <span class="req" title="required">*</span></label>'
-        '        <span class="hint">Staff member authorizing and signing this intent into the immutable kernel log.</span>'
-        f'        <select name="actor" id="f_actor" required>{"".join(actor_opts)}</select>'
+        '        <span class="hint">Who authorizes and signs this intent into the immutable kernel log.</span>'
+        + control +
         '      </div>'
     )
 
@@ -1388,7 +1413,7 @@ def form_html(built, *, valid_at, as_of, values=None, message=None, bad=False,
     out.append(
         f'<div class="stage-stepper">'
         f'  <a href="/classes?{carried}">← Back to Stage 4 Classes</a>'
-        f'  <a class="primary" href="/table/StockReconciliation?{carried}">Next: Stage 5 (Live Operational Tables) →</a>'
+        f'  <a class="primary" href="{table_link(carried)}">Next: Stage 5 (Live Operational Tables) →</a>'
         f'</div>'
     )
     return "\n".join(out)
@@ -1410,12 +1435,7 @@ def correct_html(target, *, valid_at, as_of, actors=None, message=None, bad=Fals
     recorded_at = str(target.get("recorded_at") or "")[:16]
     stating_actor = target.get("actor_id") or "system"
 
-    actors = actors or [
-        ("marina", "Marina Devlin (Owner / Production)"),
-        ("dan", "Dan Farrugia (Head Gelatiere)"),
-        ("aoife", "Aoife Byrne (Shop Manager, Cotham)"),
-        ("fareza", "Fareza (System Auditor / Admin)"),
-    ]
+    actors = actors or []
 
     out = [
         '<div class="dash-header">',
@@ -1454,6 +1474,9 @@ def correct_html(target, *, valid_at, as_of, actors=None, message=None, bad=Fals
     )
 
     actor_options = "".join(f'<option value="{escape(a_id)}">{escape(a_lbl)}</option>' for a_id, a_lbl in actors)
+    # Same reason as the form: offer a name only where the log has one.
+    actor_control = (f'<select name="actor" required>{actor_options}</select>' if actors
+                     else '<input name="actor" required placeholder="who is signing this">')
 
     out.append(
         '<div class="form-card">'
@@ -1487,7 +1510,7 @@ def correct_html(target, *, valid_at, as_of, actors=None, message=None, bad=Fals
         '      <div class="field">'
         '        <label for="f_actor">Authorized Signatory <span class="req" title="required">*</span></label>'
         '        <span class="hint">Staff member authorizing and signing this revocation in the kernel log.</span>'
-        f'        <select name="actor" id="f_actor" required>{actor_options}</select>'
+        f'        {actor_control}'
         '      </div>'
         '      <div class="field">'
         '        <label for="f_reason">Reason Code <span class="req" title="required">*</span></label>'
@@ -1700,8 +1723,19 @@ def message_page(title, text, *, valid_at, as_of, path=None, bad=True):
 
 
 def p2_dashboard_html(*, valid_at, as_of):
+    """What the modular layer holds, read off the packages that are there.
+
+    The registry below is whatever `packages/` actually carries. A card for a
+    package nobody can open would be a claim the load path does not support.
+    """
     """Prototype 2: Metamodel Architecture & Package Intelligence Dashboard."""
     carried = _carried(valid_at, as_of)
+    try:
+        from components.web.studio_handler import list_available_packages
+        packages = list_available_packages()
+    except Exception:
+        packages = []
+
     out = [
         '<div class="dash-header">',
         '  <div style="display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:1rem;">',
@@ -1718,8 +1752,8 @@ def p2_dashboard_html(*, valid_at, as_of):
         '<div class="kpi-grid">',
         '  <div class="kpi-card primary-card">',
         '    <div class="kpi-label">Modular Packages</div>',
-        '    <div class="kpi-value">3 Modules</div>',
-        '    <div class="kpi-sub">@uniti/core, @community/inventory, @tenants/sorella</div>',
+        f'    <div class="kpi-value">{len(packages)} Modules</div>',
+        f'    <div class="kpi-sub">{escape(", ".join(pkg.get("name", "?") for pkg in packages) or "none on the load path")}</div>',
         '  </div>',
         '  <div class="kpi-card success-card">',
         '    <div class="kpi-label">Foundational Archetypes</div>',
@@ -1741,21 +1775,14 @@ def p2_dashboard_html(*, valid_at, as_of):
         '  <h2>Active Modular Ontologies Registry</h2>',
         '  <p class="log-desc">In Prototype 2, the kernel stores formal ontology definitions without operational seed contamination. Below are the registered packages:</p>',
         '  <div class="cards-grid" style="margin-top:1rem;">',
-        '    <div class="class-card">',
-        '      <div class="class-card-header"><span class="class-card-title">@uniti/core</span><span class="badge badge-success">Metamodel</span></div>',
-        '      <p class="class-card-desc">The immutable architectural kernel containing REA-H archetypes, bitemporal clock machinery, and universal primitives.</p>',
-        f'      <div class="class-card-action"><a href="/studio?pkg=packages/@uniti/core&amp;{carried}">Open in Studio →</a></div>',
-        '    </div>',
-        '    <div class="class-card">',
-        '      <div class="class-card-header"><span class="class-card-title">@community/inventory</span><span class="badge badge-neutral">Community</span></div>',
-        '      <p class="class-card-desc">Reusable inventory lifecycle definitions, unit conversion formulas, and stocktaking invariants.</p>',
-        f'      <div class="class-card-action"><a href="/studio?pkg=packages/@community/inventory&amp;{carried}">Open in Studio →</a></div>',
-        '    </div>',
-        '    <div class="class-card">',
-        '      <div class="class-card-header"><span class="class-card-title">@tenants/sorella_gelato</span><span class="badge badge-neutral">Tenant</span></div>',
-        '      <p class="class-card-desc">Tenant-specific specialization for artisanal gelato manufacturing and kitchen operations.</p>',
-        f'      <div class="class-card-action"><a href="/studio?pkg=packages/@tenants/sorella_gelato&amp;{carried}">Open in Studio →</a></div>',
-        '    </div>',
+        *[line for pkg in packages for line in (
+            '    <div class="class-card">',
+            f'      <div class="class-card-header"><span class="class-card-title">{escape(pkg.get("name", "?"))}</span>'
+            f'<span class="badge badge-neutral">{escape(pkg.get("pkg_type", "Package"))}</span></div>',
+            f'      <p class="class-card-desc">{escape(pkg.get("description") or pkg.get("title") or "")}</p>',
+            f'      <div class="class-card-action"><a href="/studio?pkg={quote(pkg.get("path", ""))}&amp;{carried}">Open in Studio →</a></div>',
+            '    </div>',
+        )],
         '  </div>',
         '</div>',
         '<div class="stage-stepper" style="margin-top:2rem;">',
@@ -1906,7 +1933,7 @@ def dashboard_html(data, *, valid_at, as_of):
     out.append('<h2>Complete Inventory Health & Physical Stocktake</h2>')
     out.append('<p>Live reconciliation between cumulative stock movements and physical counts, with automated reorder triggers and financial variance analysis.</p>')
     out.append('</div>')
-    out.append(f'<div><a href="/table/StockReconciliation?{carried}" class="btn-action btn-outline">Open Full Raw Table</a></div>')
+    out.append(f'<div><a href="{table_link(carried)}" class="btn-action btn-outline">Open Full Raw Table</a></div>')
     out.append('</div>')
 
     out.append('<table class="data">')

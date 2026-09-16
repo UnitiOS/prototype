@@ -152,13 +152,22 @@ def window(conn):
     return held
 
 
-def recent_assertions(conn, limit=40, filter_type=None, actor=None, search=None):
+def recent_assertions(conn, limit=40, filter_type=None, actor=None, search=None,
+                      action_names=None):
     """Recent assertions recorded in the kernel, with resolved URIs and actors.
 
     Supports filtering by:
-    - filter_type: 'all', 'revocations', 'master', 'stocktake', 'movement'
+    - filter_type: 'all', or 'revocations'
+    - action_names: which intents to keep, as a sequence of action names
     - actor: filter by specific actor_id
     - search: filter by substring matching subject, predicate, or value
+
+    `revocations` is the only named filter here because it is the only one this
+    file can state without knowing a business: a revocation is a shape in the
+    log. Every other grouping — what is master data, what is a document — is a
+    distinction the *map* draws, so the caller reads it off the map and passes
+    the action names down. A list of them written here would be one domain's
+    vocabulary inside the one reader the kernel has.
     """
     by_uri, by_id = _registry(conn)
     clauses = ["1=1"]
@@ -166,12 +175,10 @@ def recent_assertions(conn, limit=40, filter_type=None, actor=None, search=None)
 
     if filter_type == "revocations":
         clauses.append("(a.revokes IS NOT NULL OR EXISTS (SELECT 1 FROM assertion r WHERE r.revokes = a.id))")
-    elif filter_type == "master":
-        clauses.append("i.action_name IN ('submit_Ingredient', 'submit_InternalLocation', 'submit_Supplier', 'submit_Person', 'submit_Unit', 'submit_UnitConversion', 'submit_MovementKind')")
-    elif filter_type == "stocktake":
-        clauses.append("i.action_name IN ('submit_StockCount', 'submit_StockCountLine')")
-    elif filter_type == "movement":
-        clauses.append("i.action_name = 'submit_StockMovement'")
+
+    if action_names:
+        clauses.append("i.action_name = ANY(%(action_names)s)")
+        params["action_names"] = list(action_names)
 
     if actor:
         clauses.append("i.actor_id = %(actor)s")

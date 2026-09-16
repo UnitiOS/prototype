@@ -53,7 +53,7 @@ map's own distinction and not a business's.
 Run:
     make serve
     make demo-serve
-    UNITI_DSN=... UNITI_OPS_DSN=... serve.py business/sorella/v3.yaml --port 8000
+    UNITI_DSN=... UNITI_OPS_DSN=... serve.py business/<name>/v3.yaml --port 8000
 """
 
 import argparse
@@ -327,9 +327,91 @@ def _form_classes(map_):
     ]
 
 
+def _ledger_filters(map_):
+    """The ledger filters this map supports, and the actions each one covers.
+
+    `generate.submit()` names an intent `submit_<Class>`, so the classes the
+    map gives a form are exactly the actions the log can hold. They are grouped
+    by the same distinction `_form_classes` draws — what gets written down
+    against what it refers to — because that split is the map's own.
+
+    Returns (pills, actions): pills for the page to draw, and a mapping from a
+    filter's value to the action names it selects.
+    """
+    pills, actions = [], {}
+    for heading, class_names in _form_classes(map_):
+        if not class_names:
+            continue
+        value = "written" if heading.startswith("what gets") else "referred"
+        pills.append((value, escape(heading)))
+        actions[value] = [f"submit_{name}" for name in class_names]
+    return pills, actions
+
+
 def _table_classes(map_):
     """Every class the map gives a rule that fills a table."""
     return sorted(_aggregate_classes(map_))
+
+
+def _graph_layers(map_):
+    """The three tiers of the map, described in the map's own words.
+
+    `diagram._tiers` decides which class is which; the blurbs say what a tier
+    *is* in terms of the kernel, which is true of every map. A class's own
+    description and its computed columns come off the map, so a different map
+    describes itself and this file describes none of them.
+    """
+    view = map_["view"]
+    named, unnamed, computed = diagram._tiers(map_)
+
+    def described(names, with_formulas=False):
+        out = []
+        for name in names:
+            cls = view.get_class(name)
+            description = (cls.description or "").split(".")[0].strip()
+            formulas = []
+            if with_formulas:
+                try:
+                    plan_ = plan_for(map_, name)
+                except Exception:
+                    plan_ = None
+                if plan_:
+                    formulas = [
+                        (str(col["name"]), str(col.get("title") or col["name"]))
+                        for col in plan_["columns"]
+                        if col["kind"] in ("aggregate", "expression")
+                    ][:4]
+            out.append((name, description, formulas))
+        return out
+
+    return [
+        ("Layer 1 · What the business refers to",
+         "Things somebody names and refers to afterwards. One of their slots "
+         "identifies them, so a row is written once and pointed at from then on.",
+         described(named)),
+        ("Layer 2 · What the business writes down",
+         "Append-only operational records, written as they happen and identified "
+         "by nothing but having happened. Bitemporal and strictly immutable.",
+         described(unnamed)),
+        ("Layer 3 · What is computed, and stated by nobody",
+         "Compiled queries evaluating state at any (valid_at, as_of) pair. No row "
+         "of one is ever stated; every value is derived from the log.",
+         described(computed, with_formulas=True)),
+    ]
+
+
+def _type_slot_uri(map_):
+    """The URI the map records class membership under.
+
+    Class membership is an assertion like any other, so it has a predicate, and
+    the map names it: the slot carrying `designates_type`. Reading it here is
+    what keeps a fixed prefix out of a query.
+    """
+    for name in map_["view"].all_classes():
+        slot = _type_slot(map_, str(name))
+        if slot is not None and slot.slot_uri:
+            return str(slot.slot_uri)
+    return None
 
 
 def _find_slot(map_, predicate_uri, conn=None, subject_uri=None):
@@ -340,7 +422,7 @@ def _find_slot(map_, predicate_uri, conn=None, subject_uri=None):
         try:
             by_uri, _ = provenance._registry(conn)
             sub_id = by_uri.get(subject_uri)
-            class_pred_id = by_uri.get("sorella:entity_class") or by_uri.get("uniti:entity_class")
+            class_pred_id = by_uri.get(_type_slot_uri(map_))
             if sub_id and class_pred_id:
                 with conn.cursor() as cur:
                     cur.execute(
@@ -541,7 +623,7 @@ class Handler(BaseHTTPRequestHandler):
                 if not getattr(render, "SHOW_STUDIO", False):
                     return self._refuse("Prototype 1 Isolation",
                                         "Uniti Studio is isolated to Prototype 2 on port 8100 (make p2-serve). "
-                                        "Prototype 1 serves the operational Sorella Gelato demo.",
+                                        "Prototype 1 serves the operational demonstration.",
                                         valid_at, as_of, 404)
                 from components.web.studio_handler import get_studio_html
                 pkg = parse_qs(query).get("pkg", [None])[0]
@@ -659,7 +741,8 @@ class Handler(BaseHTTPRequestHandler):
                 "bitemporal audit log, and digital twin analytical projections. "
                 "Every entity, relationship, and derivation is generated from LinkML ontology rules.",
                 diagram.script(diagram.classes(self.map_), height="50rem"),
-                valid_at=valid_at, as_of=as_of)
+                valid_at=valid_at, as_of=as_of,
+                layers=_graph_layers(self.map_))
             return self._send(render.page("the map", body,
                                           valid_at=valid_at, as_of=as_of,
                                           path=self.path))
@@ -715,15 +798,18 @@ class Handler(BaseHTTPRequestHandler):
         try:
             with connect_kernel(connect_timeout=1) as kernel:
                 if not (subject and predicate):
+                    pills, actions = _ledger_filters(self.map_)
                     recent = provenance.recent_assertions(
                         kernel, limit=50, filter_type=filter_type,
                         actor=actor if actor and actor != "all" else None,
-                        search=search or None
+                        search=search or None,
+                        action_names=actions.get(filter_type),
                     )
                     body = render.ask_html(
                         provenance.window(kernel), recent=recent,
                         filter_type=filter_type, actor=actor, search=search,
-                        valid_at=valid_at, as_of=as_of
+                        valid_at=valid_at, as_of=as_of, filters=pills,
+                        actors=self._actors(valid_at, as_of)
                     )
                     return self._send(render.page("audit log", body,
                                                   valid_at=valid_at, as_of=as_of,
@@ -765,43 +851,24 @@ class Handler(BaseHTTPRequestHandler):
                                valid_at=valid_at, as_of=as_of, path=self.path))
 
     def _actors(self, valid_at, as_of):
-        """Known actors for intent signing, combining Person entities and intent history."""
+        """Who has signed an intent, read off the log.
+
+        An actor is whoever put their name on a write, so the log is the whole
+        of the answer and there is no list of people here. A kernel nobody has
+        written to yet yields nobody, and the form asks for a name instead of
+        offering one.
+        """
         try:
             with connect_kernel() as kernel:
                 with kernel.cursor() as cur:
-                    cur.execute("SELECT DISTINCT actor_id FROM intent ORDER BY actor_id")
-                    intent_actors = [r[0] for r in cur.fetchall() if r[0]]
-                people, _ = _options(kernel, self.map_, "Person",
-                                     valid_at=_instant(valid_at),
-                                     as_of=_instant(as_of)) if "Person" in self.map_["view"].all_classes() else ([], None)
+                    cur.execute(
+                        "SELECT actor_id, count(*) FROM intent "
+                        "WHERE actor_id IS NOT NULL AND actor_id <> '' "
+                        "GROUP BY actor_id ORDER BY count(*) DESC, actor_id")
+                    rows = cur.fetchall()
         except Exception:
-            intent_actors, people = ["marina", "dan", "aoife", "fareza"], []
-
-        labels = {
-            "marina": "Marina Devlin (Owner / Production)",
-            "dan": "Dan Farrugia (Head Gelatiere)",
-            "aoife": "Aoife Byrne (Shop Manager, Cotham)",
-            "fareza": "Fareza (System Auditor / Admin)",
-        }
-        out = []
-        seen = set()
-        for uri, name in (people or []):
-            short = name.split()[0].lower() if name else uri
-            matched = next((a for a in intent_actors if a.lower() == short or a.lower() in name.lower()), short)
-            out.append((matched, labels.get(matched, f"{name} ({matched})")))
-            seen.add(matched)
-        for a in intent_actors:
-            if a not in seen:
-                out.append((a, labels.get(a, a.title())))
-                seen.add(a)
-        if not out:
-            out = [
-                ("marina", "Marina Devlin (Owner / Production)"),
-                ("dan", "Dan Farrugia (Head Gelatiere)"),
-                ("aoife", "Aoife Byrne (Shop Manager, Cotham)"),
-                ("fareza", "Fareza (System Auditor / Admin)"),
-            ]
-        return out
+            return []
+        return [(actor, f"{actor} ({signed})") for actor, signed in rows]
 
     def _built_form(self, class_name, valid_at, as_of):
         with connect_kernel() as kernel:
@@ -1269,8 +1336,8 @@ def main(argv=None):
         render.SHOW_STUDIO = True
         render.BRAND_SUB = args.title or "Prototype 2 · Modular Metamodel & Studio"
     else:
-        p1_dsn = os.environ.get("UNITI_P1_KERNEL_DSN", os.environ.get("UNITI_DSN", "postgresql://uniti:uniti@localhost:5433/uniti_demo"))
-        p1_ops_dsn = os.environ.get("UNITI_P1_OPS_DSN", os.environ.get("UNITI_OPS_DSN", "postgresql://uniti:uniti@localhost:5433/uniti_demo_ops"))
+        p1_dsn = os.environ.get("UNITI_P1_KERNEL_DSN", os.environ.get("UNITI_DSN", "postgresql://uniti:uniti@localhost:5433/uniti"))
+        p1_ops_dsn = os.environ.get("UNITI_P1_OPS_DSN", os.environ.get("UNITI_OPS_DSN", "postgresql://uniti:uniti@localhost:5433/uniti_ops"))
         os.environ["UNITI_DSN"] = p1_dsn
         os.environ["UNITI_OPS_DSN"] = p1_ops_dsn
         import perform, compile
@@ -1281,7 +1348,7 @@ def main(argv=None):
         render.MODE = "p1"
         render.IS_P2_MODE = False
         render.SHOW_STUDIO = args.studio
-        render.BRAND_SUB = args.title or "Sorella Gelato Enterprise Demo"
+        render.BRAND_SUB = args.title or "Operational Demonstration"
 
     try:
         Handler._static_map = read_map(args.map)
@@ -1292,6 +1359,15 @@ def main(argv=None):
     active_map = Handler._static_map
     forms = [name for _, group in _form_classes(active_map) for name in group]
     tables = _table_classes(active_map)
+
+    # The stage links need somewhere to point. Which class that is comes off
+    # the map — the first one it gives a rule that fills a table — so that
+    # `render` never has to name one.
+    render.set_mode(render.MODE, show_studio=render.SHOW_STUDIO,
+                    brand_sub=render.BRAND_SUB,
+                    default_table=(tables[0] if tables else ""),
+                    default_prefix=str(getattr(active_map["view"].schema,
+                                               "default_prefix", "") or ""))
     print(f"[{render.MODE.upper()}] {args.map} ({active_map['version']}): "
           f"{len(forms)} classes with a form, {len(tables)} with a table")
     print(f"mode   {render.MODE} ({render.BRAND_SUB})")

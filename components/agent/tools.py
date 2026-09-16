@@ -484,6 +484,7 @@ class UnitiTools:
         filter_type: str = "all",
         actor: Optional[str] = None,
         search: Optional[str] = None,
+        action_names: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         """Fetch immutable assertion activity ledger with actor, intent, and bitemporal details.
 
@@ -491,8 +492,10 @@ class UnitiTools:
             business: Business namespace.
             limit: Maximum rows to return (default: 20).
             offset: Pagination offset.
-            filter_type: Filter category ('all', 'revocations', 'master', 'stocktake', 'movement').
-            actor: Filter by specific actor identity (e.g. 'marina', 'agent').
+            filter_type: Filter category ('all' or 'revocations').
+            action_names: Restrict to these intent action names, e.g. those a
+                map's classes produce as 'submit_<Class>'.
+            actor: Filter by specific actor identity.
             search: Free-text search on subject, predicate, or values.
         """
         with self._connect_kernel() as kernel:
@@ -503,6 +506,7 @@ class UnitiTools:
                 filter_type=filter_type,
                 actor=actor,
                 search=search,
+                action_names=action_names,
             )
 
         return _serialize({
@@ -617,7 +621,7 @@ class UnitiTools:
         Args:
             class_name: Class of transaction/document, as named by the map.
             fields: Dict of slot key-values.
-            actor: Actor identity (e.g. "ai_agent", "marina").
+            actor: Actor identity.
             action_name: Action identifier on intent.
             subject: Optional entity URI. If omitted, will be generated.
             valid_from: Business effective timestamp (ISO format).

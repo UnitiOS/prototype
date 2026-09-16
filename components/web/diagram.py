@@ -36,168 +36,155 @@ def _label(text):
         out = out.replace(char, entity)
     return out
 
+def _node(view, name, style):
+    """One box: the class's name, and the first sentence the map wrote for it."""
+    cls = view.get_class(name)
+    desc = (cls.description or "").split(".")[0].strip()
+    if len(desc) > 34:
+        desc = desc[:31] + "..."
+    desc_str = f"<br><small>{_label(desc)}</small>" if desc else ""
+    return f'    {name}["<b>{_label(name)}</b>{desc_str}"]:::{style}'
+
+
+def _tiers(map_):
+    """The three tiers, read off the map and out of nothing else.
+
+    A class the map gives an aggregate is **computed**: nobody states a row of
+    it. Of the rest, the ones the log can say an entity is — those carrying
+    `designates_type` — divide by the map's own distinction, the same one the
+    forms page uses: a class one of its slots identifies is a thing somebody
+    names and refers to afterwards, and a class nothing identifies is written
+    down as it happens and identified by nothing but having happened.
+
+    Whatever is left is a class the log cannot instantiate — an abstract parent
+    — and it is drawn beside the things it is a parent of.
+    """
+    from compile import _aggregate_classes
+    from generate import _identifier, _type_slot
+
+    all_classes = sorted(str(name) for name in map_["view"].all_classes())
+    computed = sorted(str(name) for name in _aggregate_classes(map_))
+    rest = [c for c in all_classes if c not in set(computed)]
+
+    named, unnamed, abstract = [], [], []
+    for name in rest:
+        if _type_slot(map_, name) is None:
+            abstract.append(name)
+        elif _identifier(map_, name) is not None:
+            named.append(name)
+        else:
+            unnamed.append(name)
+    return sorted(named + abstract), unnamed, computed
+
+
+def _edges(map_, drawn):
+    """Every line on the drawing, and what the map says each one is.
+
+    Four kinds, and each is a thing the map declares rather than a thing this
+    file knows: inheritance, a slot whose range is another class, the source an
+    aggregate runs over, and the class a parameter reads its fact off.
+
+    Slots between one pair of classes are gathered onto a single line: two
+    classes joined by three slots are one relationship read three ways, and
+    three arrows say less than one.
+    """
+    from compile import _annotation
+
+    view = map_["view"]
+    index, out = {}, []
+
+    def add(source, target, label, arrow):
+        if source not in drawn or target not in drawn or source == target:
+            return
+        key = (source, target, arrow)
+        edge = index.get(key)
+        if edge is None:
+            edge = {"source": source, "target": target,
+                    "arrow": arrow, "labels": []}
+            index[key] = edge
+            out.append(edge)
+        if label and label not in edge["labels"]:
+            edge["labels"].append(label)
+
+    def spec_get(spec, key):
+        try:
+            return spec.get(key)
+        except AttributeError:
+            return None
+
+    for name in drawn:
+        cls = view.get_class(name)
+
+        if cls.is_a and str(cls.is_a) in drawn:
+            add(name, str(cls.is_a), "is a", "-->")
+
+        for slot in view.class_induced_slots(name):
+            slot_name = str(slot.name)
+
+            # A slot whose range is another class is an edge from it.
+            if slot.range and str(slot.range) in drawn:
+                add(str(slot.range), name, str(slot.title or slot_name), "-->")
+
+            # An aggregate names the class it runs over.
+            aggregate = _annotation(slot, "aggregate")
+            over = spec_get(aggregate, "over") if aggregate else None
+            if over:
+                add(str(over), name, "aggregates", "==>")
+
+            # A parameter reads one fact off whatever its key column names.
+            parameter = _annotation(slot, "parameter")
+            of = spec_get(parameter, "of") if parameter else None
+            if of:
+                try:
+                    key_slot = view.induced_slot(str(of), name)
+                except Exception:
+                    key_slot = None
+                if key_slot is not None and key_slot.range and str(key_slot.range) in drawn:
+                    add(str(key_slot.range), name, "reads", "-.->")
+
+    return out
+
 
 def classes(map_):
-    """Every class organized into architectural tiers, with references,
-    inheritance, and analytical aggregate derivations.
+    """Every class the map declares, tiered and joined by what the map says.
+
+    There is no list of names here: the tiers come from `_tiers` and the lines
+    from `_edges`, and both of them read the map. Point it at another map and
+    another drawing comes out, which is the whole claim.
     """
     view = map_["view"]
-    all_classes = set(str(name) for name in view.all_classes())
-    known = set(all_classes)
-    try:
-        from compile import _aggregate_classes, plan_for
-        proj_classes = set(str(name) for name in _aggregate_classes(map_))
-    except Exception:
-        proj_classes = {"CountedOnHand", "IngredientOnHand", "StockReconciliation"}
-        plan_for = None
+    named, unnamed, computed = _tiers(map_)
+    drawn = set(named) | set(unnamed) | set(computed)
 
-    places = [c for c in ["Location", "InternalLocation", "Supplier"] if c in all_classes]
-    items = [c for c in ["Unit", "Ingredient", "UnitConversion"] if c in all_classes]
-    staff_ops = [c for c in ["Person", "MovementKind"] if c in all_classes]
+    lines = ["flowchart TD"]
 
-    counts = [c for c in ["StockCount", "StockCountLine"] if c in all_classes]
-    moves = [c for c in ["StockMovement"] if c in all_classes]
+    for tier_id, heading, members, style in (
+        ("L1", "LAYER 1 &middot; WHAT THE BUSINESS REFERS TO", named, "master"),
+        ("L2", "LAYER 2 &middot; WHAT THE BUSINESS WRITES DOWN", unnamed, "event"),
+        ("L3", "LAYER 3 &middot; WHAT IS COMPUTED, AND STATED BY NOBODY", computed, "proj"),
+    ):
+        if not members:
+            continue
+        lines.append(f'  subgraph {tier_id} ["{heading}"]')
+        lines.append("    direction TB")
+        lines += [_node(view, name, style) for name in members]
+        lines.append("  end")
+        lines.append("")
 
-    handled = set(places + items + staff_ops + counts + moves) | proj_classes
-    remaining = [c for c in sorted(all_classes - handled)]
-    if remaining:
-        staff_ops.extend(remaining)
+    lines.append("  %% Every line below is a rule the map declares.")
+    for edge in _edges(map_, drawn):
+        label = " / ".join(edge["labels"])
+        joint = f"|{_label(label)}|" if label else ""
+        lines.append(f'  {edge["source"]} {edge["arrow"]}{joint} {edge["target"]}')
 
-    lines = [
-        "flowchart TD",
-        '  subgraph L1 ["🏢 LAYER 1 · OPERATIONAL MASTER DATA & PHYSICAL ASSETS"]',
-        "    direction TB",
-        '    subgraph L1_places ["📍 Storage & Logistics"]',
-        "      direction TB",
-    ]
-    for name in places:
-        cls = view.get_class(name)
-        desc = (cls.description or "").split(".")[0].strip()
-        if len(desc) > 34:
-            desc = desc[:31] + "..."
-        desc_str = f"<br><small>{_label(desc)}</small>" if desc else ""
-        lines.append(f'      {name}["<b>{_label(name)}</b>{desc_str}"]:::master')
-    lines.append("    end\n")
-
-    lines.append('    subgraph L1_items ["📦 Materials & Conversion Rules"]')
-    lines.append("      direction TB")
-    for name in items:
-        cls = view.get_class(name)
-        desc = (cls.description or "").split(".")[0].strip()
-        if len(desc) > 34:
-            desc = desc[:31] + "..."
-        desc_str = f"<br><small>{_label(desc)}</small>" if desc else ""
-        lines.append(f'      {name}["<b>{_label(name)}</b>{desc_str}"]:::master')
-    lines.append("    end\n")
-
-    lines.append('    subgraph L1_ops ["👤 Staff & Movement Typologies"]')
-    lines.append("      direction TB")
-    for name in staff_ops:
-        cls = view.get_class(name)
-        desc = (cls.description or "").split(".")[0].strip()
-        if len(desc) > 34:
-            desc = desc[:31] + "..."
-        desc_str = f"<br><small>{_label(desc)}</small>" if desc else ""
-        lines.append(f'      {name}["<b>{_label(name)}</b>{desc_str}"]:::master')
-    lines.append("    end\n")
-    lines.append("  end\n")
-
-    lines.append('  subgraph L2 ["📜 LAYER 2 · IMMUTABLE AUDIT TRANSACTION LOG"]')
-    lines.append("    direction TB")
-    lines.append('    subgraph L2_counts ["📋 Physical Stocktaking Sessions"]')
-    lines.append("      direction TB")
-    for name in counts:
-        cls = view.get_class(name)
-        desc = (cls.description or "").split(".")[0].strip()
-        if len(desc) > 34:
-            desc = desc[:31] + "..."
-        desc_str = f"<br><small>{_label(desc)}</small>" if desc else ""
-        lines.append(f'      {name}["<b>{_label(name)}</b>{desc_str}"]:::event')
-    lines.append("    end\n")
-
-    lines.append('    subgraph L2_moves ["🚚 Operational Stock Transfers"]')
-    lines.append("      direction TB")
-    for name in moves:
-        cls = view.get_class(name)
-        desc = (cls.description or "").split(".")[0].strip()
-        if len(desc) > 34:
-            desc = desc[:31] + "..."
-        desc_str = f"<br><small>{_label(desc)}</small>" if desc else ""
-        lines.append(f'      {name}["<b>{_label(name)}</b>{desc_str}"]:::event')
-    lines.append("    end\n")
-    lines.append("  end\n")
-
-    lines.append('  subgraph L3 ["📊 LAYER 3 · DIGITAL TWIN PROJECTIONS & EXECUTIVE BI"]')
-    lines.append("    direction TB")
-    for name in sorted(proj_classes):
-        cls = view.get_class(name)
-        desc = (cls.description or "").split(".")[0].strip()
-        if len(desc) > 34:
-            desc = desc[:31] + "..."
-        desc_str = f"<br><small>{_label(desc)}</small>" if desc else ""
-        lines.append(f'    {name}["<b>{_label(name)}</b>{desc_str}"]:::proj')
-    lines.append("  end\n")
-
-    # Internal Layer 1 Relationships
-    lines.append("  %% Internal Layer 1 Connections")
-    if "InternalLocation" in known and "Location" in known:
-        lines.append("  InternalLocation -->|is_a| Location")
-    if "Supplier" in known and "Location" in known:
-        lines.append("  Supplier -->|is_a| Location")
-    if "Ingredient" in known and "Unit" in known:
-        lines.append("  Ingredient -->|base & pack units| Unit")
-    if "UnitConversion" in known and "Ingredient" in known:
-        lines.append("  UnitConversion -->|factor for| Ingredient")
-    if "UnitConversion" in known and "Unit" in known:
-        lines.append("  UnitConversion -->|converts to kg| Unit")
-
-    # Internal Layer 2 Relationships
-    lines.append("  %% Internal Layer 2 Connections")
-    if "StockCount" in known and "StockCountLine" in known:
-        lines.append("  StockCount -->|contains line| StockCountLine")
-
-    # Top-to-Down Layer 1 -> Layer 2 Operational Relationships
-    lines.append("  %% Master Data feeds Transaction Log (Top to Down)")
-    if "Location" in known and "StockMovement" in known:
-        lines.append("  Location -->|out_of / into| StockMovement")
-    if "Location" in known and "StockCountLine" in known:
-        lines.append("  Location -->|where counted| StockCountLine")
-    if "Ingredient" in known and "StockMovement" in known:
-        lines.append("  Ingredient -->|item moved| StockMovement")
-    if "Ingredient" in known and "StockCountLine" in known:
-        lines.append("  Ingredient -->|item counted| StockCountLine")
-    if "Person" in known and "StockMovement" in known:
-        lines.append("  Person -->|authorized by| StockMovement")
-    if "Person" in known and "StockCount" in known:
-        lines.append("  Person -->|counted by| StockCount")
-    if "MovementKind" in known and "StockMovement" in known:
-        lines.append("  MovementKind -->|movement kind| StockMovement")
-
-    # Top-to-Down Layer 2 -> Layer 3 Aggregation
-    lines.append("  %% Transaction Log aggregates into Projections (Top to Down)")
-    if "StockMovement" in known and "IngredientOnHand" in known:
-        lines.append("  StockMovement ==>|aggregates balance| IngredientOnHand")
-    if "StockCountLine" in known and "CountedOnHand" in known:
-        lines.append("  StockCountLine ==>|aggregates counts| CountedOnHand")
-    if "IngredientOnHand" in known and "StockReconciliation" in known:
-        lines.append("  IngredientOnHand -.->|expected stock| StockReconciliation")
-    if "CountedOnHand" in known and "StockReconciliation" in known:
-        lines.append("  CountedOnHand -.->|counted stock| StockReconciliation")
-    if "Ingredient" in known and "StockReconciliation" in known:
-        lines.append("  Ingredient -.->|reads price & reorder| StockReconciliation")
-
-    lines.append("\n  %% Themes")
+    lines.append("")
+    lines.append("  %% Themes")
     lines.append("  classDef master fill:#f0fdf4,stroke:#16a34a,stroke-width:1.5px,color:#14532d,rx:6px,ry:6px;")
     lines.append("  classDef event fill:#fffbeb,stroke:#d97706,stroke-width:1.5px,color:#78350f,rx:6px,ry:6px;")
     lines.append("  classDef proj fill:#eef2ff,stroke:#4f46e5,stroke-width:2px,color:#312e81,rx:5px,ry:5px;")
     lines.append("  style L1 fill:#fafaf9,stroke:#86efac,stroke-dasharray: 4 4,color:#166534")
     lines.append("  style L2 fill:#fafaf9,stroke:#fcd34d,stroke-dasharray: 4 4,color:#92400e")
     lines.append("  style L3 fill:#fafaf9,stroke:#a5b4fc,stroke-dasharray: 4 4,color:#3730a3")
-    lines.append("  style L1_places fill:#ffffff,stroke:#bbf7d0,color:#15803d")
-    lines.append("  style L1_items fill:#ffffff,stroke:#bbf7d0,color:#15803d")
-    lines.append("  style L1_ops fill:#ffffff,stroke:#bbf7d0,color:#15803d")
-    lines.append("  style L2_counts fill:#ffffff,stroke:#fde68a,color:#b45309")
-    lines.append("  style L2_moves fill:#ffffff,stroke:#fde68a,color:#b45309")
     return "\n".join(lines)
 
 
