@@ -193,9 +193,9 @@ STAGES = [
     ("Live use", "Fill one in. The write becomes one intent and N assertions "
      "through the one gate, and the table rebuilds itself from the log the "
      "next time it is asked for.", "/classes#tables"),
-    ("Decision & Intelligence", "The graph projected into executive BI and agentic insights: "
-     "stock valuation, variance analysis, reorder alerts, and anomaly root-cause investigation.",
-     "/dashboard"),
+    ("Decision & Intelligence", "The modular layer reporting on itself: which "
+     "packages are on the load path, which archetypes they rest on, and which "
+     "invariants the linter holds them to.", "/dashboard"),
     ("Definition change", "The Ontologist Workbench: converse with AI, compose modular domain graphs, "
      "validate invariants deterministically, and seal immutable packages.", "/studio"),
 ]
@@ -712,7 +712,7 @@ class Handler(BaseHTTPRequestHandler):
                 ("Definition change", "Uniti Studio 2.0: Multi-model AI Ontologist Workbench and interactive visual graph.", "/studio"),
             ]
         else:
-            stages = [s for s in STAGES if s[2] != "/studio"]
+            stages = [s for s in STAGES if s[2] not in ("/studio", "/dashboard")]
         body = render.home_html(stages, valid_at=valid_at, as_of=as_of)
         self._send(render.page("uniti", body, valid_at=valid_at, as_of=as_of,
                                path=self.path))
@@ -1093,206 +1093,24 @@ class Handler(BaseHTTPRequestHandler):
                                 valid_at, as_of, 503)
 
     def _dashboard(self, query, valid_at, as_of):
-        """Executive BI Dashboard route reading bitemporal projections."""
-        if getattr(render, "IS_P2_MODE", False):
-            body = render.p2_dashboard_html(valid_at=valid_at, as_of=as_of)
-            return self._send(render.page("Metamodel Dashboard", body,
-                                          valid_at=valid_at, as_of=as_of,
-                                          path=self.path))
+        """What the modular layer holds. Served only where that layer is.
 
-        try:
-            with connect_kernel(connect_timeout=2) as kernel, psycopg.connect(OPS_DSN, connect_timeout=2) as ops:
-                built = compile_class(kernel, ops, self.map_, "StockReconciliation",
-                                      valid_at=_instant(valid_at),
-                                      as_of=_instant(as_of))
-                # Also read metadata for ingredients and locations from operational store
-                with ops.cursor() as cur:
-                    cur.execute("""
-                        SELECT i.entity_uri, i.item_name, i.item_counted_in, 
-                               i.item_reorder_level, i.item_price_per_kg,
-                               coalesce(c.conversion_factor, 1.0) AS factor,
-                               u.unit_name AS counted_in_name
-                        FROM p_ingredient i
-                        LEFT JOIN p_unit u ON u.entity_uri = i.item_counted_in
-                        LEFT JOIN p_unit_conversion c 
-                               ON c.conversion_ingredient = i.entity_uri 
-                              AND c.conversion_unit = i.item_counted_in
-                    """)
-                    meta = {row[0]: {
-                        "name": row[1],
-                        "counted_in_uri": row[2],
-                        "reorder_level_pack": float(row[3]) if row[3] is not None else None,
-                        "price_per_kg": float(row[4]) if row[4] is not None else 0.0,
-                        "pack_factor": float(row[5]),
-                        "counted_in_name": row[6] or "units",
-                    } for row in cur.fetchall()}
+        Prototype 1 had a dashboard written around one map's projection and its
+        columns — a demonstration rather than a component. It is gone, and the
+        route belongs to the metamodel now.
+        """
+        if not getattr(render, "SHOW_STUDIO", False):
+            return self._refuse(
+                "Prototype 1 Isolation",
+                "The dashboard reports on the modular metamodel layer, which is "
+                "served by Prototype 2 on port 8100 (make p2-serve). Prototype 1 "
+                "serves the operational walk: forms, projections and the log.",
+                valid_at, as_of, 404)
+        body = render.p2_dashboard_html(valid_at=valid_at, as_of=as_of)
+        return self._send(render.page("Metamodel Dashboard", body,
+                                      valid_at=valid_at, as_of=as_of,
+                                      path=self.path))
 
-                    cur.execute("SELECT entity_uri, location_name, location_temperature FROM p_internal_location")
-                    locations = {row[0]: {
-                        "name": row[1],
-                        "temp": row[2] or "Ambient",
-                    } for row in cur.fetchall()}
-        except (psycopg.OperationalError, psycopg.Error) as exc:
-            return self._refuse("Operational Database Offline",
-                                f"Cannot connect to PostgreSQL operational projection store ({OPS_DSN}). "
-                                f"Please ensure Docker Desktop / PostgreSQL is running (`docker compose up -d`).",
-                                valid_at, as_of, 503)
-
-        items = []
-        for row in built["rows"]:
-            ing_uri = row[0]
-            loc_uri = row[1]
-            ing_m = meta.get(ing_uri, {})
-            loc_m = locations.get(loc_uri, {})
-            price = float(row[3] or 0.0)
-            pack_factor = ing_m.get("pack_factor", 1.0)
-            reorder_pack = ing_m.get("reorder_level_pack")
-            reorder_kg = (reorder_pack * pack_factor) if reorder_pack is not None else None
-            exp_kg = float(row[7] or 0.0)
-            cnt_kg = float(row[8] or 0.0)
-            stock_val = float(row[9] or (cnt_kg * price))
-            var_kg = float(row[10] or 0.0)
-            var_val = float(row[11] or (var_kg * price))
-            counted_pack = round(cnt_kg / pack_factor, 1) if pack_factor else cnt_kg
-            is_anomaly = (var_val <= -50.0)
-            is_reorder = (reorder_kg is not None and cnt_kg < reorder_kg and exp_kg > 0)
-            items.append({
-                "ing_uri": ing_uri,
-                "loc_uri": loc_uri,
-                "name": ing_m.get("name", ing_uri),
-                "location": loc_m.get("name", loc_uri),
-                "temp": loc_m.get("temp", "Ambient"),
-                "price_per_kg": price,
-                "pack_unit": ing_m.get("counted_in_name", "kg"),
-                "pack_factor": pack_factor,
-                "reorder_pack": reorder_pack,
-                "reorder_kg": reorder_kg,
-                "expected_kg": exp_kg,
-                "counted_kg": cnt_kg,
-                "counted_pack": counted_pack,
-                "stock_val": stock_val,
-                "var_kg": var_kg,
-                "var_val": var_val,
-                "is_reorder": is_reorder,
-                "is_anomaly": is_anomaly,
-            })
-
-        # Calculate totals
-        total_val = sum(x["stock_val"] for x in items)
-        total_exp = sum(x["expected_kg"] * x["price_per_kg"] for x in items)
-        total_var_val = sum(x["var_val"] for x in items)
-        total_var_kg = sum(x["var_kg"] for x in items)
-        accuracy_pct = (total_val / total_exp * 100.0) if total_exp else 100.0
-
-        # Loss ranking for chart
-        top_losses = sorted([x for x in items if x["var_val"] < 0], key=lambda x: x["var_val"])[:6]
-
-        # Alerts
-        alerts = []
-        carried = render._carried(valid_at, as_of)
-        for anom in [x for x in items if x["is_anomaly"]]:
-            alerts.append({
-                "type": "danger",
-                "badge": "Severe Loss Deficit",
-                "badge_class": "badge-danger",
-                "title": f"🚨 High-Value Stock Shortfall: {anom['name']}",
-                "description": (
-                    f"Physical count in {anom['location']} found <strong>{anom['counted_kg']:.2f} kg</strong> "
-                    f"against expected <strong>{anom['expected_kg']:.2f} kg</strong>. Unaccounted deficit of "
-                    f"<strong>{abs(anom['var_kg']):.2f} kg</strong> represents a direct financial loss of "
-                    f"<strong>-£{abs(anom['var_val']):,.2f}</strong> ({abs(anom['var_val'])/abs(total_var_val)*100:.1f}% of entire business variance)."
-                ),
-                "buttons": [
-                    {
-                        "href": f"/why?subject={quote(anom['ing_uri'], safe='')}&predicate=sorella%3Aitem_price_per_kg&{carried}",
-                        "label": "Audit Provenance (/why)",
-                        "class": "btn-danger",
-                    },
-                    {
-                        "href": f"/table/StockReconciliation?{carried}&only.reconciliation_ingredient={quote(anom['ing_uri'], safe='')}",
-                        "label": "Filter in Stock Table",
-                        "class": "btn-outline",
-                    },
-                ],
-                "agent_trigger": "Autonomous Reconciliation Agent: Audit Delivery Invoices vs Batch Churn Log",
-            })
-
-        for reord in [x for x in items if x["is_reorder"] and x["name"] == "Base 50 stabiliser"]:
-            deficit = reord["reorder_kg"] - reord["counted_kg"]
-            alerts.append({
-                "type": "warning",
-                "badge": "Stockout Risk",
-                "badge_class": "badge-warning",
-                "title": f"⚠️ Production Reorder Threshold Breached: {reord['name']}",
-                "description": (
-                    f"Current inventory in {reord['location']} stands at <strong>{reord['counted_kg']:.2f} kg</strong> "
-                    f"({reord['counted_pack']:.1f} cartons / 8 bags), which is <strong>{deficit:.1f} kg below</strong> "
-                    f"the mandatory minimum threshold of <strong>{reord['reorder_kg']:.1f} kg ({reord['reorder_pack']:.0f} cartons)</strong>. "
-                    f"Gelato production capacity is impaired without stabiliser reorder."
-                ),
-                "buttons": [
-                    {
-                        "href": f"/table/StockReconciliation?{carried}&only.reconciliation_ingredient={quote(reord['ing_uri'], safe='')}",
-                        "label": "Inspect Stabiliser Inventory",
-                        "class": "btn-warning",
-                    },
-                    {
-                        "href": f"/form/StockMovement?{carried}",
-                        "label": "Record Restock Movement",
-                        "class": "btn-outline",
-                    },
-                ],
-                "agent_trigger": "Autonomous Purchasing Agent: Draft Purchase Order (2 Cartons / £552) to Terra Nostra",
-            })
-
-        # Zones breakdown
-        zones_map = {}
-        for x in items:
-            loc = x["location"]
-            if loc not in zones_map:
-                zones_map[loc] = {
-                    "name": loc,
-                    "temp": x["temp"],
-                    "count": 0,
-                    "valuation": 0.0,
-                    "variance_val": 0.0,
-                    "items": [],
-                }
-            zones_map[loc]["count"] += 1
-            zones_map[loc]["valuation"] += x["stock_val"]
-            zones_map[loc]["variance_val"] += x["var_val"]
-            zones_map[loc]["items"].append(x)
-
-        assessments = {
-            "Dry store": "Contains ambient pastes, sugars, and stabilisers. High variance rate driven by Sicilian Pistachio Paste shortfall; bulk sugars and powders strictly balanced.",
-            "Walk-in chiller": "Dairy, cream, and fresh seasonal fruit. Superb operational control with variances within culinary kitchen handling tare (<0.5%).",
-            "Ingredient freezer": "Frozen fruit purées. Thawing transfers from freezer to chiller balance cleanly with weekend batch churn schedule.",
-        }
-
-        zones_list = []
-        for name, z in zones_map.items():
-            z["assessment"] = assessments.get(name, "Monitored internal storage location.")
-            zones_list.append(z)
-
-        # Sort items by variance value (worst first)
-        items_sorted = sorted(items, key=lambda x: (x["var_val"], x["name"]))
-
-        dash_data = {
-            "total_valuation": total_val,
-            "total_expected_valuation": total_exp,
-            "total_variance_val": total_var_val,
-            "total_variance_kg": total_var_kg,
-            "accuracy_pct": accuracy_pct,
-            "alerts": alerts,
-            "top_losses": top_losses,
-            "zones": zones_list,
-            "items": items_sorted,
-        }
-
-        body = render.dashboard_html(dash_data, valid_at=valid_at, as_of=as_of)
-        self._send(render.page("Executive BI Dashboard", body,
-                               valid_at=valid_at, as_of=as_of,
-                               path=self.path))
 
     def _presentation(self, valid_at, as_of):
         path = ROOT / "presentation" / "unitios_presentation.html"

@@ -550,14 +550,15 @@ def page(title, body, *, valid_at, as_of, path=None):
         stage = "table"
         cname = title.split("—")[0].strip() if "—" in title else (p.split("/")[-1] if "/" in p else "Projection")
         crumbs = [(f"/classes?{carried}#tables", "Stage 5 · Projections"), f"{escape(cname)} Table"]
-        back_btn = (f"/dashboard?{carried}", "Open Executive BI &rarr;")
+        back_btn = (f"/classes?{carried}#tables", "&larr; Back to Projections")
     elif p == "classes":
         stage = "classes"
         crumbs = ["Stages 4 & 5 · Operational Forms & Projections Hub"]
-        back_btn = (f"/dashboard?{carried}", "Next: Stage 6 Executive BI &rarr;")
+        back_btn = ((f"/dashboard?{carried}", "Next: Metamodel Dashboard &rarr;")
+                    if SHOW_STUDIO else None)
     elif p == "dashboard" or "dashboard" in t or "executive" in t:
         stage = "dashboard"
-        crumbs = ["Stage 6 · Executive Decision Intelligence & BI"]
+        crumbs = ["Metamodel Dashboard"]
         back_btn = (table_link(carried), "&larr; Inspect the projections")
     else:
         stage = "home"
@@ -570,8 +571,13 @@ def page(title, body, *, valid_at, as_of, path=None):
         ("why", "3", "Kernel Audit", f"/why?{carried}", "Append-Only Audit Log"),
         ("classes", "4", "Ingestion Forms", f"/classes?{carried}#forms", "Operational Ingestion"),
         ("table", "5", "Projections", table_link(carried), "Live Digital Twin"),
-        ("dashboard", "6", "Executive BI", f"/dashboard?{carried}", "Executive BI & Anomaly Signals"),
     ]
+    # The dashboard reports on the modular layer, so it is a step only where
+    # that layer is served.
+    if SHOW_STUDIO:
+        stepper_defs.append(
+            ("dashboard", "6", "Metamodel", f"/dashboard?{carried}",
+             "Package registry & archetype telemetry"))
     step_items = []
     for s_id, s_num, s_name, s_url, s_hint in stepper_defs:
         is_active = " active" if stage == s_id else ""
@@ -1792,218 +1798,4 @@ def p2_dashboard_html(*, valid_at, as_of):
     ]
     return "\n".join(out)
 
-
-def dashboard_html(data, *, valid_at, as_of):
-    """Executive Decision Intelligence & BI Dashboard.
-
-    Visualises inventory valuation, monthly variance, stock accuracy, critical
-    reorder alerts, storage zone breakdown, and anomaly root-cause provenance
-    all derived live from the bitemporal graph projection.
-    """
-    carried = _carried(valid_at, as_of)
-    out = []
-
-    # Header
-    out.append('<div class="dash-header">')
-    out.append('<div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 1rem;">')
-    out.append('<div>')
-    out.append('<h1>Executive Decision Intelligence & BI Dashboard</h1>')
-    out.append(f'<p>Projections over the operational graph at valid_at: <strong>{escape(str(valid_at)[:10])}</strong>, as_of: <strong>{escape(str(as_of)[:10])}</strong></p>')
-    out.append('</div>')
-    out.append('<div style="display: flex; gap: .5rem; align-items: center;">')
-    out.append('<span class="badge badge-neutral">Graph Schema: v5</span>')
-    out.append('<span class="badge badge-success">Single Write Gate: Active</span>')
-    out.append('</div>')
-    out.append('</div>')
-    out.append('</div>')
-
-    # Top KPI Cards
-    tot_val = data["total_valuation"]
-    tot_exp = data["total_expected_valuation"]
-    tot_var_val = data["total_variance_val"]
-    tot_var_kg = data["total_variance_kg"]
-    accuracy = data["accuracy_pct"]
-    alert_count = len(data["alerts"])
-
-    out.append('<div class="kpi-grid">')
-    
-    # Valuation Card
-    out.append('<div class="kpi-card primary-card">')
-    out.append('<div class="kpi-label">Total Stock Valuation</div>')
-    out.append(f'<div class="kpi-value">£{tot_val:,.2f}</div>')
-    out.append(f'<div class="kpi-sub">Expected: £{tot_exp:,.2f} across 3 storage zones</div>')
-    out.append('</div>')
-
-    # Net Variance Card
-    var_class = "alert-card" if tot_var_val < -100 else ("warning-card" if tot_var_val < 0 else "success-card")
-    out.append(f'<div class="kpi-card {var_class}">')
-    out.append('<div class="kpi-label">Total Inventory Variance</div>')
-    sign = "" if tot_var_val >= 0 else "-"
-    abs_var = abs(tot_var_val)
-    out.append(f'<div class="kpi-value" style="color: {"#b32d2e" if tot_var_val < 0 else "#15803d"};">{sign}£{abs_var:,.2f}</div>')
-    out.append(f'<div class="kpi-sub"><span class="badge badge-danger">{sign}{abs(tot_var_kg):,.2f} kg</span> Net discrepancy in stocktake</div>')
-    out.append('</div>')
-
-    # Accuracy Card
-    acc_class = "success-card" if accuracy >= 95 else ("warning-card" if accuracy >= 85 else "alert-card")
-    out.append(f'<div class="kpi-card {acc_class}">')
-    out.append('<div class="kpi-label">Stock Valuation Accuracy</div>')
-    out.append(f'<div class="kpi-value">{accuracy:.2f}%</div>')
-    out.append(f'<div class="kpi-sub">Physical valuation vs movement log expectation</div>')
-    out.append('</div>')
-
-    # Active Alerts Card
-    out.append('<div class="kpi-card alert-card">')
-    out.append('<div class="kpi-label">Active Action Alerts</div>')
-    out.append(f'<div class="kpi-value" style="color: #b32d2e;">{alert_count} Alerts</div>')
-    out.append('<div class="kpi-sub">1 High-Value Loss • 1 Critical Reorder</div>')
-    out.append('</div>')
-
-    out.append('</div>')  # end kpi-grid
-
-    # Action Alerts Section (Agent Triggers)
-    if data["alerts"]:
-        out.append('<div class="dash-alerts">')
-        for alert in data["alerts"]:
-            box_class = "danger" if alert["type"] == "danger" else "warning"
-            out.append(f'<div class="alert-box {box_class}">')
-            out.append(f'<h3><span>{escape(alert["title"])}</span> <span class="badge {alert["badge_class"]}">{escape(alert["badge"])}</span></h3>')
-            out.append(f'<p>{alert["description"]}</p>')
-            out.append('<div class="alert-action">')
-            for btn in alert["buttons"]:
-                out.append(f'<a href="{escape(btn["href"])}" class="btn-action {escape(btn["class"])}">{escape(btn["label"])}</a>')
-            if "agent_trigger" in alert:
-                out.append(f'<span class="badge badge-neutral" title="Autonomous execution hook">🤖 Agent Hook: {escape(alert["agent_trigger"])}</span>')
-            out.append('</div>')
-            out.append('</div>')
-        out.append('</div>')
-
-    # Discrepancy Bar Chart Section
-    out.append('<div class="chart-card">')
-    out.append('<h2>Variance Distribution & Financial Loss Concentration</h2>')
-    out.append('<p class="chart-desc">Breakdown of inventory variances across ingredients. The financial shortfall is overwhelmingly concentrated in high-value Italian pastes, while everyday baking ingredients exhibit normal kitchen culinary handling tare (&lt;0.5%).</p>')
-    out.append('<div class="bar-chart">')
-    
-    top_losses = data.get("top_losses", [])
-    max_loss = max([abs(item["var_val"]) for item in top_losses] or [1.0])
-    
-    for item in top_losses:
-        loss_val = abs(item["var_val"])
-        pct_of_max = min(100.0, (loss_val / max_loss) * 100.0) if max_loss > 0 else 0
-        pct_of_total = (loss_val / abs(tot_var_val) * 100.0) if tot_var_val != 0 else 0
-        fill_class = "bar-severe" if loss_val > 100 else ("bar-moderate" if loss_val > 5 else "bar-minor")
-        why_href = f'/why?subject={escape(quote(item["ing_uri"], safe=""))}&predicate=sorella%3Aitem_price_per_kg&{carried}'
-
-        out.append('<div class="bar-row">')
-        out.append(f'<div class="bar-label"><a href="{why_href}" title="Inspect audit trail in /why">{escape(item["name"])}</a></div>')
-        out.append(f'<div class="bar-track"><div class="bar-fill {fill_class}" style="width: {pct_of_max:.1f}%;"></div></div>')
-        out.append(f'<div class="bar-num" style="color: {"#b32d2e" if item["var_val"] < 0 else "#15803d"};">-£{loss_val:,.2f}</div>')
-        out.append(f'<div class="bar-pct">{pct_of_total:.1f}%</div>')
-        out.append('</div>')
-
-    out.append('</div>')  # end bar-chart
-    out.append('</div>')  # end chart-card
-
-    # Storage Zone Breakdown
-    out.append('<div class="dash-table-card">')
-    out.append('<h2>Storage Zone Operational Intelligence</h2>')
-    out.append('<p>Physical inventory valuation, temperature regimes, and variance concentration segregated by internal storage area.</p>')
-    out.append('<div class="zones-grid">')
-    
-    for zone in data.get("zones", []):
-        z_var = zone["variance_val"]
-        z_sign = "" if z_var >= 0 else "-"
-        out.append('<div class="zone-card">')
-        out.append(f'<h3><span>{escape(zone["name"])}</span> <span class="badge badge-neutral">{escape(zone["temp"])}</span></h3>')
-        out.append(f'<div class="zone-temp">{zone["count"]} ingredients monitored</div>')
-        out.append('<div class="zone-stats">')
-        out.append(f'<div><div class="zone-stat-label">Valuation</div><div class="zone-stat-num">£{zone["valuation"]:,.2f}</div></div>')
-        out.append(f'<div><div class="zone-stat-label">Variance</div><div class="zone-stat-num" style="color: {"#b32d2e" if z_var < -10 else "#15803d"};">{z_sign}£{abs(z_var):,.2f}</div></div>')
-        out.append('</div>')
-        out.append(f'<p class="zone-note">{escape(zone["assessment"])}</p>')
-        out.append('</div>')
-
-    out.append('</div>')  # end zones-grid
-    out.append('</div>')  # end dash-table-card
-
-    # Full Ingredient Health Table
-    out.append('<div class="dash-table-card">')
-    out.append('<div style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap;">')
-    out.append('<div>')
-    out.append('<h2>Complete Inventory Health & Physical Stocktake</h2>')
-    out.append('<p>Live reconciliation between cumulative stock movements and physical counts, with automated reorder triggers and financial variance analysis.</p>')
-    out.append('</div>')
-    out.append(f'<div><a href="{table_link(carried)}" class="btn-action btn-outline">Open Full Raw Table</a></div>')
-    out.append('</div>')
-
-    out.append('<table class="data">')
-    out.append('<thead><tr>')
-    out.append('<th>Ingredient</th>')
-    out.append('<th>Storage Zone</th>')
-    out.append('<th>Unit Price</th>')
-    out.append('<th>Expected</th>')
-    out.append('<th>Counted</th>')
-    out.append('<th>In Packs</th>')
-    out.append('<th>Reorder Threshold</th>')
-    out.append('<th>Variance (kg)</th>')
-    out.append('<th>Variance (£)</th>')
-    out.append('<th>Health Status</th>')
-    out.append('<th>Audit</th>')
-    out.append('</tr></thead>')
-    out.append('<tbody>')
-
-    for item in data.get("items", []):
-        row_style = ' style="background: #fff8f8;"' if item["is_anomaly"] else (' style="background: #fffdf5;"' if item["is_reorder"] else '')
-        out.append(f'<tr{row_style}>')
-        
-        # Name
-        out.append(f'<td style="font-weight: 600;">{escape(item["name"])}</td>')
-        # Location
-        out.append(f'<td>{escape(item["location"])}</td>')
-        # Price
-        out.append(f'<td style="text-align: right;">£{item["price_per_kg"]:.2f}/kg</td>')
-        # Expected
-        out.append(f'<td style="text-align: right;">{item["expected_kg"]:.2f} kg</td>')
-        # Counted
-        out.append(f'<td style="text-align: right; font-weight: 600;">{item["counted_kg"]:.2f} kg</td>')
-        # In Packs
-        cnt_pack_str = f'{item["counted_pack"]:.1f} {item["pack_unit"]}'
-        out.append(f'<td style="text-align: right; color: #5a524a;">{escape(cnt_pack_str)}</td>')
-        
-        # Reorder Threshold
-        if item["reorder_kg"] is not None:
-            reorder_str = f'{item["reorder_kg"]:.1f} kg ({item["reorder_pack"]:.0f} {item["pack_unit"]})'
-        else:
-            reorder_str = '-'
-        out.append(f'<td style="text-align: right;">{escape(reorder_str)}</td>')
-        
-        # Variance kg
-        v_kg = item["var_kg"]
-        v_sign = "+" if v_kg > 0 else ""
-        out.append(f'<td style="text-align: right; font-weight: 500;">{v_sign}{v_kg:.2f} kg</td>')
-        
-        # Variance £
-        v_val = item["var_val"]
-        val_color = "#b32d2e" if v_val < -5 else ("#6b6259" if v_val == 0 else "#15803d")
-        out.append(f'<td style="text-align: right; font-weight: 600; color: {val_color};">£{v_val:.2f}</td>')
-        
-        # Health Status Badge
-        if item["is_anomaly"]:
-            status_badge = '<span class="badge badge-danger">Severe Loss (-£428)</span>'
-        elif item["is_reorder"]:
-            status_badge = '<span class="badge badge-warning">Low Stock Reorder</span>'
-        else:
-            status_badge = '<span class="badge badge-success">Healthy (&lt;0.5%)</span>'
-        out.append(f'<td>{status_badge}</td>')
-
-        # Audit Link
-        why_href = f'/why?subject={escape(quote(item["ing_uri"], safe=""))}&predicate=sorella%3Aitem_price_per_kg&{carried}'
-        out.append(f'<td><a class="why" href="{why_href}">why</a></td>')
-        out.append('</tr>')
-
-    out.append('</tbody>')
-    out.append('</table>')
-    out.append('</div>')  # end dash-table-card
-
-    return "\n".join(out)
 

@@ -44,7 +44,7 @@ Most operational software commits three design errors:
 │     3. OPERATIONAL & QUERY LAYER      │   │          2. KERNEL LAYER          │
 │  - Compiled multi-CTE SQL projections │   │  - PostgreSQL append-only ledger  │
 │  - Single write gate (generate.py)    │◄──┤    (intent, entity, assertion)    │
-│  - Web interface & dashboard          │   │  - Triggers deny UPDATE & DELETE  │
+│  - Web interface                      │   │  - Triggers deny UPDATE & DELETE  │
 │  - MCP servers for agents             │   │  - Bitemporal indexing            │
 └───────────────────────────────────────┘   └───────────────────────────────────┘
 ```
@@ -115,10 +115,11 @@ The repository carries two running configurations of the same components.
 
 | | **P1** | **P2** |
 |---|---|---|
-| Purpose | The operational walk: forms, projections, audit, dashboard | Modular metamodel and the ontology authoring workbench |
+| Purpose | The operational walk: forms, projections, audit | Modular metamodel, its dashboard, and the authoring workbench |
 | Graph source | `business/<name>/vN.yaml` | `packages/<scope>/<name>/` |
 | Default port | 8000 | 8100 |
 | Studio | off | on |
+| `/studio`, `/dashboard` | 404 | served |
 | Start | `make p1-serve` | `make p2-serve` |
 
 Mode is explicit on the command line, and P1 refuses Studio routes outright:
@@ -174,7 +175,7 @@ Both live on the URL, so any view is a link somebody can send, and moving a cloc
 | `/form/<Class>` | A generated form; `POST` submits through the write gate |
 | `/correct` | Retroactive correction and retraction, without mutating history |
 | `/table/<Class>` | A projection compiled at the current clocks |
-| `/dashboard` | Aggregate indicators over the compiled projections |
+| `/dashboard` | What the modular layer holds: packages on the load path, archetypes, linter gates (P2 only) |
 | `/studio` | The ontology workbench (P2 only) |
 
 ---
