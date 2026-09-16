@@ -1,198 +1,215 @@
-# Uniti — The Ontological Operating System & Bitemporal Claim Log
+# Uniti — An Ontological Operating System over a Bitemporal Claim Log
 
-Uniti is an append-only evidence substrate and declarative operational platform. It replaces destructive database mutations and hardcoded business logic with an **immutable bitemporal claim log** paired with a **declarative ontology graph** (LinkML). 
+Uniti is an append-only evidence substrate and a declarative operational platform. It replaces destructive database mutation and hardcoded business logic with an **immutable bitemporal claim log** paired with a **declarative ontology graph** expressed in LinkML.
 
-From a high-level domain model, Uniti automatically compiles:
-1. **Dynamic relational projections** (materialized multi-CTE views with zero hardcoded business logic)
-2. **Transaction ingestion write-gates and user forms**
-3. **Forensic provenance timelines and time-travel querying**
-4. **Universal AI Agent tools** conforming to the Model Context Protocol (MCP)
+From a domain model alone, Uniti compiles:
 
----
-
-## The Core Problem & Thesis
-
-Most enterprise software (ERPs, CRMs, and operational databases) commits three fundamental design errors:
-1. **Destructive Mutation:** `UPDATE` and `DELETE` destroy evidence. When a database row is updated, the previous state of the world is erased unless expensive audit tables are retrofitted.
-2. **Single-Clock Confusion:** A database timestamp usually conflates *when an event happened in the real world* (`valid_from`) with *when the system learned about it* (`recorded_at`). This makes backdated corrections ("we made a mistake about January") indistinguishable from real-world changes ("the price changed in March").
-3. **Imperative Business Logic Lock-in:** Calculations (e.g. stock reconciliation, taxes, commissions) are scattered across application code, ORMs, and stored procedures. Modifying a business rule requires refactoring application code.
-
-### The Uniti Solution:
-- **Append-Only Kernel:** One fact is one row in `assertion`. No row is ever updated, deleted, or truncated. Database triggers physically enforce immutability.
-- **Two Time Axes (Bitemporality):** Every assertion carries `valid_from` and `recorded_at`. Reads take both `(valid_at, as_of)`, allowing true time travel and non-destructive retrospective corrections.
-- **Per-Field Provenance:** Attribution (`intent_id`, `source`, `confidence`, `authority`) is recorded at the granularity of individual statements, not entire records.
-- **Graph as the Single Source of Truth:** Business rules, aggregations, unit conversions, and validation guards are declared in standard LinkML YAML schemas. The compiler translates the graph into performant SQL queries.
-- **First-Class AI Agent Protocol:** Exposes 11 domain-agnostic OS primitives via Model Context Protocol (MCP) over standard JSON-RPC stdio.
+1. **Relational projections** — multi-CTE views carrying no hand-written business logic
+2. **Write gates and input forms** for transaction ingestion
+3. **Forensic provenance timelines** and time-travel querying
+4. **Domain-agnostic agent tools** conforming to the Model Context Protocol (MCP)
 
 ---
 
-## 3-Layer Architecture
+## The Problem
+
+Most operational software commits three design errors:
+
+1. **Destructive mutation.** `UPDATE` and `DELETE` destroy evidence. A row's prior state is gone unless audit tables are retrofitted around it.
+2. **A single clock.** One timestamp conflates *when something happened* with *when the system learned of it*. A backdated correction then becomes indistinguishable from a real-world change.
+3. **Imperative logic lock-in.** Calculations scatter across application code, ORMs, and stored procedures. Changing a rule means refactoring code.
+
+## The Response
+
+- **Append-only kernel.** One fact is one row. No row is ever updated, deleted, or truncated; database triggers enforce this physically, and the privileges are revoked besides.
+- **Two time axes.** Every assertion carries `valid_from` and `recorded_at`. Reads take both — `(valid_at, as_of)` — which makes time travel and non-destructive retrospective correction ordinary operations rather than special cases.
+- **Per-field provenance.** Attribution (`intent_id`, `source`, `confidence`, `authority`) is recorded per statement, not per record.
+- **The graph is the source of truth.** Rules, aggregations, unit conversions, and guards are declared in LinkML. A compiler turns the graph into SQL.
+- **Agents are first-class.** Domain-agnostic OS primitives are exposed over standard JSON-RPC stdio.
+
+---
+
+## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                          1. GRAPH LAYER (LinkML)                        │
-│   Declarative Domain Ontologies: Classes, Slots, Invariants, & Rules    │
-│   (business/sorella/, business/sorella_demo/)                           │
+│   Declarative ontologies: classes, slots, invariants, derivation rules  │
+│   packages/  (composable modules)   ·   business/  (single-file maps)   │
 └────────────────────────────────────┬────────────────────────────────────┘
                                      │
            ┌─────────────────────────┴─────────────────────────┐
            ▼                                                   ▼
 ┌───────────────────────────────────────┐   ┌───────────────────────────────────┐
 │     3. OPERATIONAL & QUERY LAYER      │   │          2. KERNEL LAYER          │
-│  - Dynamic Multi-CTE SQL Projections  │   │  - PostgreSQL Append-Only Ledger  │
-│  - Single Write-Gate (generate.py)    │◄──┤    (intent, entity, assertion)    │
-│  - Executive BI Dashboard (/dashboard)│   │  - Triggers deny UPDATE & DELETE  │
-│  - Universal MCP Server (agent/)      │   │  - Bitemporal Indexing (5433)     │
+│  - Compiled multi-CTE SQL projections │   │  - PostgreSQL append-only ledger  │
+│  - Single write gate (generate.py)    │◄──┤    (intent, entity, assertion)    │
+│  - Web interface & dashboard          │   │  - Triggers deny UPDATE & DELETE  │
+│  - MCP servers for agents             │   │  - Bitemporal indexing            │
 └───────────────────────────────────────┘   └───────────────────────────────────┘
 ```
 
-### 1. Graph Layer (LinkML Ontology)
-- Located in `business/<business_name>/`.
-- Expresses classes, relationships, and business logic using LinkML.
-- Custom annotations define formulas:
-  - `aggregate:` Scoped aggregation (`sum`, `count`) with `where: {is_a: ...}` filtering.
-  - `convert:` Factor conversion across measurement units (e.g., cartons/tins to base kilograms).
-  - `equals_expression:` Closed algebraic expressions across columns in a projection.
-  - `parameters:` Attribute lookups linked to master data entities.
+### 1. Graph layer
 
-### 2. Kernel Layer (PostgreSQL Append-Only Claim Log)
-- Defined in `components/kernel/001_schema.sql`.
-- Strictly maintains three closed tables:
-  - **`intent`**: Captures who acted, when, under what action name, and the human reason. Every write links back to an intent.
-  - **`assertion`**: The claim log. Records `subject_id`, `predicate_id`, `value_literal` XOR `value_ref`, `valid_from`, `recorded_at`, `confidence`, `source`, `authority`, and `revokes`.
-  - **`entity`**: Minted identity registry (`entity_id`, `uri`, `recorded_at`, `intent_id`). Class membership is an assertion (`member_of`), never a static column.
-- **Append-only enforcement:** `kernel_deny()` triggers raise database exceptions on `UPDATE`, `DELETE`, or `TRUNCATE`.
+Two ways to express a domain, both LinkML, both sealed the same way:
 
-### 3. Operational & Projection Layer
-- Translates ontology rules into high-speed PostgreSQL Multi-CTE queries.
-- Incorporates planner hints (`SET enable_nestloop = off; SET jit = off`) to bypass query optimizer pitfalls on unindexed dynamic CTEs, slashing execution times from 50s to 0.05s.
-- Materializes projections into a derived operational database (`uniti_demo_ops`).
+- **`business/<name>/`** — a single-file map per version (`v1.yaml`, `v2.yaml`, …). The original form.
+- **`packages/<scope>/<name>/`** — composable modules with a `uniti.package.yaml` manifest and a `schema/` directory, resolved through `components/linter/package_loader.py`. `@uniti/core` defines the root metamodel: five archetypes (**Agent, Resource, Commitment, Event, Projection**) that every domain class must descend from.
 
----
+Derivation is declared through annotations, which is the entire vocabulary the compiler understands:
 
-## Repository Structure
+| Annotation | Meaning |
+|---|---|
+| `aggregate:` | Scoped aggregation (`sum`, `count`) over a source class, with `by` grouping and optional `where` / `is_a` filtering |
+| `convert:` | Factor conversion between measurement units, resolved through a conversion class |
+| `equals_expression:` | Closed arithmetic over other columns of the same projection |
+| `parameter:` | A single fact read off the entity a key column names |
 
-```
-.
-├── business/               # Declarative LinkML business ontologies
-│   ├── sorella/            # Full reference model (gelato enterprise: v1–v3)
-│   ├── sorella_demo/       # Live interactive demo model (sealed v1–v5)
-│   └── trial/              # Minimal fixture ontology for LinkML tests
-├── components/             # Core Uniti subsystem components (domain-agnostic)
-│   ├── agent/              # Universal Model Context Protocol (MCP) server
-│   ├── compiler/           # LinkML-to-SQL compiler & aggregate planner
-│   ├── generator/          # Single write-gate (submit) & dynamic form generator
-│   ├── kernel/             # PostgreSQL schema, deny-triggers, & connection helpers
-│   ├── ontology/           # Bitemporal version resolution across time axes
-│   ├── provenance/         # Forensic audit reader & historical claim tracer
-│   ├── seal/               # Verification & version-sealing gate (draft -> version)
-│   └── web/                # HTTP server, Executive BI dashboard, & SVG graph renderer
-├── scripts/                # Operational CLI utilities
-│   ├── check_profile.py    # Cross-validates business profiles against raw rules
-│   ├── project.py          # Bitemporal projection builder & diff comparator
-│   ├── seed_200.py         # Deterministic seed generator for regression testing
-│   ├── seed_demo.py        # Realistic 6-month culinary enterprise seeder
-│   ├── owl_domains.py      # OWL domain inference utility
-│   └── render_map.py       # Map markdown and documentation renderer
-├── tests/                  # 9 dedicated pytest suites (90 unit tests)
-│   ├── agent/              # MCP protocol, tool dispatch, & schema inspection
-│   ├── compiler/           # Scoped aggregates, unit conversions, & CTE validation
-│   ├── generator/          # Dynamic form emission & transaction generation
-│   ├── kernel/             # Bitemporal read matrix & append-only trigger enforcement
-│   ├── ontology/           # Multi-version resolution at given (valid_at, as_of)
-│   ├── provenance/         # Claim history, retraction tracking, & author tracing
-│   ├── seal/               # Draft validation & sealing rules
-│   └── trial/              # LinkML feature compatibility tests
-├── docker-compose.yml      # PostgreSQL 17 multi-database container definition
-├── Makefile                # Standard automation targets
-└── README.md               # System overview and operational guide
-```
+### 2. Kernel layer
+
+Defined in `components/kernel/001_schema.sql`. Three tables, closed column lists:
+
+- **`intent`** — who acted, when, under what action, and why. Every write links back to one.
+- **`assertion`** — the claim log: `subject_id`, `predicate_id`, `value_literal` XOR `value_ref`, `valid_from`, `recorded_at`, `confidence`, `source`, `authority`, `revokes`.
+- **`entity`** — the identity registry. There is no class column; class membership is itself an assertion.
+
+A `kernel_deny()` trigger raises on `UPDATE`, `DELETE`, and `TRUNCATE`; those privileges are also revoked from `PUBLIC`.
+
+### 3. Operational layer
+
+The compiler reads the log through the map and fills a store in a **separate database**, so no page and no query can join a projection to an `assertion` row. Projections are derived caches: they are dropped and rebuilt, never treated as the source of truth.
 
 ---
 
-## Quick Start & Verification
+## Components
 
-### Prerequisites
-- **Docker** and Docker Compose
-- **Python 3.12**
-- Git
+| Path | Responsibility |
+|---|---|
+| `components/kernel/` | Schema, deny triggers, the write primitive (`perform`), single-fact resolution (`resolve`) |
+| `components/compiler/` | LinkML → SQL compiler and aggregate planner |
+| `components/generator/` | The single write gate (`submit`) and dynamic form generation |
+| `components/seal/` | Draft validation and version sealing (draft → immutable `vN`) |
+| `components/ontology/` | Version resolution across both time axes |
+| `components/provenance/` | Forensic audit reader and claim history tracer |
+| `components/linter/` | Package loader and the deterministic semantic linter |
+| `components/studio/` | Ontology authoring: catalog, schema patcher, prompts, LLM agent |
+| `components/agent/` | MCP servers — operational primitives and Studio authoring tools |
+| `components/web/` | HTTP server, rendering, diagrams, Studio workbench handler |
 
-### 1. Verify Everything in One Command (`make check`)
+### Linter rules
 
-From a clean clone, run:
+| Rule | Severity | Checks |
+|---|---|---|
+| `LINT-000` | error | The schema and its imports resolve at all |
+| `LINT-001` | error | Every class descends from one of the five archetypes |
+| `LINT-002` | warning | Numeric slots are anchored to a standard URI |
+| `LINT-003` | error / warning | Commitment lifecycles are sound: declared initial state, known transitions, no deadlocked states |
+| `LINT-004` | error | Invariant expressions parse and contain only safe AST nodes, rooted at `self` or `actor` |
+| `LINT-005` | error | A projection's `equals_expression` references only slots that class actually has |
+
+---
+
+## Two prototypes
+
+The repository carries two running configurations of the same components.
+
+| | **P1** | **P2** |
+|---|---|---|
+| Purpose | The operational walk: forms, projections, audit, dashboard | Modular metamodel and the ontology authoring workbench |
+| Graph source | `business/<name>/vN.yaml` | `packages/<scope>/<name>/` |
+| Default port | 8000 | 8100 |
+| Studio | off | on |
+| Start | `make p1-serve` | `make p2-serve` |
+
+Mode is explicit on the command line, and P1 refuses Studio routes outright:
+
+```bash
+serve.py <map> --port 8100 --mode p2 --studio
+```
+
+---
+
+## Quick start
+
+**Prerequisites:** Docker and Docker Compose, Python 3.12, Git.
+
 ```bash
 make check
 ```
-`make check` will:
-1. Initialize the Python virtual environment (`.venv`) and install dependencies (`psycopg[binary]`, `pytest`, `linkml`).
-2. Launch the PostgreSQL 17 Docker container on host port `5433`.
-3. Wipe and re-apply the kernel schema to a throwaway database (`uniti_check`).
-4. Execute the complete test suite (**90 passed in <2s**).
-5. Seed 200 synthetic bitemporal assertions, project them twice, and assert that the output is **byte-identical twice in a row**.
+
+`make check` creates the virtual environment, starts PostgreSQL 17 on host port `5433`, applies the kernel schema to a throwaway database, runs the test suite, then seeds synthetic assertions and projects them twice — asserting the two projections come out byte-identical.
+
+### Other targets
+
+| Target | Does |
+|---|---|
+| `make schema` | Start the database, apply the kernel schema to the check database |
+| `make test` | Run the test suite |
+| `make replay` | Seed, project twice, assert determinism |
+| `make compile` | Compile projections into the operational store |
+| `make p1-serve` / `make p2-serve` | Run the web interface in either mode |
+| `make mcp-serve` | Run the operational MCP server |
+| `make mcp-studio-serve` | Run the Studio authoring MCP server |
+| `make p2-bootstrap` | Register the core metamodel into a P2 kernel |
+| `make p2-check` | Run the P2 test suite |
 
 ---
 
-## Running the Web Demonstration
+## The web interface
 
-Uniti includes an interactive web application running over `business/sorella_demo/v5.yaml` (a realistic artisanal gelato enterprise dataset with opening inventories, supplier deliveries, production batches, retail POS scans, and physical stocktake variance).
+Every page carries two clock inputs in the header:
 
-### Step 1: Seed the Demo Database
-```bash
-make demo-seed
-```
-This drops and recreates `uniti_demo` and `uniti_demo_ops`, loads 11,700+ assertions spanning 6 months, and compiles all digital twin projection tables.
+- **`valid_at`** (effective time) — how the world stood at a chosen moment
+- **`as_of`** (record time) — what the system believed at a chosen moment
 
-### Step 2: Start the Web Server
-```bash
-make demo-serve
-```
-The server binds to **`http://localhost:8100`**.
+Both live on the URL, so any view is a link somebody can send, and moving a clock is a reload.
 
-### The 6-Stage Web Walk
-Open your browser to `http://localhost:8100/` to explore the stages:
+| Route | Shows |
+|---|---|
+| `/` | The stages, in the order they happen |
+| `/said` | The narrative description beside the map it became |
+| `/graph` | The map drawn; with `?class=&column=` it draws the rule deriving one column |
+| `/why` | The raw claim ledger for one subject and predicate, with a bitemporal timeline |
+| `/classes` | Every class the map gives a form, and every class it gives a table |
+| `/form/<Class>` | A generated form; `POST` submits through the write gate |
+| `/correct` | Retroactive correction and retraction, without mutating history |
+| `/table/<Class>` | A projection compiled at the current clocks |
+| `/dashboard` | Aggregate indicators over the compiled projections |
+| `/studio` | The ontology workbench (P2 only) |
 
-| Stage | Route | Description |
+---
+
+## Agent interface (MCP)
+
+Two servers, both JSON-RPC 2.0 over stdio (`2024-11-05`). Neither contains a domain word: the same primitives operate any business.
+
+**Operational server** — `components/agent/server.py`
+
+| Graph | Digital twin | Provenance & write |
 |---|---|---|
-| **Overview** | `/` | Pipeline walk through the 6 stages of data life. |
-| **Stage 1 · Narrative** | `/said` | Plain-English business transcript displayed side-by-side with the LinkML ontology it created. |
-| **Stage 2 · Domain Graph** | `/graph` | Interactive Mermaid diagram with zoom/pan. Querying with `?class=...&column=...` highlights the exact derivation formula for any projected column. |
-| **Stage 3 · Kernel Audit** | `/why` | Raw forensic audit ledger reading directly from `intent` and `assertion`. Includes a visual bitemporal timeline showing active vs revoked claims. |
-| **Stage 4 · Forms Hub** | `/classes` | Auto-generated input forms for Events (e.g. `StockMovement`) and Master Data, reading select options dynamically from the operational store. |
-| **Write Gate** | `/form/<Class>` | Submits new transactions through `generate.submit()`, minting entities and recording atomic intent. |
-| **Bitemporal Correction** | `/correct` | Dedicated UI to retroactively correct or retract earlier assertions without mutating history. |
-| **Stage 5 · Projections** | `/table/<Class>` | Dynamic digital twin projections. See `/table/StockReconciliation` for system vs. physical count variance and financial loss calculations. |
-| **Stage 6 · Executive BI** | `/dashboard` | Executive Decision Dashboard with high-level KPI cards, safety stockout alerts, and anomaly detection (e.g., £2,000+ Sicilian Pistachio Paste shrinkage). |
+| `graph_get_schema` | `ops_list_projections` | `kernel_get_activity` |
+| `graph_update_draft` | `ops_query_projection` | `kernel_trace_provenance` |
+| `graph_validate_draft` | `ops_explain_projection` | `kernel_submit_transaction` |
+| `graph_seal_version` | | `kernel_correct_assertion` |
 
-### Global Bitemporal Time Travel
-Every page features sticky header clock inputs:
-- **`valid_at` (Effective Time):** View what the state of the world was at any date.
-- **`as_of` (Record Time):** View what the system believed at any date (reconstructing historical knowledge before later corrections were submitted).
-- **`[ ↻ Live Today ]`**: Instantly resets both clocks to current real time.
+**Studio server** — `components/agent/studio_server.py`
 
----
+`studio_init_package` · `studio_inspect_package` · `studio_propose_patch` · `studio_search_catalog` · `studio_validate_linter` · `studio_render_graph` · `studio_seal_package`
 
-## Universal AI Agent Server (Model Context Protocol / MCP)
+### Connecting a client
 
-Uniti provides a built-in, domain-agnostic **MCP Server** (`components/agent/server.py`) conforming to the standard JSON-RPC 2.0 stdio protocol (`2024-11-05`). It allows external AI agents (Claude Desktop, Cursor, Antigravity, or custom autonomous loops) to explore the ontology, query the digital twin, audit provenance, and submit verified transactions.
+The server names no default business. State it in the environment, or pass `business` on every call.
 
-### Running the MCP Server
-```bash
-make mcp-serve
-```
-
-### Connecting to Claude Desktop / Cursor
-Add the following to your `claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
     "uniti": {
-      "command": "C:/Users/<username>/Desktop/Uniti/PoC/.venv/Scripts/python.exe",
-      "args": [
-        "C:/Users/<username>/Desktop/Uniti/PoC/components/agent/server.py"
-      ],
+      "command": "<repo>/.venv/Scripts/python.exe",
+      "args": ["<repo>/components/agent/server.py"],
       "env": {
-        "UNITI_DSN": "postgresql://uniti:uniti@localhost:5433/uniti_demo",
-        "UNITI_OPS_DSN": "postgresql://uniti:uniti@localhost:5433/uniti_demo_ops",
+        "UNITI_DSN": "postgresql://uniti:uniti@localhost:5433/<log_db>",
+        "UNITI_OPS_DSN": "postgresql://uniti:uniti@localhost:5433/<ops_db>",
+        "UNITI_BUSINESS": "<name under business/>",
         "PYTHONIOENCODING": "utf-8"
       }
     }
@@ -200,92 +217,65 @@ Add the following to your `claude_desktop_config.json`:
 }
 ```
 
-### The 11 Domain-Agnostic OS Primitives
+---
 
-The server contains **zero domain words**. An agent can operate any business (manufacturing, hospitality, logistics, healthcare) using the same 11 primitives:
+## Architectural invariants
 
-```
-┌────────────────────────────────────────────────────────────────────────┐
-│                        11 MCP TOOLS BY PILLAR                          │
-├───────────────────┬───────────────────┬────────────────────────────────┤
-│ 1. GRAPH PILLAR   │ 2. TWIN PILLAR    │ 3. PROVENANCE & WRITE PILLAR   │
-├───────────────────┼───────────────────┼────────────────────────────────┤
-│ graph_get_schema  │ ops_list_projections│ kernel_get_activity          │
-│ graph_update_draft│ ops_query_projection│ kernel_trace_provenance      │
-│ graph_validate_draft│ ops_explain_projection│ kernel_submit_transaction  │
-│ graph_seal_version│                   │ kernel_correct_assertion       │
-└───────────────────┴───────────────────┴────────────────────────────────┘
-```
+These hold across the codebase and must not be broken.
 
-#### Graph Pillar
-- `graph_get_schema`: Reads sealed LinkML ontologies, classes, slots, ranges, and formulas.
-- `graph_update_draft`: Modifies draft ontology schemas during interactive business modeling.
-- `graph_validate_draft`: Checks drafts against LinkML metamodel constraints and naming rules.
-- `graph_seal_version`: Cryptographically seals an approved draft into an immutable version (`v1`, `v2`, ...).
+**1. Live code is domain-blind.**
+No business term may appear in `components/`. Domain vocabulary belongs exclusively in `business/*.yaml` and `packages/**/schema/*.yaml`. A compiler that recognised a column name would be defective: point it at another map and another table must come out.
 
-#### Digital Twin & Operational Pillar
-- `ops_list_projections`: Discovers available compiled operational tables and their column schemas.
-- `ops_query_projection`: Executes filtered, parameterized queries against compiled operational views at `(valid_at, as_of)`.
-- `ops_explain_projection`: Returns the formal mathematical formula and underlying LinkML rules behind any projected column.
+**2. One write gate.**
+Never `INSERT INTO assertion` directly. Every write passes through `generate.submit()`, which mints an atomic `intent`, validates slot ranges and references, and assigns bitemporal stamps and attribution consistently.
 
-#### Provenance & Forensic Pillar
-- `kernel_get_activity`: Inspects the raw activity ledger (`intent` + `assertion`) across specific time windows.
-- `kernel_trace_provenance`: Traces the complete lifecycle of a specific entity or property, showing every claim, author, confidence score, and revocation.
+**3. Immutability is enforced by the database.**
+Never attempt `UPDATE`, `DELETE`, or `TRUNCATE` on `assertion`, `intent`, or `entity`. Retraction and correction are new assertions carrying `revokes`.
 
-#### Write Gate Pillar
-- `kernel_submit_transaction`: Validates and submits domain transactions through `generate.submit()`, minting entities and recording provenance.
-- `kernel_correct_assertion`: Submits an append-only correction or retraction for an inaccurate historical assertion without mutating the log.
+**4. A slot's identity is its URI.**
+Every slot declares an explicit `slot_uri`, and `seal` refuses one that does not. Facts are recorded against the URI, never the slot's name — a URI derived from the name would change on every rename and orphan every fact already recorded under it. Where an authoring tool has no canonical URI to anchor to, it mints one and **writes it into the draft**, so the identity becomes a reviewable declaration rather than a value recomputed later.
+
+**5. Projections are ephemeral.**
+The operational store is a derived cache. It may be dropped and recompiled at any time and is never the source of truth.
+
+**6. Tests touch throwaway databases only.**
+Both `UNITI_DSN` and `UNITI_OPS_DSN` must point at throwaway databases. The operational one matters just as much as the log: compiling a projection *drops and rebuilds* its table, so a run that inherits a live operational store silently empties it. `tests/conftest.py` pins both and refuses to run otherwise.
 
 ---
 
-## Architectural Invariants (Guidelines for Agents & Developers)
+## Repository layout
 
-When working on or extending this codebase, the following invariants **must remain unbroken**:
+```
+.
+├── business/               # Single-file LinkML maps, one directory per domain
+├── packages/               # Composable LinkML modules (@uniti/core = metamodel)
+├── components/             # The system itself — see the Components table
+├── scripts/                # Operational CLI utilities: seeding, projection, checks
+├── tests/                  # Test suites, including tests/p2 for the modular layer
+├── docker-compose.yml      # PostgreSQL 17
+├── Makefile                # Automation targets
+└── README.md
+```
 
-1. **Strict Domain-Blindness in Live Code:**
-   No business terms (e.g. *gelato*, *ingredient*, *churn*, *sku*, *order*, *vendor*) may appear in `components/kernel/`, `components/compiler/`, `components/generator/`, or `components/agent/`. All domain logic belongs exclusively in `business/<business_name>/*.yaml`.
-
-2. **The Single Write-Gate (`generate.submit`):**
-   Never issue direct SQL `INSERT INTO assertion` in application code. All writes must pass through `generate.submit()`, which ensures:
-   - An atomic `intent` row is minted.
-   - Slot ranges and references are validated.
-   - Bitemporal timestamps and attribution are assigned consistently.
-
-3. **Database-Enforced Immutability:**
-   Never attempt to run `UPDATE`, `DELETE`, or `TRUNCATE` on `assertion`, `intent`, or `entity`. Database triggers will abort the transaction. Retractions and corrections are modeled as new assertions where `revokes = <prior_assertion_id>`.
-
-4. **Projections are Ephemeral Views:**
-   Projections in `uniti_ops` / `uniti_demo_ops` are derived caches. They can be completely dropped and recompiled at any time using `components/compiler/compile.py`. Never treat operational tables as the source of truth.
-
-5. **Test Isolation (`UNITI_DSN`):**
-   Running tests against `uniti` or `uniti_demo` will cause assertion conflicts. Always point test runs to the throwaway database `uniti_check`:
-   ```bash
-   $env:UNITI_DSN="postgresql://uniti:uniti@localhost:5433/uniti_check"
-   ```
+`business/` and `packages/` carry example domains used to exercise the system. They are fixtures, not part of it — everything under `components/` is written to work equally well against a map it has never seen.
 
 ---
 
-## Manual Execution Reference
-
-If running steps manually without `make`:
+## Manual execution
 
 ```bash
-# 1. Start database
+# 1. Start the database
 docker compose up -d
 
-# 2. Reset throwaway schema
+# 2. Apply the kernel schema to a throwaway database
 docker compose exec -T db psql -U uniti -d uniti_check -v ON_ERROR_STOP=1 -f /kernel/001_schema.sql
 
-# 3. Run unit tests
-$env:UNITI_DSN="postgresql://uniti:uniti@localhost:5433/uniti_check"
+# 3. Run the tests (conftest pins both DSNs to throwaway stores)
 .venv/Scripts/python.exe -m pytest tests -q
 
-# 4. Verify bitemporal replay determinism
+# 4. Verify replay determinism
 .venv/Scripts/python.exe scripts/seed_200.py
 .venv/Scripts/python.exe scripts/project.py build/check/projection_a.txt
 .venv/Scripts/python.exe scripts/project.py build/check/projection_b.txt
 .venv/Scripts/python.exe scripts/project.py --compare build/check/projection_a.txt build/check/projection_b.txt
-
-# 5. Cross-check business profile
-.venv/Scripts/python.exe scripts/check_profile.py
 ```

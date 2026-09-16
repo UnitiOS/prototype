@@ -138,7 +138,7 @@ DEMO_DSN      := postgresql://uniti:uniti@localhost:5433/$(DEMO_DB)
 DEMO_OPS_DSN  := postgresql://uniti:uniti@localhost:5433/$(DEMO_OPS_DB)
 # A port of its own. `make serve` holds 8000, and a demonstration answering on
 # the same one as the thing it replaces is indistinguishable from it by URL.
-DEMO_PORT     := 8100
+DEMO_PORT     := 8000
 # What the compiler printed, kept where a person looks at what came out.
 DEMO_RENDER   := build/$(DEMO_BUSINESS)/v5/tables.txt
 
@@ -163,18 +163,45 @@ demo-seed: venv
 	    > $(DEMO_RENDER)
 	@echo "demo-seed: $(DEMO_DB), tables in $(DEMO_OPS_DB), $(DEMO_RENDER)"
 
-demo-serve: export UNITI_DSN     := $(DEMO_DSN)
-demo-serve: export UNITI_OPS_DSN := $(DEMO_OPS_DSN)
-demo-serve: venv
-	$(DC) up -d
-	@$(DC) exec -T db psql -U uniti -d postgres -tAc \
-	    "SELECT 1 FROM pg_database WHERE datname = '$(DEMO_OPS_DB)'" | grep -q 1 \
-	    || $(DC) exec -T db createdb -U uniti $(DEMO_OPS_DB)
-	PYTHONIOENCODING=utf-8 $(PY) components/web/serve.py $(DEMO_MAP) --port $(DEMO_PORT)
+p1-serve: export UNITI_DSN     := $(DEMO_DSN)
+p1-serve: export UNITI_OPS_DSN := $(DEMO_OPS_DSN)
+p1-serve: venv
+	PYTHONIOENCODING=utf-8 $(PY) components/web/serve.py $(DEMO_MAP) --port 8000 --mode p1
 
-# Run the generic Model Context Protocol (MCP) server over stdio
+# Backward-compatible alias
+demo-serve: p1-serve
+
+# Run the generic Model Context Protocol (MCP) server over stdio (Runtime Co-Pilot)
 mcp-serve: export UNITI_DSN     := $(DEMO_DSN)
 mcp-serve: export UNITI_OPS_DSN := $(DEMO_OPS_DSN)
 mcp-serve: venv
 	PYTHONIOENCODING=utf-8 $(PY) components/agent/server.py
+
+# Run the Uniti Studio Ontologist MCP server over stdio (Design-Time Ontologist Workbench)
+mcp-studio-serve: venv
+	PYTHONIOENCODING=utf-8 $(PY) components/agent/studio_server.py
+
+# ---- Prototype 2 Targets (Modular Metamodel & Studio - Port 8100) -----------
+P2_PORT     := 8100
+P2_DB       := uniti_p2
+P2_OPS_DB   := uniti_p2_ops
+P2_DSN      := postgresql://uniti:uniti@localhost:5433/$(P2_DB)
+P2_OPS_DSN  := postgresql://uniti:uniti@localhost:5433/$(P2_OPS_DB)
+P2_MAP      := packages/@uniti/core/schema/archetypes.yaml
+
+p2-check: export UNITI_DSN     := postgresql://uniti:uniti@localhost:5433/$(CHECK_DB)
+p2-check: export UNITI_OPS_DSN := postgresql://uniti:uniti@localhost:5433/$(CHECK_DB)_ops
+p2-check: venv
+	$(PY) -m pytest tests/p2/
+
+p2-bootstrap: venv
+	PYTHONIOENCODING=utf-8 $(PY) scripts/bootstrap_p2_kernel.py --dsn $(P2_DSN)
+
+# Run the Uniti Studio 2.0 Web Workbench & Modular Metamodel (Port 8100)
+p2-serve: export UNITI_DSN     := $(P2_DSN)
+p2-serve: export UNITI_OPS_DSN := $(P2_OPS_DSN)
+p2-serve: venv
+	PYTHONIOENCODING=utf-8 $(PY) components/web/serve.py $(P2_MAP) --port $(P2_PORT) --mode p2 --studio
+
+studio-serve: p2-serve
 

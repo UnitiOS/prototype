@@ -22,9 +22,9 @@ optional fourth:
     annotations:
       valid_from: '2026-01-01T00:00:00Z'
       facts:
-        - subject: uniti:freezer_a
-          predicate: uniti:freezer_label
-          value: Freezer A
+        - subject: uniti:thing_a
+          predicate: uniti:thing_label
+          value: Thing A
           confidence: low
 
 `confidence` is how sure the business is of this one fact, and it is the
@@ -62,7 +62,7 @@ under `uniti:uri`, and writes no file — the door into an empty log for a map
 that has one. It states no facts: a sealed version carries none.
 
 Run: .venv/Scripts/python.exe components/seal/seal.py business/draft.yaml --actor fareza
-     .venv/Scripts/python.exe components/seal/seal.py business/sorella/v2.yaml          --register --actor fareza
+     .venv/Scripts/python.exe components/seal/seal.py business/<name>/v2.yaml           --register --actor <actor>
 """
 
 import argparse
@@ -131,7 +131,7 @@ def _utc(value):
     return moment if moment.tzinfo else moment.replace(tzinfo=timezone.utc)
 
 
-def _validate(text, name):
+def _validate(source, name):
     """Load through SchemaView, which is what "valid LinkML" means here.
 
     SchemaView raises on malformed YAML, on a missing `id` or `name`, and on
@@ -139,7 +139,16 @@ def _validate(text, name):
     slot references — that is not parsing, and the generator will meet those.
     """
     try:
-        return SchemaView(text)
+        p = Path(str(source))
+        if p.is_file():
+            if "packages" in str(p) or "@" in p.read_text(encoding="utf-8"):
+                try:
+                    from components.linter.package_loader import PackageLoader
+                    return PackageLoader().load_schemaview(p)
+                except Exception:
+                    return SchemaView(str(p))
+            return SchemaView(str(p))
+        return SchemaView(source)
     except Exception as exc:
         raise DraftError(
             f"{name} is not valid LinkML — {type(exc).__name__}: {exc}"
@@ -402,7 +411,7 @@ def seal(conn, draft_path, *, actor_id, into=None, sealed_at=None):
     # A class-ranged value names an entity, and an entity has to exist before a
     # row can point at it — so a URI first seen on the value side is registered
     # exactly as a subject is. Deduping against `known` and against this list is
-    # what makes two facts about `uniti:freezer_a` one entity rather than two,
+    # what makes two facts about `uniti:thing_a` one entity rather than two,
     # whether they name it as a subject, as a value, or one of each.
     named = [fact["subject"] for fact in facts]
     named += [fact["value"] for fact in facts if fact["ref"]]
@@ -504,7 +513,7 @@ def register(conn, version_path, *, actor_id, recorded_at=None):
     if not version_path.is_file():
         raise DraftError(f"no version at {version_path}")
     text = version_path.read_text(encoding="utf-8")
-    view = _validate(text, version_path.name)
+    view = _validate(version_path, version_path.name)
     document = yaml.safe_load(text) or {}
 
     version = view.schema.version

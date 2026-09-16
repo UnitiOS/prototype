@@ -35,8 +35,33 @@ the same page with more on its query string. Nothing on it is JavaScript, and
 there is no state anywhere but the URL.
 """
 
+import sys
 from html import escape
 from urllib.parse import parse_qs, quote, urlencode, urlparse
+
+MODE = "p1"
+SHOW_STUDIO = False
+BRAND_SUB = "Sorella Gelato Enterprise Demo"
+
+
+def set_mode(mode: str, show_studio: bool = None, brand_sub: str = None):
+    global MODE, SHOW_STUDIO, BRAND_SUB
+    MODE = mode
+    SHOW_STUDIO = show_studio if show_studio is not None else (mode == "p2")
+    if brand_sub is not None:
+        BRAND_SUB = brand_sub
+    elif mode == "p2":
+        BRAND_SUB = "Prototype 2: Modular Metamodel & Studio"
+    else:
+        BRAND_SUB = "Sorella Gelato Enterprise Demo"
+
+    for mod_name in ("render", "components.web.render"):
+        if mod_name in sys.modules:
+            mod = sys.modules[mod_name]
+            mod.MODE = MODE
+            mod.SHOW_STUDIO = SHOW_STUDIO
+            mod.BRAND_SUB = BRAND_SUB
+
 
 # One block, no framework, no build step. Enough to read a table and fill in a
 # form and no more.
@@ -540,13 +565,35 @@ def page(title, body, *, valid_at, as_of, path=None):
     )
 
     # 4. Header Bar
+    studio_link = ""
+    is_studio = SHOW_STUDIO
+    sub_label = BRAND_SUB
+    for mod_name in ("render", "components.web.render"):
+        if mod_name in sys.modules:
+            mod = sys.modules[mod_name]
+            if getattr(mod, "SHOW_STUDIO", False):
+                is_studio = True
+            mod_sub = getattr(mod, "BRAND_SUB", None)
+            if mod_sub and mod_sub != "Sorella Gelato Enterprise Demo":
+                sub_label = mod_sub
+
+    if is_studio:
+        studio_link = (
+            f'<a href="/studio?{carried}" style="font-size:0.75rem;font-weight:700;'
+            f'background:#0f172a;color:#38bdf8;padding:3px 9px;border-radius:12px;'
+            f'text-decoration:none;border:1px solid #0284c7;margin-left:0.5rem;'
+            f'display:inline-flex;align-items:center;gap:4px;" '
+            f'title="Open Prototype 2 Socratic Ontologist Workbench">🧠 Uniti Studio 2.0 &rarr;</a>'
+        )
+
     brand_html = (
         f'<div class="brand-zone">'
         f'<a class="brand-home" href="/?{carried}">'
         f'<span class="brand-symbol">&#9670;</span>'
         f'<span class="brand-title">uniti</span>'
         f'</a>'
-        f'<span class="brand-sub">Sorella Gelato Enterprise Demo</span>'
+        f'<span class="brand-sub">{escape(sub_label)}</span>'
+        f'{studio_link}'
         f'</div>'
     )
     clocks_html = _clocks(valid_at, as_of, query=query, path=clean_path)
@@ -900,7 +947,7 @@ def why_html(built, *, valid_at, as_of):
     return "\n".join(out)
 
 
-def ask_html(window, *, recent=None, filter_type="all", actor="", search="", valid_at, as_of):
+def ask_html(window, *, recent=None, filter_type="all", actor="", search="", valid_at, as_of, db_warning=None):
     """Stage 3: Enterprise Kernel Audit Workbench.
 
     Presents the immutable append-only activity ledger directly from PostgreSQL,
@@ -920,13 +967,22 @@ def ask_html(window, *, recent=None, filter_type="all", actor="", search="", val
         '</div>'
     ]
 
+    if db_warning:
+        out.append(
+            '<div class="alert-box alert-warning" style="margin-bottom:1.5rem; background:#fffbeb; border:1px solid #fef3c7; border-left:4px solid #f59e0b; padding:1rem 1.25rem; border-radius:6px;">'
+            f'  <h3 style="margin:0 0 .35rem; color:#92400e; font-size:.95rem;">🏛️ PostgreSQL Kernel Status: Offline / Standalone</h3>'
+            f'  <p style="margin:0; font-size:.85rem; color:#78350f; line-height:1.45;">{escape(db_warning)}</p>'
+            '</div>'
+        )
+
     # 1. Telemetry Bar (Compact 4-Card Grid)
     if window:
-        vf = str(window.get("first_valid_from", ""))[:10]
-        vl = str(window.get("last_valid_from", ""))[:10]
-        rf = str(window.get("first_recorded_at", ""))[:10]
-        rl = str(window.get("last_recorded_at", ""))[:16]
-        rev_count = window.get("revocations", 34)
+        vf = str(window.get("first_valid_from") or "")[:10]
+        vl = str(window.get("last_valid_from") or "")[:10]
+        rf = str(window.get("first_recorded_at") or "")[:10]
+        rl = str(window.get("last_recorded_at") or "")[:16]
+        rev_count = window.get("revocations", 0)
+        span_disp = f"{vf} → {vl}" if (vf and vl and vf != "None") else "Clean Slate (0 records)"
         out.append(
             '<div class="kpi-grid">'
             '  <div class="kpi-card primary-card">'
@@ -946,7 +1002,7 @@ def ask_html(window, *, recent=None, filter_type="all", actor="", search="", val
             '  </div>'
             '  <div class="kpi-card alert-card">'
             '    <div class="kpi-label">Operational Clocks Span</div>'
-            f'    <div class="kpi-value" style="font-size: 1.15rem; margin-top:.4rem;">{vf} → {vl}</div>'
+            f'    <div class="kpi-value" style="font-size: 1.15rem; margin-top:.4rem;">{span_disp}</div>'
             '    <div class="kpi-sub">valid_from horizon</div>'
             '  </div>'
             '</div>'
@@ -1641,6 +1697,73 @@ def message_page(title, text, *, valid_at, as_of, path=None, bad=True):
     body = (f"<h1>{escape(title)}</h1>"
             f'<p class="msg{" bad" if bad else ""}">{escape(text)}</p>')
     return page(title, body, valid_at=valid_at, as_of=as_of, path=path)
+
+
+def p2_dashboard_html(*, valid_at, as_of):
+    """Prototype 2: Metamodel Architecture & Package Intelligence Dashboard."""
+    carried = _carried(valid_at, as_of)
+    out = [
+        '<div class="dash-header">',
+        '  <div style="display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:1rem;">',
+        '    <div>',
+        '      <h1>Stage 5 · Metamodel Architecture &amp; Package Intelligence</h1>',
+        '      <p>Modular Ontological Governance over <code>@uniti/core</code> archetypes at valid_at: <strong>' + escape(str(valid_at)[:10]) + '</strong>, as_of: <strong>' + escape(str(as_of)[:10]) + '</strong></p>',
+        '    </div>',
+        '    <div style="display:flex; gap:.5rem; align-items:center;">',
+        '      <span class="badge badge-success">Mode: Prototype 2</span>',
+        '      <span class="badge badge-neutral">Kernel: Clean Slate</span>',
+        '    </div>',
+        '  </div>',
+        '</div>',
+        '<div class="kpi-grid">',
+        '  <div class="kpi-card primary-card">',
+        '    <div class="kpi-label">Modular Packages</div>',
+        '    <div class="kpi-value">3 Modules</div>',
+        '    <div class="kpi-sub">@uniti/core, @community/inventory, @tenants/sorella</div>',
+        '  </div>',
+        '  <div class="kpi-card success-card">',
+        '    <div class="kpi-label">Foundational Archetypes</div>',
+        '    <div class="kpi-value">6 Archetypes</div>',
+        '    <div class="kpi-sub">Agent, Resource, Event, Commitment, Projection, CoreClass</div>',
+        '  </div>',
+        '  <div class="kpi-card warning-card">',
+        '    <div class="kpi-label">Linter Invariant Rules</div>',
+        '    <div class="kpi-value">5 Deterministic Gates</div>',
+        '    <div class="kpi-sub">Lineage, URIs, State Machine, CEL, Aggregates</div>',
+        '  </div>',
+        '  <div class="kpi-card alert-card">',
+        '    <div class="kpi-label">Studio Socratic Workbench</div>',
+        '    <div class="kpi-value" style="color:#1c4f8b;">Active (v2.0)</div>',
+        '    <div class="kpi-sub">Multi-Model AI Ontologist &amp; Live Graph</div>',
+        '  </div>',
+        '</div>',
+        '<div class="recent-log-card" style="margin-top:1.5rem;">',
+        '  <h2>Active Modular Ontologies Registry</h2>',
+        '  <p class="log-desc">In Prototype 2, the kernel stores formal ontology definitions without operational seed contamination. Below are the registered packages:</p>',
+        '  <div class="cards-grid" style="margin-top:1rem;">',
+        '    <div class="class-card">',
+        '      <div class="class-card-header"><span class="class-card-title">@uniti/core</span><span class="badge badge-success">Metamodel</span></div>',
+        '      <p class="class-card-desc">The immutable architectural kernel containing REA-H archetypes, bitemporal clock machinery, and universal primitives.</p>',
+        f'      <div class="class-card-action"><a href="/studio?pkg=packages/@uniti/core&amp;{carried}">Open in Studio →</a></div>',
+        '    </div>',
+        '    <div class="class-card">',
+        '      <div class="class-card-header"><span class="class-card-title">@community/inventory</span><span class="badge badge-neutral">Community</span></div>',
+        '      <p class="class-card-desc">Reusable inventory lifecycle definitions, unit conversion formulas, and stocktaking invariants.</p>',
+        f'      <div class="class-card-action"><a href="/studio?pkg=packages/@community/inventory&amp;{carried}">Open in Studio →</a></div>',
+        '    </div>',
+        '    <div class="class-card">',
+        '      <div class="class-card-header"><span class="class-card-title">@tenants/sorella_gelato</span><span class="badge badge-neutral">Tenant</span></div>',
+        '      <p class="class-card-desc">Tenant-specific specialization for artisanal gelato manufacturing and kitchen operations.</p>',
+        f'      <div class="class-card-action"><a href="/studio?pkg=packages/@tenants/sorella_gelato&amp;{carried}">Open in Studio →</a></div>',
+        '    </div>',
+        '  </div>',
+        '</div>',
+        '<div class="stage-stepper" style="margin-top:2rem;">',
+        f'  <a href="/classes?{carried}">← Previous: Stage 4 (Operational Forms)</a>',
+        f'  <a class="primary" href="/studio?{carried}">Next: Stage 6 (Uniti Studio 2.0) →</a>',
+        '</div>'
+    ]
+    return "\n".join(out)
 
 
 def dashboard_html(data, *, valid_at, as_of):

@@ -1,0 +1,75 @@
+id: https://w3id.org/uniti/core/base_types
+name: uniti_base_types
+title: UnitiOS Standard Base Concepts
+description: Common universal specializations of the 5 archetypes (Person, Organization, Location).
+version: "1.0.0"
+
+prefixes:
+  linkml: https://w3id.org/linkml/
+  uniti: https://w3id.org/uniti/core#
+
+default_prefix: uniti
+default_range: string
+
+imports:
+  - linkml:types
+  - archetypes
+
+classes:
+  Person:
+    is_a: Agent
+    description: Individual human being possessing legal identity and operational role in enterprise processes.
+    slots:
+      - person_first_name
+      - person_last_name
+      - person_email
+
+  Organization:
+    is_a: Agent
+    description: Legal entity, company, division, vendor, or independent commercial organization.
+    slots:
+      - org_legal_name
+      - org_tax_id
+      - org_website
+
+  PhysicalLocation:
+    is_a: Resource
+    description: Spatial or physical container where assets are stored, inspected, or dispatched (Warehouse, Chiller, Bin).
+    slots:
+      - location_code
+      - location_address
+      - is_temperature_controlled
+
+slots:
+  person_first_name:
+    slot_uri: uniti:person_first_name
+    range: string
+  person_last_name:
+    slot_uri: uniti:person_last_name
+    range: string
+  person_email:
+    slot_uri: uniti:person_email
+    range: string
+  org_legal_name:
+    slot_uri: uniti:org_legal_name
+    range: string
+  org_tax_id:
+    slot_uri: uniti:org_tax_id
+    range: string
+  org_website:
+    slot_uri: uniti:org_website
+    range: string
+  location_code:
+    slot_uri: uniti:location_code
+    identifier: true
+    range: string
+  location_address:
+    slot_uri: uniti:location_address
+    range: string
+  is_temperature_controlled:
+    slot_uri: uniti:is_temperature_controlled
+    range: boolean
+
+annotations:
+  valid_from: "2026-01-01T00:00:00+00:00"
+  sealed_at: "2026-01-01T00:00:00+00:00"

@@ -37,8 +37,8 @@ VALUES (%s, %s, %s, %s, %s, %s, COALESCE(%s, now()), %s, %s, %s, %s, %s, %s, NUL
 # subject_key_id stays NULL: its meaning is unresolved (OPEN.md, T1).
 
 
-def connect(dsn=None):
-    return psycopg.connect(dsn or DSN)
+def connect(dsn=None, connect_timeout=1):
+    return psycopg.connect(dsn or DSN, connect_timeout=connect_timeout)
 
 
 def _ref(value, names):

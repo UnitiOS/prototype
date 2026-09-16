@@ -92,20 +92,31 @@ class UnitiTools:
 
     def __init__(
         self,
-        default_business: str = "sorella_demo",
+        default_business: Optional[str] = None,
         kernel_dsn: Optional[str] = None,
         ops_dsn: Optional[str] = None,
     ):
-        self.default_business = default_business
+        # No default names a business: which domain this server operates is
+        # the caller's to state, and a default here would be one domain's name
+        # compiled into a domain-blind server.
+        self.default_business = default_business or os.environ.get("UNITI_BUSINESS")
         self.kernel_dsn = kernel_dsn or os.environ.get(
-            "UNITI_DSN", "postgresql://uniti:uniti@localhost:5433/uniti_demo"
+            "UNITI_DSN", "postgresql://uniti:uniti@localhost:5433/uniti"
         )
+        # The fallback names the neutral store, never a populated one: a
+        # compile drops and rebuilds its table, so an unsafe default here is a
+        # test run silently overwriting somebody's operational store.
         self.ops_dsn = ops_dsn or os.environ.get(
-            "UNITI_OPS_DSN", "postgresql://uniti:uniti@localhost:5433/uniti_demo_ops"
+            "UNITI_OPS_DSN", "postgresql://uniti:uniti@localhost:5433/uniti_ops"
         )
 
     def _get_business_dir(self, business: Optional[str]) -> Path:
         biz = business or self.default_business
+        if not biz:
+            raise ValueError(
+                "no business named: pass `business`, or set UNITI_BUSINESS. "
+                "This server holds no default domain."
+            )
         bdir = ROOT / "business" / biz
         if not bdir.is_dir():
             raise FileNotFoundError(f"Business directory '{biz}' not found at {bdir}")
@@ -156,8 +167,8 @@ class UnitiTools:
         """Inspect LinkML ontology schema: classes, slots, derivation formulas, and relationships.
 
         Args:
-            business: Business namespace (default: "sorella_demo").
-            class_name: Optional specific class to inspect (e.g. "StockReconciliation").
+            business: Business namespace. Required unless UNITI_BUSINESS is set.
+            class_name: Optional specific class to inspect, as named by the map.
             slot_name: Optional specific slot to inspect.
             valid_at: Bitemporal business clock.
             as_of: Bitemporal system audit clock.
@@ -239,7 +250,7 @@ class UnitiTools:
         """Write or patch draft ontology (draft.yaml) and draft interview transcript (draft.txt).
 
         Args:
-            business: Target business namespace (default: "sorella_demo").
+            business: Target business namespace. Required unless UNITI_BUSINESS is set.
             yaml_content: Complete LinkML schema YAML content to save as draft.yaml.
             transcript_notes: Supporting domain interview notes to append or write to draft.txt.
         """
@@ -379,7 +390,7 @@ class UnitiTools:
 
     def ops_query_projection(
         self,
-        class_name: str = "StockReconciliation",
+        class_name: str,
         business: Optional[str] = None,
         valid_at: Optional[str] = None,
         as_of: Optional[str] = None,
@@ -388,7 +399,7 @@ class UnitiTools:
         """Execute dynamic SQL compiler for an analytical projection and return structured rows.
 
         Args:
-            class_name: Target projection class (e.g. "StockReconciliation", "IngredientOnHand").
+            class_name: Target projection class, as named by the map.
             business: Business namespace.
             valid_at: Business moment (ISO timestamp or YYYY-MM-DD).
             as_of: System audit moment (ISO timestamp or YYYY-MM-DD).
@@ -432,7 +443,7 @@ class UnitiTools:
 
     def ops_explain_projection(
         self,
-        class_name: str = "StockReconciliation",
+        class_name: str,
         business: Optional[str] = None,
         valid_at: Optional[str] = None,
         as_of: Optional[str] = None,
@@ -515,7 +526,7 @@ class UnitiTools:
         """Perform deep forensic bitemporal audit: trace every assertion ever made about an entity.
 
         Args:
-            subject: URI or identifier of the entity (e.g. 'sorella:item_vanilla_extract').
+            subject: URI or identifier of the entity, as registered in the log.
             predicate: Optional predicate URI or slot name to focus on.
             business: Business namespace.
         """
@@ -604,7 +615,7 @@ class UnitiTools:
         Creates exactly 1 intent and N assertions atomically in the append-only ledger.
 
         Args:
-            class_name: Class of transaction/document (e.g. "StockMovement", "StockCount").
+            class_name: Class of transaction/document, as named by the map.
             fields: Dict of slot key-values.
             actor: Actor identity (e.g. "ai_agent", "marina").
             action_name: Action identifier on intent.

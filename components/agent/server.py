@@ -54,11 +54,11 @@ TOOL_DEFINITIONS = [
             "properties": {
                 "business": {
                     "type": "string",
-                    "description": "Business namespace (default: 'sorella_demo').",
+                    "description": "Business namespace. Required unless UNITI_BUSINESS is set.",
                 },
                 "class_name": {
                     "type": "string",
-                    "description": "Optional specific class to inspect in detail (e.g. 'StockReconciliation').",
+                    "description": "Optional specific class to inspect in detail, as named by the map.",
                 },
                 "slot_name": {
                     "type": "string",
@@ -86,7 +86,7 @@ TOOL_DEFINITIONS = [
             "properties": {
                 "business": {
                     "type": "string",
-                    "description": "Target business namespace (default: 'sorella_demo').",
+                    "description": "Target business namespace. Required unless UNITI_BUSINESS is set.",
                 },
                 "yaml_content": {
                     "type": "string",
@@ -110,7 +110,7 @@ TOOL_DEFINITIONS = [
             "properties": {
                 "business": {
                     "type": "string",
-                    "description": "Target business namespace (default: 'sorella_demo').",
+                    "description": "Target business namespace. Required unless UNITI_BUSINESS is set.",
                 },
             },
         },
@@ -144,7 +144,7 @@ TOOL_DEFINITIONS = [
         "name": "ops_list_projections",
         "description": (
             "Discover all analytical projections and tables compiled from the ontology rules "
-            "(e.g. StockReconciliation, IngredientOnHand) with their measure and grouping columns."
+            "with their measure and grouping columns, as named by the map."
         ),
         "inputSchema": {
             "type": "object",
@@ -175,8 +175,7 @@ TOOL_DEFINITIONS = [
             "properties": {
                 "class_name": {
                     "type": "string",
-                    "description": "Target projection class (e.g. 'StockReconciliation', 'IngredientOnHand').",
-                    "default": "StockReconciliation",
+                    "description": "Target projection class, as named by the map.",
                 },
                 "business": {
                     "type": "string",
@@ -210,7 +209,6 @@ TOOL_DEFINITIONS = [
                 "class_name": {
                     "type": "string",
                     "description": "Target projection class.",
-                    "default": "StockReconciliation",
                 },
                 "business": {
                     "type": "string",
@@ -274,7 +272,7 @@ TOOL_DEFINITIONS = [
             "properties": {
                 "subject": {
                     "type": "string",
-                    "description": "Entity URI or identifier (e.g. 'sorella:item_vanilla_extract').",
+                    "description": "Entity URI or identifier, as registered in the log.",
                 },
                 "predicate": {
                     "type": "string",
@@ -299,7 +297,7 @@ TOOL_DEFINITIONS = [
             "properties": {
                 "class_name": {
                     "type": "string",
-                    "description": "Class of transaction (e.g. 'StockMovement', 'StockCount', 'Ingredient').",
+                    "description": "Class of transaction, as named by the map.",
                 },
                 "fields": {
                     "type": "object",

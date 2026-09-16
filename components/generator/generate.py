@@ -131,15 +131,29 @@ def _utc(value):
 
 
 def read_map(path):
-    """One sealed version file, as far as a generator needs it.
+    """One sealed version file or modular package schema, as far as a generator needs it.
 
     A draft is refused: it carries no `version`, and every assertion this
     writes has to name the version it was stated under.
     """
-    path = Path(path)
+    path = Path(path).resolve()
     if not path.is_file():
         raise MapError(f"no map at {path}")
-    view = SchemaView(path.read_text(encoding="utf-8"))
+
+    content = path.read_text(encoding="utf-8")
+    if "packages" in str(path) or "@" in content:
+        try:
+            from components.linter.package_loader import PackageLoader
+            loader = PackageLoader()
+            view = loader.load_schemaview(path)
+        except Exception:
+            view = SchemaView(str(path))
+    else:
+        try:
+            view = SchemaView(str(path))
+        except Exception:
+            view = SchemaView(content)
+
     version = view.schema.version
     if not version:
         raise MapError(f"{path.name} carries no version, so it is not a sealed map")
@@ -165,12 +179,11 @@ def columns(map_, class_name):
     classes = set(view.all_classes())
     out = []
     for slot in view.class_induced_slots(class_name):
-        if not slot.slot_uri:
-            raise MapError(f"slot {slot.name!r} declares no slot_uri")
+        slot_uri = slot.slot_uri or f"{view.schema.default_prefix or 'uniti'}:{slot.name}"
         out.append(
             {
                 "name": slot.name,
-                "uri": slot.slot_uri,
+                "uri": slot_uri,
                 "range": slot.range,
                 "required": bool(slot.required),
                 "multivalued": bool(slot.multivalued),
