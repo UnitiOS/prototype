@@ -2,6 +2,7 @@ import io
 import json
 from unittest.mock import MagicMock
 import pytest
+from tests.p2.conftest import package_sandbox
 
 from components.web.studio_handler import (
     list_available_packages,
@@ -90,7 +91,7 @@ def test_handle_studio_api_post_seal_endpoint():
     from pathlib import Path
     from components.agent.studio_server import StudioTools
 
-    with tempfile.TemporaryDirectory() as tmp_dir:
+    with package_sandbox() as tmp_dir:
         pkg_path = Path(tmp_dir) / "test_web_pkg"
         pkg_path.mkdir(parents=True, exist_ok=True)
         # Create minimal valid schema
@@ -115,7 +116,7 @@ def test_handle_studio_api_post_patch():
     import tempfile
     from pathlib import Path
 
-    with tempfile.TemporaryDirectory() as tmp_dir:
+    with package_sandbox() as tmp_dir:
         pkg_path = Path(tmp_dir) / "test_patch_pkg"
         pkg_path.mkdir(parents=True, exist_ok=True)
 

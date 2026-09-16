@@ -12,6 +12,7 @@ import json
 import logging
 import sys
 from datetime import datetime, timezone
+import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 import yaml
@@ -154,19 +155,66 @@ ARCHETYPE_COLORS = {
     "CoreClass": "#64748B",   # Slate Gray
 }
 
+class PackagePathError(ValueError):
+    """The package path leads somewhere this gate does not write."""
+
+
 class StudioTools:
-    def __init__(self):
+    """The authoring write gate.
+
+    Every path it writes to is resolved under one root and checked to still be
+    under it afterwards. The paths come from an agent's tool call, so they are
+    model output shaped by whatever was typed into a chat box: a gate that
+    followed them wherever they pointed would not be a gate.
+    """
+
+    def __init__(self, packages_root=None):
         self.catalog = SemanticCatalog()
         self.loader = PackageLoader()
         self.linter = LinterEngine(loader=self.loader)
+        self._packages_root = packages_root
+
+    @property
+    def packages_root(self) -> Path:
+        """Where packages are written. Configuration, read when it is used.
+
+        Read on use rather than captured at construction, so that setting
+        UNITI_PACKAGES_ROOT takes effect for a gate that already exists.
+        """
+        return Path(
+            self._packages_root
+            or os.environ.get("UNITI_PACKAGES_ROOT")
+            or (ROOT / "packages")
+        ).resolve()
 
     def _normalize_pkg_dir(self, pkg_path_str: str) -> Path:
-        norm = str(pkg_path_str).replace("\\", "/").strip("/")
-        if Path(pkg_path_str).is_absolute():
-            return Path(pkg_path_str)
-        if norm.startswith("@"):
-            norm = f"packages/{norm}"
-        return (ROOT / norm).resolve()
+        """Where a package path lands, refusing anything outside the root.
+
+        A bare name is a package, not a directory at the top of the repository:
+        'inventory' means packages/inventory. A leading 'packages/' is accepted
+        and dropped, so both spellings of the same place agree.
+        """
+        raw = str(pkg_path_str or "").replace("\\", "/").strip()
+        if not raw:
+            raise PackagePathError("no package path given")
+
+        norm = raw.strip("/")
+        candidate = Path(raw)
+        if candidate.is_absolute():
+            resolved = candidate.resolve()
+        else:
+            if norm.startswith("packages/"):
+                norm = norm[len("packages/"):]
+            resolved = (self.packages_root / norm).resolve()
+
+        root = self.packages_root
+        if resolved != root and root not in resolved.parents:
+            raise PackagePathError(
+                f"package path {pkg_path_str!r} resolves to {resolved}, which is "
+                f"outside {root}. Packages are written under that directory and "
+                f"nowhere else."
+            )
+        return resolved
 
     def _resolve_schema_file(self, pkg_path_str: str) -> Path:
         p = self._normalize_pkg_dir(pkg_path_str)

@@ -114,4 +114,4 @@ slots:
     description: Ending balance quantity at this storage location.
 annotations:
   valid_from: '2026-09-15T05:00:49.337721+00:00'
-  sealed_at: '2026-09-16T06:36:43.393831+00:00'
+  sealed_at: '2026-09-16T06:46:22.404048+00:00'

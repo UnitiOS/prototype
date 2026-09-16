@@ -8,6 +8,8 @@ import os
 import pytest
 import asyncio
 from unittest.mock import patch
+from pathlib import Path
+from tests.p2.conftest import package_sandbox
 
 from components.studio.agent import (
     resolve_model_string,
@@ -110,21 +112,29 @@ def test_stream_unconfigured():
         assert "GEMINI_API_KEY" in full_text
 
 
-def test_stream_with_test_model(tmp_path):
-    pkg_dir = tmp_path / "test_pkg"
-    pkg_dir.mkdir(parents=True, exist_ok=True)
-    schema_file = pkg_dir / "schema.yaml"
-    schema_file.write_text("id: test\nname: test\nclasses: {}\nslots: {}\n", encoding="utf-8")
+def test_stream_with_test_model():
+    """TestModel calls the registered tools with synthetic arguments.
 
-    async def _run():
-        chunks = []
-        async for chunk in stream_socratic_agent(
-            "I want to add a Resource SilkFabric",
-            str(pkg_dir),
-            model_override=TestModel(),
-        ):
-            chunks.append(chunk)
-        return "".join(chunks)
+    Those arguments include package paths, and the write gate acts on them, so
+    this runs inside a sandbox. Without one the gate faithfully writes a package
+    named after whatever string the test model happened to invent.
+    """
+    with package_sandbox() as sandbox:
+        pkg_dir = Path(sandbox) / "test_pkg"
+        pkg_dir.mkdir(parents=True, exist_ok=True)
+        schema_file = pkg_dir / "schema.yaml"
+        schema_file.write_text("id: test\nname: test\nclasses: {}\nslots: {}\n", encoding="utf-8")
 
-    full_text = asyncio.run(_run())
+        async def _run():
+            chunks = []
+            async for chunk in stream_socratic_agent(
+                "I want to add a Resource SilkFabric",
+                str(pkg_dir),
+                model_override=TestModel(),
+            ):
+                chunks.append(chunk)
+            return "".join(chunks)
+
+        full_text = asyncio.run(_run())
+
     assert len(full_text) > 0

@@ -2,6 +2,7 @@ import json
 import tempfile
 from pathlib import Path
 import pytest
+from tests.p2.conftest import package_sandbox
 
 from components.agent.studio_server import StudioMCPServer
 
@@ -32,7 +33,7 @@ def test_mcp_tools_list(mcp):
     assert "studio_seal_package" in tool_names
 
 def test_mcp_workflow_propose_and_validate(mcp):
-    with tempfile.TemporaryDirectory() as tmp_dir:
+    with package_sandbox() as tmp_dir:
         pkg_path = Path(tmp_dir) / "test_pkg"
         pkg_path.mkdir(parents=True, exist_ok=True)
 
@@ -130,7 +131,7 @@ def test_mcp_search_catalog_tool(mcp):
     assert out[0]["curie"] == "inv:quantity"
 
 def test_mcp_seal_rejection_on_linter_failure(mcp):
-    with tempfile.TemporaryDirectory() as tmp_dir:
+    with package_sandbox() as tmp_dir:
         pkg_path = Path(tmp_dir) / "broken_pkg"
         pkg_path.mkdir(parents=True, exist_ok=True)
 
@@ -186,7 +187,7 @@ def test_mcp_unknown_method_and_tool_errors(mcp):
 
 
 def test_mcp_init_package_and_write_gate_immutability(mcp):
-    with tempfile.TemporaryDirectory() as tmp_dir:
+    with package_sandbox() as tmp_dir:
         pkg_path = Path(tmp_dir) / "community_test"
 
         # 1. Init package via MCP
