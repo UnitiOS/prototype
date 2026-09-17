@@ -85,7 +85,14 @@ button, input { font: inherit; color: inherit; }
   margin-bottom: 20px;
 }
 .brand { margin: 0; font-size: var(--step-2); font-weight: 600; letter-spacing: -0.01em; }
-.where { margin: 0; font-size: var(--step-1); color: var(--ink-soft); }
+.areas { display: flex; gap: 4px; }
+.area {
+  border: 0; background: none; cursor: pointer;
+  font-size: var(--step-1); color: var(--ink-soft);
+  padding: 2px 10px; border-radius: 6px;
+}
+.area:hover { color: var(--ink); background: var(--field); }
+.area-on { color: var(--ink); font-weight: 600; }
 .held { margin: 0 0 0 auto; color: var(--ink-soft); font-size: var(--step--1); }
 
 /* ---------------------------------------------------------------- clocks */
@@ -309,3 +316,77 @@ td { padding: 6px 16px; border-top: 1px solid var(--rule); vertical-align: top; 
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
+
+/* ---------------------------------------------------------------- modules */
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  padding: 8px 8px 4px;
+  margin-bottom: 8px;
+}
+
+.timeline { margin: 0; }
+.timeline svg { display: block; }
+.tl-lane-name { fill: var(--ink); font-family: var(--mono); font-size: 12px; }
+.tl-lane { stroke: var(--rule); stroke-width: 3; stroke-linecap: round; }
+.tl-edge { fill: none; stroke: var(--ink-soft); stroke-width: 1.25; opacity: 0.55; }
+.tl-edge-lit { stroke: var(--known); stroke-width: 2; opacity: 1; }
+.tl-edge-faded { opacity: 0.15; }
+.tl-arrowhead { fill: var(--ink-soft); }
+.tl-arrowhead-lit { fill: var(--known); }
+.tl-node { cursor: pointer; }
+.tl-node circle { fill: var(--surface); stroke: var(--ink); stroke-width: 2; }
+.tl-node text { fill: var(--ink); font-size: 12px; font-weight: 600; }
+.tl-node:hover circle { fill: var(--field); }
+.tl-node:focus-visible { outline: none; }
+.tl-node:focus-visible circle { stroke: var(--focus); stroke-width: 3; }
+.tl-selected circle { fill: var(--known); stroke: var(--known); }
+.tl-faded { opacity: 0.3; }
+.tl-axis { fill: var(--ink-soft); font-size: 11px; font-weight: 600; }
+
+.module-row {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 8px 10px; border-bottom: 1px solid var(--rule);
+}
+.versions, .chips-inline { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.version-chip {
+  border: 1px solid var(--rule); background: var(--surface);
+  border-radius: 999px; padding: 0 10px; cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+.version-chip:hover { border-color: var(--ink-soft); }
+.version-chip-on { background: var(--known); border-color: var(--known); color: var(--surface); }
+
+.pins { list-style: none; margin: 0; padding: 8px 16px 12px; display: grid; gap: 6px; }
+.pins li { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; }
+.drift { color: var(--withdrawn); font-size: var(--step--1); }
+.fact-head-sub { border-top: 1px solid var(--rule); }
+.fact-imported { background: var(--ground); }
+.scroll-plain { overflow-x: auto; }
+.scroll-plain table + table { margin-top: 4px; }
+
+.transcript {
+  margin: 0; padding: 12px 16px; white-space: pre-wrap;
+  font-family: var(--mono); font-size: var(--step--1); max-width: 90ch;
+}
+
+.diff { padding: 8px 16px 12px; }
+.diff p { margin: 0 0 6px; }
+.diff ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.diff li { display: flex; gap: 10px; }
+.diff-mark { width: 1ch; font-weight: 600; font-family: var(--mono); }
+.diff-added .diff-mark { color: var(--stands); }
+.diff-removed .diff-mark { color: var(--withdrawn); }
+.diff-changed .diff-mark { color: var(--known); }
+
+details.fact > summary { cursor: pointer; list-style: none; }
+details.fact > summary::-webkit-details-marker { display: none; }
+details.fact > summary h3::before {
+  content: ""; display: inline-block; margin-right: 8px; vertical-align: 2px;
+  border: 5px solid transparent; border-left-color: var(--ink-soft);
+  transform-origin: 25% 50%;
+}
+details.fact[open] > summary h3::before { transform: rotate(90deg); }
+details.fact:not([open]) > summary { border-bottom: 0; }

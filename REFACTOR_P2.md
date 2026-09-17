@@ -258,6 +258,15 @@ menghitung lintas modul.
 - **Dua mekanisme penamaan di kernel.** Seed sintetis menamai entity lewat
   predikat `has_label`, sedangkan seal lewat registry `uniti:uri`. Seed sekarang
   memakai registry, sehingga pembaca kernel hanya mengenal satu cara.
+- **Label versi di kernel.** Dengan banyak modul, `ontology_version = "v1"` tidak
+  menunjuk apa pun. Seal ke dalam modul kini mencatat `@scope/name@vN`. Label untuk
+  fakta yang ditulis lewat form (versi aplikasi atau versi modul pemilik slot)
+  tetap diputuskan di irisan 2.
+- **Import ke versi yang di-seal belakangan.** Seal kini menolak draft yang memin
+  versi yang di-seal setelah draft itu sendiri.
+- **`@uniti/core` v1 masih membawa slot `is_temperature_controlled`** pada
+  `PhysicalLocation`, sisa data uji P1. Isi core adalah keputusan Anda; perubahan
+  apa pun menjadi core v2.
 - **Jebakan YAML 1.1 di map P1:** kunci `on:` tanpa tanda kutip di blok `convert`
   terbaca sebagai boolean `True`. Beberapa aturan di map demo P1 terkena ini tanpa
   ada yang menolaknya. Seal atau compiler harus menolaknya (irisan 1 atau 2).
@@ -270,7 +279,7 @@ menghitung lintas modul.
 |---|---|
 | 0a | selesai: file lama dihapus, fondasi lepas dari linter, istilah domain di test dinetralkan (compiler punya fixture netral sendiri), Makefile dan README ditulis ulang; 82 test lulus, replay identik |
 | 0b | selesai, menunggu Anda melihatnya: API baca kernel (`components/api`), aplikasi web (`web/`) dengan penjelajah kernel dan bidang jam; seed sintetis dinetralkan dan menamai entity lewat registry `uniti:uri`; 96 test lulus |
-| 1 | belum dimulai |
+| 1 | selesai, menunggu Anda melihatnya: store modul berversi (`components/modules`), import dipin dan diperiksa seal, `@uniti/core` di-seal sebagai v1, linimasa + detail versi + diff di aplikasi; 110 test lulus |
 | 2 | belum dimulai |
 | 3 | belum dimulai |
 | 4 | belum dimulai |

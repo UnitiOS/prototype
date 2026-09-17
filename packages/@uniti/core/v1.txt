@@ -1,0 +1,6 @@
+Transcript, @uniti/core v1.
+
+Not a conversation. The content was written by hand during the first P2
+attempt, as two files (archetypes and base types), and is carried here
+unchanged apart from the examples in four descriptions. It is a hypothesis:
+nothing yet executes the archetypes, and v2 is where evidence changes it.

@@ -91,3 +91,65 @@ export const api = {
     get<{ total: number; assertions: Assertion[] }>("/api/kernel/log", { ...clockParams(c), offset, limit }),
   plane: (c: Clocks) => get<{ total: number; points: Point[] }>("/api/kernel/plane", clockParams(c)),
 };
+
+// ---------------------------------------------------------------- modules
+
+export interface Pin { name: string; version: string }
+
+export interface ModuleVersionRow {
+  version: string; valid_from: string; sealed_at: string; supersedes: string | null;
+  imports: Pin[]; classes: number; slots: number;
+}
+
+export interface ModuleRow {
+  name: string; title: string | null; description: string | null;
+  versions: ModuleVersionRow[]; latest: string | null; draft: boolean;
+}
+
+export interface ModuleGraph {
+  nodes: (Pin & { latest: boolean; sealed_at: string })[];
+  edges: { from: Pin; to: Pin; kind: "imports" | "supersedes" }[];
+}
+
+export interface ClassItem {
+  name: string; is_a: string | null; description: string | null; slots: string[]; from: Pin;
+}
+
+export interface SlotItem {
+  name: string; slot_uri: string | null; range: string | null;
+  identifier: boolean; required: boolean; designates_type: boolean;
+  rule: "aggregate" | "parameter" | "expression" | null;
+  description: string | null; from: Pin; registered: boolean | null;
+}
+
+export interface ModuleVersion {
+  name: string; version: string; title: string | null; description: string | null;
+  valid_from: string; sealed_at: string; supersedes: string | null; latest: string | null;
+  imports: (Pin & { latest: string | null })[]; imported_by: Pin[]; closure: Pin[];
+  classes: ClassItem[]; slots: SlotItem[]; transcript: string | null;
+}
+
+interface Change { from: unknown; to: unknown }
+
+export interface ModuleDiff {
+  name: string; from: string; to: string;
+  diff: {
+    imports: { added: string[]; removed: string[] };
+    classes: {
+      added: string[]; removed: string[];
+      changed: { name: string; changes: Record<string, Change>; slots_added: string[]; slots_removed: string[] }[];
+    };
+    slots: {
+      added: string[]; removed: string[];
+      renamed: { from: string; to: string; slot_uri: string; changes: Record<string, Change> }[];
+      changed: { name: string; changes: Record<string, Change> }[];
+    };
+  };
+}
+
+export const modulesApi = {
+  list: () => get<ModuleRow[]>("/api/modules"),
+  graph: () => get<ModuleGraph>("/api/modules/graph"),
+  version: (name: string, version: string) => get<ModuleVersion>("/api/modules/version", { name, version }),
+  diff: (name: string, from: string, to: string) => get<ModuleDiff>("/api/modules/diff", { name, from, to }),
+};

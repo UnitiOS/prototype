@@ -59,12 +59,17 @@ replay: venv
 # A development log of its own, never touched by the tests.
 DEV_DB  := uniti_dev
 DEV_DSN := postgresql://uniti:uniti@localhost:5433/$(DEV_DB)
+# Example modules are sealed here, beside the real store; the first root wins.
+DEV_PACKAGES := build/dev/packages
+DEV_STORE    := $(DEV_PACKAGES);packages
 
-# Create the development log if absent and fill it with the synthetic seed.
-# The seed resets the kernel first, so this replaces whatever the log held.
+# Create the development log if absent, fill it with the synthetic seed, and
+# seal the example modules into their own store root. The seed resets the
+# kernel first, so this replaces whatever the log held.
 dev-db: db venv
 	@$(DC) exec -T db psql -U uniti -d postgres -tAc 	    "SELECT 1 FROM pg_database WHERE datname = '$(DEV_DB)'" | grep -q 1 	    || $(DC) exec -T db createdb -U uniti $(DEV_DB)
 	UNITI_DSN=$(DEV_DSN) $(PY) scripts/seed_200.py
+	UNITI_DSN=$(DEV_DSN) $(PY) scripts/dev_modules.py $(DEV_PACKAGES)
 
 # Build the web application into web/dist.
 web:
@@ -72,7 +77,7 @@ web:
 
 # The API and the built application together, on http://localhost:8200.
 app: venv
-	UNITI_DSN=$(DEV_DSN) $(PY) -m uvicorn components.api.app:app --port 8200
+	UNITI_DSN=$(DEV_DSN) UNITI_PACKAGES="$(DEV_STORE)" $(PY) -m uvicorn components.api.app:app --port 8200
 
 # While changing the frontend: Vite on http://localhost:5173, forwarding /api to `make app`.
 web-dev:

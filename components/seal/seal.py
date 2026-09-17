@@ -131,15 +131,18 @@ def _utc(value):
     return moment if moment.tzinfo else moment.replace(tzinfo=timezone.utc)
 
 
-def _validate(text, name):
+def _validate(text, name, store=None):
     """Load through SchemaView, which is what "valid LinkML" means here.
 
     SchemaView raises on malformed YAML, on a missing `id` or `name`, and on
     any key the metamodel does not know. It does not resolve ranges or class
     slot references — that is not parsing, and the generator will meet those.
+
+    With a module `store`, imports are resolved through it and checked now:
+    every module import must pin a version the store holds sealed.
     """
     try:
-        return SchemaView(text)
+        return store.view(text) if store is not None else SchemaView(text)
     except Exception as exc:
         raise DraftError(
             f"{name} is not valid LinkML — {type(exc).__name__}: {exc}"
@@ -346,11 +349,16 @@ def _sealed_document(draft, version, valid_from, sealed_at, supersedes):
     return document
 
 
-def seal(conn, draft_path, *, actor_id, into=None, sealed_at=None):
+def seal(conn, draft_path, *, actor_id, into=None, sealed_at=None, store=None):
     """Seal one draft. Returns a dict describing what was written.
 
     Raises DraftError, before anything is written anywhere, if the draft is not
     sealable.
+
+    With a module `store`, the draft's imports resolve through it, and when
+    `into` is one of the store's modules the kernel records the version as
+    `@scope/name@vN`: a bare `v1` names nothing once there is more than one
+    module.
     """
     draft_path = Path(draft_path)
     into = Path(into) if into is not None else ROOT / "business"
@@ -359,9 +367,11 @@ def seal(conn, draft_path, *, actor_id, into=None, sealed_at=None):
     if not draft_path.is_file():
         raise DraftError(f"no draft at {draft_path}")
     text = draft_path.read_text(encoding="utf-8")
-    view = _validate(text, draft_path.name)
+    view = _validate(text, draft_path.name, store)
     draft = yaml.safe_load(text) or {}
 
+    if store is not None:
+        _pins_already_sealed(store, draft, sealed_at, draft_path.name)
     ranges = _slot_ranges(view, draft_path.name)
     annotations = draft.get("annotations") or {}
     facts = _facts(annotations, ranges, draft_path.name)
@@ -376,7 +386,7 @@ def seal(conn, draft_path, *, actor_id, into=None, sealed_at=None):
     sealed_text = yaml.safe_dump(
         document, sort_keys=False, default_flow_style=False, allow_unicode=True
     )
-    _validate(sealed_text, f"{version}.yaml")
+    _validate(sealed_text, f"{version}.yaml", store)
 
     path = into / f"{version}.yaml"
     transcript_path = into / f"{version}.txt"
@@ -448,7 +458,7 @@ def seal(conn, draft_path, *, actor_id, into=None, sealed_at=None):
         actor_id=actor_id,
         agent_id="seal",
         action_name="seal_version",
-        ontology_version=version,
+        ontology_version=_label(store, into, version),
         note=f"sealed {draft_path.name} as {version}",
         mint=minting,
         assertions=assertions,
@@ -470,7 +480,29 @@ def seal(conn, draft_path, *, actor_id, into=None, sealed_at=None):
     }
 
 
-def register(conn, version_path, *, actor_id, recorded_at=None):
+def _pins_already_sealed(store, draft, sealed_at, name):
+    """Every pinned import was sealed before this seal.
+
+    A version records what existed when it was sealed. Pinning a version
+    sealed later would make the history say a module imported something that
+    was not there yet.
+    """
+    for pinned_name, pinned_version in store.imports(draft):
+        held = next(v for v in store.versions(pinned_name) if v["version"] == pinned_version)
+        if held["sealed_at"] > sealed_at:
+            raise DraftError(
+                f"{name} pins {pinned_name}@{pinned_version}, sealed at "
+                f"{held['sealed_at'].isoformat()}, after this seal at {sealed_at.isoformat()}"
+            )
+
+
+def _label(store, directory, version):
+    """How the kernel names a version: `@scope/name@vN` for a module, else `vN`."""
+    module = store.module_of(directory) if store is not None else None
+    return f"{module}@{version}" if module else version
+
+
+def register(conn, version_path, *, actor_id, recorded_at=None, store=None):
     """Put a sealed version's vocabulary into a log, writing no file.
 
     `seal` does two things at once: it decides a version and it registers the
@@ -504,7 +536,7 @@ def register(conn, version_path, *, actor_id, recorded_at=None):
     if not version_path.is_file():
         raise DraftError(f"no version at {version_path}")
     text = version_path.read_text(encoding="utf-8")
-    view = _validate(text, version_path.name)
+    view = _validate(text, version_path.name, store)
     document = yaml.safe_load(text) or {}
 
     version = view.schema.version
@@ -552,7 +584,7 @@ def register(conn, version_path, *, actor_id, recorded_at=None):
         actor_id=actor_id,
         agent_id="seal",
         action_name="register_version",
-        ontology_version=version,
+        ontology_version=_label(store, version_path.parent, version),
         note=f"registered the URIs {version_path.name} names",
         mint=minting,
         assertions=assertions,

@@ -1,0 +1,3 @@
+name: "@uniti/core"
+title: Uniti core
+description: The root module every other module may import.

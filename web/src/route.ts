@@ -1,32 +1,47 @@
-// The whole view lives in the URL hash: which list, which item, which clocks.
+// The whole view lives in the URL hash: which area, which item, which clocks.
 // A link to a view is therefore a link to exactly what was on screen.
+//
+//   #/entities/<id>?valid_at=..&as_of=..        the kernel
+//   #/modules?name=@x/y&version=v2&compare=v1    the module store
 
 import { useEffect, useState } from "react";
 import type { Clocks } from "./api";
 
-export type Tab = "entities" | "actions" | "log";
+export type Tab = "entities" | "actions" | "log" | "modules";
 
-export interface Route { tab: Tab; id: string | null; clocks: Clocks }
+export interface ModulePick { name: string | null; version: string | null; compare: string | null }
+
+export interface Route { tab: Tab; id: string | null; clocks: Clocks; module: ModulePick }
 
 function parse(hash: string): Route {
   const [path, query = ""] = hash.replace(/^#\/?/, "").split("?");
   const [first, id] = path.split("/");
-  const tab: Tab = first === "actions" || first === "log" ? first : "entities";
+  const tab: Tab = first === "actions" || first === "log" || first === "modules" ? first : "entities";
   const params = new URLSearchParams(query);
   const read = (name: string) => {
     const raw = params.get(name);
     const moment = raw ? new Date(raw) : new Date();
     return Number.isNaN(moment.getTime()) ? new Date() : moment;
   };
-  return { tab, id: id || null, clocks: { validAt: read("valid_at"), asOf: read("as_of") } };
+  return {
+    tab,
+    id: tab === "modules" ? null : id || null,
+    clocks: { validAt: read("valid_at"), asOf: read("as_of") },
+    module: { name: params.get("name"), version: params.get("version"), compare: params.get("compare") },
+  };
 }
 
 export function href(route: Route): string {
   const path = route.id ? `${route.tab}/${route.id}` : route.tab;
-  const query = new URLSearchParams({
-    valid_at: route.clocks.validAt.toISOString(),
-    as_of: route.clocks.asOf.toISOString(),
-  });
+  const query = new URLSearchParams();
+  if (route.tab === "modules") {
+    const { name, version, compare } = route.module;
+    if (name) query.set("name", name);
+    if (version) query.set("version", version);
+    if (compare) query.set("compare", compare);
+  }
+  query.set("valid_at", route.clocks.validAt.toISOString());
+  query.set("as_of", route.clocks.asOf.toISOString());
   return `#/${path}?${query}`;
 }
 

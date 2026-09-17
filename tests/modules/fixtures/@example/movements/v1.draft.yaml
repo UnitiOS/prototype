@@ -1,0 +1,30 @@
+id: https://uniti.example/movements
+name: example_movements
+title: Movements
+prefixes:
+  linkml: https://w3id.org/linkml/
+  uniti: https://w3id.org/uniti/core#
+  mv: https://uniti.example/movements/
+default_prefix: mv
+default_range: string
+imports:
+  - linkml:types
+  - "@uniti/core@v1"
+  - "@example/things@v1"
+classes:
+  Movement:
+    is_a: Event
+    description: A quantity of one thing moving.
+    slots:
+      - movement_thing
+      - movement_quantity
+slots:
+  movement_thing:
+    slot_uri: mv:movement_thing
+    range: Thing
+  movement_quantity:
+    slot_uri: mv:movement_quantity
+    range: decimal
+annotations:
+  valid_from: '2026-03-01T00:00:00+00:00'
+  transcript: v1.draft.txt

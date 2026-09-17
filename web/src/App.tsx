@@ -4,6 +4,7 @@ import type { Clocks, Point, Summary } from "./api";
 import { ClockPlane } from "./ClockPlane";
 import { day, fromInput, toInput } from "./format";
 import { useRoute } from "./route";
+import { ModulesPage } from "./modules";
 import type { Tab } from "./route";
 import { ActionList, ActionView, EntityList, EntityView, LogView } from "./views";
 
@@ -11,6 +12,11 @@ const TABS: { tab: Tab; label: string }[] = [
   { tab: "entities", label: "Entities" },
   { tab: "actions", label: "Actions" },
   { tab: "log", label: "Log" },
+];
+
+const AREAS: { tab: Tab; label: string }[] = [
+  { tab: "entities", label: "Kernel" },
+  { tab: "modules", label: "Modules" },
 ];
 
 export function App() {
@@ -30,6 +36,7 @@ export function App() {
 
   const setClocks = (next: Clocks) => go({ ...route, clocks: next }, true);
   const open = (tab: "entities" | "actions", id: string) => go({ ...route, tab, id });
+  const inModules = route.tab === "modules";
 
   const now = () => {
     const t = new Date();
@@ -40,8 +47,18 @@ export function App() {
     <div className="app">
       <header className="top">
         <h1 className="brand">Uniti</h1>
-        <p className="where">Kernel</p>
-        {summary && (
+        <nav className="areas" aria-label="Areas">
+          {AREAS.map(({ tab, label }) => {
+            const on = tab === "modules" ? inModules : !inModules;
+            return (
+              <button key={tab} className={`area${on ? " area-on" : ""}`} aria-current={on}
+                onClick={() => go({ ...route, tab, id: null })}>
+                {label}
+              </button>
+            );
+          })}
+        </nav>
+        {summary && !inModules && (
           <p className="held">
             {summary.assertions} statements from {summary.intents} actions about {summary.entities} entities
             {summary.first_recorded_at && summary.last_recorded_at && (
@@ -53,6 +70,11 @@ export function App() {
 
       {error && <p className="failure" role="alert">{error}</p>}
 
+      {inModules && (
+        <ModulesPage pick={route.module} onPick={(module) => go({ ...route, module })} />
+      )}
+
+      {!inModules && <>
       <section className="clocks" aria-label="Clocks">
         <div className="clock-fields">
           <label className="clock">
@@ -122,6 +144,7 @@ export function App() {
         )}
         {route.tab === "log" && <LogView clocks={clocks} open={open} />}
       </main>
+      </>}
     </div>
   );
 }

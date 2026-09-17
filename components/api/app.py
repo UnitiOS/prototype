@@ -28,9 +28,13 @@ from starlette.staticfiles import StaticFiles
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT / "components" / "kernel"))
+sys.path.insert(0, str(ROOT / "components" / "provenance"))
 
 from components.api import kernel  # noqa: E402
+from components.modules import read as modules_read  # noqa: E402
+from components.modules.store import ModuleError, Store  # noqa: E402
 from perform import connect  # noqa: E402
+from provenance import _registry  # noqa: E402
 
 DIST = ROOT / "web" / "dist"
 
@@ -123,6 +127,43 @@ async def plane(request: Request):
     return _read(kernel.plane, **_clocks(request))
 
 
+def _required(request, name):
+    value = request.query_params.get(name)
+    if not value:
+        raise HTTPException(400, f"{name} is required")
+    return value
+
+
+def _modules(fn, *args, **kwargs):
+    try:
+        return JSON(fn(Store.from_env(), *args, **kwargs))
+    except ModuleError as exc:
+        raise HTTPException(404, str(exc))
+
+
+async def modules(request: Request):
+    return _modules(modules_read.modules)
+
+
+async def modules_graph(request: Request):
+    return _modules(modules_read.graph)
+
+
+async def module_version(request: Request):
+    name, version = _required(request, "name"), _required(request, "version")
+    try:
+        with connect(os.environ.get("UNITI_DSN"), connect_timeout=3) as conn:
+            registered = set(_registry(conn)[0])
+    except Exception:
+        registered = None
+    return _modules(modules_read.version, name, version, registered=registered)
+
+
+async def module_diff(request: Request):
+    return _modules(modules_read.compare, _required(request, "name"),
+                    _required(request, "from"), _required(request, "to"))
+
+
 async def _error(request: Request, exc: HTTPException):
     return JSON({"error": exc.detail}, status_code=exc.status_code)
 
@@ -135,6 +176,10 @@ routes = [
     Route("/api/kernel/intents/{id}", intent),
     Route("/api/kernel/log", log),
     Route("/api/kernel/plane", plane),
+    Route("/api/modules", modules),
+    Route("/api/modules/graph", modules_graph),
+    Route("/api/modules/version", module_version),
+    Route("/api/modules/diff", module_diff),
 ]
 if DIST.is_dir():
     routes.append(Mount("/", StaticFiles(directory=DIST, html=True)))
