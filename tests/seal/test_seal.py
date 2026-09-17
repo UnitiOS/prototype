@@ -1,13 +1,13 @@
 """Sealing a draft: one file, one intent, and one entity per URI.
 
-Two fixture drafts describe the same ice cream shop twice. `draft_two` renames
-`freezer_location` to `freezer_place` while keeping its `slot_uri`, and adds
-`batch_litres` — so the second seal shares four predicates with the first,
+Two fixture drafts describe the same business twice. `draft_two` renames
+`box_location` to `box_place` while keeping its `slot_uri`, and adds
+`run_volume` — so the second seal shares four predicates with the first,
 one of them under a new name, and brings one of its own.
 
 A third, `draft_ranges`, is about one rule and nothing else: which column a
 value lands in. It declares a class-ranged slot beside a type-ranged one and an
-unranged one, and names one freezer only on the value side.
+unranged one, and names one box only on the value side.
 
 A fourth, `draft_confidence`, is about the optional fourth fact key: one fact
 weighed, one estimated, one silent — and the silent one has to reach the log as
@@ -15,7 +15,7 @@ NULL rather than as a level nobody stated.
 
 The seals land in a temporary directory rather than in `business/`: a test that
 wrote there would leave a v3 behind every time `make check` ran, and a test that
-merely read there would make the production map store a fixture. Nothing here
+merely read there would make the working map store a fixture. Nothing here
 touches `business/` — what the two seals prove is that `resolve` can read what
 `seal` wrote, and two files in a temp directory prove that better.
 
@@ -150,15 +150,15 @@ def test_every_assertion_from_one_seal_shares_the_sealed_at(conn, sealed):
 def test_a_slot_uri_in_both_versions_yields_one_predicate_entity(conn, sealed):
     _, first, second = sealed
     # Shared outright, and shared under a new name: draft_two calls
-    # uniti:freezer_location `freezer_place`.
-    for uri in ("uniti:freezer_label", "uniti:freezer_location"):
+    # uniti:box_location `box_place`.
+    for uri in ("uniti:box_label", "uniti:box_location"):
         assert first["entities"][uri] == second["entities"][uri]
         assert len(_entities_named(conn, uri)) == 1
         # The second seal reused them rather than minting twins. The registry
         # is global, so what a seal mints depends on what the log already
         # holds; what it must never do is mint a URI a second time.
         assert uri not in second["minted"]
-    assert len(_entities_named(conn, "uniti:batch_litres")) == 1
+    assert len(_entities_named(conn, "uniti:run_volume")) == 1
     # The registry predicate registers itself: one row, subject == predicate.
     assert len(_entities_named(conn, URI_PREDICATE)) == 1
 
@@ -177,9 +177,9 @@ def test_facts_carry_the_versions_valid_from_not_the_seal_instant(conn, sealed):
 def test_the_stated_facts_reach_the_log_and_leave_the_map(conn, sealed):
     into, first, _ = sealed
     stated = [row for row in _rows(conn, first["intent_id"]) if row[5] == "human_stated"]
-    assert [row[2] for row in stated] == ["Freezer A", "Front of shop", "Freezer B"]
-    assert stated[0][0] == first["entities"]["uniti:freezer_a"]
-    assert stated[0][1] == first["entities"]["uniti:freezer_label"]
+    assert [row[2] for row in stated] == ["Box A", "Front room", "Box B"]
+    assert stated[0][0] == first["entities"]["uniti:box_a"]
+    assert stated[0][1] == first["entities"]["uniti:box_label"]
     assert "facts" not in (into / "v1.yaml").read_text(encoding="utf-8")
 
 
@@ -192,7 +192,7 @@ def test_an_invalid_draft_leaves_the_database_and_the_directory_untouched(conn, 
 
 
 def test_a_slot_without_a_slot_uri_is_refused(conn, tmp_path):
-    with pytest.raises(DraftError, match="freezer_location"):
+    with pytest.raises(DraftError, match="box_location"):
         seal(conn, FIXTURES / "no_slot_uri.yaml", actor_id="test", into=tmp_path)
     assert list(tmp_path.iterdir()) == []
 
@@ -299,9 +299,9 @@ def test_a_class_ranged_fact_lands_as_a_ref_and_a_type_range_as_a_literal(conn, 
 
     # A type range and no range at all: both literal, and no ref beside them.
     assert literals == {
-        "uniti:freezer_label": "Freezer D",
-        "uniti:batch_flavour": "Stracciatella",
-        "uniti:batch_litres": "18.5",
+        "uniti:box_label": "Box D",
+        "uniti:run_variant": "Speckled",
+        "uniti:run_volume": "18.5",
     }
     # The class range: three refs, and every one of them with a null literal.
     assert [p for p, ref in refs] == ["uniti:stored_in"] * 3
@@ -310,23 +310,23 @@ def test_a_class_ranged_fact_lands_as_a_ref_and_a_type_range_as_a_literal(conn, 
 
 def test_two_facts_naming_one_uri_reach_one_entity(conn, ranged):
     """One entity, whether the URI arrives as a subject or as a value."""
-    freezer_d = ranged["entities"]["uniti:freezer_d"]
+    box_d = ranged["entities"]["uniti:box_d"]
     refs = [ref for _, lit, ref in _stated(conn, ranged["intent_id"]) if ref]
 
-    # Two batches stored in the same freezer point at the same row, and it is
-    # the same entity the freezer's own label was asserted about.
-    assert refs.count(freezer_d) == 2
-    assert len(_entities_named(conn, "uniti:freezer_d")) == 1
+    # Two runs stored in the same box point at the same row, and it is
+    # the same entity the box's own label was asserted about.
+    assert refs.count(box_d) == 2
+    assert len(_entities_named(conn, "uniti:box_d")) == 1
 
 
 def test_a_class_ranged_value_registers_a_uri_nothing_else_names(conn, ranged):
-    """`uniti:freezer_e` appears only on the value side, and still gets an id."""
-    freezer_e = ranged["entities"]["uniti:freezer_e"]
-    assert freezer_e in ranged["minted"].values()
-    assert len(_entities_named(conn, "uniti:freezer_e")) == 1
+    """`uniti:box_e` appears only on the value side, and still gets an id."""
+    box_e = ranged["entities"]["uniti:box_e"]
+    assert box_e in ranged["minted"].values()
+    assert len(_entities_named(conn, "uniti:box_e")) == 1
 
     refs = [ref for _, lit, ref in _stated(conn, ranged["intent_id"]) if ref]
-    assert refs.count(freezer_e) == 1
+    assert refs.count(box_e) == 1
 
 
 def _confidences(conn, intent_id):
@@ -351,9 +351,9 @@ def test_a_stated_confidence_reaches_the_log_and_silence_stays_null(conn, confid
     """Absent is NULL, not `high`: a default would claim what nobody said."""
     stated = _confidences(conn, confident["intent_id"])
     assert stated == [
-        ("uniti:material_kilograms", "high"),
-        ("uniti:material_kilograms", "low"),
-        ("uniti:material_label", None),
+        ("uniti:supply_amount", "high"),
+        ("uniti:supply_amount", "low"),
+        ("uniti:supply_label", None),
     ]
     # The minted URI rows are the tool's own act and state nothing either.
     with conn.cursor() as cur:

@@ -30,7 +30,7 @@ optional fourth:
 `confidence` is how sure the business is of this one fact, and it is the
 kernel's own vocabulary — `high`, `medium`, `low`. It has no default: a fact
 that says nothing about its own confidence records NULL, because a business
-that weighed nineteen tubs and eyeballed six of them said two things, not one.
+that measured some things and estimated others said two things, not one.
 
 `predicate` is a `slot_uri` the draft declares — that is the whole of the join
 between map and log. `subject` is a URI too, because the kernel's `entity` has
@@ -131,7 +131,7 @@ def _utc(value):
     return moment if moment.tzinfo else moment.replace(tzinfo=timezone.utc)
 
 
-def _validate(source, name):
+def _validate(text, name):
     """Load through SchemaView, which is what "valid LinkML" means here.
 
     SchemaView raises on malformed YAML, on a missing `id` or `name`, and on
@@ -139,16 +139,7 @@ def _validate(source, name):
     slot references — that is not parsing, and the generator will meet those.
     """
     try:
-        p = Path(str(source))
-        if p.is_file():
-            if "packages" in str(p) or "@" in p.read_text(encoding="utf-8"):
-                try:
-                    from components.linter.package_loader import PackageLoader
-                    return PackageLoader().load_schemaview(p)
-                except Exception:
-                    return SchemaView(str(p))
-            return SchemaView(str(p))
-        return SchemaView(source)
+        return SchemaView(text)
     except Exception as exc:
         raise DraftError(
             f"{name} is not valid LinkML — {type(exc).__name__}: {exc}"
@@ -513,7 +504,7 @@ def register(conn, version_path, *, actor_id, recorded_at=None):
     if not version_path.is_file():
         raise DraftError(f"no version at {version_path}")
     text = version_path.read_text(encoding="utf-8")
-    view = _validate(version_path, version_path.name)
+    view = _validate(text, version_path.name)
     document = yaml.safe_load(text) or {}
 
     version = view.schema.version

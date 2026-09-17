@@ -1,0 +1,4 @@
+Transcript, compiler fixture.
+
+Not a conversation. The map is written to exercise aggregates with `where`
+and `convert`, parameters, and expressions over one computed class.

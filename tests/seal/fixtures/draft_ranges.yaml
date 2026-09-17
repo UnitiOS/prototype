@@ -1,7 +1,7 @@
 id: https://uniti.example/business
 name: business
-title: Ice cream inventory, with one relationship
-description: A batch is stored in a freezer. That slot's range is a class.
+title: Fixture inventory, with one relationship
+description: A run is stored in a box. That slot's range is a class.
 prefixes:
   linkml: https://w3id.org/linkml/
   uniti: https://uniti.example/business/
@@ -10,52 +10,52 @@ imports:
   - linkml:types
 default_range: string
 classes:
-  Freezer:
-    description: A cabinet stock is held in.
+  Box:
+    description: A container things are held in.
     slots:
-      - freezer_label
-  Batch:
-    description: One production run of one flavour.
+      - box_label
+  Run:
+    description: One run of one variant.
     slots:
-      - batch_flavour
-      - batch_litres
+      - run_variant
+      - run_volume
       - stored_in
 slots:
-  freezer_label:
-    slot_uri: uniti:freezer_label
-    description: What the staff call this freezer.
-  batch_flavour:
-    slot_uri: uniti:batch_flavour
+  box_label:
+    slot_uri: uniti:box_label
+    description: What this box is called.
+  run_variant:
+    slot_uri: uniti:run_variant
     description: No range, so default_range applies. A literal.
-  batch_litres:
-    slot_uri: uniti:batch_litres
+  run_volume:
+    slot_uri: uniti:run_volume
     range: decimal
     description: A type range. Still a literal.
   stored_in:
     slot_uri: uniti:stored_in
-    range: Freezer
+    range: Box
     description: A class range. The value names an entity, not a string.
 annotations:
   transcript: draft_ranges.txt
   valid_from: '2026-05-01T00:00:00Z'
   facts:
-    - subject: uniti:freezer_d
-      predicate: uniti:freezer_label
-      value: Freezer D
-    - subject: uniti:batch_71
-      predicate: uniti:batch_flavour
-      value: Stracciatella
-    - subject: uniti:batch_71
-      predicate: uniti:batch_litres
+    - subject: uniti:box_d
+      predicate: uniti:box_label
+      value: Box D
+    - subject: uniti:run_71
+      predicate: uniti:run_variant
+      value: Speckled
+    - subject: uniti:run_71
+      predicate: uniti:run_volume
       value: 18.5
-    # Two batches into the same freezer, and one of them into a freezer this
+    # Two runs into the same box, and one of them into a box this
     # draft never names as a subject.
-    - subject: uniti:batch_71
+    - subject: uniti:run_71
       predicate: uniti:stored_in
-      value: uniti:freezer_d
-    - subject: uniti:batch_72
+      value: uniti:box_d
+    - subject: uniti:run_72
       predicate: uniti:stored_in
-      value: uniti:freezer_d
-    - subject: uniti:batch_72
+      value: uniti:box_d
+    - subject: uniti:run_72
       predicate: uniti:stored_in
-      value: uniti:freezer_e
+      value: uniti:box_e

@@ -1,22 +1,22 @@
 """Generating a table and a form from a sealed map and the log.
 
-One fixture draft, sealed into a temporary directory so the production map
+One fixture draft, sealed into a temporary directory so the working map
 store is left alone, describes five classes:
 
-    Tub      three slots of its own, two inherited from Held
+    Parcel      three slots of its own, two inherited from Held
     Held     the parent, two slots, one of them `g_class`
-    Flavour  one slot, and one entity — what a class-ranged field offers
+    Variant  one slot, and one entity — what a class-ranged field offers
     Rumour   declared, and nobody ever said a thing under it
     Tally    declared with no `g_class` slot: a table, and no form
 
-and four entities, each with its class stated: a tub with every cell filled, a
-tub with only its name, a crate that is a Held and not a Tub, and a flavour.
+and four entities, each with its class stated: a parcel with every cell filled, a
+parcel with only its name, a bundle that is a Held and not a Parcel, and a variant.
 
-The crate is the point of the fixture. `g_place` is a column of Tub by
+The bundle is the point of the fixture. `g_place` is a column of Parcel by
 inheritance, so a rule that made an entity a row of every table one of whose
-columns it had a fact under would put the crate in the tub table. It says it
+columns it had a fact under would put the bundle in the parcel table. It says it
 is a Held; the log is read, and it is a row of the parent's table only. The
-tubs are rows of both, which is what `is_a` means.
+parcels are rows of both, which is what `is_a` means.
 
 The reads sit at as_of 1 June and the form writes are recorded 1 August, so
 these tests do not depend on the order they run in.
@@ -64,7 +64,7 @@ def conn():
 def map_(conn, tmp_path_factory):
     """The fixture draft, sealed, and the sealed file read back as a map."""
     into = tmp_path_factory.mktemp("generator")
-    result = seal(conn, FIXTURES / "draft_shop.yaml", actor_id="test",
+    result = seal(conn, FIXTURES / "draft_fixture.yaml", actor_id="test",
                   into=into, sealed_at=SEALED)
     return read_map(result["path"])
 
@@ -80,16 +80,16 @@ def cells(t):
 def test_a_draft_is_not_a_map():
     """It carries no version, and every assertion has to name one."""
     with pytest.raises(MapError, match="not a sealed map"):
-        read_map(FIXTURES / "draft_shop.yaml")
+        read_map(FIXTURES / "draft_fixture.yaml")
 
 
 def test_the_columns_are_the_classs_induced_slots(map_):
-    cols = columns(map_, "Tub")
+    cols = columns(map_, "Parcel")
     assert [c["name"] for c in cols] == [
-        "g_tub_name", "g_tub_kilograms", "g_tub_flavour", "g_class", "g_place"
+        "g_parcel_name", "g_parcel_weight", "g_parcel_variant", "g_class", "g_place"
     ]
     assert [c["uri"] for c in cols] == [
-        "uniti:g_tub_name", "uniti:g_tub_kilograms", "uniti:g_tub_flavour",
+        "uniti:g_parcel_name", "uniti:g_parcel_weight", "uniti:g_parcel_variant",
         "uniti:g_class", "uniti:g_place",
     ]
     # Straight off the map: an identifier induces required, and a class range
@@ -104,14 +104,14 @@ def test_the_columns_are_the_classs_induced_slots(map_):
 
 
 def test_the_table_is_what_the_log_says_at_those_clocks(conn, map_):
-    t = built(conn, map_, "Tub")
+    t = built(conn, map_, "Parcel")
     assert cells(t) == {
-        "uniti:g_tub_1": ["Tub 1", "4.8", "uniti:g_vanilla", "Tub",
-                          "Display cabinet"],
-        "uniti:g_tub_2": ["Tub 2", None, None, "Tub", None],
+        "uniti:g_parcel_1": ["Parcel 1", "4.8", "uniti:g_plain", "Parcel",
+                          "Front shelf"],
+        "uniti:g_parcel_2": ["Parcel 2", None, None, "Parcel", None],
     }
     # Rows come out in one order whatever the log's insertion order was.
-    assert [r["uri"] for r in t["rows"]] == ["uniti:g_tub_1", "uniti:g_tub_2"]
+    assert [r["uri"] for r in t["rows"]] == ["uniti:g_parcel_1", "uniti:g_parcel_2"]
 
 
 def test_the_rows_equal_a_direct_read_of_the_log(conn, map_):
@@ -122,25 +122,25 @@ def test_the_rows_equal_a_direct_read_of_the_log(conn, map_):
     compared is the generator's pivot — which entity is a row, which value
     lands in which column — not the read rule against itself.
     """
-    for class_name in ("Tub", "Held", "Flavour", "Rumour", "Tally"):
+    for class_name in ("Parcel", "Held", "Variant", "Rumour", "Tally"):
         t = built(conn, map_, class_name)
         assert verify(conn, t) == [], class_name
 
 
 def test_a_row_is_what_the_log_says_the_entity_is(conn, map_):
-    """The crate has a fact under one of Tub's columns and is not a Tub.
+    """The bundle has a fact under one of Parcel's columns and is not a Parcel.
 
-    `g_place` is a column of Tub by inheritance, and the crate has a g_place.
+    `g_place` is a column of Parcel by inheritance, and the bundle has a g_place.
     What keeps it out is the only thing that should: it says it is a Held.
     """
-    assert "uniti:g_crate" not in cells(built(conn, map_, "Tub"))
+    assert "uniti:g_bundle" not in cells(built(conn, map_, "Parcel"))
     # The parent's table holds all three, because `is_a` is walked downward
-    # for rows exactly as `columns()` walks it upward for columns. A tub is a
+    # for rows exactly as `columns()` walks it upward for columns. A parcel is a
     # row of two tables, which is what the relation means.
     assert cells(built(conn, map_, "Held")) == {
-        "uniti:g_crate": ["Held", "Dry store"],
-        "uniti:g_tub_1": ["Tub", "Display cabinet"],
-        "uniti:g_tub_2": ["Tub", None],
+        "uniti:g_bundle": ["Held", "Back shelf"],
+        "uniti:g_parcel_1": ["Parcel", "Front shelf"],
+        "uniti:g_parcel_2": ["Parcel", None],
     }
 
 
@@ -166,19 +166,19 @@ def test_a_class_with_no_class_slot_is_a_table_and_not_a_form(conn, map_):
 
 
 def test_a_form_is_generated_for_one_class(conn, map_):
-    f = form(conn, map_, "Tub", valid_at=READ, as_of=READ)
+    f = form(conn, map_, "Parcel", valid_at=READ, as_of=READ)
     fields = {field["name"]: field for field in f["fields"]}
     assert list(fields) == [
-        "g_tub_name", "g_tub_kilograms", "g_tub_flavour", "g_class", "g_place"
+        "g_parcel_name", "g_parcel_weight", "g_parcel_variant", "g_class", "g_place"
     ]
-    assert fields["g_tub_kilograms"]["range"] == "decimal"
-    assert fields["g_tub_kilograms"]["required"] is True
+    assert fields["g_parcel_weight"]["range"] == "decimal"
+    assert fields["g_parcel_weight"]["required"] is True
     assert fields["g_place"]["required"] is False
     # A class-ranged field offers entities, labelled by the slot the map says
     # identifies them — so choosing one writes an edge, not a string.
-    assert fields["g_tub_flavour"]["options"] == [("uniti:g_vanilla", "Vanilla")]
-    assert fields["g_tub_name"]["options"] == []
-    assert "-> Flavour" in render_form(f)
+    assert fields["g_parcel_variant"]["options"] == [("uniti:g_plain", "Plain")]
+    assert fields["g_parcel_name"]["options"] == []
+    assert "-> Variant" in render_form(f)
     # A class nobody has spoken about still has a form: it carries the slot
     # that could say so. It is the empty table that is the finding.
     assert len(form(conn, map_, "Rumour")["fields"]) == 2
@@ -187,12 +187,12 @@ def test_a_form_is_generated_for_one_class(conn, map_):
 def test_a_value_entered_through_the_form_reaches_the_log(conn, map_):
     """One literal and one edge, on a subject the log already holds."""
     result = submit(
-        conn, map_, "Tub",
-        subject="uniti:g_tub_2",
-        values={"g_tub_kilograms": "5.1", "g_tub_flavour": "uniti:g_vanilla"},
+        conn, map_, "Parcel",
+        subject="uniti:g_parcel_2",
+        values={"g_parcel_weight": "5.1", "g_parcel_variant": "uniti:g_plain"},
         actor_id="test", valid_from=ENTERED_FROM, recorded_at=ENTERED_AT,
     )
-    # Neither the subject nor the flavour is new, so the form minted nothing.
+    # Neither the subject nor the variant is new, so the form minted nothing.
     assert result["minted"] == {}
     assert len(result["assertions"]) == 2
 
@@ -201,18 +201,18 @@ def test_a_value_entered_through_the_form_reaches_the_log(conn, map_):
                               predicate_id=result["predicates"][field],
                               valid_at=valid_at, as_of=as_of)
 
-    assert back("g_tub_kilograms")["value_literal"] == "5.1"
-    assert back("g_tub_kilograms")["ontology_version"] == map_["version"]
-    assert back("g_tub_flavour")["value_literal"] is None
-    assert back("g_tub_flavour")["value_ref"] is not None
+    assert back("g_parcel_weight")["value_literal"] == "5.1"
+    assert back("g_parcel_weight")["ontology_version"] == map_["version"]
+    assert back("g_parcel_variant")["value_literal"] is None
+    assert back("g_parcel_variant")["value_ref"] is not None
 
     # And the generated table is a read, not a store: at the as_of the other
     # tests use, the log had not learned any of this yet.
-    assert cells(built(conn, map_, "Tub"))["uniti:g_tub_2"] == [
-        "Tub 2", None, None, "Tub", None
+    assert cells(built(conn, map_, "Parcel"))["uniti:g_parcel_2"] == [
+        "Parcel 2", None, None, "Parcel", None
     ]
-    assert cells(built(conn, map_, "Tub", LATER, LATER))["uniti:g_tub_2"] == [
-        "Tub 2", "5.1", "uniti:g_vanilla", "Tub", None
+    assert cells(built(conn, map_, "Parcel", LATER, LATER))["uniti:g_parcel_2"] == [
+        "Parcel 2", "5.1", "uniti:g_plain", "Parcel", None
     ]
 
 
@@ -224,20 +224,20 @@ def test_a_form_naming_an_entity_the_log_has_never_held_mints_it(conn, map_):
     honest rather than a defect.
     """
     result = submit(
-        conn, map_, "Tub",
-        subject="uniti:g_tub_3",
-        values={"g_tub_name": "Tub 3", "g_class": "Tub"},
+        conn, map_, "Parcel",
+        subject="uniti:g_parcel_3",
+        values={"g_parcel_name": "Parcel 3", "g_class": "Parcel"},
         actor_id="test", valid_from=ENTERED_FROM, recorded_at=ENTERED_AT,
     )
-    assert list(result["minted"]) == ["uniti:g_tub_3"]
-    assert cells(built(conn, map_, "Tub", LATER, LATER))["uniti:g_tub_3"] == [
-        "Tub 3", None, None, "Tub", None
+    assert list(result["minted"]) == ["uniti:g_parcel_3"]
+    assert cells(built(conn, map_, "Parcel", LATER, LATER))["uniti:g_parcel_3"] == [
+        "Parcel 3", None, None, "Parcel", None
     ]
 
 
 def test_a_field_the_map_does_not_declare_is_refused(conn, map_):
     with pytest.raises(MapError, match="g_colour"):
-        submit(conn, map_, "Tub", subject="uniti:g_tub_1",
+        submit(conn, map_, "Parcel", subject="uniti:g_parcel_1",
                values={"g_colour": "white"}, actor_id="test")
 
 
@@ -266,9 +266,9 @@ def test_a_submission_carries_who_said_it_and_why(conn, map_):
     them would keep the number and lose the half that makes it evidence.
     """
     result = submit(
-        conn, map_, "Tub",
-        subject="uniti:g_tub_4",
-        values={"g_tub_name": "Tub 4"},
+        conn, map_, "Parcel",
+        subject="uniti:g_parcel_4",
+        values={"g_parcel_name": "Parcel 4"},
         actor_id="test", valid_from=ENTERED_FROM, recorded_at=ENTERED_AT,
         authority="Marina", confidence="high",
         reason_code="correction", note="Set by Marina after the count",
@@ -278,10 +278,10 @@ def test_a_submission_carries_who_said_it_and_why(conn, map_):
     )
     stated = resolve_single(
         conn, subject_id=result["subject_id"],
-        predicate_id=result["predicates"]["g_tub_name"],
+        predicate_id=result["predicates"]["g_parcel_name"],
         valid_at=LATER, as_of=LATER,
     )
-    assert stated["value_literal"] == "Tub 4"
+    assert stated["value_literal"] == "Parcel 4"
     assert stated["authority"] == "Marina"
     assert stated["confidence"] == "high"
 
@@ -294,12 +294,12 @@ def test_a_submission_carries_who_said_it_and_why(conn, map_):
 def test_a_submission_naming_no_authority_writes_null(conn, map_):
     """Unsaid is NULL. "Nobody said who set this" is a fact about the log."""
     result = submit(
-        conn, map_, "Tub",
-        subject="uniti:g_tub_4",
-        values={"g_tub_kilograms": "2.0"},
+        conn, map_, "Parcel",
+        subject="uniti:g_parcel_4",
+        values={"g_parcel_weight": "2.0"},
         actor_id="test", valid_from=ENTERED_FROM, recorded_at=ENTERED_AT,
     )
     assert [_authority(conn, a) for a in result["assertions"]] == [(None, None)]
     reason_code, note = _intent(conn, result["intent_id"])
     assert reason_code is None
-    assert note == "Tub form, 1 field(s), uniti:g_tub_4"
+    assert note == "Parcel form, 1 field(s), uniti:g_parcel_4"

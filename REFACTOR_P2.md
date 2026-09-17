@@ -66,8 +66,12 @@ Prinsip mekanisme yang ikut terbawa. Semuanya sudah terbukti di P1:
 `render_map.py`, `owl_domains.py`, dan dashboard.
 
 **Seluruh lapisan authoring P2 yang gagal:**
-`components/studio/*`, `agent/studio_server.py`, `web/studio_handler.py`,
-`linter/*`, `scripts/bootstrap_p2_kernel.py`, dan `tests/p2/*`.
+`components/studio/*`, `web/studio_handler.py`, `linter/*`,
+`scripts/bootstrap_p2_kernel.py`, dan `tests/p2/*`.
+
+**Disimpan sebagai referensi, tidak dijalankan dan tidak dites:** `components/agent/*`
+(MCP baca P1 dan server Studio P2), sebagai inspirasi untuk irisan 4.
+`studio_server.py` di dalamnya mengimpor modul yang sudah dihapus.
 
 **Pelajaran yang diambil dari kegagalan itu:**
 
@@ -246,11 +250,23 @@ menghitung lintas modul.
 
 ---
 
-## 8. Status
+## 8. Temuan selama berjalan
+
+- **Compiler belum punya test yang mengeksekusi.** Test-nya hanya memeriksa rencana
+  dan teks SQL; angka hasilnya dulu hanya dibuktikan lewat demo P1. Test eksekusi
+  (log → operational DB → angka) ditambahkan di irisan 2.
+- **Jebakan YAML 1.1 di map P1:** kunci `on:` tanpa tanda kutip di blok `convert`
+  terbaca sebagai boolean `True`. Beberapa aturan di map demo P1 terkena ini tanpa
+  ada yang menolaknya. Seal atau compiler harus menolaknya (irisan 1 atau 2).
+
+---
+
+## 9. Status
 
 | Irisan | Status |
 |---|---|
-| 0 | berjalan: tag dan branch dibuat; menunggu konfirmasi daftar hapus dan teknologi UI |
+| 0a | selesai: file lama dihapus, fondasi lepas dari linter, istilah domain di test dinetralkan (compiler punya fixture netral sendiri), Makefile dan README ditulis ulang; 82 test lulus, replay identik |
+| 0b | berikutnya: API baca kernel + aplikasi web baru (Starlette + React/TypeScript/Vite, disetujui) |
 | 1 | belum dimulai |
 | 2 | belum dimulai |
 | 3 | belum dimulai |

@@ -1,0 +1,139 @@
+id: https://uniti.example/fixture
+name: compiler_fixture
+version: v1
+title: Compiler fixture
+description: >-
+  A map written to exercise the compiler, not to describe a business. Things
+  move between places and are counted in them; one computed class reconciles
+  what the movements say should stand against what the counts found.
+prefixes:
+  linkml: https://w3id.org/linkml/
+  fx: https://uniti.example/fixture/
+default_prefix: fx
+imports:
+  - linkml:types
+default_range: string
+annotations:
+  valid_from: '2026-01-01T00:00:00+00:00'
+  sealed_at: '2026-01-01T00:00:00+00:00'
+  transcript: v1.txt
+classes:
+  Place:
+    slots: [entity_class, place_name]
+  InnerPlace:
+    is_a: Place
+  OuterPlace:
+    is_a: Place
+  Measure:
+    slots: [entity_class, measure_name]
+  Thing:
+    slots: [entity_class, thing_name, thing_base_measure, thing_price, thing_threshold]
+  MeasureConversion:
+    slots: [entity_class, conversion_thing, conversion_measure, conversion_factor]
+  Transfer:
+    slots: [entity_class, transfer_thing, transfer_from, transfer_to, transfer_quantity, transfer_measure]
+  CountLine:
+    slots: [entity_class, count_thing, count_place, count_quantity, count_measure]
+  Reconciliation:
+    slots:
+      - rec_thing
+      - rec_place
+      - rec_measure
+      - rec_price
+      - rec_threshold
+      - rec_in
+      - rec_out
+      - rec_expected
+      - rec_counted
+      - rec_counted_value
+      - rec_variance
+      - rec_variance_value
+slots:
+  entity_class: {slot_uri: fx:entity_class, designates_type: true, range: string}
+  place_name: {slot_uri: fx:place_name, identifier: true, range: string}
+  measure_name: {slot_uri: fx:measure_name, identifier: true, range: string}
+  thing_name: {slot_uri: fx:thing_name, identifier: true, range: string}
+  thing_base_measure: {slot_uri: fx:thing_base_measure, range: Measure}
+  thing_price: {slot_uri: fx:thing_price, range: decimal}
+  thing_threshold: {slot_uri: fx:thing_threshold, range: decimal}
+  conversion_thing: {slot_uri: fx:conversion_thing, range: Thing}
+  conversion_measure: {slot_uri: fx:conversion_measure, range: Measure}
+  conversion_factor: {slot_uri: fx:conversion_factor, range: decimal}
+  transfer_thing: {slot_uri: fx:transfer_thing, range: Thing}
+  transfer_from: {slot_uri: fx:transfer_from, range: Place}
+  transfer_to: {slot_uri: fx:transfer_to, range: Place}
+  transfer_quantity: {slot_uri: fx:transfer_quantity, range: decimal}
+  transfer_measure: {slot_uri: fx:transfer_measure, range: Measure}
+  count_thing: {slot_uri: fx:count_thing, range: Thing}
+  count_place: {slot_uri: fx:count_place, range: Place}
+  count_quantity: {slot_uri: fx:count_quantity, range: decimal}
+  count_measure: {slot_uri: fx:count_measure, range: Measure}
+  rec_thing: {slot_uri: fx:rec_thing, range: Thing}
+  rec_place: {slot_uri: fx:rec_place, range: Place}
+  rec_measure:
+    slot_uri: fx:rec_measure
+    range: Measure
+    annotations:
+      parameter: {value: {of: rec_thing, slot: thing_base_measure}}
+  rec_price:
+    slot_uri: fx:rec_price
+    range: decimal
+    annotations:
+      parameter: {value: {of: rec_thing, slot: thing_price}}
+  rec_threshold:
+    slot_uri: fx:rec_threshold
+    range: decimal
+    annotations:
+      parameter: {value: {of: rec_thing, slot: thing_threshold}}
+  rec_in:
+    slot_uri: fx:rec_in
+    range: decimal
+    annotations:
+      aggregate:
+        value:
+          over: Transfer
+          sum: transfer_quantity
+          by: {rec_thing: transfer_thing, rec_place: transfer_to}
+          where:
+            transfer_to: {is_a: InnerPlace}
+            transfer_thing: {is_a: Thing}
+          convert:
+            using: MeasureConversion
+            'on': {conversion_thing: transfer_thing, conversion_measure: transfer_measure}
+            factor: conversion_factor
+  rec_out:
+    slot_uri: fx:rec_out
+    range: decimal
+    annotations:
+      aggregate:
+        value:
+          over: Transfer
+          sum: transfer_quantity
+          by: {rec_thing: transfer_thing, rec_place: transfer_from}
+          where:
+            transfer_from: {is_a: InnerPlace}
+            transfer_thing: {is_a: Thing}
+          convert:
+            using: MeasureConversion
+            'on': {conversion_thing: transfer_thing, conversion_measure: transfer_measure}
+            factor: conversion_factor
+  rec_expected: {slot_uri: fx:rec_expected, range: decimal, equals_expression: '{rec_in} - {rec_out}'}
+  rec_counted:
+    slot_uri: fx:rec_counted
+    range: decimal
+    annotations:
+      aggregate:
+        value:
+          over: CountLine
+          sum: count_quantity
+          by: {rec_thing: count_thing, rec_place: count_place}
+          where:
+            count_place: {is_a: InnerPlace}
+            count_thing: {is_a: Thing}
+          convert:
+            using: MeasureConversion
+            'on': {conversion_thing: count_thing, conversion_measure: count_measure}
+            factor: conversion_factor
+  rec_counted_value: {slot_uri: fx:rec_counted_value, range: decimal, equals_expression: '{rec_counted} * {rec_price}'}
+  rec_variance: {slot_uri: fx:rec_variance, range: decimal, equals_expression: '{rec_counted} - {rec_expected}'}
+  rec_variance_value: {slot_uri: fx:rec_variance_value, range: decimal, equals_expression: '{rec_variance} * {rec_price}'}

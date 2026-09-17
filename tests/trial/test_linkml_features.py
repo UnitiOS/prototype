@@ -1,15 +1,14 @@
 """Which of five LinkML metamodel features survive `seal`.
 
-`business/trial/draft.yaml` declares them, `seal` was run against a throwaway
-database with `--into business/trial`, and `business/trial/v1.yaml` is what
-came out. These tests read that sealed file — not a draft, not a fixture — and
+A draft declared them, `seal` was run against a throwaway database, and
+`fixtures/v1.yaml` is what came out. These tests read that sealed file — not a draft, not a fixture — and
 say for each feature whether it is still there and still visible through
 `SchemaView`, including through `induced_slot`, which is the door the
 generator uses.
 
 Present here means present in the file. It says nothing about whether anything
 can act on it: `rules` survives the seal intact and `linkml_runtime` raises
-`NotImplementedError` the moment it is asked to apply one. See LOG.md.
+`NotImplementedError` the moment it is asked to apply one.
 
 No database. The sealed file is the fixture.
 
@@ -21,7 +20,7 @@ from pathlib import Path
 import pytest
 from linkml_runtime import SchemaView
 
-SEALED = Path(__file__).resolve().parent.parent.parent / "business" / "trial" / "v1.yaml"
+SEALED = Path(__file__).resolve().parent / "fixtures" / "v1.yaml"
 
 
 @pytest.fixture(scope="module")

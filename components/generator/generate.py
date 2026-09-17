@@ -34,11 +34,11 @@ and the value comes straight back out of `resolve_single()`.
                it is the fallback for a class nothing has compiled.
 
 Run:
-    generate.py table  business/v1.yaml Material --out build/material.txt
-    generate.py table  business/v1.yaml Material --verify
-    generate.py form   business/v1.yaml Material
-    generate.py submit business/v1.yaml Material --subject uniti:milk_powder \
-                       --set material_supplier=uniti:dairy_supplier --actor fareza
+    generate.py table  <map>/v1.yaml <Class> --out build/<class>.txt
+    generate.py table  <map>/v1.yaml <Class> --verify
+    generate.py form   <map>/v1.yaml <Class>
+    generate.py submit <map>/v1.yaml <Class> --subject <prefix>:<thing> \
+                       --set <slot>=<prefix>:<other_thing> --actor <actor>
 """
 
 import argparse
@@ -131,29 +131,15 @@ def _utc(value):
 
 
 def read_map(path):
-    """One sealed version file or modular package schema, as far as a generator needs it.
+    """One sealed version file, as far as a generator needs it.
 
     A draft is refused: it carries no `version`, and every assertion this
     writes has to name the version it was stated under.
     """
-    path = Path(path).resolve()
+    path = Path(path)
     if not path.is_file():
         raise MapError(f"no map at {path}")
-
-    content = path.read_text(encoding="utf-8")
-    if "packages" in str(path) or "@" in content:
-        try:
-            from components.linter.package_loader import PackageLoader
-            loader = PackageLoader()
-            view = loader.load_schemaview(path)
-        except Exception:
-            view = SchemaView(str(path))
-    else:
-        try:
-            view = SchemaView(str(path))
-        except Exception:
-            view = SchemaView(content)
-
+    view = SchemaView(path.read_text(encoding="utf-8"))
     version = view.schema.version
     if not version:
         raise MapError(f"{path.name} carries no version, so it is not a sealed map")

@@ -1,6 +1,6 @@
 id: https://uniti.example/business
 name: business
-title: Ice cream inventory, with one fact the shop is unsure of
+title: Fixture inventory, with one fact the business is unsure of
 description: Two opening quantities, one weighed and one eyeballed.
 prefixes:
   linkml: https://w3id.org/linkml/
@@ -10,33 +10,33 @@ imports:
   - linkml:types
 default_range: string
 classes:
-  Material:
-    description: A thing the shop holds stock of.
+  Supply:
+    description: A thing the business holds an amount of.
     slots:
-      - material_label
-      - material_kilograms
+      - supply_label
+      - supply_amount
 slots:
-  material_label:
-    slot_uri: uniti:material_label
-    description: What the staff call it.
-  material_kilograms:
-    slot_uri: uniti:material_kilograms
+  supply_label:
+    slot_uri: uniti:supply_label
+    description: What it is called.
+  supply_amount:
+    slot_uri: uniti:supply_amount
     description: How much of it there was.
 annotations:
   transcript: draft_confidence.txt
   valid_from: '2026-07-01T00:00:00Z'
   facts:
-    # Weighed on the scale.
-    - subject: uniti:sugar
-      predicate: uniti:material_kilograms
+    # Measured.
+    - subject: uniti:supply_a
+      predicate: uniti:supply_amount
       value: 24.0
       confidence: high
-    # Eyeballed through the sack.
-    - subject: uniti:hazelnut_paste
-      predicate: uniti:material_kilograms
+    # Estimated.
+    - subject: uniti:supply_b
+      predicate: uniti:supply_amount
       value: 3
       confidence: low
     # Says nothing about how sure it is, so the log says nothing either.
-    - subject: uniti:sugar
-      predicate: uniti:material_label
-      value: Sugar
+    - subject: uniti:supply_a
+      predicate: uniti:supply_label
+      value: Supply A

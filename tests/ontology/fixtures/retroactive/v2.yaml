@@ -7,6 +7,6 @@ annotations:
   supersedes: v1
   transcript: v2.txt
 classes:
-  Batch:
+  Run:
     slots:
-      - batch_code
+      - run_code

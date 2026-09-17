@@ -1,6 +1,6 @@
-Interviewer: tell me about where you keep the ice cream.
-Owner: two freezers. The one out front we call Freezer A, it's by the counter.
+Interviewer: what do you keep things in?
+Speaker: two boxes. The first one we call Box A, it stands in the front room.
 Interviewer: and the other?
-Owner: Freezer B. Out back, but I haven't measured where exactly.
+Speaker: Box B. Somewhere at the back, but nobody has said where exactly.
 Interviewer: since when has it been that way?
-Owner: first of January, when we reopened.
+Speaker: since the first of January.

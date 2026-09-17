@@ -1,7 +1,7 @@
 id: https://uniti.example/business
 name: business
 title: Generator fixture
-description: A shop small enough that a generated table can be checked by eye.
+description: A business small enough that a generated table can be checked by eye.
   Everything it declares is namespaced g_ so that sealing it leaves the other
   suites' entities alone — the URI registry is global.
 prefixes:
@@ -13,25 +13,25 @@ imports:
 default_range: string
 classes:
   Held:
-    description: Anything the shop holds and can say where it is.
+    description: Anything the business holds and can say where it is.
     slots:
       - g_class
       - g_place
-  Tub:
+  Parcel:
     is_a: Held
-    description: One tub of gelato. Inherits g_place, which is what makes the
-      crate turn up in this table.
+    description: One parcel. Inherits g_place, which is what makes the
+      bundle turn up in this table.
     slots:
-      - g_tub_name
-      - g_tub_kilograms
-      - g_tub_flavour
-  Flavour:
+      - g_parcel_name
+      - g_parcel_weight
+      - g_parcel_variant
+  Variant:
     description: One entry in the recipe book.
     slots:
       - g_class
-      - g_flavour_name
+      - g_variant_name
   Rumour:
-    description: A class the shop declares and never states one fact about.
+    description: A class the business declares and never states one fact about.
     slots:
       - g_class
       - g_rumour_text
@@ -52,22 +52,22 @@ slots:
     slot_uri: uniti:g_place
     range: string
     description: Where it stands.
-  g_tub_name:
-    slot_uri: uniti:g_tub_name
+  g_parcel_name:
+    slot_uri: uniti:g_parcel_name
     identifier: true
     range: string
     description: What is written on the tape.
-  g_tub_kilograms:
-    slot_uri: uniti:g_tub_kilograms
+  g_parcel_weight:
+    slot_uri: uniti:g_parcel_weight
     required: true
     range: decimal
     description: What it weighed when it was filled.
-  g_tub_flavour:
-    slot_uri: uniti:g_tub_flavour
-    range: Flavour
-    description: Which flavour is in it.
-  g_flavour_name:
-    slot_uri: uniti:g_flavour_name
+  g_parcel_variant:
+    slot_uri: uniti:g_parcel_variant
+    range: Variant
+    description: Which variant is in it.
+  g_variant_name:
+    slot_uri: uniti:g_variant_name
     identifier: true
     range: string
     description: What it is called on the board.
@@ -80,39 +80,39 @@ slots:
     range: decimal
     description: A number nobody writes down.
 annotations:
-  transcript: draft_shop.txt
+  transcript: draft_fixture.txt
   valid_from: '2026-01-01T00:00:00Z'
   facts:
-    - subject: uniti:g_vanilla
+    - subject: uniti:g_plain
       predicate: uniti:g_class
-      value: Flavour
-    - subject: uniti:g_vanilla
-      predicate: uniti:g_flavour_name
-      value: Vanilla
-    - subject: uniti:g_tub_1
+      value: Variant
+    - subject: uniti:g_plain
+      predicate: uniti:g_variant_name
+      value: Plain
+    - subject: uniti:g_parcel_1
       predicate: uniti:g_class
-      value: Tub
-    - subject: uniti:g_tub_1
-      predicate: uniti:g_tub_name
-      value: Tub 1
-    - subject: uniti:g_tub_1
-      predicate: uniti:g_tub_kilograms
+      value: Parcel
+    - subject: uniti:g_parcel_1
+      predicate: uniti:g_parcel_name
+      value: Parcel 1
+    - subject: uniti:g_parcel_1
+      predicate: uniti:g_parcel_weight
       value: '4.8'
-    - subject: uniti:g_tub_1
-      predicate: uniti:g_tub_flavour
-      value: uniti:g_vanilla
-    - subject: uniti:g_tub_1
+    - subject: uniti:g_parcel_1
+      predicate: uniti:g_parcel_variant
+      value: uniti:g_plain
+    - subject: uniti:g_parcel_1
       predicate: uniti:g_place
-      value: Display cabinet
-    - subject: uniti:g_tub_2
+      value: Front shelf
+    - subject: uniti:g_parcel_2
       predicate: uniti:g_class
-      value: Tub
-    - subject: uniti:g_tub_2
-      predicate: uniti:g_tub_name
-      value: Tub 2
-    - subject: uniti:g_crate
+      value: Parcel
+    - subject: uniti:g_parcel_2
+      predicate: uniti:g_parcel_name
+      value: Parcel 2
+    - subject: uniti:g_bundle
       predicate: uniti:g_class
       value: Held
-    - subject: uniti:g_crate
+    - subject: uniti:g_bundle
       predicate: uniti:g_place
-      value: Dry store
+      value: Back shelf
