@@ -17,6 +17,8 @@ business's own logic carried in a graph rather than in code.
 | `components/generator` | Columns and forms from a sealed map; `submit` writes one form into the kernel. |
 | `components/compiler` | The map's `aggregate`, `parameter` and `equals_expression` rules, executed as SQL into an operational database that can be dropped and rebuilt. |
 | `components/provenance` | Who stated what about a subject, when, and what was later withdrawn. |
+| `components/api` | The JSON API every surface reads: the kernel's entities, actions and statements, each read at `(valid_at, as_of)`. It never decides which statement stands; that is `resolve_single`. |
+| `web/` | The application (React, TypeScript, Vite). Today: the kernel explorer and the clock plane. |
 | `packages/@uniti/core` | The seed of a shared core graph. A hypothesis, not yet a foundation. |
 
 `components/agent` is kept for reference only while the agent layer is rebuilt.
@@ -29,6 +31,11 @@ Needs Docker, Python 3.12 and Node 22.
 ```
 make check    # database, kernel schema, tests, and a byte-identical replay
 make test     # tests only
+
+make dev-db   # a development log (uniti_dev) filled with a synthetic seed
+make web      # build the application
+make app      # API and application on http://localhost:8200
+make web-dev  # frontend with live reload on http://localhost:5173 (needs `make app`)
 ```
 
 Tests run against throwaway databases (`uniti_check`, `uniti_check_ops`) and

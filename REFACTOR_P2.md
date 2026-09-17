@@ -255,6 +255,9 @@ menghitung lintas modul.
 - **Compiler belum punya test yang mengeksekusi.** Test-nya hanya memeriksa rencana
   dan teks SQL; angka hasilnya dulu hanya dibuktikan lewat demo P1. Test eksekusi
   (log → operational DB → angka) ditambahkan di irisan 2.
+- **Dua mekanisme penamaan di kernel.** Seed sintetis menamai entity lewat
+  predikat `has_label`, sedangkan seal lewat registry `uniti:uri`. Seed sekarang
+  memakai registry, sehingga pembaca kernel hanya mengenal satu cara.
 - **Jebakan YAML 1.1 di map P1:** kunci `on:` tanpa tanda kutip di blok `convert`
   terbaca sebagai boolean `True`. Beberapa aturan di map demo P1 terkena ini tanpa
   ada yang menolaknya. Seal atau compiler harus menolaknya (irisan 1 atau 2).
@@ -266,7 +269,7 @@ menghitung lintas modul.
 | Irisan | Status |
 |---|---|
 | 0a | selesai: file lama dihapus, fondasi lepas dari linter, istilah domain di test dinetralkan (compiler punya fixture netral sendiri), Makefile dan README ditulis ulang; 82 test lulus, replay identik |
-| 0b | berikutnya: API baca kernel + aplikasi web baru (Starlette + React/TypeScript/Vite, disetujui) |
+| 0b | selesai, menunggu Anda melihatnya: API baca kernel (`components/api`), aplikasi web (`web/`) dengan penjelajah kernel dan bidang jam; seed sintetis dinetralkan dan menamai entity lewat registry `uniti:uri`; 96 test lulus |
 | 1 | belum dimulai |
 | 2 | belum dimulai |
 | 3 | belum dimulai |

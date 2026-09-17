@@ -13,7 +13,7 @@ export UNITI_OPS_DSN := postgresql://uniti:uniti@localhost:5433/$(CHECK_OPS_DB)
 
 OUT := build/check
 
-.PHONY: check venv db schema test replay
+.PHONY: check venv db schema test replay dev-db app web web-dev
 
 # Environment, schema, tests, and a replay that must come out byte-identical twice.
 check: venv schema test replay
@@ -54,3 +54,26 @@ replay: venv
 	$(PY) scripts/project.py $(OUT)/projection_a.txt
 	$(PY) scripts/project.py $(OUT)/projection_b.txt
 	$(PY) scripts/project.py --compare $(OUT)/projection_a.txt $(OUT)/projection_b.txt
+
+# ---------------------------------------------------------------- the application
+# A development log of its own, never touched by the tests.
+DEV_DB  := uniti_dev
+DEV_DSN := postgresql://uniti:uniti@localhost:5433/$(DEV_DB)
+
+# Create the development log if absent and fill it with the synthetic seed.
+# The seed resets the kernel first, so this replaces whatever the log held.
+dev-db: db venv
+	@$(DC) exec -T db psql -U uniti -d postgres -tAc 	    "SELECT 1 FROM pg_database WHERE datname = '$(DEV_DB)'" | grep -q 1 	    || $(DC) exec -T db createdb -U uniti $(DEV_DB)
+	UNITI_DSN=$(DEV_DSN) $(PY) scripts/seed_200.py
+
+# Build the web application into web/dist.
+web:
+	cd web && npm install --no-audit --no-fund && npm run build
+
+# The API and the built application together, on http://localhost:8200.
+app: venv
+	UNITI_DSN=$(DEV_DSN) $(PY) -m uvicorn components.api.app:app --port 8200
+
+# While changing the frontend: Vite on http://localhost:5173, forwarding /api to `make app`.
+web-dev:
+	cd web && npm run dev

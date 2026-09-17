@@ -4,8 +4,9 @@ A projection is derived, never stored. It is not written back as assertions:
 it is rebuilt from `assertion` every time, by asking resolve_single() for the
 winner of every (subject, predicate) pair at one pair of clocks.
 
-Labels come from the log too. The `has_label` predicate is the one entity that
-labels itself, so the projection needs no lookup table outside the kernel.
+Names come from the log too: every entity is registered under `uniti:uri`, the
+predicate that registers itself, so the projection needs no lookup table
+outside the kernel.
 
 Run: .venv/Scripts/python.exe scripts/project.py build/projection_a.txt
      .venv/Scripts/python.exe scripts/project.py --compare FILE FILE
@@ -16,17 +17,19 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "components" / "kernel"))
+sys.path.insert(0, str(ROOT / "components" / "seal"))
 
 from perform import connect  # noqa: E402
 from resolve import resolve_single  # noqa: E402
+from seal import URI_PREDICATE  # noqa: E402
 
 VALID_AT = "2026-06-01T00:00:00Z"
 AS_OF = "2026-12-31T00:00:00Z"
 
 # The predicate that names things is the one that names itself.
-_HAS_LABEL_SQL = """
+_URI_PREDICATE_SQL = """
 SELECT DISTINCT subject_id FROM assertion
-WHERE subject_id = predicate_id AND value_literal = 'has_label'
+WHERE subject_id = predicate_id AND value_literal = %s
 """
 
 _PAIRS_SQL = "SELECT DISTINCT subject_id, predicate_id FROM assertion"
@@ -38,14 +41,14 @@ _HEADERS = ("subject", "predicate", "value", "valid_from", "recorded_at",
 def build(conn):
     """Return the projection as a list of tuples, deterministically ordered."""
     with conn.cursor() as cur:
-        cur.execute(_HAS_LABEL_SQL)
-        (has_label,) = cur.fetchone()
+        cur.execute(_URI_PREDICATE_SQL, (URI_PREDICATE,))
+        (uri_predicate,) = cur.fetchone()
         cur.execute(_PAIRS_SQL)
         pairs = cur.fetchall()
 
     def label_of(entity_id):
         row = resolve_single(conn, subject_id=entity_id,
-                             predicate_id=has_label,
+                             predicate_id=uri_predicate,
                              valid_at=VALID_AT, as_of=AS_OF)
         return row["value_literal"] if row else f"<{entity_id}>"
 

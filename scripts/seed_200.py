@@ -1,8 +1,13 @@
 """Reset the kernel and write 200 synthetic assertions.
 
-Deterministic: one RNG seed, so the same log comes out every time. The seed is
-a small tutoring business — students, cohorts, fees, phone numbers — stated,
-corrected, changed and revoked over 2026.
+Deterministic: one RNG seed, so the same log comes out every time. The log is
+synthetic and names no domain: twelve subjects, three groups, and three
+predicates — an amount, a membership and a contact — stated, corrected,
+changed and revoked over 2026.
+
+Every entity is named the way `seal` names one: an assertion under the
+well-known predicate `uniti:uri`, which registers itself. A reader of the log
+therefore needs one naming mechanism, not one per writer.
 
 Four kinds of event, one of which is a pure retraction: a row that names an
 earlier row and states no value at all — "we were wrong", said without
@@ -24,16 +29,18 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "components" / "kernel"))
+sys.path.insert(0, str(ROOT / "components" / "seal"))
 
 from perform import connect, perform  # noqa: E402
+from seal import URI_PREDICATE  # noqa: E402
 
 TOTAL = 200
 RNG_SEED = 20260822
 EPOCH = datetime(2026, 1, 1, tzinfo=timezone.utc)
 
-STUDENTS = [f"student_{i:02d}" for i in range(1, 13)]
-COHORTS = ["cohort_a", "cohort_b", "cohort_c"]
-PREDICATES = ["has_label", "monthly_fee", "member_of", "guardian_phone"]
+SUBJECTS = [f"ex:subject_{i:02d}" for i in range(1, 13)]
+GROUPS = ["ex:group_a", "ex:group_b", "ex:group_c"]
+PREDICATES = ["ex:amount", "ex:member_of", "ex:contact"]
 
 SOURCES = ["human_stated", "human_confirmed", "document_extracted", "imported"]
 
@@ -59,29 +66,29 @@ def build_rows(rng, names):
     """
     rows = []
 
-    # Every entity says what it is called. A projection can then be read
-    # without a lookup table outside the log.
-    for label in STUDENTS + COHORTS + PREDICATES:
+    # Every entity is registered under its URI, the registry predicate first,
+    # because it registers itself. A projection can then be read without a
+    # lookup table outside the log.
+    for label in [URI_PREDICATE] + SUBJECTS + GROUPS + PREDICATES:
         rows.append({
-            "subject": label, "predicate": "has_label", "value": label,
+            "subject": label, "predicate": URI_PREDICATE, "value": label,
             "ref": None, "valid_from": 0, "recorded_at": 0,
-            "revokes": None, "source": "human_stated", "confidence": "high",
-            "action": "state",
+            "revokes": None, "source": "system_derived", "confidence": None,
+            "action": "register",
         })
 
-    pairs = [(s, p) for s in STUDENTS
-             for p in ("monthly_fee", "member_of", "guardian_phone")]
+    pairs = [(s, p) for s in SUBJECTS for p in PREDICATES]
 
     # Where each pair currently stands, so later events can build on it.
     state = {pair: {"indices": [], "max_valid": 0, "max_recorded": 0,
                     "revoked": set()} for pair in pairs}
 
     def value_for(predicate):
-        if predicate == "monthly_fee":
+        if predicate == "ex:amount":
             return str(rng.randrange(30, 90) * 100_000), None
-        if predicate == "guardian_phone":
-            return f"08{rng.randrange(10**9, 10**10)}", None
-        return None, rng.choice(COHORTS)
+        if predicate == "ex:contact":
+            return f"c-{rng.randrange(10**6, 10**7)}", None
+        return None, rng.choice(GROUPS)
 
     def emit(pair, valid_from, recorded_at, revokes=None, pure=False,
              action="state"):
@@ -150,7 +157,7 @@ def build_rows(rng, names):
 
 def main():
     rng = random.Random(RNG_SEED)
-    labels = STUDENTS + COHORTS + PREDICATES
+    labels = [URI_PREDICATE] + SUBJECTS + GROUPS + PREDICATES
 
     with connect() as conn:
         reset(conn)
@@ -160,7 +167,7 @@ def main():
             actor_id="seed",
             action_name="mint_seed_entities",
             ontology_version="v0",
-            note="synthetic tutoring business, 200 assertions",
+            note="synthetic log, 200 assertions",
             occurred_at=EPOCH,
             recorded_at=EPOCH,
             mint=labels,
