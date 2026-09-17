@@ -122,6 +122,7 @@ compiler can fill — it is a list somebody has to type in. `LINT-006` refuses i
 | `LINT-004` | error | Invariant expressions parse and contain only safe AST nodes, rooted at `self` or `actor` |
 | `LINT-005` | error | A projection's `equals_expression` references only slots that class actually has |
 | `LINT-006` | error | A projection computes: at least one slot carries an `aggregate`, its `over` and `by` name real classes and slots, its measure can be totalled, and all its aggregates group by the same keys |
+| `LINT-007` | error | A class is whole: one identifier slot, no two slots on one `slot_uri`, and no derivation rule on a class that is not a projection. Slots are shared by name, so a definition written for one class lands on every class that lists it |
 
 ---
 

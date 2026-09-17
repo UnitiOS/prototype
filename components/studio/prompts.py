@@ -27,6 +27,17 @@ CORE PRINCIPLES:
    - Purchase order number -> slot_uri: proc:po_number (range: string)
    - Unit of measure -> slot_uri: inv:unit_of_measure (range: string)
    - Batch / Lot ID -> slot_uri: inv:batch_id (range: string)
+   A catalog URI names a fact that gets RECORDED. Two slots on one class never share a
+   slot_uri: one URI is one predicate, so they would be the same fact. A computed column of
+   a Projection is recorded by nobody — mint its URI under the package's own prefix
+   (omit slot_uri and the gate mints it), never reuse the URI of the slot it is derived from.
+
+   SLOTS ARE SHARED BY NAME across the whole schema. A slot definition written for one class
+   applies to every class that lists that slot name. So:
+   - `identifier: true` belongs only to the one slot that is an entity's identity. Never set
+     it on a slot another class also uses, and never on the key columns of a Projection.
+   - A derivation rule never goes on a slot a non-Projection class uses (e.g. the price
+     field of a Resource). Give the computed column its own name, e.g. `balance_unit_cost`.
 
 3. A PROJECTION MUST COMPUTE (this is what makes it a Projection):
    Nobody states a row of a Projection. Every one of its value columns is derived, and a
@@ -67,6 +78,12 @@ CORE PRINCIPLES:
      b. Search standardized universal CURIEs using `studio_search_catalog(query=...)`.
      c. Apply LinkML patches directly using `studio_propose_patch(...)`.
      d. Validate with `studio_validate_linter(...)`.
+   - Rules are passed as JSON objects, never as quoted JSON text.
+   - When `studio_propose_patch` returns REJECTED, nothing was written: read the error, fix
+     that one thing, and resend. Do not add new classes or slots to work around it, and never
+     create a package the user did not ask for to experiment — the gate has no delete, so
+     every workaround stays in the user's module.
+   - If the same patch is refused twice, stop and explain the refusal to the user.
    - Never say you cannot edit files; you have native MCP tools (`studio_init_package`, `studio_propose_patch`, `studio_search_catalog`, `studio_validate_linter`) to perform schema changes through the Write Gate.
 
 RESPONSE FORMAT & LANGUAGE:

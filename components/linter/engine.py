@@ -291,7 +291,17 @@ class LinterEngine:
                 if s_def is None:
                     continue
                 spec = normalize_meta((s_def.annotations or {}).get("aggregate"))
+                if spec is None:
+                    continue
                 if not isinstance(spec, dict):
+                    # Written as text — typically a rule's JSON quoted into
+                    # the file — the compiler cannot read it as a rule.
+                    found_aggregate = True
+                    diagnostics.append(Diagnostic(
+                        rule_id="LINT-006", severity="ERROR", target=f"{class_name}.{slot_name}",
+                        message=(f"aggregate is written as the text {spec!r}, not as a mapping "
+                                 f"of over/sum/by, so nothing can read it as a rule."),
+                    ))
                     continue
                 found_aggregate = True
                 target = f"{class_name}.{slot_name}"
@@ -358,5 +368,52 @@ class LinterEngine:
                     message=(f"the aggregates on '{class_name}' group by different key sets "
                              f"{sorted(groupings)} — one row of a table has one grouping."),
                 ))
+
+        # -------------------------------------------------------------
+        # Rule LINT-007: A class is whole
+        # -------------------------------------------------------------
+        # Slots are shared by name across a schema, so a definition written
+        # with one class in mind lands on every class that lists the slot.
+        # Three consequences break a class without anything else noticing:
+        # a second identity, two columns on one predicate, and a stated field
+        # turned into a computed one.
+        local_classes = getattr(sv.schema, "classes", {}) or {}
+        for class_name in local_classes:
+            class_def = all_classes.get(class_name)
+            if class_def is None or class_name in CORE_ARCHETYPES:
+                continue
+            own_slots = [s for s in (class_def.slots or []) if all_slots.get(s) is not None]
+
+            identifiers = [s for s in own_slots if all_slots[s].identifier]
+            if len(identifiers) > 1:
+                diagnostics.append(Diagnostic(
+                    rule_id="LINT-007", severity="ERROR", target=class_name,
+                    message=(f"'{class_name}' carries {len(identifiers)} identifier slots "
+                             f"{identifiers}; an entity has exactly one identity."),
+                ))
+
+            by_uri: Dict[str, List[str]] = {}
+            for s in own_slots:
+                if all_slots[s].slot_uri:
+                    by_uri.setdefault(str(all_slots[s].slot_uri), []).append(s)
+            for uri, sharing in by_uri.items():
+                if len(sharing) > 1:
+                    diagnostics.append(Diagnostic(
+                        rule_id="LINT-007", severity="ERROR", target=class_name,
+                        message=(f"slots {sharing} on '{class_name}' share slot_uri '{uri}'; "
+                                 f"a slot_uri is one predicate, so they would be the same fact."),
+                    ))
+
+            if "Projection" not in self._safe_class_ancestors(sv, class_name):
+                ruled = [s for s in own_slots
+                         if getattr(all_slots[s], "equals_expression", None)
+                         or any(str(k) in ("aggregate", "parameter")
+                                for k in (all_slots[s].annotations or {}))]
+                if ruled:
+                    diagnostics.append(Diagnostic(
+                        rule_id="LINT-007", severity="ERROR", target=class_name,
+                        message=(f"slots {ruled} carry a derivation rule but are stated "
+                                 f"fields of '{class_name}', which is not a Projection."),
+                    ))
 
         return diagnostics

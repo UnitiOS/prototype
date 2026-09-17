@@ -168,6 +168,105 @@ ARCHETYPE_COLORS = {
     "CoreClass": "#64748B",   # Slate Gray
 }
 
+DERIVATION_KEYS = ("aggregate", "parameter")
+
+RULE_EXAMPLES = {
+    "aggregate": '{"over": "SourceClass", "sum": "source_slot", "by": {"key_slot": "source_slot"}}',
+    "parameter": '{"of": "key_slot", "slot": "slot_on_that_class"}',
+}
+
+
+def _read_rule(slot_name: str, key: str, spec: Any) -> Dict[str, Any]:
+    """A derivation rule as the mapping the compiler reads.
+
+    A model will often hand a nested object over as its JSON text. Written as
+    it came, the rule lands in the file as a quoted string: the gate reports
+    success, and the linter and compiler both see a column with no rule.
+    """
+    if isinstance(spec, str):
+        try:
+            spec = json.loads(spec)
+        except ValueError:
+            try:
+                spec = yaml.safe_load(spec)
+            except yaml.YAMLError:
+                pass
+    if isinstance(spec, dict) and set(spec) == {"value"}:
+        return {"value": _read_rule(slot_name, key, spec["value"])}
+    if not isinstance(spec, dict) or not spec:
+        raise ValueError(
+            f"slot '{slot_name}': '{key}' must be an object such as "
+            f"{RULE_EXAMPLES[key]}, not {spec!r}."
+        )
+    return spec
+
+
+def _is_projection(classes: Dict[str, Any], name: str) -> Optional[bool]:
+    """Whether a class descends from Projection; None where the chain leaves this file."""
+    seen = set()
+    while name in classes and name not in seen:
+        seen.add(name)
+        name = (classes[name] or {}).get("is_a")
+    if name == "Projection":
+        return True
+    if name in {"Agent", "Resource", "Commitment", "Event"}:
+        return False
+    return None
+
+
+def integrity_refusals(data: Dict[str, Any], class_names) -> List[str]:
+    """What would leave one of these classes unable to compile, in words.
+
+    Three ways a class breaks without anything else noticing:
+      - two identifier slots: an entity has one identity, and a second one
+        quietly turns every other class that shares the slot into a keyed one;
+      - two slots sharing one slot_uri: a slot_uri is one predicate in the
+        kernel, so both columns would read and write the same fact;
+      - a derivation rule on a class that is not a Projection: the slot is
+        stated there, and a rule would make a recorded field computed.
+    """
+    classes = data.get("classes") or {}
+    slots = data.get("slots") or {}
+    refusals = []
+    for c_name in sorted(class_names):
+        own = list((classes.get(c_name) or {}).get("slots") or [])
+
+        identifiers = [s for s in own if (slots.get(s) or {}).get("identifier")]
+        if len(identifiers) > 1:
+            refusals.append(
+                f"'{c_name}' would carry {len(identifiers)} identifier slots {identifiers}; "
+                f"an entity has exactly one identity. Slots are shared by name, so "
+                f"identifier on one slot applies to every class listing it. The key "
+                f"columns of a Projection are not identifiers."
+            )
+
+        by_uri: Dict[str, List[str]] = {}
+        for s in own:
+            uri = (slots.get(s) or {}).get("slot_uri")
+            if uri:
+                by_uri.setdefault(uri, []).append(s)
+        for uri, sharing in by_uri.items():
+            if len(sharing) > 1:
+                refusals.append(
+                    f"slots {sharing} on '{c_name}' share slot_uri '{uri}'; a slot_uri is "
+                    f"one predicate, so they would be the same fact. Give each its own "
+                    f"slot_uri (a computed column mints one under the package prefix)."
+                )
+
+        if _is_projection(classes, c_name) is False:
+            ruled = [s for s in own
+                     if (slots.get(s) or {}).get("equals_expression")
+                     or any(k in ((slots.get(s) or {}).get("annotations") or {})
+                            for k in DERIVATION_KEYS)]
+            if ruled:
+                refusals.append(
+                    f"slots {ruled} carry a derivation rule but are stated fields of "
+                    f"'{c_name}', which is not a Projection. Slots are shared by name: "
+                    f"give the computed column its own name on the Projection."
+                )
+    return refusals
+
+
 class PackagePathError(ValueError):
     """The package path leads somewhere this gate does not write."""
 
@@ -330,7 +429,7 @@ class StudioTools:
                     "linkml:types",
                     "@uniti/core",
                 ],
-                "default_prefix": "uniti",
+                "default_prefix": clean_dom,
                 "default_range": "string",
                 "classes": {},
                 "slots": {},
@@ -372,6 +471,34 @@ class StudioTools:
 
         patcher = SchemaPatcher(schema_file)
 
+        # Read every key the patcher understands. A key silently dropped here
+        # is a derivation rule the author believes they wrote: the schema
+        # would seal, the class would call itself a Projection, and the table
+        # would come out empty with nothing to explain why.
+        known = {"slot_uri", "range", "description", "identifier",
+                 "equals_expression", "aggregate", "parameter"}
+        for s_name, s_meta in (slot_definitions or {}).items():
+            if not isinstance(s_meta, dict):
+                return {"status": "REJECTED",
+                        "error": f"slot '{s_name}' must be defined by an object, not {type(s_meta).__name__}."}
+            unknown = sorted(set(s_meta) - known)
+            if unknown:
+                return {
+                    "status": "REJECTED",
+                    "error": (f"slot '{s_name}' was given {unknown}, which this "
+                              f"gate does not write. It understands {sorted(known)}."),
+                }
+            try:
+                for key in DERIVATION_KEYS:
+                    if s_meta.get(key):
+                        s_meta[key] = _read_rule(s_name, key, s_meta[key])
+            except ValueError as exc:
+                return {"status": "REJECTED", "error": str(exc)}
+            expression = s_meta.get("equals_expression")
+            if expression is not None and not isinstance(expression, str):
+                return {"status": "REJECTED",
+                        "error": f"slot '{s_name}': equals_expression must be a string such as \"{{a}} - {{b}}\"."}
+
         patcher.add_class(
             name=class_name,
             is_a=archetype,
@@ -398,22 +525,8 @@ class StudioTools:
                         slot_definitions[s_name]["slot_uri"] = cat_matches[0]["curie"]
 
         if slot_definitions:
-            # Read every key the patcher understands. A key silently dropped
-            # here is a derivation rule the author believes they wrote: the
-            # schema would seal, the class would call itself a Projection, and
-            # the table would come out empty with nothing to explain why.
-            known = {"slot_uri", "range", "description", "identifier",
-                     "equals_expression", "aggregate", "parameter"}
             for s_name, s_meta in slot_definitions.items():
-                s_meta = dict(s_meta or {})
-                unknown = sorted(set(s_meta) - known)
-                if unknown:
-                    return {
-                        "status": "REJECTED",
-                        "error": (f"slot '{s_name}' was given {unknown}, which this "
-                                  f"gate does not write. It understands {sorted(known)}."),
-                    }
-                annotations = {key: s_meta[key] for key in ("aggregate", "parameter")
+                annotations = {key: s_meta[key] for key in DERIVATION_KEYS
                                if s_meta.get(key)}
                 try:
                     patcher.add_slot(
@@ -443,6 +556,17 @@ class StudioTools:
                 states=lifecycle.get("states", {}),
                 transitions=lifecycle.get("transitions", []),
             )
+
+        # Write Gate Check 3: the patch must leave every class it touches whole.
+        # Slots are shared by name across a schema, so a definition written
+        # for one class lands on every class that lists the slot.
+        touched = {class_name} | {
+            c_name for c_name, c_def in (patcher.data.get("classes") or {}).items()
+            if set((c_def or {}).get("slots") or []) & set(slot_definitions or {})
+        }
+        refusals = integrity_refusals(patcher.data, touched)
+        if refusals:
+            return {"status": "REJECTED", "error": " ".join(refusals)}
 
         patcher.save()
         # Run linter immediately on patch

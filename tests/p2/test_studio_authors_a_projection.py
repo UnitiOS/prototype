@@ -10,6 +10,7 @@ a class could inherit Projection and carry no rule at all: it compiled to a
 list of entities under a name that promised the opposite, and nothing said so.
 """
 
+import json
 from pathlib import Path
 
 import pytest
@@ -22,7 +23,12 @@ from tests.p2.conftest import package_sandbox
 PKG = "@community/authoring_loop"
 
 
-def _compose(tools):
+def _rule(spec, as_text):
+    """A rule as an object, or as the JSON text a model often sends instead."""
+    return json.dumps(spec) if as_text else spec
+
+
+def _compose(tools, as_text=False):
     """One module: a thing, a place, a movement between them, and a balance."""
     assert tools.init_package(
         package_path=PKG, title="Authoring Loop", domain="inventory",
@@ -53,7 +59,7 @@ def _compose(tools):
         description="A quantity of one thing arriving at one place.",
         slots=["transfer_item", "transfer_site", "transfer_quantity"],
         slot_definitions={
-            "transfer_item": {"range": "TrackedItem", "slot_uri": "inv:quantity"},
+            "transfer_item": {"range": "TrackedItem"},
             "transfer_site": {"range": "HoldingSite", "slot_uri": "inv:target_location"},
             "transfer_quantity": {"range": "decimal", "slot_uri": "inv:quantity"},
         },
@@ -69,16 +75,16 @@ def _compose(tools):
             "held_site": {"range": "HoldingSite"},
             "held_quantity": {
                 "range": "decimal",
-                "aggregate": {
+                "aggregate": _rule({
                     "over": "Transfer",
                     "sum": "transfer_quantity",
                     "by": {"held_item": "transfer_item",
                            "held_site": "transfer_site"},
-                },
+                }, as_text),
             },
             "held_price": {
                 "range": "decimal",
-                "parameter": {"of": "held_item", "slot": "unit_price"},
+                "parameter": _rule({"of": "held_item", "slot": "unit_price"}, as_text),
             },
             "held_value": {
                 "range": "decimal",
@@ -88,10 +94,12 @@ def _compose(tools):
     )
 
 
-def test_studio_authors_a_projection_that_computes():
+@pytest.mark.parametrize("as_text", [False, True], ids=["object", "json-text"])
+def test_studio_authors_a_projection_that_computes(as_text):
     with package_sandbox() as sandbox:
         tools = StudioTools()
-        assert _compose(tools).get("status") != "REJECTED"
+        out = _compose(tools, as_text)
+        assert out.get("status") != "REJECTED", out
 
         # The linter passes it, which is what lets it be sealed at all.
         audit = tools.validate_linter(PKG)
@@ -174,3 +182,101 @@ def test_the_gate_refuses_a_key_it_does_not_write():
 
     assert out["status"] == "REJECTED"
     assert "aggregat" in out["error"]
+
+
+def _two_things(tools):
+    tools.init_package(package_path=PKG, title="Whole Classes",
+                       domain="inventory", author="test_runner")
+    tools.propose_patch(
+        package_path=PKG, class_name="TrackedItem", archetype="Resource",
+        description="A thing with a price.",
+        slots=["item_code", "unit_price"],
+        slot_definitions={"item_code": {"range": "string", "identifier": True},
+                          "unit_price": {"range": "decimal"}},
+    )
+    tools.propose_patch(
+        package_path=PKG, class_name="Transfer", archetype="Event",
+        description="A thing moving.",
+        slots=["transfer_code", "transfer_item"],
+        slot_definitions={"transfer_code": {"range": "string", "identifier": True},
+                          "transfer_item": {"range": "TrackedItem"}},
+    )
+
+
+def _schema_text(sandbox):
+    return (Path(sandbox) / "@community" / "authoring_loop" / "schema" / "domain.yaml").read_text(encoding="utf-8")
+
+
+def test_a_rule_that_is_neither_object_nor_json_is_refused():
+    with package_sandbox():
+        tools = StudioTools()
+        _two_things(tools)
+        out = tools.propose_patch(
+            package_path=PKG, class_name="Tally", archetype="Projection",
+            description="A rule that is a number.",
+            slots=["tally"],
+            slot_definitions={"tally": {"range": "decimal", "aggregate": 123}},
+        )
+    assert out["status"] == "REJECTED"
+    assert "must be an object" in out["error"]
+
+
+def test_identifier_on_a_shared_slot_is_refused_and_nothing_is_written():
+    """Slots are shared by name: a key made an identifier lands on the Event too."""
+    with package_sandbox() as sandbox:
+        tools = StudioTools()
+        _two_things(tools)
+        before = _schema_text(sandbox)
+        out = tools.propose_patch(
+            package_path=PKG, class_name="Balance", archetype="Projection",
+            description="Keyed by the thing.",
+            slots=["transfer_item"],
+            slot_definitions={"transfer_item": {"range": "TrackedItem", "identifier": True}},
+        )
+        after = _schema_text(sandbox)
+    assert out["status"] == "REJECTED"
+    assert "identifier" in out["error"] and "Transfer" in out["error"]
+    assert before == after
+
+
+def test_a_rule_on_a_stated_field_is_refused():
+    """A price recorded on a Resource cannot become a computed column."""
+    with package_sandbox():
+        tools = StudioTools()
+        _two_things(tools)
+        out = tools.propose_patch(
+            package_path=PKG, class_name="Balance", archetype="Projection",
+            description="Reuses the price slot as a parameter.",
+            slots=["transfer_item", "unit_price"],
+            slot_definitions={"unit_price": {
+                "range": "decimal",
+                "parameter": {"of": "transfer_item", "slot": "unit_price"}}},
+        )
+    assert out["status"] == "REJECTED"
+    assert "TrackedItem" in out["error"] and "not a Projection" in out["error"]
+
+
+def test_two_columns_on_one_predicate_are_refused():
+    with package_sandbox():
+        tools = StudioTools()
+        _two_things(tools)
+        out = tools.propose_patch(
+            package_path=PKG, class_name="Transfer", archetype="Event",
+            description="Two quantities on one predicate.",
+            slots=["sent_quantity", "received_quantity"],
+            slot_definitions={
+                "sent_quantity": {"range": "decimal", "slot_uri": "inv:quantity"},
+                "received_quantity": {"range": "decimal", "slot_uri": "inv:quantity"},
+            },
+        )
+    assert out["status"] == "REJECTED"
+    assert "inv:quantity" in out["error"]
+
+
+def test_minted_uris_belong_to_the_package_not_to_core():
+    with package_sandbox() as sandbox:
+        tools = StudioTools()
+        _two_things(tools)
+        text = _schema_text(sandbox)
+    assert "slot_uri: inventory:transfer_code" in text
+    assert "uniti:transfer_code" not in text
