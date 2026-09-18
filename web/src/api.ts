@@ -80,6 +80,24 @@ async function get<T>(path: string, params: Record<string, string | number> = {}
   return body as T;
 }
 
+async function post<T>(path: string, body: unknown): Promise<T> {
+  let response: Response;
+  try {
+    response = await fetch(path, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    throw new ApiError("The API is not reachable. Start it with uvicorn on port 8200.");
+  }
+  const answer = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new ApiError(answer?.error ?? `The API answered ${response.status}.`);
+  }
+  return answer as T;
+}
+
 export const api = {
   summary: () => get<Summary>("/api/kernel/summary"),
   entities: (search: string) =>
@@ -213,8 +231,55 @@ export interface Projection {
   valid_at: string; as_of: string;
 }
 
+export interface Statement {
+  assertion_id: string; intent_id: string;
+  subject_id: string; subject_uri: string | null;
+  predicate: string; value: string | null; names_entity: boolean;
+  valid_from: string; recorded_at: string;
+  source: string; ontology_version: string;
+}
+
+export interface CellSource {
+  name: string; version: string; class: string; column: string;
+  kind: Column["kind"]; keys: Record<string, string>;
+  statements: Statement[]; reads: string[]; cut_off: boolean;
+  entity: { uri: string; id: string } | null;
+  over?: string; operator?: string; of?: string; expression?: string;
+  valid_at: string; as_of: string;
+}
+
+export interface FormField {
+  name: string; title: string; range: string | null;
+  required: boolean; ref: boolean; description: string;
+  module: Pin | null;
+  options: { uri: string; label: string }[];
+  options_from: string | null;
+}
+
+export interface FormSpec {
+  name: string; version: string; class: string; label: string;
+  type_slot: string | null; fields: FormField[];
+}
+
+export interface Written {
+  intent_id: string; subject_id: string; assertions: number; minted: number;
+  class: string; subject: string; ontology_version: string;
+}
+
 export const appApi = {
   read: (name: string, version: string) => get<Application>("/api/app", { name, version }),
   projection: (name: string, version: string, klass: string, c: Clocks) =>
     get<Projection>("/api/app/projection", { name, version, class: klass, ...clockParams(c) }),
+  cell: (name: string, version: string, klass: string, column: string,
+         keys: Record<string, string>, c: Clocks) =>
+    get<CellSource>("/api/app/cell", {
+      name, version, class: klass, column, ...clockParams(c),
+      ...Object.fromEntries(Object.entries(keys).map(([k, v]) => [`key.${k}`, v])),
+    }),
+  form: (name: string, version: string, klass: string, c: Clocks) =>
+    get<FormSpec>("/api/app/form", { name, version, class: klass, ...clockParams(c) }),
+  state: (body: {
+    name: string; version: string; class: string; subject: string;
+    actor: string; valid_from: string; values: Record<string, string>; note?: string;
+  }) => post<Written>("/api/app/state", body),
 };

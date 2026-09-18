@@ -3,7 +3,7 @@
 //
 //   #/entities/<id>?valid_at=..&as_of=..         the kernel
 //   #/modules?name=@x/y&version=v2&compare=v1     the module store
-//   #/app?name=@x/y&version=v1&class=Thing        one application's tables
+//   #/app?name=@x/y&version=v1&class=Thing&column=c&keys=a,b   one cell of it
 
 import { useEffect, useState } from "react";
 import type { Clocks } from "./api";
@@ -12,7 +12,15 @@ export type Tab = "entities" | "actions" | "log" | "modules" | "app";
 
 export interface ModulePick { name: string | null; version: string | null; compare: string | null }
 
-export interface AppPick { name: string | null; version: string | null; klass: string | null }
+export interface AppPick {
+  name: string | null; version: string | null; klass: string | null;
+  // Which cell is open, if any: a column, and the grouping values of its row
+  // in key-column order. A link to a number is a link to its explanation.
+  column: string | null; keys: string | null;
+  // Whether the form for stating a new one is open. In the URL because every
+  // other part of the view is, so a link can hand somebody the form itself.
+  stating: boolean;
+}
 
 export interface Route {
   tab: Tab; id: string | null; clocks: Clocks; module: ModulePick; app: AppPick;
@@ -34,7 +42,11 @@ function parse(hash: string): Route {
     id: tab === "modules" || tab === "app" ? null : id || null,
     clocks: { validAt: read("valid_at"), asOf: read("as_of") },
     module: { name: params.get("name"), version: params.get("version"), compare: params.get("compare") },
-    app: { name: params.get("name"), version: params.get("version"), klass: params.get("class") },
+    app: {
+      name: params.get("name"), version: params.get("version"),
+      klass: params.get("class"), column: params.get("column"),
+      keys: params.get("keys"), stating: params.get("new") === "1",
+    },
   };
 }
 
@@ -48,10 +60,13 @@ export function href(route: Route): string {
     if (compare) query.set("compare", compare);
   }
   if (route.tab === "app") {
-    const { name, version, klass } = route.app;
+    const { name, version, klass, column, keys, stating } = route.app;
     if (name) query.set("name", name);
     if (version) query.set("version", version);
     if (klass) query.set("class", klass);
+    if (column) query.set("column", column);
+    if (keys) query.set("keys", keys);
+    if (stating) query.set("new", "1");
   }
   query.set("valid_at", route.clocks.validAt.toISOString());
   query.set("as_of", route.clocks.asOf.toISOString());

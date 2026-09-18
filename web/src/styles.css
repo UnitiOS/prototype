@@ -467,3 +467,35 @@ details.fact:not([open]) > summary { border-bottom: 0; }
 .column-head { font-weight: 600; }
 .rule { padding: 8px 16px 12px; display: grid; gap: 6px; max-width: 80ch; }
 .rule p { margin: 0; }
+
+/* ------------------------------------------------- cells and their sources */
+
+.cell {
+  border: 0; background: none; padding: 0; margin: 0; text-align: inherit;
+  font: inherit; color: inherit; cursor: pointer;
+  border-bottom: 1px dotted var(--rule);
+}
+.cell:hover { border-bottom-color: var(--ink-soft); }
+.cell-on {
+  background: var(--counts); border-bottom: 2px solid var(--known);
+  box-shadow: 0 0 0 3px var(--counts);
+}
+.sources { padding: 0 16px 12px; display: grid; gap: 8px; }
+.sources p { margin: 0; }
+
+/* ---------------------------------------------------------------- the form */
+
+.form {
+  padding: 10px 16px 4px;
+  display: grid; gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+}
+.field { display: grid; gap: 3px; align-content: start; }
+.field > span { font-weight: 600; font-size: var(--step--1); }
+.field input, .field select {
+  border: 1px solid var(--rule); border-radius: 4px;
+  background: var(--surface); padding: 5px 7px; min-width: 0;
+}
+.field input:hover, .field select:hover { border-color: var(--ink-soft); }
+.field small { color: var(--ink-soft); font-size: var(--step--1); line-height: 1.35; }
+.button[disabled] { opacity: 0.5; cursor: not-allowed; }

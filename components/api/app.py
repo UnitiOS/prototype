@@ -194,6 +194,70 @@ async def app_projection(request: Request):
             conn, store, name, version, class_name, **clocks))
 
 
+async def app_cell(request: Request):
+    """What one cell of a table stands on, at the clocks it was derived at."""
+    name = _required(request, "name")
+    version = _required(request, "version")
+    class_name = _required(request, "class")
+    column = _required(request, "column")
+    # The grouping values, one query parameter per key column: `key.<column>`.
+    keys = {k[len("key."):]: v for k, v in request.query_params.items()
+            if k.startswith("key.")}
+    clocks = _clocks(request)
+    with connect(os.environ.get("UNITI_DSN"), connect_timeout=3) as conn:
+        return _application(lambda store: application.cell(
+            conn, store, name, version, class_name, column, keys, **clocks))
+
+
+async def app_form(request: Request):
+    name = _required(request, "name")
+    version = _required(request, "version")
+    class_name = _required(request, "class")
+    clocks = _clocks(request)
+    with connect(os.environ.get("UNITI_DSN"), connect_timeout=3) as conn:
+        return _application(lambda store: application.form_of(
+            conn, store, name, version, class_name, **clocks))
+
+
+async def app_state(request: Request):
+    """One form submission. The only write this API makes.
+
+    It is one `perform()` underneath, exactly as a seal is: one intent, N
+    assertions, nothing edited. The response names the intent, so whatever was
+    written can be opened in the kernel explorer straight away.
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(400, "the body is not JSON")
+    if not isinstance(body, dict):
+        raise HTTPException(400, "the body is not an object")
+    for field in ("name", "version", "class", "subject", "actor"):
+        if not body.get(field):
+            raise HTTPException(400, f"{field} is required")
+    values = body.get("values") or {}
+    if not isinstance(values, dict):
+        raise HTTPException(400, "values is not an object")
+
+    valid_from = body.get("valid_from")
+    if valid_from:
+        try:
+            valid_from = datetime.fromisoformat(str(valid_from).replace("Z", "+00:00"))
+        except ValueError:
+            raise HTTPException(400, f"valid_from is not an ISO 8601 instant: {valid_from!r}")
+        if valid_from.tzinfo is None:
+            valid_from = valid_from.replace(tzinfo=timezone.utc)
+    else:
+        valid_from = datetime.now(timezone.utc)
+
+    with connect(os.environ.get("UNITI_DSN"), connect_timeout=3) as conn:
+        return _application(lambda store: application.state(
+            conn, store, body["name"], body["version"], body["class"],
+            subject=str(body["subject"]), values=values,
+            actor_id=str(body["actor"]), valid_from=valid_from,
+            note=body.get("note") or None))
+
+
 async def _error(request: Request, exc: HTTPException):
     return JSON({"error": exc.detail}, status_code=exc.status_code)
 
@@ -213,6 +277,9 @@ routes = [
     Route("/api/modules/classes", module_classes),
     Route("/api/app", app_read),
     Route("/api/app/projection", app_projection),
+    Route("/api/app/cell", app_cell),
+    Route("/api/app/form", app_form),
+    Route("/api/app/state", app_state, methods=["POST"]),
 ]
 if DIST.is_dir():
     routes.append(Mount("/", StaticFiles(directory=DIST, html=True)))

@@ -190,8 +190,10 @@ Anda lihat*.
     (`is_a`, `reference`, `aggregate`, `parameter`)
   - tabel proyeksi, dengan "bagaimana angka ini dihitung": aturan per kolom,
     modul pemilik slot, dan SQL yang dipancarkan
-  - ~~form yang menulis ke kernel~~ — belum; pintu tulis massal (`load_facts.py`)
-    sudah ada, form lewat generator menyusul
+  - **klik satu sel → pernyataan yang menopangnya**, tiap baris menunjuk ke
+    entity dan ke aksi yang menulisnya di penjelajah kernel
+  - **form yang menulis ke kernel**, medannya dibaca dari map, pilihan untuk
+    medan bertipe kelas dibaca dari operational store, satu submit = satu intent
 - **Selesai jika:** proyeksi di satu modul menghitung dari event modul lain lewat
   `slot_uri` bersama, dan angkanya bisa ditelusuri.
 
@@ -296,6 +298,9 @@ menghitung lintas modul.
   tetap diputuskan di irisan 2.
 - **Import ke versi yang di-seal belakangan.** Seal kini menolak draft yang memin
   versi yang di-seal setelah draft itu sendiri.
+- **`submit` mencatat `ontology_version = "v1"`,** label telanjang yang tidak
+  menunjuk modul mana pun. Sekarang `read_map` membawa label `@scope/name@vN`
+  dan form memakainya, sama seperti seal.
 - **Compiler menerima kelas yang tidak ada dengan `ValueError` LinkML**, bukan
   `MapError`, sehingga API mengembalikan 500. `plan_for` sekarang menolak lebih
   dulu dengan daftar kelas yang ada.
@@ -316,7 +321,7 @@ menghitung lintas modul.
 | 0b | selesai, menunggu Anda melihatnya: API baca kernel (`components/api`), aplikasi web (`web/`) dengan penjelajah kernel dan bidang jam; seed sintetis dinetralkan dan menamai entity lewat registry `uniti:uri`; 96 test lulus |
 | 1.5 | selesai: core dikecilkan ke `entity_class` dan di-reset sebagai v1, modul contoh lepas dari archetype, kernel pengembangan dimulai kosong |
 | 1 | selesai, menunggu Anda melihatnya: store modul berversi (`components/modules`), import dipin dan diperiksa seal, `@uniti/core` di-seal sebagai v1, linimasa + detail versi + diff di aplikasi; 110 test lulus |
-| 2 | selesai, menunggu Anda melihatnya: aplikasi sebagai versi yang memin (`components/api/application.py`), compiler dieksekusi lintas modul dengan test angka, pintu tulis massal `scripts/load_facts.py`, graph kelas lintas modul + tabel proyeksi + penjelasan aturan per kolom di aplikasi web; fixture diganti tiga modul demonstrasi yang menandai dirinya di graph dan di kernel; 124 test lulus |
+| 2 | selesai, menunggu Anda melihatnya: aplikasi sebagai versi yang memin (`components/api/application.py`), compiler dieksekusi lintas modul dengan test angka, pintu tulis massal `scripts/load_facts.py`, form yang menulis ke kernel, dan penelusuran satu sel sampai ke pernyataan yang menopangnya; graph kelas lintas modul + tabel proyeksi + penjelasan aturan per kolom di aplikasi web; fixture diganti tiga modul demonstrasi yang menandai dirinya di graph dan di kernel; 134 test lulus |
 | 3 | belum dimulai |
 | 4 | belum dimulai |
 | 5 | belum dimulai |

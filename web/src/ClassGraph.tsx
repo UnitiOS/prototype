@@ -120,7 +120,9 @@ export function ClassGraph({ graph, selected, onSelect }: Props) {
           const d = sameBand
             ? `M${x1} ${y1}C${x1} ${y1 + dip} ${x2} ${y2 + dip} ${x2} ${y2}`
             : `M${x1} ${y1}C${x1} ${y1 + 30} ${x2} ${y2 - 30} ${x2} ${y2}`;
-          const labelY = sameBand ? y1 + dip - 3 : y1 + (y2 - y1) * 0.34;
+          // Two edges leaving the same box would otherwise put their labels on
+          // one line, so consecutive ones sit at different heights.
+          const labelY = sameBand ? y1 + dip - 3 : y1 + (y2 - y1) * (0.26 + (i % 3) * 0.17);
           return (
             <g key={i} className={`cg-edge cg-edge-${e.kind}${on ? " cg-lit" : selected ? " cg-dim" : ""}`}>
               <title>{`${e.from} ${KIND_LABEL[e.kind]} ${e.to} — ${e.label}`}</title>

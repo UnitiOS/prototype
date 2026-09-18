@@ -2,19 +2,22 @@
 //
 // Nothing here is a new kind of thing in the store — an application is one
 // sealed version that pins others and declares the tables somebody wants. So
-// this page picks a version, draws every class its pins let it see, and then
-// fills one of its tables from the log at the two clocks in the URL.
+// this page picks a version, draws every class its pins let it see, fills one
+// of its tables from the log at the two clocks in the URL, and lets a person
+// state something new into the same log.
 //
-// Every number on this page carries its rule beside it. A cell nobody can
-// explain is a cell nobody should trust.
+// Every number on this page can be taken apart. A cell nobody can explain is a
+// cell nobody should act on.
 
 import { useEffect, useState } from "react";
 import { ApiError, appApi, modulesApi } from "./api";
-import type { Application, ClassGraph as Graph, Column, ModuleGraph, Pin, Projection } from "./api";
+import type {
+  Application, CellSource, ClassGraph as Graph, Clocks, Column, FormSpec,
+  ModuleGraph, Pin, Projection, Written,
+} from "./api";
 import { ClassGraph } from "./ClassGraph";
-import { instant } from "./format";
+import { day, fromInput, instant, toInput } from "./format";
 import type { AppPick } from "./route";
-import type { Clocks } from "./api";
 
 function useLoad<T>(load: (() => Promise<T>) | null, deps: unknown[]) {
   const [state, setState] = useState<{ data?: T; error?: string }>({});
@@ -78,23 +81,24 @@ export function ApplicationPage(
             return (
               <button key={pinText(c)} className={`version-chip${on ? " version-chip-on" : ""}`}
                 aria-current={on}
-                onClick={() => onPick({ name: c.name, version: c.version, klass: null })}>
+                onClick={() => onPick({ name: c.name, version: c.version, klass: null,
+                  column: null, keys: null, stating: false })}>
                 {pinText(c)}
               </button>
             );
           })}
         </nav>
       )}
-      {chosen && <ApplicationView pin={chosen} klass={pick.klass} clocks={clocks}
-        onPick={(klass) => onPick({ ...pick, klass })} />}
+      {chosen && <ApplicationView pin={chosen} pick={pick} clocks={clocks} onPick={onPick} />}
     </>
   );
 }
 
 function ApplicationView(
-  { pin, klass, clocks, onPick }:
-  { pin: Pin; klass: string | null; clocks: Clocks; onPick: (klass: string | null) => void },
+  { pin, pick, clocks, onPick }:
+  { pin: Pin; pick: AppPick; clocks: Clocks; onPick: (next: AppPick) => void },
 ) {
+  const klass = pick.klass;
   const app = useLoad<Application>(() => appApi.read(pin.name, pin.version), [pin.name, pin.version]);
   const classes = useLoad<Graph>(() => modulesApi.classes(pin.name, pin.version), [pin.name, pin.version]);
   const [focus, setFocus] = useState<string | null>(null);
@@ -103,6 +107,7 @@ function ApplicationView(
   if (!app.data) return <p className="quiet">Reading…</p>;
   const a = app.data;
   const chosen = klass ?? (a.tables[0]?.class ?? null);
+  const table = a.tables.find((t) => t.class === chosen) ?? null;
 
   return (
     <>
@@ -132,7 +137,12 @@ function ApplicationView(
               return (
                 <li key={t.class}>
                   <button className={`row row-stacked${on ? " row-selected" : ""}`}
-                    aria-current={on} onClick={() => { onPick(t.class); setFocus(t.class); }}>
+                    aria-current={on}
+                    onClick={() => {
+                      onPick({ ...pick, klass: t.class, column: null, keys: null,
+                        stating: false });
+                      setFocus(t.class);
+                    }}>
                     <span>
                       {t.class}
                       <span className={`badge badge-${t.shape}`}>{t.shape === "grouped" ? "derived" : "entities"}</span>
@@ -147,8 +157,9 @@ function ApplicationView(
             })}
           </ul>
         </div>
-        {chosen
-          ? <ProjectionView pin={pin} klass={chosen} clocks={clocks} appName={a.name} />
+        {chosen && table
+          ? <ProjectionView pin={pin} klass={chosen} shape={table.shape} pick={pick}
+              onPick={onPick} clocks={clocks} appName={a.name} />
           : <p className="empty">This application fills no table yet.</p>}
       </main>
     </>
@@ -173,18 +184,53 @@ function ruleText(col: Column): string {
   return `Arithmetic over the columns beside it: ${rule.expression}`;
 }
 
+// A link into the kernel explorer, at the same two clocks. A number here and
+// the statement it came from are one thing seen from two sides, so the page
+// never makes a reader copy an id across.
+function kernelHref(tab: "entities" | "actions", id: string, clocks: Clocks): string {
+  const query = new URLSearchParams({
+    valid_at: clocks.validAt.toISOString(),
+    as_of: clocks.asOf.toISOString(),
+  });
+  return `#/${tab}/${id}?${query}`;
+}
+
+/** The grouping values of one row: what identifies the cell a reader clicked. */
+function keysOf(table: Projection, row: (string | null)[]): Record<string, string> {
+  const keys: Record<string, string> = {};
+  table.columns.forEach((c, i) => {
+    if (c.kind === "key" || c.kind === "identity") keys[c.name] = String(row[i] ?? "");
+  });
+  return keys;
+}
+
 function ProjectionView(
-  { pin, klass, clocks, appName }:
-  { pin: Pin; klass: string; clocks: Clocks; appName: string },
+  { pin, klass, shape, pick, onPick, clocks, appName }: {
+    pin: Pin; klass: string; shape: "grouped" | "entities";
+    pick: AppPick; onPick: (next: AppPick) => void; clocks: Clocks; appName: string;
+  },
 ) {
+  // Bumped after a submission, so the table is worked out again from a log
+  // that now holds one more statement. Nothing is invalidated; it is derived.
+  const [written, setWritten] = useState(0);
   const { data, error } = useLoad<Projection>(
     () => appApi.projection(pin.name, pin.version, klass, clocks),
-    [pin.name, pin.version, klass, clocks.validAt.getTime(), clocks.asOf.getTime()]);
-  const [column, setColumn] = useState<string | null>(null);
-
+    [pin.name, pin.version, klass, clocks.validAt.getTime(), clocks.asOf.getTime(), written]);
   if (error) return <p className="failure" role="alert">{error}</p>;
   if (!data) return <p className="quiet">Deriving…</p>;
-  const shown = data.columns.find((c) => c.name === column) ?? null;
+
+  // Which cell is open lives in the URL, in key-column order, so a link to a
+  // number is a link to the statements underneath it.
+  const keyColumns = data.columns.filter((c) => c.kind === "key" || c.kind === "identity");
+  const values = pick.keys === null ? [] : pick.keys.split(",");
+  const picked = pick.column && values.length === keyColumns.length
+    ? { column: pick.column,
+        keys: Object.fromEntries(keyColumns.map((c, i) => [c.name, values[i]])) }
+    : null;
+  const open = (column: string | null, keys: Record<string, string> | null) =>
+    onPick({ ...pick, column, keys: keys ? keyColumns.map((c) => keys[c.name]).join(",") : null });
+  const stating = pick.stating;
+  const shown = picked ? data.columns.find((c) => c.name === picked.column) ?? null : null;
 
   return (
     <article className="detail">
@@ -195,7 +241,20 @@ function ProjectionView(
           {instant(data.valid_at)} as the log knew it on {instant(data.as_of)}.
           Nothing is stored: move either clock and it is worked out again.
         </p>
+        {shape === "entities" && (
+          <p className="chips">
+            <button className="button"
+              onClick={() => onPick({ ...pick, stating: !stating, column: null, keys: null })}>
+              {stating ? "Never mind" : `State a ${data.class}`}
+            </button>
+          </p>
+        )}
       </header>
+
+      {stating && (
+        <FormPanel pin={pin} klass={klass} clocks={clocks}
+          onWritten={() => setWritten(written + 1)} />
+      )}
 
       <div className="scroll">
         <table className="projection">
@@ -203,10 +262,7 @@ function ProjectionView(
             <tr>
               {data.columns.map((c) => (
                 <th key={c.name}>
-                  <button className="link column-head" onClick={() => setColumn(column === c.name ? null : c.name)}
-                    aria-current={column === c.name}>
-                    {c.name}
-                  </button>
+                  <span className="column-head">{c.name}</span>
                   <span className={`badge badge-${c.kind}`}>{c.kind}</span>
                   {c.module && c.module.name !== appName && (
                     <span className="quiet block">{c.module.name}</span>
@@ -218,11 +274,21 @@ function ProjectionView(
           <tbody>
             {data.rows.map((row, i) => (
               <tr key={i}>
-                {row.map((cell, j) => (
-                  <td key={j} className={data.columns[j].type === "text" ? "id" : "num"}>
-                    {cell === null ? <span className="quiet">not stated</span> : String(cell)}
-                  </td>
-                ))}
+                {row.map((value, j) => {
+                  const c = data.columns[j];
+                  const keys = keysOf(data, row);
+                  const on = picked?.column === c.name
+                    && JSON.stringify(picked.keys) === JSON.stringify(keys);
+                  return (
+                    <td key={j} className={c.type === "text" ? "id" : "num"}>
+                      <button className={`cell${on ? " cell-on" : ""}`} aria-current={on}
+                        title="Where does this come from?"
+                        onClick={() => (on ? open(null, null) : open(c.name, keys))}>
+                        {value === null ? <span className="quiet">not stated</span> : String(value)}
+                      </button>
+                    </td>
+                  );
+                })}
               </tr>
             ))}
           </tbody>
@@ -232,7 +298,12 @@ function ProjectionView(
 
       <section className="fact">
         <div className="fact-head">
-          <h3>{shown ? `How ${shown.name} is worked out` : "How a column is worked out"}</h3>
+          <h3>{shown ? `How ${shown.name} is worked out` : "Where a number comes from"}</h3>
+          {picked && (
+            <span className="quiet">
+              {Object.entries(picked.keys).map(([k, v]) => `${k} = ${v}`).join(", ")}
+            </span>
+          )}
         </div>
         {shown ? (
           <div className="rule">
@@ -244,7 +315,11 @@ function ProjectionView(
             </p>
           </div>
         ) : (
-          <p className="quiet">Click a column heading to see the rule that fills it.</p>
+          <p className="quiet">Click any cell to see the statements it stands on.</p>
+        )}
+        {picked && (
+          <CellPanel pin={pin} klass={klass} column={picked.column}
+            keys={picked.keys} clocks={clocks} />
         )}
       </section>
 
@@ -256,5 +331,203 @@ function ProjectionView(
         <pre className="transcript">{data.sql}</pre>
       </details>
     </article>
+  );
+}
+
+function CellPanel(
+  { pin, klass, column, keys, clocks }:
+  { pin: Pin; klass: string; column: string; keys: Record<string, string>; clocks: Clocks },
+) {
+  const { data, error } = useLoad<CellSource>(
+    () => appApi.cell(pin.name, pin.version, klass, column, keys, clocks),
+    [pin.name, pin.version, klass, column, JSON.stringify(keys),
+      clocks.validAt.getTime(), clocks.asOf.getTime()]);
+  if (error) return <p className="failure" role="alert">{error}</p>;
+  if (!data) return <p className="chips quiet">Reading the log…</p>;
+
+  if (data.kind === "expression") {
+    return (
+      <div className="rule">
+        <p className="quiet">
+          Nothing in the log says this directly. It is{" "}
+          <span className="id">{data.expression}</span>, so click{" "}
+          {data.reads.map((r) => <span key={r} className="id">{r} </span>)}
+          in this same row to see what those stand on.
+        </p>
+      </div>
+    );
+  }
+
+  const total = data.kind === "aggregate"
+    ? data.statements.reduce((sum, s) => sum + Number(s.value ?? 0), 0)
+    : null;
+
+  return (
+    <div className="sources">
+      <p className="quiet">
+        {data.statements.length === 0
+          ? "Nothing stands here. Nobody has stated it at these two clocks, which is why the cell is empty rather than nought."
+          : data.kind === "aggregate"
+            ? `${data.statements.length} statements, ${data.operator} ${total}. Each one is a ${data.over} the log holds.`
+            : "One statement stands here."}
+        {data.cut_off && " Only the first of them are shown."}
+      </p>
+      {data.statements.length > 0 && (
+        <div className="scroll-plain">
+          <table>
+            <thead>
+              <tr>
+                <th>Subject</th><th>Predicate</th><th>Value</th>
+                <th>Valid from</th><th>Recorded at</th><th>Said by</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.statements.map((s) => (
+                <tr key={s.assertion_id}>
+                  <td>
+                    <a className="link id" href={kernelHref("entities", s.subject_id, clocks)}>
+                      {s.subject_uri ?? s.subject_id.slice(0, 8)}
+                    </a>
+                  </td>
+                  <td className="id">{s.predicate}</td>
+                  <td className={s.names_entity ? "id" : "num"}>{s.value}</td>
+                  <td className="num" title={instant(s.valid_from)}>{day(s.valid_from)}</td>
+                  <td className="num" title={instant(s.recorded_at)}>{day(s.recorded_at)}</td>
+                  <td>
+                    <a className="link" href={kernelHref("actions", s.intent_id, clocks)}>
+                      {s.source.replace(/_/g, " ")}
+                    </a>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// The form. Every field, its range and its choices are read out of the map;
+// nothing here is written per class. Submitting is one intent.
+function FormPanel(
+  { pin, klass, clocks, onWritten }:
+  { pin: Pin; klass: string; clocks: Clocks; onWritten: () => void },
+) {
+  const { data, error } = useLoad<FormSpec>(
+    () => appApi.form(pin.name, pin.version, klass, clocks),
+    [pin.name, pin.version, klass]);
+  const [values, setValues] = useState<Record<string, string>>({});
+  const [subject, setSubject] = useState("");
+  const [actor, setActor] = useState("");
+  const [validFrom, setValidFrom] = useState(toInput(clocks.validAt));
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState<string | null>(null);
+  const [done, setDone] = useState<Written | null>(null);
+
+  if (error) return <p className="failure" role="alert">{error}</p>;
+  if (!data) return <p className="quiet">Reading the map…</p>;
+
+  const send = async () => {
+    setBusy(true);
+    setFailed(null);
+    try {
+      const at = fromInput(validFrom) ?? clocks.validAt;
+      const answer = await appApi.state({
+        name: pin.name, version: pin.version, class: klass,
+        subject: subject.trim(), actor: actor.trim(),
+        valid_from: at.toISOString(), values,
+      });
+      setDone(answer);
+      setValues({});
+      setSubject("");
+      onWritten();
+    } catch (e) {
+      setFailed(e instanceof ApiError ? e.message : "The submission failed.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const ready = subject.trim() !== "" && actor.trim() !== ""
+    && Object.values(values).some((v) => v !== "");
+
+  return (
+    <section className="fact">
+      <div className="fact-head">
+        <h3>State a {data.class}</h3>
+        <span className="quiet">
+          one action, one intent, written under <span className="id">{data.label}</span>
+        </span>
+      </div>
+      <div className="form">
+        <label className="field">
+          <span>URI</span>
+          <input value={subject} placeholder="prefix:name"
+            onChange={(e) => setSubject(e.target.value)} />
+          <small>What the log will call it. A URI it already holds is reused, never minted twice.</small>
+        </label>
+        <label className="field">
+          <span>Who says so</span>
+          <input value={actor} placeholder="your name"
+            onChange={(e) => setActor(e.target.value)} />
+          <small>Lands on the intent. Nothing reaches the log without somebody behind it.</small>
+        </label>
+        <label className="field">
+          <span>Valid from</span>
+          <input type="datetime-local" value={validFrom}
+            onChange={(e) => setValidFrom(e.target.value)} />
+          <small>From when this is true of the world, not when it is written down.</small>
+        </label>
+
+        {data.fields.map((f) => (
+          <label key={f.name} className="field">
+            <span>
+              {f.title}
+              {f.ref && <span className="badge badge-stated">names an entity</span>}
+            </span>
+            {f.ref ? (
+              <select value={values[f.name] ?? ""}
+                onChange={(e) => setValues({ ...values, [f.name]: e.target.value })}>
+                <option value="">—</option>
+                {f.options.map((o) => (
+                  <option key={o.uri} value={o.uri}>{o.label ? `${o.label} — ${o.uri}` : o.uri}</option>
+                ))}
+              </select>
+            ) : (
+              <input value={values[f.name] ?? ""}
+                onChange={(e) => setValues({ ...values, [f.name]: e.target.value })} />
+            )}
+            <small>
+              {f.description
+                || (f.ref ? `One ${f.range}, chosen from ${f.options_from ?? "the log"}.` : f.range ?? "text")}
+              {f.module && <> · <span className="id">{f.module.name}</span></>}
+            </small>
+          </label>
+        ))}
+      </div>
+      {data.type_slot && (
+        <p className="quiet rule">
+          <span className="id">{data.type_slot}</span> is not a field: the map says which slot
+          carries the class, and submitting states it. Nobody types the class in.
+        </p>
+      )}
+      {failed && <p className="failure" role="alert">{failed}</p>}
+      {done && (
+        <p className="rule">
+          Written: {done.assertions} statements
+          {done.minted > 0 && `, ${done.minted} entity minted`} under one action.{" "}
+          <a className="link" href={kernelHref("actions", done.intent_id, clocks)}>
+            Open it in the kernel
+          </a>
+        </p>
+      )}
+      <p className="chips">
+        <button className="button" disabled={!ready || busy} onClick={send}>
+          {busy ? "Writing…" : "State it"}
+        </button>
+        {!ready && <span className="quiet">A URI, who says so, and at least one field.</span>}
+      </p>
+    </section>
   );
 }

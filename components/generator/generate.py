@@ -162,7 +162,12 @@ def read_map(path, store=None):
     version = view.schema.version
     if not version:
         raise MapError(f"{path.name} carries no version, so it is not a sealed map")
-    return {"path": path, "view": view, "version": version}
+    # How the kernel names this map. With more than one module in the store a
+    # bare `v1` names nothing, so a version sealed into a module is recorded as
+    # `@scope/name@vN` — the same label `seal` writes.
+    module = store.module_of(path.parent) if store is not None else None
+    label = f"{module}@{version}" if module else version
+    return {"path": path, "view": view, "version": version, "label": label}
 
 
 def columns(map_, class_name):
@@ -551,7 +556,7 @@ def submit(conn, map_, class_name, *, subject, values, actor_id,
         actor_id=actor_id,
         agent_id="generator",
         action_name=f"submit_{class_name}",
-        ontology_version=map_["version"],
+        ontology_version=map_.get("label") or map_["version"],
         reason_code=reason_code,
         note=note or f"{class_name} form, {len(values)} field(s), {subject}",
         mint=minting,
