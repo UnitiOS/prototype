@@ -2,6 +2,12 @@
 
 The claim this slice has to hold: a module that pins `@x/y@v1` means exactly
 what it meant when it was sealed, whatever versions of `@x/y` come after.
+
+The fixtures are three modules of demonstration content — a small bakery's
+catalog, its stock movements, and an application over both. Every one of them
+declares `purpose: demonstration` in its manifest, and the last test here is
+that the word reaches the log, so nobody reading the kernel has to be told
+which rows are made up.
 """
 
 import os
@@ -22,7 +28,8 @@ from components.modules.store import ModuleError, Store  # noqa: E402
 from perform import connect  # noqa: E402
 from seal import DraftError, seal  # noqa: E402
 
-THINGS, MOVEMENTS, CORE = "@example/things", "@example/movements", "@uniti/core"
+CATALOG, INVENTORY, STOCK = dev_modules.CATALOG, dev_modules.INVENTORY, dev_modules.STOCK
+CORE = dev_modules.CORE
 
 
 @pytest.fixture
@@ -38,7 +45,8 @@ def built(conn, tmp_path):
 
 
 def _draft(tmp_path, imports):
-    draft = yaml.safe_load((dev_modules.FIXTURES / THINGS / "v1.draft.yaml").read_text(encoding="utf-8"))
+    draft = yaml.safe_load(
+        (dev_modules.FIXTURES / CATALOG / "v1.draft.yaml").read_text(encoding="utf-8"))
     draft["imports"] = imports
     draft["annotations"]["transcript"] = "t.txt"
     path = tmp_path / "draft.yaml"
@@ -48,12 +56,12 @@ def _draft(tmp_path, imports):
 
 
 def test_the_store_holds_every_version_in_order(built):
-    assert built.names() == [MOVEMENTS, THINGS, CORE]
-    assert [v["version"] for v in built.versions(THINGS)] == ["v1", "v2"]
+    assert built.names() == [CATALOG, INVENTORY, STOCK, CORE]
+    assert [v["version"] for v in built.versions(CATALOG)] == ["v1", "v2"]
     listing = {m["name"]: m for m in read.modules(built)}
-    assert listing[MOVEMENTS]["latest"] == "v2"
-    assert listing[MOVEMENTS]["versions"][0]["imports"] == [
-        {"name": CORE, "version": "v1"}, {"name": THINGS, "version": "v1"}]
+    assert listing[INVENTORY]["latest"] == "v2"
+    assert listing[INVENTORY]["versions"][0]["imports"] == [
+        {"name": CORE, "version": "v1"}, {"name": CATALOG, "version": "v1"}]
 
 
 @pytest.mark.parametrize("imports, refusal", [
@@ -64,7 +72,7 @@ def test_the_store_holds_every_version_in_order(built):
     (["linkml:types", "some/local/@uniti/core@v1"], "neither a module@version"),
 ])
 def test_an_import_must_pin_a_sealed_version(conn, built, tmp_path, imports, refusal):
-    target = built.directory(THINGS)
+    target = built.directory(CATALOG)
     before = sorted(p.name for p in target.iterdir())
     with pytest.raises(DraftError, match=refusal):
         seal(conn, _draft(tmp_path, imports), actor_id="test", into=target, store=built)
@@ -74,86 +82,117 @@ def test_an_import_must_pin_a_sealed_version(conn, built, tmp_path, imports, ref
 def test_a_version_cannot_pin_one_sealed_after_it(conn, built, tmp_path):
     with pytest.raises(DraftError, match="after this seal"):
         seal(conn, _draft(tmp_path, ["linkml:types", "@uniti/core@v1"]), actor_id="test",
-             into=built.directory(THINGS), sealed_at="2020-01-01T00:00:00+00:00", store=built)
+             into=built.directory(CATALOG), sealed_at="2020-01-01T00:00:00+00:00",
+             store=built)
 
 
 def test_a_pinned_import_keeps_its_meaning_when_the_module_moves_on(conn, tmp_path):
-    store, sealed = dev_modules.build(conn, tmp_path / "packages", until=f"{MOVEMENTS}@v1")
-    assert sealed[-1] == f"{MOVEMENTS}@v1"
-    before = read.version(store, MOVEMENTS, "v1")
+    store, sealed = dev_modules.build(conn, tmp_path / "packages",
+                                      until=f"{INVENTORY}@v1")
+    assert sealed[-1] == f"{INVENTORY}@v1"
+    before = read.version(store, INVENTORY, "v1")
 
-    seal(conn, dev_modules.FIXTURES / THINGS / "v2.draft.yaml", actor_id="test",
-         into=store.directory(THINGS), store=store)
-    after = read.version(store, MOVEMENTS, "v1")
+    seal(conn, dev_modules.FIXTURES / CATALOG / "v2.draft.yaml", actor_id="test",
+         into=store.directory(CATALOG), store=store)
+    after = read.version(store, INVENTORY, "v1")
 
     assert after["classes"] == before["classes"]
     assert after["slots"] == before["slots"]
     assert after["closure"] == before["closure"]
     # What changed is only that a newer version exists beside the pin.
-    pin = next(i for i in after["imports"] if i["name"] == THINGS)
+    pin = next(i for i in after["imports"] if i["name"] == CATALOG)
     assert pin["version"] == "v1" and pin["latest"] == "v2"
     seen = {s["name"] for s in after["slots"]}
-    assert "thing_label" in seen and "thing_name" not in seen
+    assert "ingredient_label" in seen and "ingredient_name" not in seen
 
 
 def test_a_version_sees_what_it_imports_and_says_where_it_came_from(built):
-    detail = read.version(built, MOVEMENTS, "v2")
+    detail = read.version(built, INVENTORY, "v2")
     assert detail["closure"] == [
-        {"name": CORE, "version": "v1"}, {"name": THINGS, "version": "v2"},
-        {"name": MOVEMENTS, "version": "v2"}]
+        {"name": CORE, "version": "v1"}, {"name": CATALOG, "version": "v2"},
+        {"name": INVENTORY, "version": "v2"}]
     by_name = {c["name"]: c for c in detail["classes"]}
-    assert by_name["Movement"]["from"] == {"name": MOVEMENTS, "version": "v2"}
-    assert by_name["ThingGroup"]["from"] == {"name": THINGS, "version": "v2"}
-    assert detail["classes"][0]["from"]["name"] == MOVEMENTS
+    assert by_name["StockMovement"]["from"] == {"name": INVENTORY, "version": "v2"}
+    assert by_name["Ingredient"]["from"] == {"name": CATALOG, "version": "v2"}
+    assert detail["classes"][0]["from"]["name"] == INVENTORY
 
     # The one thing core holds is the predicate a class fact is stated under,
     # and every module sees the same one.
     by_slot = {s["name"]: s for s in detail["slots"]}
     assert by_slot["entity_class"]["from"] == {"name": CORE, "version": "v1"}
     assert by_slot["entity_class"]["designates_type"] is True
-    assert "Movement" in by_name and by_name["Movement"]["slots"][0] == "entity_class"
+    assert by_name["StockMovement"]["slots"][0] == "entity_class"
 
-    used = read.version(built, THINGS, "v1")["imported_by"]
-    assert used == [{"name": MOVEMENTS, "version": "v1"}]
+    used = read.version(built, CATALOG, "v1")["imported_by"]
+    assert used == [{"name": INVENTORY, "version": "v1"}]
 
 
 def test_a_rename_keeps_its_predicate(built):
-    diff = read.compare(built, THINGS, "v1", "v2")["diff"]
-    assert diff["slots"]["renamed"][0]["from"] == "thing_label"
-    assert diff["slots"]["renamed"][0]["to"] == "thing_name"
-    assert diff["slots"]["renamed"][0]["slot_uri"] == "th:thing_label"
-    assert sorted(diff["slots"]["added"]) == ["group_code", "thing_size"]
+    diff = read.compare(built, CATALOG, "v1", "v2")["diff"]
+    renamed = diff["slots"]["renamed"][0]
+    assert renamed["from"] == "ingredient_label"
+    assert renamed["to"] == "ingredient_name"
+    assert renamed["slot_uri"] == "cat:ingredient_label"
+    assert diff["slots"]["added"] == ["ingredient_reorder_level"]
     assert diff["slots"]["removed"] == []
-    assert diff["classes"]["added"] == ["ThingGroup"]
-    thing = diff["classes"]["changed"][0]
-    assert thing["name"] == "Thing" and thing["slots_added"] == ["thing_name", "thing_size"]
+    assert diff["classes"]["added"] == []
+    ingredient = next(c for c in diff["classes"]["changed"] if c["name"] == "Ingredient")
+    assert ingredient["slots_added"] == ["ingredient_name", "ingredient_reorder_level"]
 
-    moved = read.compare(built, MOVEMENTS, "v1", "v2")["diff"]["imports"]
-    assert moved == {"added": ["@example/things@v2"], "removed": ["@example/things@v1"]}
+    moved = read.compare(built, INVENTORY, "v1", "v2")["diff"]["imports"]
+    assert moved == {"added": ["@demo/catalog@v2"], "removed": ["@demo/catalog@v1"]}
 
 
 def test_the_kernel_names_a_module_version_in_full(conn, built):
     with conn.cursor() as cur:
         cur.execute("SELECT DISTINCT ontology_version FROM assertion "
-                    "WHERE ontology_version LIKE '@example/%' ORDER BY 1")
+                    "WHERE ontology_version LIKE '@demo/%' ORDER BY 1")
         labels = [r[0] for r in cur.fetchall()]
-    assert labels == ["@example/movements@v1", "@example/movements@v2",
-                      "@example/things@v1", "@example/things@v2"]
+    assert labels == ["@demo/catalog@v1", "@demo/catalog@v2",
+                      "@demo/inventory@v1", "@demo/inventory@v2",
+                      "@demo/stock@v1"]
+
+
+def test_a_module_that_says_it_is_made_up_says_so_in_the_log(conn, built):
+    """`purpose: demonstration` is a manifest word that reaches the kernel.
+
+    A log is read by people who do not hold the store. If the content in it is
+    made up, the rows have to say so themselves — so the word on the manifest
+    becomes the `reason_code` of every intent that seals or registers one of
+    its versions.
+    """
+    assert built.purpose(CATALOG) == "demonstration"
+    assert built.purpose(CORE) is None
+
+    with conn.cursor() as cur:
+        cur.execute("SELECT DISTINCT i.reason_code FROM intent i "
+                    "JOIN assertion a ON a.intent_id = i.id "
+                    "WHERE a.ontology_version LIKE '@demo/%'")
+        assert [r[0] for r in cur.fetchall()] == ["demonstration"]
+
+        cur.execute("SELECT DISTINCT i.reason_code FROM intent i "
+                    "JOIN assertion a ON a.intent_id = i.id "
+                    "WHERE a.ontology_version = '@uniti/core@v1'")
+        assert [r[0] for r in cur.fetchall()] == [None]
+
+    assert read.version(built, CATALOG, "v1")["purpose"] == "demonstration"
+    assert read.version(built, CORE, "v1")["purpose"] is None
 
 
 def test_the_graph_draws_pins_and_supersessions(built):
     graph = read.graph(built)
     edges = {(e["from"]["name"], e["from"]["version"], e["to"]["name"], e["to"]["version"], e["kind"])
              for e in graph["edges"]}
-    assert (MOVEMENTS, "v1", THINGS, "v1", "imports") in edges
-    assert (MOVEMENTS, "v2", THINGS, "v2", "imports") in edges
-    assert (THINGS, "v2", THINGS, "v1", "supersedes") in edges
-    assert len(graph["nodes"]) == 5
+    assert (INVENTORY, "v1", CATALOG, "v1", "imports") in edges
+    assert (INVENTORY, "v2", CATALOG, "v2", "imports") in edges
+    assert (STOCK, "v1", INVENTORY, "v2", "imports") in edges
+    assert (CATALOG, "v2", CATALOG, "v1", "supersedes") in edges
+    assert len(graph["nodes"]) == 6
 
 
 def test_a_module_name_is_checked(built):
     with pytest.raises(ModuleError, match="not a module name"):
-        built.directory("things")
+        built.directory("catalog")
 
 
 def test_the_api_reads_the_store_in_the_environment(conn, built, monkeypatch):
@@ -164,16 +203,18 @@ def test_the_api_reads_the_store_in_the_environment(conn, built, monkeypatch):
     client = TestClient(app)
 
     names = [m["name"] for m in client.get("/api/modules").json()]
-    assert names == [MOVEMENTS, THINGS, CORE]
-    assert len(client.get("/api/modules/graph").json()["nodes"]) == 5
+    assert names == [CATALOG, INVENTORY, STOCK, CORE]
+    assert len(client.get("/api/modules/graph").json()["nodes"]) == 6
 
-    detail = client.get("/api/modules/version", params={"name": THINGS, "version": "v2"}).json()
-    own = {s["name"]: s for s in detail["slots"] if s["from"]["name"] == THINGS}
+    detail = client.get("/api/modules/version",
+                        params={"name": CATALOG, "version": "v2"}).json()
+    own = {s["name"]: s for s in detail["slots"] if s["from"]["name"] == CATALOG}
     assert all(s["registered"] for s in own.values())
 
-    diff = client.get("/api/modules/diff", params={"name": THINGS, "from": "v1", "to": "v2"}).json()
-    assert diff["diff"]["slots"]["renamed"][0]["to"] == "thing_name"
+    diff = client.get("/api/modules/diff",
+                      params={"name": CATALOG, "from": "v1", "to": "v2"}).json()
+    assert diff["diff"]["slots"]["renamed"][0]["to"] == "ingredient_name"
 
-    missing = client.get("/api/modules/version", params={"name": THINGS, "version": "v7"})
+    missing = client.get("/api/modules/version", params={"name": CATALOG, "version": "v7"})
     assert missing.status_code == 404 and "v7" in missing.json()["error"]
-    assert client.get("/api/modules/diff", params={"name": THINGS}).status_code == 400
+    assert client.get("/api/modules/diff", params={"name": CATALOG}).status_code == 400

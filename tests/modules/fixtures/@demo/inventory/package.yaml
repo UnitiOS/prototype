@@ -1,0 +1,8 @@
+name: "@demo/inventory"
+title: Inventory
+purpose: demonstration
+description: >-
+  Demonstration data, not real content. What happens to the ingredients the
+  catalog names: deliveries in, use and waste out, each one at a place. It
+  states events and derives nothing; the quantity anybody actually asks for is
+  worked out in `@demo/stock`.

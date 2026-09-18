@@ -89,6 +89,17 @@ class Store:
             raise ModuleError(f"{name}/{MANIFEST} names itself {data.get('name')!r}")
         return data
 
+    def purpose(self, name):
+        """What the content of this module is for, when its manifest says.
+
+        A manifest that declares one is saying it about every version under it:
+        `demonstration` means the content is made up and is here so that the
+        mechanisms have something to run on. It is carried into the kernel on
+        the intent that seals or registers a version, so a reader of the log
+        knows without holding the store.
+        """
+        return self.manifest(name).get("purpose")
+
     def versions(self, name):
         return load_versions(self.directory(name))
 

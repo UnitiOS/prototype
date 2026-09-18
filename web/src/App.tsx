@@ -5,6 +5,7 @@ import { ClockPlane } from "./ClockPlane";
 import { day, fromInput, toInput } from "./format";
 import { useRoute } from "./route";
 import { ModulesPage } from "./modules";
+import { ApplicationPage } from "./application";
 import type { Tab } from "./route";
 import { ActionList, ActionView, EntityList, EntityView, LogView } from "./views";
 
@@ -17,6 +18,7 @@ const TABS: { tab: Tab; label: string }[] = [
 const AREAS: { tab: Tab; label: string }[] = [
   { tab: "entities", label: "Kernel" },
   { tab: "modules", label: "Modules" },
+  { tab: "app", label: "Application" },
 ];
 
 export function App() {
@@ -37,6 +39,10 @@ export function App() {
   const setClocks = (next: Clocks) => go({ ...route, clocks: next }, true);
   const open = (tab: "entities" | "actions", id: string) => go({ ...route, tab, id });
   const inModules = route.tab === "modules";
+  const inApp = route.tab === "app";
+  // The clocks are what a projection is read at, so they belong to both the
+  // kernel explorer and the application. Only the module store is timeless.
+  const inKernel = !inModules && !inApp;
 
   const now = () => {
     const t = new Date();
@@ -49,7 +55,7 @@ export function App() {
         <h1 className="brand">Uniti</h1>
         <nav className="areas" aria-label="Areas">
           {AREAS.map(({ tab, label }) => {
-            const on = tab === "modules" ? inModules : !inModules;
+            const on = tab === "modules" ? inModules : tab === "app" ? inApp : inKernel;
             return (
               <button key={tab} className={`area${on ? " area-on" : ""}`} aria-current={on}
                 onClick={() => go({ ...route, tab, id: null })}>
@@ -58,7 +64,7 @@ export function App() {
             );
           })}
         </nav>
-        {summary && !inModules && (
+        {summary && inKernel && (
           <p className="held">
             {summary.assertions} statements from {summary.intents} actions about {summary.entities} entities
             {summary.first_recorded_at && summary.last_recorded_at && (
@@ -112,6 +118,12 @@ export function App() {
         />
       </section>
 
+      {inApp && (
+        <ApplicationPage pick={route.app} clocks={clocks}
+          onPick={(app) => go({ ...route, app })} />
+      )}
+
+      {inKernel && <>
       <nav className="tabs" aria-label="Views">
         {TABS.map(({ tab, label }) => (
           <button
@@ -144,6 +156,7 @@ export function App() {
         )}
         {route.tab === "log" && <LogView clocks={clocks} open={open} />}
       </main>
+      </>}
       </>}
     </div>
   );

@@ -1,0 +1,13 @@
+Transcript, @demo/catalog v1.
+
+Demonstration content. Not a conversation: this fixture is written by hand so
+the mechanisms have something life-sized to run on, and everything it says is
+made up.
+
+Three classes, and the reason each one is a class rather than a field. A
+category and a supplier are named, pointed at from more than one ingredient,
+and outlive any one of them, so each is an entity with a code of its own. The
+unit is none of those things — nobody points at "kilogram" — so it stays a
+value on the ingredient.
+
+Every class states `entity_class` itself, the one slot @uniti/core@v1 holds.

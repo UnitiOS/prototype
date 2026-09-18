@@ -53,10 +53,12 @@ from linkml_runtime import SchemaView
 from psycopg.rows import dict_row
 
 ROOT = Path(__file__).resolve().parent.parent.parent
+sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "components" / "seal"))
 sys.path.insert(0, str(ROOT / "components" / "kernel"))
 sys.path.insert(0, str(ROOT / "components"))
 
+from components.modules.store import Store  # noqa: E402
 from perform import connect, perform  # noqa: E402
 from resolve import resolve_single  # noqa: E402
 from seal import URI_PREDICATE  # noqa: E402
@@ -130,16 +132,33 @@ def _utc(value):
     return moment if moment.tzinfo else moment.replace(tzinfo=timezone.utc)
 
 
-def read_map(path):
+def read_map(path, store=None):
     """One sealed version file, as far as a generator needs it.
 
     A draft is refused: it carries no `version`, and every assertion this
     writes has to name the version it was stated under.
+
+    With a module `store`, the version's pinned imports are resolved through it
+    and the view spans the whole closure. That is all an *application* is: one
+    sealed version that pins others, read as one map. A class it never declared
+    is then a class it can aggregate over, and the predicate URIs are the same
+    ones in the same registry, so nothing has to be joined up afterwards.
     """
     path = Path(path)
     if not path.is_file():
         raise MapError(f"no map at {path}")
-    view = SchemaView(path.read_text(encoding="utf-8"))
+    text = path.read_text(encoding="utf-8")
+    view = store.view(text) if store is not None else SchemaView(text)
+    if store is None:
+        # SchemaView resolves imports lazily and would carry on with half a
+        # map, silently missing every class the pinned modules declare. A map
+        # that pins is an application and is only whole in a store.
+        pinned = [str(i) for i in (view.schema.imports or []) if str(i).startswith("@")]
+        if pinned:
+            raise MapError(
+                f"{path.name} pins {', '.join(pinned)}, so it is only whole in a "
+                f"module store — read it with one"
+            )
     version = view.schema.version
     if not version:
         raise MapError(f"{path.name} carries no version, so it is not a sealed map")
@@ -657,7 +676,7 @@ def main(argv=None):
     args = parser.parse_args(argv)
 
     try:
-        map_ = read_map(args.map)
+        map_ = read_map(args.map, Store.from_env())
         with connect() as conn:
             if args.what == "form":
                 _write(render_form(form(conn, map_, args.klass)), args.out)

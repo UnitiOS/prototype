@@ -1,0 +1,12 @@
+Transcript, @demo/inventory v2.
+
+Demonstration content.
+
+The pin moves from @demo/catalog@v1 to @demo/catalog@v2. Nothing forced it:
+v1 of this module still pins v1 of the catalog and still means what it meant.
+Moving is a decision, taken by sealing a version that says so.
+
+`movement_reason` is added as a plain value. There is no vocabulary behind it
+and no mechanism reads it, which is the honest state of it — a word somebody
+typed. If something ever has to count reasons, that is the moment it becomes a
+class, and not before.

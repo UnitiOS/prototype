@@ -1,1 +1,0 @@
-Fixture transcript. The first version: a thing has a code and a label.

@@ -96,8 +96,11 @@ Prinsip mekanisme yang ikut terbawa. Semuanya sudah terbukti di P1:
   yang bisa dilihat di layar.
 - **Tidak ada file konteks** (`CLAUDE.md`, `DECISIONS.md`, log). Dokumen ini
   satu-satunya, dan dihapus di akhir.
-- **Kode domain-agnostic.** Tidak ada istilah dari data uji di kode. Fixture test
-  memakai nama netral.
+- **Kode domain-agnostic.** Tidak ada istilah dari data uji di kode. Semua isi
+  domain hidup di `tests/modules/fixtures/` — modul `@demo/*` dan `demo_data.yaml` —
+  dan setiap modul di sana menyatakan `purpose: demonstration`, yang terbawa sampai
+  ke `reason_code` di kernel. Jadi data uji menandai dirinya sendiri, di graph
+  maupun di log, tanpa ada satu kata domain pun di komponen.
 - **Satu commit per langkah yang utuh.** Irisan ditutup setelah Anda melihatnya.
 
 ---
@@ -178,11 +181,17 @@ Anda lihat*.
 
 - **Mekanisme:** sebuah *aplikasi* adalah sekumpulan modul yang dipin. Compiler dan
   generator membacanya sebagai satu map, lalu membangun satu operational DB.
+  Aplikasi **bukan** jenis baru di store: ia satu versi sealed yang memin modul lain
+  dan mendeklarasikan tabel yang ingin dilihat seseorang. `read_map(path, store)`
+  meresolusi pin lewat store; tanpa store, map yang memin ditolak karena ia hanya
+  utuh di dalam store.
 - **Yang dilihat:**
-  - graph gabungan, dengan warna per modul
-  - form yang menulis ke kernel
-  - tabel proyeksi, dengan "bagaimana angka ini dihitung": aturan, sumber, dan
-    klik ke provenance
+  - graph kelas gabungan, dengan warna per modul dan empat jenis sambungan
+    (`is_a`, `reference`, `aggregate`, `parameter`)
+  - tabel proyeksi, dengan "bagaimana angka ini dihitung": aturan per kolom,
+    modul pemilik slot, dan SQL yang dipancarkan
+  - ~~form yang menulis ke kernel~~ — belum; pintu tulis massal (`load_facts.py`)
+    sudah ada, form lewat generator menyusul
 - **Selesai jika:** proyeksi di satu modul menghitung dari event modul lain lewat
   `slot_uri` bersama, dan angkanya bisa ditelusuri.
 
@@ -258,6 +267,8 @@ menghitung lintas modul.
 | Kernel | Satu kernel untuk semua modul dan data. Satu operational DB per aplikasi (turunan, boleh dibuang). | Integrasi antar modul terjadi lewat `slot_uri` di satu registry. Multi-kernel adalah soal isolasi, belum dibutuhkan, dan pintunya tetap terbuka karena semua komponen menerima DSN. |
 | Isi core selama refactor | Core minimal: hanya `entity_class`, satu-satunya bagian core yang dijalankan mekanisme hari ini. Standarnya didesain di irisan 2.5. | Lima archetype percobaan lalu tidak mengubah perilaku gerbang, generator, atau compiler mana pun, dan masih membawa sisa istilah data uji. |
 | Cara menggantinya | `core@v1` di-reset di branch ini, bukan di-seal sebagai v2. | Melanggar "versi sealed tidak pernah diedit", tetapi sah selama masih refactor dan belum ada yang bergantung padanya. Disetujui 18 September 2026. |
+| `ontology_version` untuk fakta instance | **Versi aplikasi** (`@demo/stock@v1`), bukan modul pemilik tiap slot. | Sebuah fakta dinyatakan di bawah map yang sedang dilihat orangnya; satu aksi punya satu map. Modul pemilik tiap predikat tetap bisa ditemukan lewat store dari `slot_uri`, jadi tidak ada informasi yang hilang. Kebalikannya tidak benar: dari daftar modul, map yang dipakai saat menulis tidak bisa direkonstruksi. |
+| Penanda data uji | Manifest modul boleh menyatakan `purpose:`. `seal` dan `register` membawanya ke `reason_code` intent; `load_facts` membawanya ke tiap intent yang ditulisnya. | Log dibaca orang yang tidak memegang store. Kalau isinya karangan, barisnya sendiri yang harus mengatakannya — bukan konvensi nama scope yang harus dihafal. |
 | Kernel pengembangan | Dimulai kosong. Tidak ada lagi seed sintetis 200 assertion di sana; seed itu hanya dipakai `make check` di database test. | Semua yang tampil di penjelajah kernel harus berasal dari mekanisme yang bisa ditelusuri: seal, registrasi, atau isian form. |
 
 ### Masih terbuka
@@ -265,7 +276,7 @@ menghitung lintas modul.
 | # | Pertanyaan | Kapan | Rekomendasi |
 |---|---|---|---|
 | 1 | Teknologi UI | awal irisan 0b | API JSON Python (Starlette/uvicorn, sudah terpasang) yang dipakai bersama oleh UI dan agent, ditambah frontend React + TypeScript + Vite (Node 22 sudah ada). Graph, diff, dan chat streaming butuh UI interaktif yang sungguhan. |
-| 2 | Isi `ontology_version` pada assertion di dunia modular: versi aplikasi, atau `modul@versi` pemilik slot? | irisan 1 | Opsi konkret dibawa saat irisan 1, dengan tampilannya |
+| ~~2~~ | ~~Isi `ontology_version` pada assertion di dunia modular~~ | **dijawab di irisan 2** | **Versi aplikasi.** Lihat keputusan di bawah. |
 | 3 | Isi `@uniti/core` | berjalan | Hipotesis. Hanya yang dibutuhkan mekanisme yang masuk; archetype menunggu bukti. |
 | 4 | Penyedia LLM untuk agent | irisan 4 | — |
 
@@ -285,6 +296,12 @@ menghitung lintas modul.
   tetap diputuskan di irisan 2.
 - **Import ke versi yang di-seal belakangan.** Seal kini menolak draft yang memin
   versi yang di-seal setelah draft itu sendiri.
+- **Compiler menerima kelas yang tidak ada dengan `ValueError` LinkML**, bukan
+  `MapError`, sehingga API mengembalikan 500. `plan_for` sekarang menolak lebih
+  dulu dengan daftar kelas yang ada.
+- **`read_map` tanpa store memuat map separuh.** SchemaView meresolusi import
+  secara malas, jadi map aplikasi terbaca tanpa satu pun kelas dari modul yang
+  dipin, tanpa error. Sekarang ditolak.
 - **Jebakan YAML 1.1 di map P1:** kunci `on:` tanpa tanda kutip di blok `convert`
   terbaca sebagai boolean `True`. Beberapa aturan di map demo P1 terkena ini tanpa
   ada yang menolaknya. Seal atau compiler harus menolaknya (irisan 1 atau 2).
@@ -299,7 +316,7 @@ menghitung lintas modul.
 | 0b | selesai, menunggu Anda melihatnya: API baca kernel (`components/api`), aplikasi web (`web/`) dengan penjelajah kernel dan bidang jam; seed sintetis dinetralkan dan menamai entity lewat registry `uniti:uri`; 96 test lulus |
 | 1.5 | selesai: core dikecilkan ke `entity_class` dan di-reset sebagai v1, modul contoh lepas dari archetype, kernel pengembangan dimulai kosong |
 | 1 | selesai, menunggu Anda melihatnya: store modul berversi (`components/modules`), import dipin dan diperiksa seal, `@uniti/core` di-seal sebagai v1, linimasa + detail versi + diff di aplikasi; 110 test lulus |
-| 2 | belum dimulai |
+| 2 | selesai, menunggu Anda melihatnya: aplikasi sebagai versi yang memin (`components/api/application.py`), compiler dieksekusi lintas modul dengan test angka, pintu tulis massal `scripts/load_facts.py`, graph kelas lintas modul + tabel proyeksi + penjelasan aturan per kolom di aplikasi web; fixture diganti tiga modul demonstrasi yang menandai dirinya di graph dan di kernel; 124 test lulus |
 | 3 | belum dimulai |
 | 4 | belum dimulai |
 | 5 | belum dimulai |

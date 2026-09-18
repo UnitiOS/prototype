@@ -392,3 +392,78 @@ details.fact[open] > summary h3::before { transform: rotate(90deg); }
 details.fact:not([open]) > summary { border-bottom: 0; }
 
 .under { color: var(--ink-soft); }
+
+/* ---------------------------------------------------------------- badges */
+/* A badge states a fact about the thing beside it and never decorates: a
+   module's declared purpose, the kind of table, the rule behind a column. */
+
+.badge {
+  display: inline-block; margin-left: 6px; padding: 0 7px;
+  border: 1px solid var(--rule); border-radius: 999px;
+  font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.02em;
+  text-transform: lowercase; vertical-align: 1px; white-space: nowrap;
+  color: var(--ink-soft); background: var(--surface);
+}
+.badge-demo { color: var(--withdrawn); border-color: var(--withdrawn); background: transparent; }
+.badge-grouped, .badge-aggregate { color: var(--known); border-color: var(--known); }
+.badge-entities, .badge-stated { color: var(--ink-soft); }
+.badge-parameter { color: var(--stands); border-color: var(--stands); }
+.badge-expression { color: var(--later); border-color: var(--later); }
+.badge-key, .badge-identity { color: var(--ink); }
+.badge-unfilled { color: var(--withdrawn); }
+
+.block { display: block; font-weight: 400; text-transform: none; }
+.list-head { padding: 10px 12px 4px; border-bottom: 1px solid var(--rule); margin: 0; }
+.tl-lane-purpose { fill: var(--withdrawn); font-size: 10px; font-weight: 600; }
+
+/* ----------------------------------------------------------- class graph */
+/* One colour per module, used for the band and for every class declared in
+   it, so where a class comes from is readable without following a line. */
+
+.cg-mod-0 { --mod: var(--known); }
+.cg-mod-1 { --mod: var(--stands); }
+.cg-mod-2 { --mod: #8a5cc3; }
+.cg-mod-3 { --mod: var(--withdrawn); }
+.cg-mod-4 { --mod: #b08a2d; }
+.cg-mod-5 { --mod: #2da3b0; }
+
+.classgraph { margin: 0; padding: 4px 0 8px; overflow-x: auto; }
+.cg-band rect { fill: var(--mod); opacity: 0.06; }
+.cg-band text { fill: var(--mod); font-size: 11px; font-weight: 700; font-family: var(--mono); }
+
+.cg-node { cursor: pointer; }
+.cg-node rect { fill: var(--surface); stroke: var(--mod); stroke-width: 1.5; }
+.cg-node text { fill: var(--ink); font-size: 12px; font-weight: 600; }
+.cg-node .cg-sub { fill: var(--ink-soft); font-size: 10px; font-weight: 400; }
+.cg-node:hover rect { fill: var(--field); }
+.cg-node:focus-visible { outline: none; }
+.cg-node:focus-visible rect { stroke: var(--focus); stroke-width: 3; }
+.cg-selected rect { stroke-width: 3; }
+.cg-shape-derived rect { stroke-dasharray: 5 3; }
+.cg-faded { opacity: 0.25; }
+
+.cg-edge path { fill: none; stroke: var(--ink-soft); stroke-width: 1.4; opacity: 0.55; }
+.cg-edge text { fill: var(--ink-soft); font-size: 10px; font-family: var(--mono); opacity: 0.8; }
+.cg-edge-aggregate path { stroke: var(--known); stroke-width: 2; opacity: 0.85; }
+.cg-edge-parameter path { stroke: var(--stands); stroke-width: 2; opacity: 0.85; }
+.cg-edge-is_a path { stroke-dasharray: 4 3; }
+.cg-lit path { opacity: 1; stroke-width: 2.4; }
+.cg-dim { opacity: 0.12; }
+.cg-head { fill: var(--ink-soft); }
+.cg-head-lit { fill: var(--ink); }
+
+.cg-key { display: flex; flex-wrap: wrap; gap: 14px; padding: 4px 16px 0; font-size: var(--step--1); }
+.cg-key-item { color: var(--ink-soft); display: inline-flex; align-items: center; gap: 6px; }
+.cg-key-item::before { content: ""; width: 18px; height: 0; border-top: 2px solid currentColor; }
+.cg-key-reference { color: var(--ink-soft); }
+.cg-key-aggregate { color: var(--known); }
+.cg-key-parameter { color: var(--stands); }
+.cg-key-is_a { color: var(--ink-soft); }
+.cg-key-is_a::before { border-top-style: dashed; }
+
+/* ------------------------------------------------------------ projection */
+
+.projection th { vertical-align: top; }
+.column-head { font-weight: 600; }
+.rule { padding: 8px 16px 12px; display: grid; gap: 6px; max-width: 80ch; }
+.rule p { margin: 0; }

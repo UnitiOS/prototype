@@ -1,0 +1,84 @@
+id: https://uniti.example/catalog
+name: demo_catalog
+title: Catalog
+description: >-
+  Demonstration data. The things a small bakery buys and keeps. This version
+  renames one slot without changing what it means, and adds the level below
+  which somebody wants to be told to order more.
+prefixes:
+  linkml: https://w3id.org/linkml/
+  uniti: https://w3id.org/uniti/core#
+  cat: https://uniti.example/catalog/
+default_prefix: cat
+default_range: string
+imports:
+  - linkml:types
+  - "@uniti/core@v1"
+classes:
+  Category:
+    description: A group an ingredient belongs to.
+    slots:
+      - entity_class
+      - category_code
+      - category_label
+  Supplier:
+    description: Somebody an ingredient is bought from.
+    slots:
+      - entity_class
+      - supplier_code
+      - supplier_label
+  Ingredient:
+    description: Something bought, kept, and used up.
+    slots:
+      - entity_class
+      - ingredient_code
+      - ingredient_name
+      - ingredient_unit
+      - ingredient_category
+      - ingredient_supplier
+      - ingredient_reorder_level
+slots:
+  category_code:
+    slot_uri: cat:category_code
+    identifier: true
+  category_label:
+    title: Category
+    slot_uri: cat:category_label
+  supplier_code:
+    slot_uri: cat:supplier_code
+    identifier: true
+  supplier_label:
+    title: Supplier
+    slot_uri: cat:supplier_label
+  ingredient_code:
+    slot_uri: cat:ingredient_code
+    identifier: true
+  ingredient_name:
+    title: Ingredient
+    slot_uri: cat:ingredient_label
+    description: >-
+      What the ingredient is called. Renamed from `ingredient_label`; the
+      predicate is unchanged, so everything already stated under it still
+      stands.
+  ingredient_unit:
+    title: Unit
+    slot_uri: cat:ingredient_unit
+    description: The unit every quantity of this ingredient is counted in.
+  ingredient_category:
+    title: Category
+    slot_uri: cat:ingredient_category
+    range: Category
+  ingredient_supplier:
+    title: Supplier
+    slot_uri: cat:ingredient_supplier
+    range: Supplier
+  ingredient_reorder_level:
+    title: Reorder level
+    slot_uri: cat:ingredient_reorder_level
+    range: decimal
+    description: >-
+      The quantity somebody decided not to fall below. Stated, never computed:
+      it is a judgement, and the log records who made it and when.
+annotations:
+  valid_from: '2026-04-01T00:00:00+00:00'
+  transcript: v2.draft.txt

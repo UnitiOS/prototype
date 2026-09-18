@@ -1,0 +1,15 @@
+Transcript, @demo/catalog v2.
+
+Demonstration content.
+
+Two changes, and they are different in kind.
+
+`ingredient_label` is renamed to `ingredient_name`. The predicate is untouched
+— both versions say `cat:ingredient_label` — so this is a change of wording and
+not of meaning, and every fact already in the log is still a fact about the
+same thing. A reader of v1 and a reader of v2 disagree about what to call the
+slot and about nothing else.
+
+`ingredient_reorder_level` is new. It is stated by a person, never derived: it
+is somebody's judgement about how low is too low, and the log keeps who said
+so and from when. @demo/stock reads it as a parameter.

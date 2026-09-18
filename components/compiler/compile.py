@@ -62,12 +62,14 @@ import psycopg
 from jsonasobj2 import as_dict, items
 
 ROOT = Path(__file__).resolve().parent.parent.parent
+sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "components" / "generator"))
 sys.path.insert(0, str(ROOT / "components" / "seal"))
 sys.path.insert(0, str(ROOT / "components" / "kernel"))
 
 # The map is read exactly as the generator reads it — same induced slots, same
 # rule for which entities are of a class — so the two cannot drift apart.
+from components.modules.store import Store  # noqa: E402
 from generate import IDENTITY_COLUMN, MapError, columns, read_map, table_name  # noqa: E402
 from generate import _grid as grid  # noqa: E402
 from generate import _type_slot as type_slot  # noqa: E402
@@ -472,6 +474,11 @@ def plan_for(map_, class_name):
     A class the map gives an aggregate is a grouping; anything else the log can
     say an entity is, is a list of them. Nothing else decides it.
     """
+    if class_name not in map_["view"].all_classes():
+        raise MapError(
+            f"{map_['path'].name} declares no class {class_name!r} — it has "
+            f"{sorted(str(name) for name in map_['view'].all_classes())}"
+        )
     for slot in map_["view"].class_induced_slots(class_name):
         if _annotation(slot, "aggregate"):
             return plan(map_, class_name)
@@ -787,8 +794,15 @@ def emit(map_, plan_):
 
 # ---- running it -----------------------------------------------------------
 
-def compile_class(kernel, ops, map_, class_name, *, valid_at, as_of):
-    """Read the log through the map's rules; drop and rebuild one table."""
+def preview(kernel, map_, class_name, *, valid_at, as_of):
+    """Plan one table, emit its SQL, and run it against the log. Writes nothing.
+
+    This is the whole of the derivation except the last step. It exists because
+    a reader wants the numbers and the rules that produced them without a
+    projection being dropped and rebuilt under somebody else's feet — the
+    operational store is per application, and reading is not a reason to touch
+    it.
+    """
     plan_ = plan_for(map_, class_name)
     ddl, select = (emit(map_, plan_) if plan_["shape"] == "grouped"
                    else emit_entities(map_, plan_))
@@ -799,6 +813,15 @@ def compile_class(kernel, ops, map_, class_name, *, valid_at, as_of):
         cur.execute(select, {"valid_at": valid_at, "as_of": as_of,
                              "uri_predicate": URI_PREDICATE})
         rows = cur.fetchall()
+    return {"plan": plan_, "ddl": ddl, "select": select, "rows": rows,
+            "valid_at": valid_at, "as_of": as_of}
+
+
+def compile_class(kernel, ops, map_, class_name, *, valid_at, as_of):
+    """Read the log through the map's rules; drop and rebuild one table."""
+    built = preview(kernel, map_, class_name, valid_at=valid_at, as_of=as_of)
+    plan_, ddl, select, rows = (built["plan"], built["ddl"],
+                                built["select"], built["rows"])
 
     names = [c["name"] for c in plan_["columns"]]
     insert = "INSERT INTO {} ({}) VALUES ({})".format(
@@ -883,6 +906,15 @@ def _entity_classes(map_):
             if str(name) not in grouped and type_slot(map_, name) is not None]
 
 
+def tables(map_):
+    """Every class this map can fill a table for, groupings first.
+
+    One list, in the order the CLI compiles them and a reader should meet
+    them: what the map derives, then what the log can say an entity is.
+    """
+    return _aggregate_classes(map_) + _entity_classes(map_)
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(
         description="Compile a sealed map's rules into the operational store.")
@@ -900,7 +932,7 @@ def main(argv=None):
     valid_at, as_of = args.valid_at or now, args.as_of or now
 
     try:
-        map_ = read_map(args.map)
+        map_ = read_map(args.map, Store.from_env())
         classes = args.klass or (_aggregate_classes(map_) + _entity_classes(map_))
         if not classes:
             raise MapError(

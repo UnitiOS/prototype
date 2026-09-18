@@ -1,14 +1,19 @@
-"""Seal the fixture modules, in order, into a store root of their own.
+"""Seal the demonstration modules, in order, into a store root of their own.
 
-Two modules, two versions each, sealed as they would be over time:
+Three modules, sealed as they would have been over time:
 
-    @example/things@v1      a thing has a code and a label
-    @example/movements@v1   pins things@v1
-    @example/things@v2      the label is renamed, a size and a group are added
-    @example/movements@v2   moves its pin to things@v2
+    @demo/catalog@v1     what a small bakery buys and keeps
+    @demo/inventory@v1   movements of it, pinning the catalog's v1
+    @demo/catalog@v2     one slot renamed, a reorder level added
+    @demo/inventory@v2   moves its pin to the catalog's v2
+    @demo/stock@v1       the application: it pins both and states one table
 
-The order is the point: when things@v2 is sealed, movements@v1 already exists
-and pins things@v1, and nothing about it changes.
+The order is the point: when `@demo/catalog@v2` is sealed, `@demo/inventory@v1`
+already exists and pins `@demo/catalog@v1`, and nothing about it changes.
+
+Every one of these modules declares `purpose: demonstration` in its manifest.
+The content is made up, and `seal` carries that word onto the intent, so the
+log says so on every row it wrote.
 
 The root is emptied first. `@uniti/core` is not copied: it is real content in
 `packages/`, found through the store's second root.
@@ -31,15 +36,25 @@ from perform import connect  # noqa: E402
 from seal import register, seal  # noqa: E402
 
 FIXTURES = ROOT / "tests" / "modules" / "fixtures"
+
+CATALOG = "@demo/catalog"
+INVENTORY = "@demo/inventory"
+STOCK = "@demo/stock"
+CORE = "@uniti/core"
+
 # Sealed now, one after another: a seal records when it happened, and each of
 # these pins versions sealed before it. What each version says about the world
 # is dated by its own `valid_from`.
 SEQUENCE = [
-    ("@example/things", "v1"),
-    ("@example/movements", "v1"),
-    ("@example/things", "v2"),
-    ("@example/movements", "v2"),
+    (CATALOG, "v1"),
+    (INVENTORY, "v1"),
+    (CATALOG, "v2"),
+    (INVENTORY, "v2"),
+    (STOCK, "v1"),
 ]
+
+# The application: the version the compiler and the generator read as one map.
+APPLICATION = (STOCK, "v1")
 
 
 def build(conn, root, *, until=None, register_core=True):
@@ -54,7 +69,7 @@ def build(conn, root, *, until=None, register_core=True):
 
     store = Store([root, ROOT / "packages"])
     if register_core:
-        register(conn, store.path("@uniti/core", "v1"), actor_id="dev", store=store)
+        register(conn, store.path(CORE, "v1"), actor_id="dev", store=store)
 
     sealed = []
     for name, version in SEQUENCE:

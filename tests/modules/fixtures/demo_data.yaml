@@ -1,0 +1,297 @@
+# Demonstration data. None of this happened.
+#
+# A small bakery's first half-year, written as the actions that stated it.
+# Every action here becomes one intent in the log, carrying `reason_code:
+# demonstration`, so nobody reading the kernel has to be told which rows are
+# made up.
+#
+# Two clocks are used on purpose, and the difference between them is the point:
+#
+#   valid_from   when it became true of the world — the day stock arrived.
+#   recorded_at  when this log learned of it. Mostly the same week; twice it is
+#                much later, because somebody found a delivery note in July for
+#                a delivery in June.
+#
+# So moving `valid_at` back changes what is on hand, and moving `as_of` back to
+# before 10 July hides the late-found delivery and changes it again.
+
+map: "@demo/stock@v1"
+purpose: demonstration
+
+actions:
+  - action: add_categories
+    actor: rina
+    valid_from: '2026-01-20T00:00:00+00:00'
+    occurred_at: '2026-01-20T09:00:00+00:00'
+    recorded_at: '2026-01-20T09:00:00+00:00'
+    note: The three groups everything bought falls in.
+    entities:
+      - uri: cat:cat_dry
+        class: Category
+        facts: {category_code: DRY, category_label: Dry goods}
+      - uri: cat:cat_dairy
+        class: Category
+        facts: {category_code: DAI, category_label: Dairy}
+      - uri: cat:cat_packaging
+        class: Category
+        facts: {category_code: PKG, category_label: Packaging}
+
+  - action: add_suppliers
+    actor: rina
+    valid_from: '2026-01-20T00:00:00+00:00'
+    occurred_at: '2026-01-20T09:20:00+00:00'
+    recorded_at: '2026-01-20T09:20:00+00:00'
+    entities:
+      - uri: cat:sup_mill
+        class: Supplier
+        facts: {supplier_code: MILL, supplier_label: Northgate Mills}
+      - uri: cat:sup_coop
+        class: Supplier
+        facts: {supplier_code: COOP, supplier_label: Valley Dairy Cooperative}
+      - uri: cat:sup_paper
+        class: Supplier
+        facts: {supplier_code: PAPR, supplier_label: Ambon Paper and Box}
+
+  - action: add_ingredients
+    actor: rina
+    valid_from: '2026-01-22T00:00:00+00:00'
+    occurred_at: '2026-01-22T10:00:00+00:00'
+    recorded_at: '2026-01-22T10:00:00+00:00'
+    note: Eight things bought and kept. The unit is a value; the category and the supplier are entities, because more than one ingredient points at each.
+    entities:
+      - uri: cat:ing_flour
+        class: Ingredient
+        facts:
+          ingredient_code: FLR-01
+          ingredient_name: Wheat flour
+          ingredient_unit: kg
+          ingredient_category: cat:cat_dry
+          ingredient_supplier: cat:sup_mill
+      - uri: cat:ing_sugar
+        class: Ingredient
+        facts:
+          ingredient_code: SGR-01
+          ingredient_name: Caster sugar
+          ingredient_unit: kg
+          ingredient_category: cat:cat_dry
+          ingredient_supplier: cat:sup_mill
+      - uri: cat:ing_salt
+        class: Ingredient
+        facts:
+          ingredient_code: SLT-01
+          ingredient_name: Fine salt
+          ingredient_unit: kg
+          ingredient_category: cat:cat_dry
+          ingredient_supplier: cat:sup_mill
+      - uri: cat:ing_yeast
+        class: Ingredient
+        facts:
+          ingredient_code: YST-01
+          ingredient_name: Dry yeast
+          ingredient_unit: kg
+          ingredient_category: cat:cat_dry
+          ingredient_supplier: cat:sup_mill
+      - uri: cat:ing_butter
+        class: Ingredient
+        facts:
+          ingredient_code: BTR-01
+          ingredient_name: Unsalted butter
+          ingredient_unit: kg
+          ingredient_category: cat:cat_dairy
+          ingredient_supplier: cat:sup_coop
+      - uri: cat:ing_milk
+        class: Ingredient
+        facts:
+          ingredient_code: MLK-01
+          ingredient_name: Whole milk
+          ingredient_unit: l
+          ingredient_category: cat:cat_dairy
+          ingredient_supplier: cat:sup_coop
+      - uri: cat:ing_egg
+        class: Ingredient
+        facts:
+          ingredient_code: EGG-01
+          ingredient_name: Eggs
+          ingredient_unit: pcs
+          ingredient_category: cat:cat_dairy
+          ingredient_supplier: cat:sup_coop
+      - uri: cat:ing_box
+        class: Ingredient
+        facts:
+          ingredient_code: BOX-01
+          ingredient_name: Pastry box
+          ingredient_unit: pcs
+          ingredient_category: cat:cat_packaging
+          ingredient_supplier: cat:sup_paper
+
+  - action: add_locations
+    actor: rina
+    valid_from: '2026-01-22T00:00:00+00:00'
+    occurred_at: '2026-01-22T10:30:00+00:00'
+    recorded_at: '2026-01-22T10:30:00+00:00'
+    entities:
+      - uri: inv:loc_store
+        class: Location
+        facts: {location_code: STORE, location_label: Dry store}
+      - uri: inv:loc_chill
+        class: Location
+        facts: {location_code: CHILL, location_label: Chiller}
+
+  - action: set_reorder_levels
+    actor: rina
+    valid_from: '2026-04-15T00:00:00+00:00'
+    occurred_at: '2026-04-15T16:00:00+00:00'
+    recorded_at: '2026-04-15T16:00:00+00:00'
+    note: A judgement, not a measurement. Four of the eight get a level; the other four are left alone, and their cell stays empty rather than becoming nought.
+    entities:
+      - uri: cat:ing_flour
+        facts: {ingredient_reorder_level: 40}
+      - uri: cat:ing_sugar
+        facts: {ingredient_reorder_level: 20}
+      - uri: cat:ing_butter
+        facts: {ingredient_reorder_level: 10}
+      - uri: cat:ing_milk
+        facts: {ingredient_reorder_level: 15}
+
+  - action: record_delivery
+    actor: joko
+    valid_from: '2026-06-02T00:00:00+00:00'
+    occurred_at: '2026-06-02T07:30:00+00:00'
+    recorded_at: '2026-06-02T07:30:00+00:00'
+    note: Dry goods in.
+    entities:
+      - uri: inv:mv_0001
+        class: StockMovement
+        facts: {movement_code: MV-0001, movement_ingredient: cat:ing_flour, movement_location: inv:loc_store, movement_quantity: 50, movement_happened_on: '2026-06-02', movement_reason: delivery}
+      - uri: inv:mv_0002
+        class: StockMovement
+        facts: {movement_code: MV-0002, movement_ingredient: cat:ing_sugar, movement_location: inv:loc_store, movement_quantity: 25, movement_happened_on: '2026-06-02', movement_reason: delivery}
+      - uri: inv:mv_0003
+        class: StockMovement
+        facts: {movement_code: MV-0003, movement_ingredient: cat:ing_salt, movement_location: inv:loc_store, movement_quantity: 5, movement_happened_on: '2026-06-02', movement_reason: delivery}
+      - uri: inv:mv_0004
+        class: StockMovement
+        facts: {movement_code: MV-0004, movement_ingredient: cat:ing_yeast, movement_location: inv:loc_store, movement_quantity: 2, movement_happened_on: '2026-06-02', movement_reason: delivery}
+
+  - action: record_delivery
+    actor: joko
+    valid_from: '2026-06-03T00:00:00+00:00'
+    occurred_at: '2026-06-03T07:15:00+00:00'
+    recorded_at: '2026-06-03T07:15:00+00:00'
+    note: Chilled goods in.
+    entities:
+      - uri: inv:mv_0005
+        class: StockMovement
+        facts: {movement_code: MV-0005, movement_ingredient: cat:ing_butter, movement_location: inv:loc_chill, movement_quantity: 20, movement_happened_on: '2026-06-03', movement_reason: delivery}
+      - uri: inv:mv_0006
+        class: StockMovement
+        facts: {movement_code: MV-0006, movement_ingredient: cat:ing_milk, movement_location: inv:loc_chill, movement_quantity: 40, movement_happened_on: '2026-06-03', movement_reason: delivery}
+      - uri: inv:mv_0007
+        class: StockMovement
+        facts: {movement_code: MV-0007, movement_ingredient: cat:ing_egg, movement_location: inv:loc_chill, movement_quantity: 300, movement_happened_on: '2026-06-03', movement_reason: delivery}
+
+  - action: record_delivery
+    actor: joko
+    valid_from: '2026-06-04T00:00:00+00:00'
+    occurred_at: '2026-06-04T08:00:00+00:00'
+    recorded_at: '2026-06-04T08:00:00+00:00'
+    entities:
+      - uri: inv:mv_0008
+        class: StockMovement
+        facts: {movement_code: MV-0008, movement_ingredient: cat:ing_box, movement_location: inv:loc_store, movement_quantity: 500, movement_happened_on: '2026-06-04', movement_reason: delivery}
+
+  - action: record_usage
+    actor: joko
+    valid_from: '2026-06-08T00:00:00+00:00'
+    occurred_at: '2026-06-08T18:00:00+00:00'
+    recorded_at: '2026-06-08T18:00:00+00:00'
+    note: What the first week of baking used. Out is negative, in the ingredient's own unit.
+    entities:
+      - uri: inv:mv_0009
+        class: StockMovement
+        facts: {movement_code: MV-0009, movement_ingredient: cat:ing_flour, movement_location: inv:loc_store, movement_quantity: -18, movement_happened_on: '2026-06-08', movement_reason: production}
+      - uri: inv:mv_0010
+        class: StockMovement
+        facts: {movement_code: MV-0010, movement_ingredient: cat:ing_sugar, movement_location: inv:loc_store, movement_quantity: -6, movement_happened_on: '2026-06-08', movement_reason: production}
+      - uri: inv:mv_0011
+        class: StockMovement
+        facts: {movement_code: MV-0011, movement_ingredient: cat:ing_butter, movement_location: inv:loc_chill, movement_quantity: -7, movement_happened_on: '2026-06-08', movement_reason: production}
+      - uri: inv:mv_0012
+        class: StockMovement
+        facts: {movement_code: MV-0012, movement_ingredient: cat:ing_milk, movement_location: inv:loc_chill, movement_quantity: -12, movement_happened_on: '2026-06-08', movement_reason: production}
+      - uri: inv:mv_0013
+        class: StockMovement
+        facts: {movement_code: MV-0013, movement_ingredient: cat:ing_egg, movement_location: inv:loc_chill, movement_quantity: -90, movement_happened_on: '2026-06-08', movement_reason: production}
+      - uri: inv:mv_0014
+        class: StockMovement
+        facts: {movement_code: MV-0014, movement_ingredient: cat:ing_box, movement_location: inv:loc_store, movement_quantity: -140, movement_happened_on: '2026-06-08', movement_reason: production}
+
+  - action: record_usage
+    actor: joko
+    valid_from: '2026-06-15T00:00:00+00:00'
+    occurred_at: '2026-06-15T18:00:00+00:00'
+    recorded_at: '2026-06-15T18:00:00+00:00'
+    entities:
+      - uri: inv:mv_0015
+        class: StockMovement
+        facts: {movement_code: MV-0015, movement_ingredient: cat:ing_flour, movement_location: inv:loc_store, movement_quantity: -21, movement_happened_on: '2026-06-15', movement_reason: production}
+      - uri: inv:mv_0016
+        class: StockMovement
+        facts: {movement_code: MV-0016, movement_ingredient: cat:ing_sugar, movement_location: inv:loc_store, movement_quantity: -7, movement_happened_on: '2026-06-15', movement_reason: production}
+      - uri: inv:mv_0017
+        class: StockMovement
+        facts: {movement_code: MV-0017, movement_ingredient: cat:ing_butter, movement_location: inv:loc_chill, movement_quantity: -8, movement_happened_on: '2026-06-15', movement_reason: production}
+      - uri: inv:mv_0018
+        class: StockMovement
+        facts: {movement_code: MV-0018, movement_ingredient: cat:ing_milk, movement_location: inv:loc_chill, movement_quantity: -14, movement_happened_on: '2026-06-15', movement_reason: production}
+      - uri: inv:mv_0019
+        class: StockMovement
+        facts: {movement_code: MV-0019, movement_ingredient: cat:ing_egg, movement_location: inv:loc_chill, movement_quantity: -110, movement_happened_on: '2026-06-15', movement_reason: production}
+      - uri: inv:mv_0020
+        class: StockMovement
+        facts: {movement_code: MV-0020, movement_ingredient: cat:ing_box, movement_location: inv:loc_store, movement_quantity: -160, movement_happened_on: '2026-06-15', movement_reason: production}
+
+  - action: record_waste
+    actor: joko
+    valid_from: '2026-06-16T00:00:00+00:00'
+    occurred_at: '2026-06-16T08:00:00+00:00'
+    recorded_at: '2026-06-16T08:00:00+00:00'
+    note: Milk left out overnight.
+    entities:
+      - uri: inv:mv_0021
+        class: StockMovement
+        facts: {movement_code: MV-0021, movement_ingredient: cat:ing_milk, movement_location: inv:loc_chill, movement_quantity: -5, movement_happened_on: '2026-06-16', movement_reason: spoiled}
+
+  - action: record_restock
+    actor: joko
+    valid_from: '2026-06-22T00:00:00+00:00'
+    occurred_at: '2026-06-22T07:30:00+00:00'
+    recorded_at: '2026-06-22T07:30:00+00:00'
+    entities:
+      - uri: inv:mv_0023
+        class: StockMovement
+        facts: {movement_code: MV-0023, movement_ingredient: cat:ing_flour, movement_location: inv:loc_store, movement_quantity: 50, movement_happened_on: '2026-06-22', movement_reason: delivery}
+      - uri: inv:mv_0024
+        class: StockMovement
+        facts: {movement_code: MV-0024, movement_ingredient: cat:ing_sugar, movement_location: inv:loc_store, movement_quantity: 25, movement_happened_on: '2026-06-22', movement_reason: delivery}
+
+  - action: record_delivery
+    actor: rina
+    valid_from: '2026-06-12T00:00:00+00:00'
+    occurred_at: '2026-07-10T11:00:00+00:00'
+    recorded_at: '2026-07-10T11:00:00+00:00'
+    note: A delivery note for 12 June, found in July. It was always true of the world; the log only learns it now, so it lands under June on one clock and under July on the other.
+    entities:
+      - uri: inv:mv_0022
+        class: StockMovement
+        facts: {movement_code: MV-0022, movement_ingredient: cat:ing_flour, movement_location: inv:loc_store, movement_quantity: 25, movement_happened_on: '2026-06-12', movement_reason: delivery}
+
+  - action: set_reorder_levels
+    actor: rina
+    valid_from: '2026-07-01T00:00:00+00:00'
+    occurred_at: '2026-07-01T09:00:00+00:00'
+    recorded_at: '2026-07-01T09:00:00+00:00'
+    note: Flour goes up from 40 to 60 for the busy season. The old level is not edited and not wrong; it is what stood until 1 July.
+    entities:
+      - uri: cat:ing_flour
+        facts: {ingredient_reorder_level: 60}

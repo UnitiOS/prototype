@@ -1,0 +1,30 @@
+Transcript, @demo/stock v1.
+
+Demonstration content.
+
+This module exists to test one claim: that an application is nothing but a set
+of pinned modules plus the tables somebody wants, and that the compiler can
+read the lot as one map.
+
+So it deliberately declares no class anybody could state a fact about. It has
+no `entity_class` anywhere, nothing in the log can ever say an entity is an
+IngredientStock, and that is correct — an IngredientStock is not a thing in
+the world, it is an answer.
+
+The three derived columns are three different kinds of derivation on purpose:
+
+  quantity_on_hand   an aggregate over a class this module does not own.
+                     The movements are @demo/inventory's. The grouping value
+                     is whatever `inv:movement_ingredient` points at, which is
+                     an entity @demo/catalog describes. Three modules, one
+                     number, joined by nothing but the predicate URIs in the
+                     one registry.
+
+  reorder_level      a parameter: not computed from the rows at all, but one
+                     fact the log holds about the entity the key names. Set by
+                     a person, in @demo/catalog's vocabulary.
+
+  headroom           arithmetic over the two columns beside it.
+
+If the number is wrong, the fault is in the log or in one of these three rules,
+and both are readable.

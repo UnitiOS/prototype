@@ -1,0 +1,65 @@
+id: https://uniti.example/inventory
+name: demo_inventory
+title: Inventory
+description: >-
+  Demonstration data. What happened to the ingredients @demo/catalog names:
+  a quantity arriving or leaving, at a place, on a day. Every movement is one
+  event and is never edited; a correction is another movement.
+prefixes:
+  linkml: https://w3id.org/linkml/
+  uniti: https://w3id.org/uniti/core#
+  inv: https://uniti.example/inventory/
+default_prefix: inv
+default_range: string
+imports:
+  - linkml:types
+  - "@uniti/core@v1"
+  - "@demo/catalog@v1"
+classes:
+  Location:
+    description: A place where ingredients are kept.
+    slots:
+      - entity_class
+      - location_code
+      - location_label
+  StockMovement:
+    description: >-
+      A quantity of one ingredient arriving or leaving. Positive is in,
+      negative is out, in the ingredient's own unit.
+    slots:
+      - entity_class
+      - movement_code
+      - movement_ingredient
+      - movement_location
+      - movement_quantity
+      - movement_happened_on
+slots:
+  location_code:
+    slot_uri: inv:location_code
+    identifier: true
+  location_label:
+    title: Location
+    slot_uri: inv:location_label
+  movement_code:
+    slot_uri: inv:movement_code
+    identifier: true
+  movement_ingredient:
+    title: Ingredient
+    slot_uri: inv:movement_ingredient
+    range: Ingredient
+  movement_location:
+    title: Location
+    slot_uri: inv:movement_location
+    range: Location
+  movement_quantity:
+    title: Quantity
+    slot_uri: inv:movement_quantity
+    range: decimal
+    description: Signed, in the ingredient's unit. In is positive, out is negative.
+  movement_happened_on:
+    title: Happened on
+    slot_uri: inv:movement_happened_on
+    range: date
+annotations:
+  valid_from: '2026-02-01T00:00:00+00:00'
+  transcript: v1.draft.txt

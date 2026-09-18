@@ -459,6 +459,7 @@ def seal(conn, draft_path, *, actor_id, into=None, sealed_at=None, store=None):
         agent_id="seal",
         action_name="seal_version",
         ontology_version=_label(store, into, version),
+        reason_code=_purpose(store, into),
         note=f"sealed {draft_path.name} as {version}",
         mint=minting,
         assertions=assertions,
@@ -500,6 +501,17 @@ def _label(store, directory, version):
     """How the kernel names a version: `@scope/name@vN` for a module, else `vN`."""
     module = store.module_of(directory) if store is not None else None
     return f"{module}@{version}" if module else version
+
+
+def _purpose(store, directory):
+    """What the module's manifest says its content is for, or None.
+
+    It becomes the intent's `reason_code`, so that a log holding made-up
+    content says so on every row it was written by, and nobody has to know
+    which module names are fixtures to find out.
+    """
+    module = store.module_of(directory) if store is not None else None
+    return store.purpose(module) if module else None
 
 
 def register(conn, version_path, *, actor_id, recorded_at=None, store=None):
@@ -585,6 +597,7 @@ def register(conn, version_path, *, actor_id, recorded_at=None, store=None):
         agent_id="seal",
         action_name="register_version",
         ontology_version=_label(store, version_path.parent, version),
+        reason_code=_purpose(store, version_path.parent),
         note=f"registered the URIs {version_path.name} names",
         mint=minting,
         assertions=assertions,

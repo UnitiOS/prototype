@@ -207,6 +207,7 @@ export function ActionList({ selected, open }: { selected: string | null; open: 
               <span>
                 {i.action_name.replace(/_/g, " ")}
                 {i.ontology_version && <span className="id under"> {i.ontology_version}</span>}
+                {i.reason_code && <span className="badge badge-demo">{i.reason_code}</span>}
               </span>
               <span className="quiet">
                 {day(i.occurred_at)}, {i.actor_id}, {i.assertions} {i.assertions === 1 ? "statement" : "statements"}

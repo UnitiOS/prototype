@@ -41,6 +41,7 @@ def modules(store):
         out.append({
             "name": name,
             "title": manifest.get("title"),
+            "purpose": manifest.get("purpose"),
             "description": manifest.get("description"),
             "versions": versions,
             "latest": versions[-1]["version"] if versions else None,
@@ -56,6 +57,7 @@ def graph(store):
         for v in module["versions"]:
             nodes.append({**_pin(module["name"], v["version"]),
                           "latest": v["version"] == module["latest"],
+                          "purpose": module["purpose"],
                           "sealed_at": v["sealed_at"]})
             for pin in v["imports"]:
                 edges.append({"from": _pin(module["name"], v["version"]), "to": pin, "kind": "imports"})
@@ -66,10 +68,28 @@ def graph(store):
 
 
 def _rule(slot):
+    """What kind of rule a slot declares, or None where it is simply stated."""
+    spec = rule_of(slot)
+    return spec["kind"] if spec else None
+
+
+def rule_of(slot):
+    """The rule a slot declares, unwrapped from LinkML's annotation envelope.
+
+    An annotation body arrives as `{"value": {...}}` because that is how the
+    metamodel carries a structured annotation. A reader wants what is inside,
+    and so does anything explaining a column to a person.
+    """
     if slot.get("equals_expression"):
-        return "expression"
+        return {"kind": "expression", "expression": str(slot["equals_expression"])}
     annotations = slot.get("annotations") or {}
-    return next((r for r in RULES if r in annotations), None)
+    for kind in RULES:
+        if kind in annotations:
+            body = annotations[kind]
+            if isinstance(body, dict) and set(body) == {"value"}:
+                body = body["value"]
+            return {"kind": kind, "spec": body if isinstance(body, dict) else {}}
+    return None
 
 
 def version(store, name, version, registered=None):
@@ -97,7 +117,9 @@ def version(store, name, version, registered=None):
                 "name": slot_name, "slot_uri": s.get("slot_uri"), "range": s.get("range"),
                 "identifier": bool(s.get("identifier")), "required": bool(s.get("required")),
                 "designates_type": bool(s.get("designates_type")),
-                "rule": _rule(s), "description": s.get("description"), "from": origin,
+                "rule": _rule(s), "rule_spec": rule_of(s),
+                "title": str(s["title"]) if s.get("title") else slot_name,
+                "description": s.get("description"), "from": origin,
                 "registered": (s.get("slot_uri") in registered) if registered is not None else None,
             }
 
@@ -116,6 +138,7 @@ def version(store, name, version, registered=None):
         "name": name,
         "version": version,
         "title": document.get("title"),
+        "purpose": store.manifest(name).get("purpose"),
         "description": document.get("description"),
         "valid_from": held["valid_from"],
         "sealed_at": held["sealed_at"],
@@ -130,6 +153,92 @@ def version(store, name, version, registered=None):
     }
 
 
+def class_graph(store, name, version):
+    """Every class one version can see, and what joins them, across its modules.
+
+    The timeline answers *when* — which version was sealed before which, and
+    what each one pins. This answers *what is connected to what*, which is the
+    question a pin is actually about: a module pins another one so that its own
+    classes can point at that one's classes.
+
+    Four kinds of join, and they are not the same kind of thing:
+
+        is_a        a class is a kind of another class.
+        reference   a slot's value names an entity of another class. This is
+                    the ordinary edge, and it crosses a module boundary
+                    wherever a pinned module's class is the range.
+        aggregate   a derived column reads every entity of another class and
+                    totals one of its slots. The arrow runs to where the rows
+                    come from.
+        parameter   a derived column reads one fact off the entity a key names.
+
+    Nothing here is computed from the log. It is what the sealed versions say,
+    read in the same closure order the compiler reads them in.
+    """
+    store.path(name, version)
+    closure = store.closure(name, version)
+
+    classes, slots = {}, {}
+    for dep in closure:
+        document = store.document(*dep)
+        origin = _pin(*dep)
+        for class_name, c in (document.get("classes") or {}).items():
+            classes[class_name] = {**(c or {}), "module": origin}
+        for slot_name, s in (document.get("slots") or {}).items():
+            slots[slot_name] = {**(s or {}), "module": origin}
+
+    def shape(class_name):
+        """What kind of table this class would be, by the compiler's own rule."""
+        own = classes[class_name].get("slots") or []
+        if any((slots.get(s) or {}) and _rule(slots[s]) == "aggregate" for s in own):
+            return "derived"
+        if any(bool((slots.get(s) or {}).get("designates_type")) for s in own):
+            return "stated"
+        return "unstatable"
+
+    nodes = [{
+        "name": class_name,
+        "module": classes[class_name]["module"],
+        "is_a": classes[class_name].get("is_a"),
+        "description": classes[class_name].get("description"),
+        "shape": shape(class_name),
+        "slots": list(classes[class_name].get("slots") or []),
+    } for class_name in sorted(classes)]
+
+    edges = []
+
+    def edge(source, target, kind, label):
+        if target in classes:
+            edges.append({"from": source, "to": target, "kind": kind, "label": label})
+
+    for class_name in sorted(classes):
+        parent = classes[class_name].get("is_a")
+        if parent:
+            edge(class_name, str(parent), "is_a", "is a")
+        for slot_name in classes[class_name].get("slots") or []:
+            slot = slots.get(slot_name)
+            if slot is None:
+                continue
+            rule = rule_of(slot)
+            kind = rule["kind"] if rule else None
+            if kind == "aggregate":
+                edge(class_name, str(rule["spec"].get("over") or ""), "aggregate", slot_name)
+            elif kind == "parameter":
+                key = slots.get(str(rule["spec"].get("of") or ""))
+                edge(class_name, str((key or {}).get("range") or ""), "parameter", slot_name)
+            elif slot.get("range"):
+                edge(class_name, str(slot["range"]), "reference", slot_name)
+
+    return {
+        "name": name,
+        "version": version,
+        "modules": [{**_pin(*pin), "purpose": store.manifest(pin[0]).get("purpose"),
+                     "title": store.manifest(pin[0]).get("title")} for pin in closure],
+        "nodes": nodes,
+        "edges": edges,
+    }
+
+
 def compare(store, name, older, newer):
     for v in (older, newer):
         store.path(name, v)
@@ -137,4 +246,4 @@ def compare(store, name, older, newer):
             "diff": _diff.compare(store.document(name, older), store.document(name, newer))}
 
 
-__all__ = ["modules", "graph", "version", "compare", "ModuleError"]
+__all__ = ["modules", "graph", "version", "class_graph", "compare", "ModuleError"]

@@ -30,7 +30,7 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT / "components" / "kernel"))
 sys.path.insert(0, str(ROOT / "components" / "provenance"))
 
-from components.api import kernel  # noqa: E402
+from components.api import application, kernel  # noqa: E402
 from components.modules import read as modules_read  # noqa: E402
 from components.modules.store import ModuleError, Store  # noqa: E402
 from perform import connect  # noqa: E402
@@ -164,6 +164,36 @@ async def module_diff(request: Request):
                     _required(request, "from"), _required(request, "to"))
 
 
+async def module_classes(request: Request):
+    return _modules(modules_read.class_graph, _required(request, "name"),
+                    _required(request, "version"))
+
+
+def _application(fn, *args, **kwargs):
+    try:
+        return JSON(fn(Store.from_env(), *args, **kwargs))
+    except ModuleError as exc:
+        raise HTTPException(404, str(exc))
+    except application.MapError as exc:
+        raise HTTPException(400, str(exc))
+
+
+async def app_read(request: Request):
+    return _application(application.application, _required(request, "name"),
+                        _required(request, "version"))
+
+
+async def app_projection(request: Request):
+    """One table of the application, derived now, at the clocks in the URL."""
+    name = _required(request, "name")
+    version = _required(request, "version")
+    class_name = _required(request, "class")
+    clocks = _clocks(request)
+    with connect(os.environ.get("UNITI_DSN"), connect_timeout=3) as conn:
+        return _application(lambda store: application.projection(
+            conn, store, name, version, class_name, **clocks))
+
+
 async def _error(request: Request, exc: HTTPException):
     return JSON({"error": exc.detail}, status_code=exc.status_code)
 
@@ -180,6 +210,9 @@ routes = [
     Route("/api/modules/graph", modules_graph),
     Route("/api/modules/version", module_version),
     Route("/api/modules/diff", module_diff),
+    Route("/api/modules/classes", module_classes),
+    Route("/api/app", app_read),
+    Route("/api/app/projection", app_projection),
 ]
 if DIST.is_dir():
     routes.append(Mount("/", StaticFiles(directory=DIST, html=True)))

@@ -1,0 +1,15 @@
+Transcript, @demo/inventory v1.
+
+Demonstration content.
+
+This module pins @demo/catalog@v1 and says nothing about what an ingredient
+is; it only points at one. That is the whole of the composition claim: the
+predicate `cat:ingredient_label` belongs to the catalog, `inv:movement_quantity`
+belongs here, and a reader that holds both sees one graph.
+
+The quantity is signed rather than paired with an in/out word, so that the
+arithmetic anybody wants — how much is here — is a sum and not a case
+analysis. Whether that survives contact with returns and corrections is a
+question for a later version.
+
+No level, no total, no "on hand" here. This module states what happened.

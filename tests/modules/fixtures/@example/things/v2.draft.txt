@@ -1,2 +1,0 @@
-Fixture transcript. The second version: the label is called a name now, a thing
-has a size, and things can be grouped.

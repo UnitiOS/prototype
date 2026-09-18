@@ -45,7 +45,10 @@ export function ModulesPage({ pick, onPick }: { pick: ModulePick; onPick: (next:
           <ul>
             {list.data?.map((m) => (
               <li key={m.name} className="module-row">
-                <span className="id">{m.name}</span>
+                <span className="id">
+                  {m.name}
+                  {m.purpose && <span className="badge badge-demo">{m.purpose}</span>}
+                </span>
                 <span className="versions">
                   {m.versions.map((v) => {
                     const on = selected && selected.name === m.name && selected.version === v.version;
@@ -89,7 +92,10 @@ function VersionView({ pin, compare, onPick }: { pin: Pin; compare: string | nul
   return (
     <article className="detail">
       <header className="detail-head">
-        <h2><span className="id">{v.name}</span> {v.version}</h2>
+        <h2>
+          <span className="id">{v.name}</span> {v.version}
+          {v.purpose && <span className="badge badge-demo">{v.purpose}</span>}
+        </h2>
         <p className="quiet">
           Sealed {instant(v.sealed_at)}. In effect from {day(v.valid_from)}.
           {v.supersedes ? ` Supersedes ${v.supersedes}.` : " The first version."}

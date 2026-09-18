@@ -1,0 +1,9 @@
+name: "@demo/catalog"
+title: Catalog
+purpose: demonstration
+description: >-
+  Demonstration data, not real content. What a small bakery buys and keeps:
+  ingredients, the category each one falls in, and who supplies it. It is here
+  so the mechanisms have something life-sized to work on, and it is marked
+  `purpose: demonstration` so every reader — the module explorer and the kernel
+  log alike — says so.

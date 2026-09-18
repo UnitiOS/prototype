@@ -93,9 +93,11 @@ export function ModuleTimeline({ graph, selected, onSelect }: Props) {
         {layout.lanes.map((name) => {
           const versions = graph.nodes.filter((n) => n.name === name);
           const xs = versions.map(x);
+          const purpose = versions.find((v) => v.purpose)?.purpose;
           return (
             <g key={name}>
-              <text className="tl-lane-name" x={16} y={y(name) + 4}>{name}</text>
+              <text className="tl-lane-name" x={16} y={y(name) + (purpose ? -2 : 4)}>{name}</text>
+              {purpose && <text className="tl-lane-purpose" x={16} y={y(name) + 12}>{purpose}</text>}
               <line className="tl-lane" x1={Math.min(...xs)} x2={Math.max(...xs)} y1={y(name)} y2={y(name)} />
             </g>
           );

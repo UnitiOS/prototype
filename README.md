@@ -33,11 +33,23 @@ Needs Docker, Python 3.12 and Node 22.
 make check    # database, kernel schema, tests, and a byte-identical replay
 make test     # tests only
 
-make dev-db   # an empty development log (uniti_dev), then two example modules sealed into it
-make web      # build the application
-make app      # API and application on http://localhost:8200
-make web-dev  # frontend with live reload on http://localhost:5173 (needs `make app`)
+make dev-db      # an empty development log (uniti_dev), then the demonstration
+                 # modules sealed into it and the facts stated under them
+make dev-compile # every table the demonstration application can fill, into
+                 # an operational store of its own (uniti_dev_ops)
+make web         # build the application
+make app         # API and application on http://localhost:8200
+make web-dev     # frontend with live reload on http://localhost:5173 (needs `make app`)
 ```
 
 Tests run against throwaway databases (`uniti_check`, `uniti_check_ops`) and
 refuse to run against any other.
+
+## The demonstration content
+
+Everything in `tests/modules/fixtures/` is made up. Three modules — `@demo/catalog`,
+`@demo/inventory` and `@demo/stock` — and the facts stated under them exist so the
+mechanisms have something life-sized to run on. Each manifest declares
+`purpose: demonstration`, and that word is carried onto every intent that writes
+one of them, so the kernel says of itself which of its rows are a demonstration.
+No component names any of it: the domain lives in the fixtures alone.

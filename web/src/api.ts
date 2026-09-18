@@ -103,12 +103,12 @@ export interface ModuleVersionRow {
 }
 
 export interface ModuleRow {
-  name: string; title: string | null; description: string | null;
+  name: string; title: string | null; purpose: string | null; description: string | null;
   versions: ModuleVersionRow[]; latest: string | null; draft: boolean;
 }
 
 export interface ModuleGraph {
-  nodes: (Pin & { latest: boolean; sealed_at: string })[];
+  nodes: (Pin & { latest: boolean; purpose: string | null; sealed_at: string })[];
   edges: { from: Pin; to: Pin; kind: "imports" | "supersedes" }[];
 }
 
@@ -120,11 +120,19 @@ export interface SlotItem {
   name: string; slot_uri: string | null; range: string | null;
   identifier: boolean; required: boolean; designates_type: boolean;
   rule: "aggregate" | "parameter" | "expression" | null;
-  description: string | null; from: Pin; registered: boolean | null;
+  rule_spec: RuleSpec | null;
+  title: string; description: string | null; from: Pin; registered: boolean | null;
+}
+
+export interface RuleSpec {
+  kind: "aggregate" | "parameter" | "expression";
+  expression?: string;
+  spec?: Record<string, unknown>;
 }
 
 export interface ModuleVersion {
-  name: string; version: string; title: string | null; description: string | null;
+  name: string; version: string; title: string | null;
+  purpose: string | null; description: string | null;
   valid_from: string; sealed_at: string; supersedes: string | null; latest: string | null;
   imports: (Pin & { latest: string | null })[]; imported_by: Pin[]; closure: Pin[];
   classes: ClassItem[]; slots: SlotItem[]; transcript: string | null;
@@ -148,9 +156,65 @@ export interface ModuleDiff {
   };
 }
 
+export interface ClassNode {
+  name: string; module: Pin; is_a: string | null;
+  description: string | null; shape: "derived" | "stated" | "unstatable"; slots: string[];
+}
+
+export interface ClassEdge {
+  from: string; to: string;
+  kind: "is_a" | "reference" | "aggregate" | "parameter"; label: string;
+}
+
+export interface ClassGraph {
+  name: string; version: string;
+  modules: (Pin & { purpose: string | null; title: string | null })[];
+  nodes: ClassNode[]; edges: ClassEdge[];
+}
+
 export const modulesApi = {
   list: () => get<ModuleRow[]>("/api/modules"),
   graph: () => get<ModuleGraph>("/api/modules/graph"),
   version: (name: string, version: string) => get<ModuleVersion>("/api/modules/version", { name, version }),
   diff: (name: string, from: string, to: string) => get<ModuleDiff>("/api/modules/diff", { name, from, to }),
+  classes: (name: string, version: string) => get<ClassGraph>("/api/modules/classes", { name, version }),
+};
+
+// ------------------------------------------------------------ applications
+
+export interface TableRow {
+  class: string; table: string; shape: "grouped" | "entities";
+  module: Pin | null; columns: number;
+}
+
+export interface Application {
+  name: string; version: string; title: string | null;
+  purpose: string | null; description: string | null;
+  modules: (Pin & { purpose: string | null })[];
+  tables: TableRow[];
+}
+
+export interface ColumnRule {
+  kind: "aggregate" | "parameter" | "expression";
+  operator?: string; over?: string; measure?: string; by?: Record<string, string>;
+  of?: string; slot_uri?: string; expression?: string;
+}
+
+export interface Column {
+  name: string; title: string; type: string;
+  kind: "identity" | "key" | "stated" | "aggregate" | "parameter" | "expression" | "unfilled";
+  description: string; module: Pin | null; rule: ColumnRule | null;
+}
+
+export interface Projection {
+  name: string; version: string; class: string; table: string;
+  shape: "grouped" | "entities"; keys: string[];
+  columns: Column[]; rows: (string | null)[][]; sql: string;
+  valid_at: string; as_of: string;
+}
+
+export const appApi = {
+  read: (name: string, version: string) => get<Application>("/api/app", { name, version }),
+  projection: (name: string, version: string, klass: string, c: Clocks) =>
+    get<Projection>("/api/app/projection", { name, version, class: klass, ...clockParams(c) }),
 };

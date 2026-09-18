@@ -1,0 +1,72 @@
+id: https://uniti.example/inventory
+name: demo_inventory
+title: Inventory
+description: >-
+  Demonstration data. What happened to the ingredients @demo/catalog names.
+  This version moves its pin to the catalog's v2 and records why a movement
+  happened.
+prefixes:
+  linkml: https://w3id.org/linkml/
+  uniti: https://w3id.org/uniti/core#
+  inv: https://uniti.example/inventory/
+default_prefix: inv
+default_range: string
+imports:
+  - linkml:types
+  - "@uniti/core@v1"
+  - "@demo/catalog@v2"
+classes:
+  Location:
+    description: A place where ingredients are kept.
+    slots:
+      - entity_class
+      - location_code
+      - location_label
+  StockMovement:
+    description: >-
+      A quantity of one ingredient arriving or leaving. Positive is in,
+      negative is out, in the ingredient's own unit.
+    slots:
+      - entity_class
+      - movement_code
+      - movement_ingredient
+      - movement_location
+      - movement_quantity
+      - movement_happened_on
+      - movement_reason
+slots:
+  location_code:
+    slot_uri: inv:location_code
+    identifier: true
+  location_label:
+    title: Location
+    slot_uri: inv:location_label
+  movement_code:
+    slot_uri: inv:movement_code
+    identifier: true
+  movement_ingredient:
+    title: Ingredient
+    slot_uri: inv:movement_ingredient
+    range: Ingredient
+  movement_location:
+    title: Location
+    slot_uri: inv:movement_location
+    range: Location
+  movement_quantity:
+    title: Quantity
+    slot_uri: inv:movement_quantity
+    range: decimal
+    description: Signed, in the ingredient's unit. In is positive, out is negative.
+  movement_happened_on:
+    title: Happened on
+    slot_uri: inv:movement_happened_on
+    range: date
+  movement_reason:
+    title: Reason
+    slot_uri: inv:movement_reason
+    description: >-
+      Why this movement happened, in the words of whoever recorded it. Read by
+      nobody yet: it is here to be read, not to be computed on.
+annotations:
+  valid_from: '2026-05-01T00:00:00+00:00'
+  transcript: v2.draft.txt
