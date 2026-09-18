@@ -317,7 +317,7 @@ menghitung lintas modul.
 | ~~2~~ | ~~Isi `ontology_version` pada assertion di dunia modular~~ | **dijawab di irisan 2** | **Versi aplikasi.** Lihat keputusan di bawah. |
 | 3 | Isi `@uniti/core` | irisan 2.5 | **Peran, bukan kamus istilah.** Ukurannya terikat pada jumlah eksekutor, bukan jumlah domain: ~30 deklarasi saat dewasa. Rumus, tiga lapis (`core` / `@uniti/*` / ekosistem), dan aturan pertumbuhannya di `DESIGN_NOTES.md` §4. |
 | 4 | Penyedia LLM untuk agent | irisan 4 | — |
-| 5 | Koherensi: dua modul mengisi peran yang sama → hitung ganda | irisan 2.5 | `DESIGN_NOTES.md` §10.3. Harus dijawab sebelum ada yang rugi. |
+| ~~5~~ | ~~Koherensi: dua modul mengisi peran yang sama~~ | **dijawab di irisan 2.5** | **Slot: tepat satu per kelas, kalau tidak ditolak** — ambiguitas di dalam satu kelas tidak bisa dipecahkan siapa pun selain penulisnya. **Kelas: berapa pun, semuanya ikut, dan rencananya menyebut yang mana** — gabungan itu bermakna (dua gudang, dua modul), dan sebuah subjek hanya anggota satu kelas sehingga tidak ada baris yang terhitung dua kali. Yang tersisa adalah bahaya *data*: satu peristiwa dinyatakan dua kali di bawah dua kosakata. Itu soal penyelarasan, bukan skema. |
 | 6 | Satuan, dan waktu yang punya dua sumber tanpa penjaga | sesudah 2.5 | `DESIGN_NOTES.md` §10.4–10.5 |
 
 ---
@@ -357,6 +357,23 @@ menghitung lintas modul.
 - **`slot_uri` tidak diwariskan dari slot induk** — terverifikasi. Itu yang
   membuat peran tidak pernah sampai ke kernel: log selamanya hanya berisi predikat
   konkret, jadi mengubah peran tidak membatalkan satu pun pernyataan.
+- **Pindah ke peran tidak menulis satu pun assertion.** `@demo/catalog@v3` dan
+  `@demo/inventory@v3` menyatakan kelasnya mengisi peran apa, dan kernel tidak
+  perlu tahu: tidak ada predikat baru, tidak ada yang berubah. Itu properti yang
+  membuat pengikatan ulang fakta yatim mungkin, dan sekarang ada test-nya.
+- **Laporan kecocokan versi pertama membandingkan hal yang salah.** Ia merencanakan
+  tiap versi di closure-nya sendiri, jadi dua rencana yang sama-sama benar terlihat
+  cocok — termasuk `@demo/stock@v1` yang sebenarnya tidak bisa pindah sama sekali.
+  Pertanyaannya adalah "aturan **saya**, modul **mereka**", jadi `fit` sekarang
+  membangun map hipotetis di memori: dokumen versi ini dengan `imports` milik versi
+  itu. Tidak pernah di-seal, tidak pernah ditulis; kalau ditolak, penolakan itulah
+  jawabannya.
+- **Sebuah peran tidak boleh dapat tabel.** Tidak ada apa pun di log yang pernah
+  menjadi `Flow`, jadi tabel entity untuknya akan kosong. Akibatnya: medan yang
+  ber-range peran (seperti `item` di `@rival`) membaca pilihannya dari log, bukan
+  dari operational store. Form sudah mengatakannya di halaman. Perbaikannya kelak
+  adalah pengikat `label` di core dengan generator sebagai eksekutornya — dan itu
+  contoh "eksekutor dulu, peran diekstrak" yang ditemukan, bukan diantisipasi.
 
 ---
 
@@ -369,7 +386,7 @@ menghitung lintas modul.
 | 1.5 | selesai: core dikecilkan ke `entity_class` dan di-reset sebagai v1, modul contoh lepas dari archetype, kernel pengembangan dimulai kosong |
 | 1 | selesai, menunggu Anda melihatnya: store modul berversi (`components/modules`), import dipin dan diperiksa seal, `@uniti/core` di-seal sebagai v1, linimasa + detail versi + diff di aplikasi; 110 test lulus |
 | 2 | selesai, menunggu Anda melihatnya: aplikasi sebagai versi yang memin (`components/api/application.py`), compiler dieksekusi lintas modul dengan test angka, pintu tulis massal `scripts/load_facts.py`, form yang menulis ke kernel, dan penelusuran satu sel sampai ke pernyataan yang menopangnya; graph kelas lintas modul + tabel proyeksi + penjelasan aturan per kolom di aplikasi web; fixture diganti tiga modul demonstrasi yang menandai dirinya di graph dan di kernel; 134 test lulus |
-| 2.5 | belum dimulai — arah dan detail teknisnya dicatat di `DESIGN_NOTES.md` |
+| 2.5 | selesai, menunggu Anda melihatnya: `@uniti/core@v2` membawa peran (`Thing`, `Resource`, `Event`, `Flow`) dan tiga pengikat; seal menolak kelas yang mengaku peran tanpa memenuhinya, dan menolak closure yang memuat satu modul di dua versi; compiler meresolusi slot abstrak ke predikat konkret tiap kelas pengisi; `@rival/stock-moves@v1` sebagai modul saingan yang menulis ulang semua namanya; `@demo/stock@v3` memindahkan pin tanpa mengubah satu baris aturan dan menghasilkan angka identik; panel peran + laporan kecocokan di aplikasi web; 153 test lulus |
 | 2.6 | belum dimulai |
 | 2.7 | belum dimulai |
 | 3 | belum dimulai |

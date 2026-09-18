@@ -11,6 +11,9 @@
 > - **Bukan spesifikasi.** Tidak ada di sini yang wajib dibangun.
 > - **Akan salah di beberapa tempat.** Bagian yang sudah diverifikasi terhadap
 >   kode ditandai ✓; sisanya adalah penilaian.
+> - **Sebagian sudah dibangun.** Irisan 2.5 dikerjakan pada 18 September 2026 dan
+>   mengubah beberapa hal di sini dari usulan menjadi kode. Yang sudah berjalan
+>   ditandai **[dibangun]**, dan pertanyaan yang terjawab olehnya ditandai di §12.
 > - **Beda dari `REFACTOR_P2.md`**, yang merupakan dokumen kerja sementara dan
 >   dihapus setelah refactoring selesai. Yang ini hidup lebih lama karena isinya
 >   tentang bentuk sistemnya, bukan tentang urutan pengerjaannya.
@@ -529,7 +532,7 @@ slogan.
 
 | irisan | isi | bukti di layar |
 |---|---|---|
-| **2.5 peran** | core v2; resolusi slot abstrak; slot abstrak dilewati sebagai kolom; seal menolak peran tak terpenuhi; `@rival/*`; panel peran + laporan kecocokan | pin ditukar, angkanya identik |
+| ~~**2.5 peran**~~ **[selesai]** | core v2; resolusi slot abstrak; slot abstrak dilewati sebagai kolom; seal menolak peran tak terpenuhi dan closure berlian; `@rival/stock-moves`; panel peran + laporan kecocokan | pin ditukar, angkanya identik — 86/40/46 di kedua sisi |
 | **2.6 penolakan** | `MapError` terstruktur; setiap penolakan membawa perbaikannya | penolakan muncul dengan tombol perbaiki |
 | **2.7 katalog** | katalog terhitung + enam diagnosa | halaman katalog; `movement_happened_on` menyala sebagai istilah mati |
 | **3 Studio** | penyunting digerakkan lubang + pratinjau angka langsung + seal dengan transkrip | seseorang membuat modul baru dan men-seal-nya **tanpa menulis YAML** |
@@ -549,18 +552,28 @@ di dalam satu closure. Modul yang mendeklarasikan kelasnya sendiri bernama `Flow
 akan bertabrakan dengan core. Mitigasi: nama core dicadangkan; seal menolak modul
 yang memakainya.
 
-**10.2 Berlian: dua versi core dalam satu closure.** Kalau aplikasi mem-pin
-`@uniti/core@v2` sementara modul yang dipakainya mem-pin `@v1`, closure berisi dua
-`Flow` dengan identitas berbeda. Usulan: **tepat satu core per closure, ditegakkan
-di seal.** Itu memaksa ekosistem bergerak bersama untuk core — properti yang
-justru diinginkan untuk pondasi, dan alasan lain kenapa core harus kecil.
+**10.2 Berlian: dua versi core dalam satu closure.** **[dibangun]** Ditegakkan di
+seal, dan lebih luas dari usulannya: **tidak ada modul apa pun yang boleh muncul
+dua kali di satu closure pada dua versi**, bukan hanya core. Penolakannya menyebut
+kedua jalur yang sampai ke sana. Konsekuensinya diterima: ekosistem bergerak
+bersama untuk core, yang justru properti yang diinginkan untuk pondasi.
 
-**10.3 Koherensi / hitung ganda.** Kalau modul A *dan* C sama-sama terpasang dan
-sama-sama mengisi `Flow`, lalu aplikasi menulis `over: Flow` — barisnya diambil
-dari keduanya. Kadang benar; kadang menghitung satu pengiriman dua kali dan
-angkanya kelihatan wajar. Rust punya *coherence rules* untuk masalah yang sama.
-Aplikasi perlu bisa menyebut implementasi mana yang diterimanya, atau compiler
-menolak `over` yang ambigu. **Perlu dijawab di 2.5, bukan setelah ada kerugian.**
+**10.3 Koherensi / hitung ganda.** **[dibangun]** Dijawab dengan membedakan dua
+hal yang sebelumnya tercampur:
+
+- **Slot yang mengisi satu pengikat: tepat satu per kelas, kalau tidak ditolak.**
+  Mana di antara `qty_gross` dan `qty_net` yang *adalah* amount tidak bisa dijawab
+  siapa pun selain penulisnya, dan menebaknya menghasilkan angka salah yang
+  terlihat benar. Ditolak di seal dan sekali lagi di compiler.
+- **Kelas yang mengisi satu peran: berapa pun, semuanya ikut.** Sebuah gabungan
+  bermakna — dua gudang, dua modul — dan sebuah subjek hanya anggota satu kelas,
+  jadi tidak ada baris yang terhitung dua kali. Rencananya membawa `covers`, dan
+  halaman menyebut kelas mana yang benar-benar dijangkau, jadi gabungan itu
+  terlihat alih-alih diam.
+
+Yang tersisa adalah bahaya *data*, bukan skema: satu peristiwa nyata dinyatakan
+dua kali di bawah dua kosakata. Itu urusan penyelarasan, dan tidak ada aturan
+skema yang bisa mendeteksinya.
 
 **10.4 Satuan.** Menjumlahkan `amount` lintas modul tanpa satuan menghasilkan
 angka salah yang terlihat benar. Cepat atau lambat `Flow` harus menuntut `unit`,
@@ -609,9 +622,9 @@ Daftar ini menghemat lebih banyak diskusi daripada daftar rencana.
 
 ## 12. Pertanyaan terbuka
 
-1. **Koherensi** (§10.3) — siapa yang memutuskan implementasi mana yang dipakai
-   ketika dua modul mengisi peran yang sama? Aplikasi menyebut daftar terima, atau
-   compiler menolak ambiguitas?
+1. ~~**Koherensi** (§10.3)~~ — **terjawab di 2.5.** Ambiguitas slot ditolak;
+   banyak kelas digabungkan dan disebutkan. Yang tersisa adalah soal data, bukan
+   skema.
 2. **Waktu** (§10.5) — jam kernel atau momen yang dinyatakan?
 3. **Satuan** (§10.4) — di core sebagai pengikat wajib, atau modul `@uniti/units`
    dengan compiler yang menolak campuran?
@@ -619,7 +632,8 @@ Daftar ini menghemat lebih banyak diskusi daripada daftar rencana.
    yang *menyatakan*). Yang dibutuhkan graph adalah siapa yang *terlibat* —
    pemasok yang mengirim. REA memisahkan keduanya. Apakah perbedaan ini cukup
    layak untuk satu peran core?
-5. **Satu core per closure** (§10.2) — terima batasannya, atau cari jalan lain?
+5. ~~**Satu core per closure** (§10.2)~~ — **terjawab di 2.5:** batasannya
+   diterima, dan diperluas ke setiap modul, bukan hanya core.
 6. **Apakah `@demo` dimigrasikan ke peran, atau dibiarkan sebagai bukti bahwa
    modul pra-peran tetap bisa hidup?** Argumen untuk memigrasikan: membuktikan
    migrasi mungkin. Argumen untuk membiarkan: di app store, modul yang tidak ikut

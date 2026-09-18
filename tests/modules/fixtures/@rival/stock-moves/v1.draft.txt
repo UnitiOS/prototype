@@ -1,0 +1,25 @@
+Transcript, @rival/stock-moves v1. Demonstration content — none of this is real.
+
+This module exists to be a fair test, so the conditions it was written under
+matter more than what it says.
+
+It was written against @uniti/core@v2 and nothing else. No catalogue is pinned.
+No class belonging to another module is named. The words were chosen to be
+different from @demo/inventory's wherever a choice existed: movement became
+Movement, quantity became qty_delta, ingredient became item, happened_on became
+happened, location became kept_at, and the whole thing lives under `rv:` rather
+than `inv:`.
+
+The one thing it shares with @demo/inventory is the three answers core asked
+for. Both say what their amount is, what it affects, and when it happened.
+
+The range of `item` is left at Resource. @demo/inventory narrowed the same
+binding to Ingredient, which tied it to a bakery; this one does not, so a
+textile mill could install it and the log would say a bolt of cloth is a
+Resource. Neither choice is wrong — they are different modules for different
+appetites, and the role is what lets an application stop caring which it got.
+
+`kept_at` answers no role, deliberately. It is here so that swapping a module
+has a visible cost as well as a benefit: an application grouping by
+@demo/inventory's location cannot reach this, and the fit report has something
+true to say instead of a clean bill of health that would prove nothing.

@@ -39,8 +39,11 @@ from generate import read_map  # noqa: E402
 from perform import connect  # noqa: E402
 
 CATALOG, INVENTORY, STOCK = dev_modules.CATALOG, dev_modules.INVENTORY, dev_modules.STOCK
+RIVAL = dev_modules.RIVAL
 APP_NAME, APP_VERSION = dev_modules.APPLICATION
+SWAP_NAME, SWAP_VERSION = dev_modules.SWAPPED
 DATA = dev_modules.FIXTURES / "demo_data.yaml"
+RIVAL_DATA = dev_modules.FIXTURES / "rival_data.yaml"
 
 # A record clock late enough to hold whatever this run writes. A submission is
 # recorded when it happens, which is a moment from now, so reading it back at
@@ -82,10 +85,16 @@ def conn():
 
 @pytest.fixture(scope="module")
 def world(conn, tmp_path_factory):
-    """The whole slice in one place: modules sealed, then the facts loaded."""
+    """The whole slice in one place: modules sealed, then the facts loaded.
+
+    Both sets of facts. The same twenty-four movements are stated twice, once
+    in @demo/inventory's words and once in @rival/stock-moves', so that the two
+    applications can be compared against one log rather than two.
+    """
     store, _ = dev_modules.build(conn, tmp_path_factory.mktemp("packages"))
-    data = yaml.safe_load(DATA.read_text(encoding="utf-8"))
-    load_facts.load(conn, data, store, actor_id="test")
+    for path in (DATA, RIVAL_DATA):
+        load_facts.load(conn, yaml.safe_load(path.read_text(encoding="utf-8")),
+                        store, actor_id="test")
     # The API opens a connection of its own, so what this fixture wrote has to
     # be committed before anything outside this transaction can read it.
     conn.commit()
@@ -97,8 +106,8 @@ def app_map(world):
     return read_map(world.path(APP_NAME, APP_VERSION), world)
 
 
-def _rows(conn, world, valid_at, as_of):
-    out = application.projection(conn, world, APP_NAME, APP_VERSION,
+def _rows(conn, world, valid_at, as_of, version=None):
+    out = application.projection(conn, world, APP_NAME, version or APP_VERSION,
                                  "IngredientStock", valid_at=valid_at, as_of=as_of)
     names = [c["name"] for c in out["columns"]]
     assert names == ["stock_ingredient", "quantity_on_hand", "reorder_level", "headroom"]
@@ -140,15 +149,25 @@ def test_the_numbers_move_with_both_clocks(conn, world):
 
 
 def test_every_rule_names_the_module_it_reads(conn, world):
-    """The three derived columns are three kinds of derivation, and cross-module."""
+    """The three derived columns are three kinds of derivation, and cross-module.
+
+    The aggregate now names a role rather than a class, which is the whole of
+    what makes the application swappable: `Flow` belongs to core, and so does
+    `amount`. What it *reads* is still @demo/inventory's own predicate, and the
+    rule says both — what it was written against, and what it reached.
+    """
     out, _ = _rows(conn, world, "2026-06-30", "2026-09-18")
     by_name = {c["name"]: c for c in out["columns"]}
 
+    rule = by_name["quantity_on_hand"]["rule"]
     assert by_name["quantity_on_hand"]["kind"] == "aggregate"
-    assert by_name["quantity_on_hand"]["rule"]["over"] == "StockMovement"
-    assert by_name["quantity_on_hand"]["rule"]["measure"] == "inv:movement_quantity"
+    assert (rule["over"], rule["measure"]) == ("Flow", "amount")
+    assert rule["covers"] == ["StockMovement"]
+    assert rule["measure_uris"] == ["inv:movement_quantity"]
+    assert rule["by_uris"] == {"stock_ingredient": ["inv:movement_ingredient"]}
+
     assert by_name["reorder_level"]["kind"] == "parameter"
-    assert by_name["reorder_level"]["rule"]["slot_uri"] == "cat:ingredient_reorder_level"
+    assert by_name["reorder_level"]["rule"]["slot_uris"] == ["cat:ingredient_reorder_level"]
     assert by_name["headroom"]["kind"] == "expression"
 
     # None of the three predicates belongs to the module that declares the
@@ -160,6 +179,81 @@ def test_every_rule_names_the_module_it_reads(conn, world):
     assert owner["Ingredient"] == CATALOG
 
 
+def test_an_application_written_against_roles_survives_replacing_a_module(conn, world):
+    """The claim this whole slice exists to make.
+
+    Two inventory modules that share no word at all — different class names,
+    different slot names, different prefix, different author — and one
+    application that moves its pin from the first to the second without a
+    single rule being touched. If the numbers are equal, it is because both
+    modules answered core's questions, not because anything was translated.
+    """
+    _, mine = _rows(conn, world, "2026-06-30", "2026-09-18")
+    _, theirs = _rows(conn, world, "2026-06-30", "2026-09-18", version=SWAP_VERSION)
+    assert theirs == mine
+    assert mine["cat:ing_flour"] == ("86", "40", "46")
+
+    # And the second reading really did come from somewhere else. Same rule,
+    # different predicates — which is what makes the equality mean anything.
+    swapped = application.projection(conn, world, SWAP_NAME, SWAP_VERSION,
+                                     "IngredientStock",
+                                     valid_at="2026-06-30", as_of="2026-09-18")
+    rule = {c["name"]: c["rule"] for c in swapped["columns"]}["quantity_on_hand"]
+    assert (rule["over"], rule["measure"]) == ("Flow", "amount")
+    assert rule["covers"] == ["Movement"]
+    assert rule["measure_uris"] == ["rv:qty_delta"]
+    assert "inv:movement_quantity" not in swapped["sql"]
+    assert "rv:qty_delta" in swapped["sql"]
+
+
+def test_the_swapped_application_changed_nothing_but_its_pin(world):
+    """Not "equivalent rules" — the same bytes.
+
+    A rewritten rule that happens to agree would prove only that two maps can
+    be made to match. What is being claimed is stronger: there was nothing in
+    the rules to rewrite.
+    """
+    def rules(version):
+        text = world.path(APP_NAME, version).read_text(encoding="utf-8")
+        return text.split("classes:\n", 1)[1].split("\nannotations:")[0]
+
+    assert rules(APP_VERSION) == rules(SWAP_VERSION)
+
+    pins = {v: {n for n, _ in world.closure(APP_NAME, v)}
+            for v in (APP_VERSION, SWAP_VERSION)}
+    assert INVENTORY in pins[APP_VERSION] and RIVAL not in pins[APP_VERSION]
+    assert RIVAL in pins[SWAP_VERSION] and INVENTORY not in pins[SWAP_VERSION]
+
+
+def test_replacing_a_module_leaves_its_statements_in_the_log(conn, world):
+    """Nothing is migrated and nothing is lost: they stop being read, that is all.
+
+    This is the property that makes an app store bearable. Uninstalling a
+    module in an ordinary system drops its tables or strands them; here the
+    facts live below the schema, so the only thing a swap changes is which
+    predicates any rule reaches.
+    """
+    with conn.cursor() as cur:
+        cur.execute("SELECT count(*) FROM assertion a JOIN entity e "
+                    "ON e.id = a.predicate_id JOIN assertion u "
+                    "ON u.subject_id = e.id AND u.value_literal = %s",
+                    ("inv:movement_quantity",))
+        (held,) = cur.fetchone()
+    assert held == 24
+
+    swapped = application.projection(conn, world, SWAP_NAME, SWAP_VERSION,
+                                     "IngredientStock",
+                                     valid_at="2026-06-30", as_of="2026-09-18")
+    assert "inv:movement_quantity" not in swapped["sql"]
+
+    # And the fit report counts them rather than leaving anybody to wonder.
+    from components.modules import roles as roles_read
+    report = roles_read.fit(world, APP_NAME, APP_VERSION, SWAP_VERSION, conn=conn)
+    orphans = {o["uri"]: o["held"] for o in report["orphaned"]}
+    assert orphans["inv:movement_quantity"] == 24
+    assert report["orphaned_statements"] == sum(orphans.values())
+
+
 def test_the_class_graph_says_what_is_joined_to_what(world):
     graph = read.class_graph(world, APP_NAME, APP_VERSION)
     assert [m["name"] for m in graph["modules"]] == [
@@ -168,7 +262,11 @@ def test_the_class_graph_says_what_is_joined_to_what(world):
         CATALOG, INVENTORY, STOCK}
 
     edges = {(e["from"], e["to"], e["kind"]) for e in graph["edges"]}
-    assert ("IngredientStock", "StockMovement", "aggregate") in edges
+    # The aggregate points at the role, not at anybody's class. Reaching the
+    # class is one more hop, and the picture should show that hop rather than
+    # collapse it: that hop is the seam a module can be swapped at.
+    assert ("IngredientStock", "Flow", "aggregate") in edges
+    assert ("StockMovement", "Flow", "fills") in edges
     assert ("IngredientStock", "Ingredient", "parameter") in edges
     assert ("StockMovement", "Ingredient", "reference") in edges
     assert ("Ingredient", "Category", "reference") in edges
@@ -293,7 +391,8 @@ def test_a_cell_can_be_taken_apart(conn, world):
                              "quantity_on_hand", keys,
                              valid_at="2026-06-30", as_of="2026-09-18")
     assert total["kind"] == "aggregate"
-    assert total["operator"] == "sum" and total["over"] == "StockMovement"
+    assert total["operator"] == "sum" and total["over"] == "Flow"
+    assert total["covers"] == ["StockMovement"]
     assert not total["cut_off"]
 
     # The parts add up to the whole, which is the only thing worth checking.

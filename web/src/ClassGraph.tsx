@@ -19,6 +19,7 @@ const TOP = 16;
 
 const KIND_LABEL: Record<ClassEdge["kind"], string> = {
   is_a: "is a",
+  fills: "fills",
   reference: "points at",
   aggregate: "totals",
   parameter: "reads one fact off",
@@ -62,9 +63,25 @@ export function ClassGraph({ graph, selected, onSelect }: Props) {
       });
     });
 
+    // Each edge's position among the ones that leave its own band, so that two
+    // labels on one band never land at the same height. Counted separately for
+    // edges that stay inside a band and edges that cross one, because the two
+    // are drawn on different pieces of slack.
+    const seen = new Map<string, number>();
+    const rank = new Map<number, number>();
+    graph.edges.forEach((e, i) => {
+      const from = place.get(e.from);
+      const to = place.get(e.to);
+      if (!from || !to) return;
+      const lane = `${from.band}:${from.band === to.band}`;
+      const next = seen.get(lane) ?? 0;
+      rank.set(i, next);
+      seen.set(lane, next + 1);
+    });
+
     const widest = Math.max(
       ...bands.map((name) => graph.nodes.filter((n) => n.module.name === name).length), 1);
-    return { colour, bands, place, needed: GUTTER + widest * (BOX_W + GAP) };
+    return { colour, bands, place, rank, needed: GUTTER + widest * (BOX_W + GAP) };
   }, [graph]);
 
   const height = TOP * 2 + layout.bands.length * BAND;
@@ -114,15 +131,18 @@ export function ClassGraph({ graph, selected, onSelect }: Props) {
           // every box.
           const y1 = a.y + BOX_H;
           const y2 = sameBand ? b.y + BOX_H + 2 : b.y - 6;
-          // Neighbouring edges in one band dip by different amounts, so two
-          // labels never land on the same line.
-          const dip = sameBand ? 26 + (i % 2) * 16 : 0;
+          // Edges are staggered against the others leaving the *same band*,
+          // not against the whole list. Two labels collide when they share a
+          // band and a height, and nothing else about the order matters.
+          const rank = layout.rank.get(i) ?? 0;
+          const dip = sameBand ? 24 + (rank % 3) * 15 : 0;
           const d = sameBand
             ? `M${x1} ${y1}C${x1} ${y1 + dip} ${x2} ${y2 + dip} ${x2} ${y2}`
             : `M${x1} ${y1}C${x1} ${y1 + 30} ${x2} ${y2 - 30} ${x2} ${y2}`;
-          // Two edges leaving the same box would otherwise put their labels on
-          // one line, so consecutive ones sit at different heights.
-          const labelY = sameBand ? y1 + dip - 3 : y1 + (y2 - y1) * (0.26 + (i % 3) * 0.17);
+          // A crossing edge's label sits in the strip below its own band, not
+          // partway down the run: an edge that skips a band would otherwise
+          // drop its label on top of that band's boxes.
+          const labelY = sameBand ? y1 + dip - 3 : y1 + 13 + (rank % 4) * 12;
           return (
             <g key={i} className={`cg-edge cg-edge-${e.kind}${on ? " cg-lit" : selected ? " cg-dim" : ""}`}>
               <title>{`${e.from} ${KIND_LABEL[e.kind]} ${e.to} — ${e.label}`}</title>
@@ -153,9 +173,10 @@ export function ClassGraph({ graph, selected, onSelect }: Props) {
               <rect width={BOX_W} height={BOX_H} rx={6} />
               <text x={10} y={18}>{node.name}</text>
               <text x={10} y={33} className="cg-sub">
-                {node.shape === "derived" ? "derived table"
-                  : node.shape === "stated" ? `${node.slots.length} slots`
-                    : "nothing can be one"}
+                {node.shape === "role" ? "a role"
+                  : node.shape === "derived" ? "derived table"
+                    : node.shape === "stated" ? `${node.slots.length} slots`
+                      : "nothing can be one"}
               </text>
             </g>
           );
@@ -165,6 +186,7 @@ export function ClassGraph({ graph, selected, onSelect }: Props) {
         <span className="cg-key-item cg-key-reference">points at</span>
         <span className="cg-key-item cg-key-aggregate">totals</span>
         <span className="cg-key-item cg-key-parameter">reads one fact off</span>
+        <span className="cg-key-item cg-key-fills">fills a role</span>
         <span className="cg-key-item cg-key-is_a">is a</span>
         <span className="quiet">Click a class to keep only what touches it.</span>
       </figcaption>

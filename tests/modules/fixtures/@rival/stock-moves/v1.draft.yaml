@@ -1,0 +1,82 @@
+id: https://rival.example/stock-moves
+name: rival_stock_moves
+title: Stock moves
+description: >-
+  Demonstration data. Somebody else's inventory module. It pins @uniti/core and
+  nothing else — no catalogue, no bakery, no ingredient. What moves is a
+  Resource, whatever that turns out to be, so the same module serves a bakery
+  and a textile mill without either one being mentioned here.
+
+  Every name in it is its own. Nothing was copied from @demo/inventory, and
+  that is the point: if an application can move its pin here unchanged, it is
+  because both modules answered core, not because their words happened to
+  match.
+prefixes:
+  linkml: https://w3id.org/linkml/
+  uniti: https://w3id.org/uniti/core#
+  rv: https://rival.example/stock-moves/
+default_prefix: rv
+default_range: string
+imports:
+  - linkml:types
+  - "@uniti/core@v2"
+classes:
+  Store:
+    description: Somewhere things are kept.
+    mixins:
+      - Thing
+    slots:
+      - store_ref
+      - store_name
+  Movement:
+    description: >-
+      An amount of something going in or out. It fills core's Flow, so anything
+      that can total flows can total these.
+    mixins:
+      - Flow
+    slots:
+      - move_ref
+      - qty_delta
+      - item
+      - happened
+      - kept_at
+slots:
+  store_ref:
+    slot_uri: rv:store_ref
+    identifier: true
+  store_name:
+    title: Store
+    slot_uri: rv:store_name
+  move_ref:
+    slot_uri: rv:move_ref
+    identifier: true
+  qty_delta:
+    title: Change
+    slot_uri: rv:qty_delta
+    is_a: amount
+    range: decimal
+    description: >-
+      How much the amount held changed by. Negative is out. Fills core's
+      `amount`.
+  item:
+    title: Item
+    slot_uri: rv:item
+    is_a: affects
+    description: >-
+      What moved. The range is left at core's Resource on purpose: this module
+      has no opinion about what its users keep.
+  happened:
+    title: Date
+    slot_uri: rv:happened
+    is_a: moment
+    range: date
+  kept_at:
+    title: Store
+    slot_uri: rv:kept_at
+    range: Store
+    description: >-
+      Where it was kept. This module's own idea of a place, answering no role,
+      and therefore not something another module's rule can reach.
+annotations:
+  valid_from: '2026-08-20T00:00:00+00:00'
+  transcript: v1.draft.txt

@@ -1,0 +1,29 @@
+Transcript, @demo/stock v2. Demonstration content — none of this is real.
+
+The bakery did not ask for this version. It was written because v1 could not
+survive a question somebody asked in passing: what happens if we stop using
+this inventory module?
+
+The honest answer was that all three rules break. v1 said `over:
+StockMovement`, `sum: movement_quantity`, `by: movement_ingredient` — three
+words owned by @demo/inventory, in a file that belongs to the bakery. The
+application had been written as though there would only ever be one supplier of
+movements.
+
+So the rules were rewritten to name core instead. `over: Flow`, `sum: amount`,
+`by: affects`. Nothing else changed, and no number changed: the same movements
+are found, because @demo/inventory@v3 says its class is a Flow and says which
+of its slots is the amount.
+
+One name was left alone on purpose. `reorder_level` still reads
+`ingredient_reorder_level` straight off @demo/catalog. That is not an oversight
+and it is not a thing to fix later. The level is a judgement this bakery made
+about its own ingredients; there is no general role for it and there should not
+be one. The rule that came out of the discussion was written down as:
+
+    point at a role where you want to be able to swap; point at a name where
+    you mean that particular thing.
+
+Asked whether the application should also stop naming `Ingredient`, the answer
+was no. This is a bakery's application. It is allowed to be about ingredients.
+What it is not allowed to do is care who recorded the movements.

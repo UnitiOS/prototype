@@ -49,9 +49,22 @@ refuse to run against any other.
 
 ## The demonstration content
 
-Everything in `tests/modules/fixtures/` is made up. Three modules — `@demo/catalog`,
-`@demo/inventory` and `@demo/stock` — and the facts stated under them exist so the
-mechanisms have something life-sized to run on. Each manifest declares
-`purpose: demonstration`, and that word is carried onto every intent that writes
-one of them, so the kernel says of itself which of its rows are a demonstration.
-No component names any of it: the domain lives in the fixtures alone.
+Everything in `tests/modules/fixtures/` is made up. Four modules — `@demo/catalog`,
+`@demo/inventory`, `@demo/stock` and `@rival/stock-moves` — and the facts stated
+under them exist so the mechanisms have something life-sized to run on. Each
+manifest declares `purpose: demonstration`, and that word is carried onto every
+intent that writes one of them, so the kernel says of itself which of its rows are
+a demonstration. No component names any of it: the domain lives in the fixtures
+alone.
+
+`@rival/stock-moves` is there to make one test fair. It is a second inventory
+module, written against `@uniti/core` alone, sharing not one class name, slot name
+or prefix with `@demo/inventory`. `@demo/stock@v2` totals movements by naming
+core's `Flow` role rather than anybody's class; `@demo/stock@v3` is the same file
+below `imports`, byte for byte, pinned to the rival instead. Both produce the same
+numbers from different predicates, which is the whole claim: an application written
+against roles survives having a module replaced under it.
+
+The same twenty-four movements are therefore stated twice, once in each
+vocabulary — `demo_data.yaml` and `rival_data.yaml` — so the two can be compared
+against one log.

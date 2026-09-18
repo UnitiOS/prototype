@@ -176,12 +176,14 @@ export interface ModuleDiff {
 
 export interface ClassNode {
   name: string; module: Pin; is_a: string | null;
-  description: string | null; shape: "derived" | "stated" | "unstatable"; slots: string[];
+  fills: string[]; abstract: boolean;
+  description: string | null;
+  shape: "derived" | "stated" | "unstatable" | "role"; slots: string[];
 }
 
 export interface ClassEdge {
   from: string; to: string;
-  kind: "is_a" | "reference" | "aggregate" | "parameter"; label: string;
+  kind: "is_a" | "fills" | "reference" | "aggregate" | "parameter"; label: string;
 }
 
 export interface ClassGraph {
@@ -215,7 +217,10 @@ export interface Application {
 export interface ColumnRule {
   kind: "aggregate" | "parameter" | "expression";
   operator?: string; over?: string; measure?: string; by?: Record<string, string>;
-  of?: string; slot_uri?: string; expression?: string;
+  // What the rule was written against, and what it resolved to. They differ
+  // whenever the rule names a role, and that difference is the swappable seam.
+  covers?: string[]; measure_uris?: string[]; by_uris?: Record<string, string[]>;
+  of?: string; slot?: string; slot_uris?: string[]; expression?: string;
 }
 
 export interface Column {
@@ -244,7 +249,7 @@ export interface CellSource {
   kind: Column["kind"]; keys: Record<string, string>;
   statements: Statement[]; reads: string[]; cut_off: boolean;
   entity: { uri: string; id: string } | null;
-  over?: string; operator?: string; of?: string; expression?: string;
+  over?: string; covers?: string[]; operator?: string; of?: string; expression?: string;
   valid_at: string; as_of: string;
 }
 
@@ -266,8 +271,42 @@ export interface Written {
   class: string; subject: string; ontology_version: string;
 }
 
+// ---- roles, and what a swap would cost ------------------------------------
+
+export interface Binding {
+  name: string; required: boolean; range: string | null; description: string;
+}
+
+export interface Role {
+  name: string; module: Pin; description: string;
+  bindings: Binding[];
+  filled_by: { class: string; module: Pin; bindings: Record<string, string | null> }[];
+}
+
+export interface Roles {
+  name: string; version: string; modules: Pin[]; roles: Role[];
+}
+
+export interface FitReport {
+  name: string; from: string; to: string;
+  pins: { removed: Pin[]; added: Pin[]; kept: Pin[] };
+  roles: { name: string; before: string[]; after: string[];
+           status: "unchanged" | "gained" | "lost" | "replaced" }[];
+  rules: { class: string; column: string; kind: string; over: string;
+           covered_before: string[]; covered_after: string[];
+           reads_before: string[]; reads_after: string[];
+           status: "unchanged" | "rebound" }[];
+  dark: { class: string; column: string | null; why: string }[];
+  orphaned: { uri: string; module: Pin; held: number }[];
+  orphaned_statements: number;
+  clean: boolean;
+}
+
 export const appApi = {
   read: (name: string, version: string) => get<Application>("/api/app", { name, version }),
+  roles: (name: string, version: string) => get<Roles>("/api/app/roles", { name, version }),
+  fit: (name: string, version: string, against: string) =>
+    get<FitReport>("/api/app/fit", { name, version, against }),
   projection: (name: string, version: string, klass: string, c: Clocks) =>
     get<Projection>("/api/app/projection", { name, version, class: klass, ...clockParams(c) }),
   cell: (name: string, version: string, klass: string, column: string,

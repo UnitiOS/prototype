@@ -19,6 +19,7 @@ from datetime import date, datetime, timezone
 from decimal import Decimal
 from pathlib import Path
 
+import psycopg
 from starlette.applications import Starlette
 from starlette.exceptions import HTTPException
 from starlette.requests import Request
@@ -32,6 +33,7 @@ sys.path.insert(0, str(ROOT / "components" / "provenance"))
 
 from components.api import application, kernel  # noqa: E402
 from components.modules import read as modules_read  # noqa: E402
+from components.modules import roles as roles_read  # noqa: E402
 from components.modules.store import ModuleError, Store  # noqa: E402
 from perform import connect  # noqa: E402
 from provenance import _registry  # noqa: E402
@@ -169,6 +171,29 @@ async def module_classes(request: Request):
                     _required(request, "version"))
 
 
+async def app_roles(request: Request):
+    """Every role this application can see, and which class has filled it."""
+    return _application(roles_read.roles, _required(request, "name"),
+                        _required(request, "version"))
+
+
+async def app_fit(request: Request):
+    """What moving this application's pins to another version's would cost.
+
+    Read-only and refuses nothing: the report is for whoever is deciding.
+    """
+    name = _required(request, "name")
+    version = _required(request, "version")
+    against = _required(request, "against")
+    try:
+        with connect(os.environ.get("UNITI_DSN"), connect_timeout=3) as conn:
+            return _application(roles_read.fit, name, version, against, conn=conn)
+    except psycopg.OperationalError:
+        # The closure half of the report needs no log; only the count of what
+        # the log still holds does, and an absent one is said rather than faked.
+        return _application(roles_read.fit, name, version, against, conn=None)
+
+
 def _application(fn, *args, **kwargs):
     try:
         return JSON(fn(Store.from_env(), *args, **kwargs))
@@ -276,6 +301,8 @@ routes = [
     Route("/api/modules/diff", module_diff),
     Route("/api/modules/classes", module_classes),
     Route("/api/app", app_read),
+    Route("/api/app/roles", app_roles),
+    Route("/api/app/fit", app_fit),
     Route("/api/app/projection", app_projection),
     Route("/api/app/cell", app_cell),
     Route("/api/app/form", app_form),

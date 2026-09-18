@@ -93,6 +93,11 @@ def pinned_map(store, pin):
     slots, type_slot = {}, {}
     for class_name in classes:
         for slot in view.class_induced_slots(class_name):
+            if slot.abstract:
+                # A binding a role carries. Nothing is ever stated under it —
+                # the class fills it with a slot of its own, which is in this
+                # same list under its own name.
+                continue
             if not slot.slot_uri:
                 raise DataError(f"{class_name}.{slot.name} declares no slot_uri")
             slots[str(slot.name)] = (str(slot.slot_uri), str(slot.range) in classes)

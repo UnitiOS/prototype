@@ -189,6 +189,14 @@ def columns(map_, class_name):
     classes = set(view.all_classes())
     out = []
     for slot in view.class_induced_slots(class_name):
+        if slot.abstract:
+            # A binding a role carries, induced onto every class that mixes the
+            # role in. It is a hole, not a column: the class fills it with a
+            # slot of its own, which is already in this list under its own
+            # name. Left in, it would be a column of nulls in every projection
+            # and an empty field in every form, because nothing is ever stated
+            # under a binding — it has no slot_uri at all.
+            continue
         slot_uri = slot.slot_uri or f"{view.schema.default_prefix or 'uniti'}:{slot.name}"
         out.append(
             {

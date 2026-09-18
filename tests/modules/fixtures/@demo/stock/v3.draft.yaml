@@ -1,0 +1,80 @@
+id: https://uniti.example/stock
+name: demo_stock
+title: Stock
+description: >-
+  Demonstration data. The same application as v2, pinned to somebody else's
+  inventory module.
+
+  Everything below `imports` is byte-identical to v2. That is the whole claim
+  this version exists to make: the rules were not adjusted, translated, or
+  re-mapped, because there was nothing in them to adjust — they name core's
+  Flow and core's bindings, and @rival/stock-moves answers those as readily as
+  @demo/inventory did, under entirely different words.
+
+  What is lost by the move is real and is not hidden: @rival has no location,
+  so an application grouping by one could not have made this move at all.
+prefixes:
+  linkml: https://w3id.org/linkml/
+  uniti: https://w3id.org/uniti/core#
+  stk: https://uniti.example/stock/
+default_prefix: stk
+default_range: string
+imports:
+  - linkml:types
+  - "@uniti/core@v2"
+  - "@demo/catalog@v3"
+  - "@rival/stock-moves@v1"
+classes:
+  IngredientStock:
+    description: >-
+      One row per ingredient anything has moved for. Every column is derived;
+      nothing states a row of this table, and dropping it loses nothing.
+    slots:
+      - stock_ingredient
+      - quantity_on_hand
+      - reorder_level
+      - headroom
+slots:
+  stock_ingredient:
+    title: Ingredient
+    slot_uri: stk:stock_ingredient
+    range: Ingredient
+    description: The ingredient this row is about. The grouping, not a value.
+  quantity_on_hand:
+    title: On hand
+    slot_uri: stk:quantity_on_hand
+    range: decimal
+    description: >-
+      Every flow affecting this ingredient, added up. This module names no
+      class and no slot belonging to whoever recorded them: it names core's
+      Flow and core's two bindings, and whichever module kept that promise
+      answers.
+    annotations:
+      aggregate:
+        value:
+          over: Flow
+          sum: amount
+          by: {stock_ingredient: affects}
+  reorder_level:
+    title: Reorder level
+    slot_uri: stk:reorder_level
+    range: decimal
+    description: >-
+      What somebody said the level is, read off the ingredient this row groups
+      by. It belongs to @demo/catalog, and naming it directly is deliberate.
+      Where nobody has said one the cell is empty, which is not the same as
+      nought.
+    annotations:
+      parameter:
+        value: {of: stock_ingredient, slot: ingredient_reorder_level}
+  headroom:
+    title: Headroom
+    slot_uri: stk:headroom
+    range: decimal
+    description: >-
+      How far above the level this ingredient is. Negative means somebody
+      should be told.
+    equals_expression: "{quantity_on_hand} - {reorder_level}"
+annotations:
+  valid_from: '2026-09-01T00:00:00+00:00'
+  transcript: v3.draft.txt

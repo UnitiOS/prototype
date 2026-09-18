@@ -29,7 +29,7 @@ from perform import connect  # noqa: E402
 from seal import DraftError, seal  # noqa: E402
 
 CATALOG, INVENTORY, STOCK = dev_modules.CATALOG, dev_modules.INVENTORY, dev_modules.STOCK
-CORE = dev_modules.CORE
+RIVAL, CORE = dev_modules.RIVAL, dev_modules.CORE
 
 
 @pytest.fixture
@@ -56,10 +56,10 @@ def _draft(tmp_path, imports):
 
 
 def test_the_store_holds_every_version_in_order(built):
-    assert built.names() == [CATALOG, INVENTORY, STOCK, CORE]
-    assert [v["version"] for v in built.versions(CATALOG)] == ["v1", "v2"]
+    assert built.names() == [CATALOG, INVENTORY, STOCK, RIVAL, CORE]
+    assert [v["version"] for v in built.versions(CATALOG)] == ["v1", "v2", "v3"]
     listing = {m["name"]: m for m in read.modules(built)}
-    assert listing[INVENTORY]["latest"] == "v2"
+    assert listing[INVENTORY]["latest"] == "v3"
     assert listing[INVENTORY]["versions"][0]["imports"] == [
         {"name": CORE, "version": "v1"}, {"name": CATALOG, "version": "v1"}]
 
@@ -145,12 +145,51 @@ def test_a_rename_keeps_its_predicate(built):
 
 def test_the_kernel_names_a_module_version_in_full(conn, built):
     with conn.cursor() as cur:
-        cur.execute("SELECT DISTINCT ontology_version FROM assertion "
-                    "WHERE ontology_version LIKE '@demo/%' ORDER BY 1")
+        # Only what sealing wrote. Forms and loads write under a version label
+        # too, and this is about how a *seal* names itself.
+        cur.execute("SELECT DISTINCT a.ontology_version FROM assertion a "
+                    "JOIN intent i ON i.id = a.intent_id "
+                    "WHERE i.action_name IN ('seal_version', 'register_version') "
+                    "AND a.ontology_version LIKE '@%' ORDER BY 1")
         labels = [r[0] for r in cur.fetchall()]
+
+    # Only the versions that brought a predicate nobody had registered yet. A
+    # seal writes what is new, and `@demo/catalog@v2` was new because it added
+    # a reorder level.
     assert labels == ["@demo/catalog@v1", "@demo/catalog@v2",
                       "@demo/inventory@v1", "@demo/inventory@v2",
-                      "@demo/stock@v1"]
+                      "@demo/stock@v1", "@rival/stock-moves@v1",
+                      "@uniti/core@v1"]
+
+
+def test_moving_a_module_onto_roles_writes_nothing_to_the_log(conn, built):
+    """The v3 versions declare roles and mint not one assertion between them.
+
+    Worth asserting rather than assuming, because it is the property the whole
+    design rests on: a role lives in the map and never in the log. @demo/catalog
+    and @demo/inventory each moved onto core v2 and said what their classes
+    are, and the kernel did not need to hear about it — the predicates were
+    already registered and not one of them changed.
+
+    Which is also why re-binding an orphaned fact later can work at all.
+    """
+    with conn.cursor() as cur:
+        cur.execute("""
+            SELECT i.note, count(a.id)
+            FROM intent i LEFT JOIN assertion a ON a.intent_id = i.id
+            WHERE i.action_name = 'seal_version' AND i.reason_code = 'demonstration'
+            GROUP BY i.id, i.note
+        """)
+        wrote = [(note, n) for note, n in cur.fetchall()]
+
+    onto_roles = [n for note, n in wrote if "v3.draft" in note]
+    assert onto_roles and set(onto_roles) == {0}
+
+    # And no binding was ever registered as a predicate.
+    with conn.cursor() as cur:
+        cur.execute("SELECT count(*) FROM assertion WHERE value_literal = ANY(%s)",
+                    (["uniti:amount", "uniti:affects", "uniti:moment"],))
+        assert cur.fetchone()[0] == 0
 
 
 def test_a_module_that_says_it_is_made_up_says_so_in_the_log(conn, built):
@@ -172,7 +211,7 @@ def test_a_module_that_says_it_is_made_up_says_so_in_the_log(conn, built):
 
         cur.execute("SELECT DISTINCT i.reason_code FROM intent i "
                     "JOIN assertion a ON a.intent_id = i.id "
-                    "WHERE a.ontology_version = '@uniti/core@v1'")
+                    "WHERE a.ontology_version LIKE '@uniti/core@%'")
         assert [r[0] for r in cur.fetchall()] == [None]
 
     assert read.version(built, CATALOG, "v1")["purpose"] == "demonstration"
@@ -187,7 +226,11 @@ def test_the_graph_draws_pins_and_supersessions(built):
     assert (INVENTORY, "v2", CATALOG, "v2", "imports") in edges
     assert (STOCK, "v1", INVENTORY, "v2", "imports") in edges
     assert (CATALOG, "v2", CATALOG, "v1", "supersedes") in edges
-    assert len(graph["nodes"]) == 6
+    # The swap, drawn: one application version pins @demo's inventory and the
+    # next pins somebody else's, and nothing else about them differs.
+    assert (STOCK, "v2", INVENTORY, "v3", "imports") in edges
+    assert (STOCK, "v3", RIVAL, "v1", "imports") in edges
+    assert len(graph["nodes"]) == 12
 
 
 def test_a_module_name_is_checked(built):
@@ -203,8 +246,8 @@ def test_the_api_reads_the_store_in_the_environment(conn, built, monkeypatch):
     client = TestClient(app)
 
     names = [m["name"] for m in client.get("/api/modules").json()]
-    assert names == [CATALOG, INVENTORY, STOCK, CORE]
-    assert len(client.get("/api/modules/graph").json()["nodes"]) == 6
+    assert names == [CATALOG, INVENTORY, STOCK, RIVAL, CORE]
+    assert len(client.get("/api/modules/graph").json()["nodes"]) == 12
 
     detail = client.get("/api/modules/version",
                         params={"name": CATALOG, "version": "v2"}).json()

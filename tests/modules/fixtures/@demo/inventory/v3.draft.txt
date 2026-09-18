@@ -1,0 +1,30 @@
+Transcript, @demo/inventory v3. Demonstration content — none of this is real.
+
+Joko, who receives deliveries, was read the three bindings core's Flow asks for
+and asked whether a stock movement has them.
+
+Amount — yes, that is the quantity, and he was firm that it stays signed.
+"Twenty in and twenty out is not forty, it is nothing." Which is the reason the
+role asks for one signed number rather than a quantity and a direction.
+
+Affects — yes, the ingredient. Asked whether it could ever be something that is
+not an ingredient, he said no, not here. So the range is narrowed from Resource
+to Ingredient, and this module is a bakery's rather than a general one. Written
+down as a decision rather than a habit: leaving it at Resource would have made
+it usable by the textile mill down the road.
+
+Moment — this one took a while. He first said the date was on the delivery note
+and asked why the system needed it as well, since the note is filed. Then he
+described the case that matters: a note for the twelfth found in the middle of
+July. The day it moved and the day we learned of it are different days, and he
+wants both.
+
+That is exactly the split the kernel already makes, so `movement_happened_on`
+stays and fills `moment`. Worth recording that until this version nothing read
+it at all — two hundred-odd statements under a predicate no rule touched. It
+was not wrong, it was unread.
+
+`movement_location` was raised and deliberately left out of any role. Core has
+nothing for a place. So an application that groups by location is pinned to
+this module and cannot swap it — which is a fair trade and better said out loud
+than discovered later.

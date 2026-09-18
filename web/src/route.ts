@@ -4,6 +4,7 @@
 //   #/entities/<id>?valid_at=..&as_of=..         the kernel
 //   #/modules?name=@x/y&version=v2&compare=v1     the module store
 //   #/app?name=@x/y&version=v1&class=Thing&column=c&keys=a,b   one cell of it
+//   #/app?name=@x/y&version=v1&against=v2                      what a swap costs
 
 import { useEffect, useState } from "react";
 import type { Clocks } from "./api";
@@ -20,6 +21,10 @@ export interface AppPick {
   // Whether the form for stating a new one is open. In the URL because every
   // other part of the view is, so a link can hand somebody the form itself.
   stating: boolean;
+  // The version this one is being weighed against, if a fit report is open. A
+  // swap is a decision somebody makes with other people, so the report has to
+  // be something you can send them.
+  against: string | null;
 }
 
 export interface Route {
@@ -46,6 +51,7 @@ function parse(hash: string): Route {
       name: params.get("name"), version: params.get("version"),
       klass: params.get("class"), column: params.get("column"),
       keys: params.get("keys"), stating: params.get("new") === "1",
+      against: params.get("against"),
     },
   };
 }
@@ -60,13 +66,14 @@ export function href(route: Route): string {
     if (compare) query.set("compare", compare);
   }
   if (route.tab === "app") {
-    const { name, version, klass, column, keys, stating } = route.app;
+    const { name, version, klass, column, keys, stating, against } = route.app;
     if (name) query.set("name", name);
     if (version) query.set("version", version);
     if (klass) query.set("class", klass);
     if (column) query.set("column", column);
     if (keys) query.set("keys", keys);
     if (stating) query.set("new", "1");
+    if (against) query.set("against", against);
   }
   query.set("valid_at", route.clocks.validAt.toISOString());
   query.set("as_of", route.clocks.asOf.toISOString());

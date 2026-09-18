@@ -1,0 +1,10 @@
+name: "@rival/stock-moves"
+title: Stock moves
+purpose: demonstration
+description: >-
+  Demonstration data, not real content. A second inventory module, by somebody
+  else, written against @uniti/core alone: it pins no catalogue and names no
+  class belonging to anybody. It is here to answer one question — whether an
+  application written against core's roles can move its pin from one inventory
+  module to another and keep working — and the answer is only worth anything
+  because nothing in here knows what @demo/inventory called things.

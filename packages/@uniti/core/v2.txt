@@ -1,0 +1,74 @@
+Transcript, @uniti/core v2.
+
+v1 ended by saying what this version is: "the standard a core should set —
+which categories exist, and what each one obliges a class to carry — is a
+design to be made against mechanisms that enforce it, and sealed as a later
+version." This is that version.
+
+WHAT PROMPTED IT
+
+Three demonstration modules composed cleanly in the slice before this one, and
+the reason they did was not a good sign. @demo/stock wrote `over: StockMovement`
+and `sum: movement_quantity` — names privately owned by @demo/inventory. Five
+such names in one small application. And @demo/inventory wrote `range:
+Ingredient`, a name owned by @demo/catalog, which meant that module could not be
+used by anyone whose catalogue was not a bakery's.
+
+So the modules were not composed. They were one graph, written by one author,
+split into three files and rejoined. Swapping any of them for a rival's would
+have broken every rule that crossed the boundary.
+
+Stated in the vocabulary of the thing this is becoming: the module system had
+imports and no interfaces. Every reference named a concrete thing. What was
+missing was not a shared dictionary of terms; it was the ability to write a rule
+against something whose implementation had not been chosen yet.
+
+WHAT WAS DECIDED
+
+Core declares roles, not things. A role says what a mechanism needs in order to
+run — "to be totalled over time you must name an amount, a moment, and what is
+affected" — and never what an Item or an Order is. That distinction is the whole
+design. A core that decides what an Item is has to grow with every industry and
+becomes the thing nobody can change; a core that states obligations does not,
+because the obligations come from the executors, and there are about a dozen of
+those in total.
+
+Four roles here, and every line of them names the mechanism that reads it:
+
+    Thing      what the log can say an entity is; carries entity_class
+    Resource   what persists and can be counted
+    Event      what happened, at a moment
+    Flow       an event that moves an amount of a resource
+
+Three bindings: moment, amount, affects. Each is an abstract slot — a hole, not
+a predicate. A class mixing in a role fills each hole with a slot of its own,
+and keeps its own slot_uri.
+
+Roles are mixins rather than parents, so filling one never consumes a class's
+single inheritance. A class is free to have a hierarchy of its own.
+
+WHAT WAS DELIBERATELY LEFT OUT
+
+Units, although `amount` will eventually need them: totalling amounts in
+different units is a wrong answer that looks right, and nothing here stops it.
+Agent, although the kernel already records who *stated* a fact and the graph
+will want who was *involved*. Commitment, which procurement will demand and REA
+already has a word for. A rule relating an event's moment to the kernel's
+valid_from, which today are two dates with no mechanism keeping them equal.
+
+Each waits for the same reason v1's five archetypes were cut: no executor reads
+it yet. A role admitted before its mechanism is a vocabulary nothing enforces,
+and in core that mistake is permanent, because core is the one module nobody
+can fork.
+
+WHAT THIS IS NOT
+
+Not an upper ontology. Not a canonical data model. Those standardise what
+exists, and the attempts that tried it at this scale — ISO 15926, the SOA-era
+common information models — grew by committee until they could not be revised.
+The test for whether this has gone the same way is written down: core is too
+big the moment two credible modules would model the same thing differently and
+core has already picked the winner.
+
+The reasoning behind all of it, including the parts still open, is in
+DESIGN_NOTES.md at the repository root.

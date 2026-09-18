@@ -139,6 +139,97 @@ def _sql_type(map_, range_):
     return SQL_TYPE.get(str(range_), "text")
 
 
+def _any_of(uris):
+    """SQL for "this slot is one of these predicates"."""
+    if len(uris) == 1:
+        return f"= {_lit(uris[0])}"
+    return "= ANY (ARRAY[" + ", ".join(_lit(uri) for uri in uris) + "])"
+
+
+def _covered(view, class_name):
+    """The classes an aggregate over `class_name` actually reads.
+
+    Its descendants, minus the abstract ones: a role is never something an
+    entity *is*, only something a class promises. Nothing in the log ever
+    states `entity_class: Flow`, so listing it would widen the scan for no row.
+    """
+    return [str(name) for name in view.class_descendants(class_name)
+            if not view.get_class(name).abstract]
+
+
+def _fillers(view, class_name, binding):
+    """The class's own slots that fill one binding: those descending from it.
+
+    The same walk `seal` makes when it checks the promise was kept. It is
+    repeated here rather than imported because the compiler must work on a map
+    whoever sealed it is not present for, and because reading the map is the
+    only thing that may decide what a rule means.
+    """
+    below = set(view.slot_descendants(binding)) - {binding}
+    return [slot for slot in view.class_induced_slots(class_name)
+            if str(slot.name) in below and not slot.abstract]
+
+
+def _bound(map_, where, over, slot_name, role):
+    """Every predicate `slot_name` stands for, across the classes `over` covers.
+
+    A concrete slot names one predicate and this is the whole of it. A binding
+    names a hole, and each class filling the role fills it with a predicate of
+    its own — so a rule written against the binding reads all of them at once.
+    That is safe because a subject is of exactly one class and states only its
+    own class's predicates: the union never double-counts a row.
+
+    This is the one function that makes an application substitutable. Without
+    it a rule can only name a slot some particular module owns, and moving a
+    pin breaks every rule that crossed the boundary.
+    """
+    view = map_["view"]
+    slot_name = str(slot_name)
+    declared = {str(slot.name): slot for slot in view.class_induced_slots(over)}
+    slot = declared.get(slot_name)
+    if slot is None:
+        raise MapError(
+            f"{where}: `{role}` names {slot_name!r}, which {over} has no slot for"
+        )
+    if not slot.abstract:
+        if not slot.slot_uri:
+            raise MapError(f"{where}: {over}.{slot_name} declares no slot_uri")
+        return [slot]
+
+    found = []
+    for class_name in _covered(view, over):
+        filled = _fillers(view, class_name, slot_name)
+        if len(filled) > 1:
+            raise MapError(
+                f"{where}: {class_name} has {len(filled)} slots filling "
+                f"'{slot_name}' — {', '.join(str(s.name) for s in filled)}. "
+                f"A binding takes one"
+            )
+        found += filled
+    if not found:
+        raise MapError(
+            f"{where}: `{role}` names the binding {slot_name!r}, and no class "
+            f"below {over} fills it — {', '.join(_covered(view, over)) or 'nothing'} "
+            f"declare no slot with `is_a: {slot_name}`"
+        )
+    for slot in found:
+        if not slot.slot_uri:
+            raise MapError(f"{where}: {slot.name} declares no slot_uri")
+    return found
+
+
+def _one_type(map_, where, slots, role):
+    """The SQL type these slots share, or a refusal naming the disagreement."""
+    types = {_sql_type(map_, slot.range) for slot in slots}
+    if len(types) > 1:
+        detail = ", ".join(f"{s.name} is {_sql_type(map_, s.range)}" for s in slots)
+        raise MapError(
+            f"{where}: the slots filling `{role}` do not agree on a type — "
+            f"{detail}. One column has one type"
+        )
+    return types.pop()
+
+
 def _read_aggregate(map_, where, spec):
     """One `aggregate` annotation, checked against the map it names."""
     view = map_["view"]
@@ -154,24 +245,21 @@ def _read_aggregate(map_, where, spec):
     if over not in view.all_classes():
         raise MapError(f"{where}: `over` names {over!r}, which is not a class")
 
-    source = {slot.name: slot for slot in view.class_induced_slots(over)}
-
     def named_slot(slot_name, role):
-        slot = source.get(str(slot_name))
-        if slot is None:
-            raise MapError(
-                f"{where}: `{role}` names {slot_name!r}, which {over} has no slot for"
-            )
-        if not slot.slot_uri:
-            raise MapError(f"{where}: {over}.{slot.name} declares no slot_uri")
-        return slot
+        """One slot of the source class — the first of whatever fills the name."""
+        return _bound(map_, where, over, slot_name, role)[0]
 
-    measure = named_slot(spec[operator], operator)
-    measure_type = _sql_type(map_, measure.range)
+    def uris(slot_name, role):
+        """Every predicate the name stands for, across the classes `over` covers."""
+        return [str(slot.slot_uri)
+                for slot in _bound(map_, where, over, slot_name, role)]
+
+    measures = _bound(map_, where, over, spec[operator], operator)
+    measure_type = _one_type(map_, where, measures, operator)
     if measure_type not in SUMMABLE:
         raise MapError(
-            f"{where}: {operator} is over {measure.name}, whose range "
-            f"{measure.range} is {measure_type} and cannot be totalled"
+            f"{where}: {operator} is over {', '.join(str(m.name) for m in measures)}, "
+            f"whose range is {measure_type} and cannot be totalled"
         )
 
     by = as_dict(spec.get("by") or {})
@@ -191,18 +279,16 @@ def _read_aggregate(map_, where, spec):
             raise MapError(
                 f"{where}: `where` names {target_class!r}, which is not a class"
             )
-        target_slot = named_slot(slot_name, "where")
         t_slot = type_slot(map_, target_class)
         if t_slot is None or not t_slot.slot_uri:
             raise MapError(
                 f"{where}: {target_class} has no slot carrying designates_type"
             )
-        descendants = list(view.class_descendants(target_class))
         parsed_where.append({
             "slot_name": str(slot_name),
-            "slot_uri": target_slot.slot_uri,
+            "slot_uris": uris(slot_name, "where"),
             "type_slot_uri": t_slot.slot_uri,
-            "descendants": descendants,
+            "descendants": _covered(view, target_class),
         })
 
     convert_block = dict(as_dict(spec.get("convert") or {}))
@@ -259,16 +345,15 @@ def _read_aggregate(map_, where, spec):
                 raise MapError(
                     f"{where}: {using_class}.{conv_slot_name} declares no slot_uri"
                 )
-            s_slot = named_slot(src_slot_name, "convert.on")
             parsed_on.append({
                 "conv_slot_uri": c_slot.slot_uri,
-                "source_slot_uri": s_slot.slot_uri,
+                "source_slot_uris": uris(src_slot_name, "convert.on"),
             })
 
         parsed_convert = {
             "using": using_class,
             "type_slot_uri": t_slot.slot_uri,
-            "descendants": list(view.class_descendants(using_class)),
+            "descendants": _covered(view, using_class),
             "factor_slot_uri": factor_slot.slot_uri,
             "on": parsed_on,
         }
@@ -276,9 +361,19 @@ def _read_aggregate(map_, where, spec):
     return {
         "operator": operator,
         "over": over,
-        "measure_uri": measure.slot_uri,
+        # What the rule was written against, and what it actually reads. When
+        # `over` is a role the two differ, and the difference is the whole
+        # point: one rule, every class that kept the promise.
+        "covers": _covered(view, over),
+        # What the map wrote, and what it resolved to. When the map names a
+        # binding the two differ, and a reader wants to see both: the rule as
+        # written, and the predicates it actually reached.
+        "measure": str(spec[operator]),
+        "measure_slots": [str(m.name) for m in measures],
+        "measure_uris": [str(m.slot_uri) for m in measures],
         "measure_type": measure_type,
-        "by": {str(key): named_slot(value, "by").slot_uri for key, value in by.items()},
+        "by": {str(key): uris(value, "by") for key, value in by.items()},
+        "by_names": {str(key): str(value) for key, value in by.items()},
         "where": parsed_where,
         "convert": parsed_convert,
     }
@@ -310,18 +405,36 @@ def _read_parameter(map_, where, spec, keys, cols):
             f"so its value names no entity to read a fact off"
         )
     wanted = str(spec["slot"])
-    for class_name in view.class_descendants(range_):
-        for slot in view.class_induced_slots(class_name):
-            if str(slot.name) == wanted:
-                if not slot.slot_uri:
-                    raise MapError(
-                        f"{where}: {class_name}.{wanted} declares no slot_uri"
-                    )
-                return {"of": of, "slot_uri": str(slot.slot_uri)}
-    raise MapError(
-        f"{where}: `slot` names {wanted!r}, which neither {range_} nor any "
-        f"class below it has a slot for"
-    )
+    found = []
+    for class_name in _covered(view, range_):
+        declared = {str(slot.name): slot
+                    for slot in view.class_induced_slots(class_name)}
+        slot = declared.get(wanted)
+        if slot is None:
+            continue
+        if slot.abstract:
+            # The key's class fills the binding with a slot of its own, and
+            # which one that is may differ from class to class below the range.
+            filled = _fillers(view, class_name, wanted)
+            if len(filled) > 1:
+                raise MapError(
+                    f"{where}: {class_name} has {len(filled)} slots filling "
+                    f"'{wanted}' — {', '.join(str(s.name) for s in filled)}. "
+                    f"A binding takes one"
+                )
+            slot = filled[0] if filled else None
+        if slot is None:
+            continue
+        if not slot.slot_uri:
+            raise MapError(f"{where}: {class_name}.{slot.name} declares no slot_uri")
+        if str(slot.slot_uri) not in found:
+            found.append(str(slot.slot_uri))
+    if not found:
+        raise MapError(
+            f"{where}: `slot` names {wanted!r}, which neither {range_} nor any "
+            f"class below it has a slot for"
+        )
+    return {"of": of, "slot": wanted, "slot_uris": found}
 
 
 def plan(map_, class_name):
@@ -537,7 +650,13 @@ def _source_cte(map_, over, alias):
             f"{over} has no slot carrying designates_type, so nothing in the "
             f"log can say a subject is one and no aggregate can run over it"
         )
-    names = ", ".join(_lit(name) for name in map_["view"].class_descendants(over))
+    covered = _covered(map_["view"], over)
+    if not covered:
+        raise MapError(
+            f"{over} is a role and nothing below it is a class an entity can "
+            f"be, so there are no rows to run over"
+        )
+    names = ", ".join(_lit(name) for name in covered)
     return (
         f"{alias} AS (\n"
         f"    SELECT s.subject_id FROM stated s\n"
@@ -555,7 +674,7 @@ def _aggregate_cte(spec, column, alias, source_alias, keys, prefix):
         selects.append(f"           {k}.value AS {_ident(key)}")
         joins.append(
             f"    LEFT JOIN stated {k} ON {k}.subject_id = r.subject_id\n"
-            f"                        AND {k}.slot = {_lit(spec['by'][key])}"
+            f"                        AND {k}.slot {_any_of(spec['by'][key])}"
         )
     for j, w in enumerate(spec.get("where") or []):
         w_val = f"{prefix}w{j}_v"
@@ -564,7 +683,7 @@ def _aggregate_cte(spec, column, alias, source_alias, keys, prefix):
         descendants = ", ".join(_lit(name) for name in w["descendants"])
         joins.append(
             f"    JOIN stated {w_val} ON {w_val}.subject_id = r.subject_id\n"
-            f"                       AND {w_val}.slot = {_lit(w['slot_uri'])}\n"
+            f"                       AND {w_val}.slot {_any_of(w['slot_uris'])}\n"
             f"    JOIN registry {w_reg} ON {w_reg}.uri = {w_val}.value\n"
             f"    JOIN stated {w_cls} ON {w_cls}.subject_id = {w_reg}.entity_id\n"
             f"                       AND {w_cls}.slot = {_lit(w['type_slot_uri'])}\n"
@@ -581,7 +700,7 @@ def _aggregate_cte(spec, column, alias, source_alias, keys, prefix):
             s_alias = f"{prefix}cv_s{c_idx}"
             joins.append(
                 f"    LEFT JOIN stated {s_alias} ON {s_alias}.subject_id = r.subject_id\n"
-                f"                                AND {s_alias}.slot = {_lit(on_item['source_slot_uri'])}"
+                f"                                AND {s_alias}.slot {_any_of(on_item['source_slot_uris'])}"
             )
             sub_selects.append(f"{c_alias}.value AS match_{c_idx}")
             sub_joins.append(
@@ -618,7 +737,7 @@ def _aggregate_cte(spec, column, alias, source_alias, keys, prefix):
     )
     joins.append(
         f"    LEFT JOIN stated {m} ON {m}.subject_id = r.subject_id\n"
-        f"                        AND {m}.slot = {_lit(spec['measure_uri'])}"
+        f"                        AND {m}.slot {_any_of(spec['measure_uris'])}"
     )
     body = "    SELECT " + ",\n".join(selects).lstrip() + "\n" + "\n".join(joins)
     group = ", ".join(str(i + 1) for i in range(len(keys)))
@@ -639,7 +758,7 @@ def _parameter_cte(spec, alias):
         f"    SELECT e.uri AS key_value, s.value AS value\n"
         f"    FROM registry e\n"
         f"    JOIN stated s ON s.subject_id = e.entity_id\n"
-        f"                 AND s.slot = {_lit(spec['slot_uri'])}\n"
+        f"                 AND s.slot {_any_of(spec['slot_uris'])}\n"
         f")"
     )
 
@@ -900,10 +1019,20 @@ def _entity_classes(map_):
 
     A class with an aggregate is not here: its table is that grouping, and a
     list of its entities would be a second table under one name.
+
+    Nor is a role. A role is something a class promises, never something an
+    entity is, so nothing in the log is ever one and its table would have no
+    rows. It does mean a field ranging over a role has no projection to read
+    its choices from and falls back to the log — which the form says on the
+    page rather than rounding off, and which closes when a role carries a
+    binding the generator reads for a label.
     """
+    view = map_["view"]
     grouped = set(_aggregate_classes(map_))
-    return [str(name) for name in map_["view"].all_classes()
-            if str(name) not in grouped and type_slot(map_, name) is not None]
+    return [str(name) for name in view.all_classes()
+            if str(name) not in grouped
+            and not view.get_class(name).abstract
+            and type_slot(map_, name) is not None]
 
 
 def tables(map_):

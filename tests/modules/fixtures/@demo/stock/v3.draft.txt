@@ -1,0 +1,33 @@
+Transcript, @demo/stock v3. Demonstration content — none of this is real.
+
+This version is the experiment v2 was written to make possible.
+
+The bakery is imagined to have decided that @demo/inventory is not good enough
+and to have moved to @rival/stock-moves, a module by somebody else. The two
+share nothing but core: different class names, different slot names, a
+different prefix, and an author who had never seen the bakery's catalogue.
+
+What was changed to make the move: one line of `imports`.
+
+What was changed in the rules: nothing. Not a word. The file below `classes:`
+is byte-identical to v2's, and a test asserts it rather than trusting this
+paragraph.
+
+The numbers come out the same, which is the result worth having — but it is
+worth being clear about why they do. They are not the same numbers because the
+system translated anything. They are the same because both modules answered
+core's three questions about their own data, and the rule was written against
+the questions rather than against either set of answers.
+
+Two things were given up, and both are in the fit report rather than buried:
+
+Location. @demo/inventory had one; @rival calls its own idea of a place
+`kept_at` and it answers no role. So a rule grouping by location could not have
+survived this move. This application never grouped by one, which is the only
+reason the move was clean — and that was luck the first time and is a thing to
+check deliberately from now on.
+
+The old statements. Every fact the bakery recorded under `inv:` is still in the
+log, untouched. Nothing was migrated and nothing was deleted; they are simply
+no longer read, because no module in this closure declares their predicates.
+Bringing them back would be an alignment module, not a migration.

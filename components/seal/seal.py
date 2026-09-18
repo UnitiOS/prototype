@@ -177,6 +177,14 @@ def _slot_ranges(view, name):
     ranges = {}
     for slot_name in view.schema.slots:
         slot = view.induced_slot(slot_name)
+        if slot.abstract:
+            # A binding, not a predicate. It names a hole that whichever class
+            # fills the role fills with a slot of its own, so nothing is ever
+            # stated under it and it needs no identity in the kernel. This is
+            # what keeps roles out of the log entirely: `slot_uri` is not
+            # inherited, so a fact is always recorded under the concrete
+            # predicate, and changing a role invalidates nothing.
+            continue
         if not slot.slot_uri:
             raise DraftError(
                 f"{name}: slot '{slot_name}' declares no slot_uri, so it has no "
@@ -184,6 +192,98 @@ def _slot_ranges(view, name):
             )
         ranges.setdefault(slot.slot_uri, slot.range in classes)
     return ranges
+
+
+def fillers(view, class_name, binding):
+    """The class's own slots that fill one binding: those descending from it.
+
+    One place, because three components need the same answer. `seal` checks
+    that there is exactly one, the compiler resolves a rule written against the
+    binding to whichever slot that is, and a reader is shown what filled what.
+    """
+    below = set(view.slot_descendants(binding)) - {binding}
+    return sorted(
+        str(slot.name)
+        for slot in view.class_induced_slots(class_name)
+        if str(slot.name) in below and not slot.abstract
+    )
+
+
+def _roles(view, draft, name):
+    """Every class this draft declares fills the roles it claims, exactly once.
+
+    A role is a class core declares `abstract`, carrying `abstract` slots that
+    are bindings rather than predicates. Mixing one in is a claim, and this is
+    where the claim is checked, because `seal` is the only gate: a module whose
+    class says it is a Flow but names no quantity would compile to a column of
+    nulls somewhere else, far from the mistake.
+
+    Two refusals, and they are not symmetrical:
+
+        nothing fills a required binding   refused. The role was claimed and
+                                           not honoured.
+        two slots fill one binding         refused. Which of `qty_gross` and
+                                           `qty_net` is *the* amount is a
+                                           question only the author can answer,
+                                           and guessing it would be a wrong
+                                           number that looks right.
+
+    A binding that is not required may go unfilled: that is what an optional
+    part of a role means.
+
+    Only the draft's own classes are checked. An imported class was checked
+    when it was sealed, and an error about somebody else's module here would
+    name a file the reader cannot change.
+    """
+    for class_name in (draft.get("classes") or {}):
+        if class_name not in view.all_classes():
+            continue
+        if view.get_class(class_name).abstract:
+            continue
+        for slot in view.class_induced_slots(class_name):
+            if not slot.abstract:
+                continue
+            binding = str(slot.name)
+            filled = fillers(view, class_name, binding)
+            if len(filled) > 1:
+                raise DraftError(
+                    f"{name}: {class_name} has {len(filled)} slots filling "
+                    f"'{binding}' — {', '.join(filled)}. A binding takes one, "
+                    f"and which one it is cannot be guessed"
+                )
+            if not filled and slot.required:
+                roles = ", ".join(str(r) for r in (view.get_class(class_name).mixins or [])) \
+                    or "a role"
+                raise DraftError(
+                    f"{name}: {class_name} mixes in {roles}, which obliges it to "
+                    f"name one slot as '{binding}', and it names none. Declare a "
+                    f"slot with `is_a: {binding}`"
+                )
+
+
+def _one_version_per_module(store, draft, name):
+    """No module reachable from this draft appears at two versions.
+
+    Pins are exact, so two of them can disagree: an application pinning
+    `@uniti/core@v2` while a module under it pins `@v1` would put two `Flow`
+    classes in one closure, of the same name and different identity, and
+    whichever LinkML merged last would win silently.
+
+    Refusing is the narrow reading and it is the right one for a foundation: it
+    means the ecosystem moves together on core, which is exactly the property
+    core is for — and one more reason for core to stay small.
+    """
+    seen = {}
+    for pin in store.imports(draft):
+        for pinned_name, pinned_version in store.closure(*pin):
+            held = seen.setdefault(pinned_name, (pinned_version, pin))
+            if held[0] != pinned_version:
+                raise DraftError(
+                    f"{name} reaches {pinned_name} at two versions: "
+                    f"{held[0]} through {held[1][0]}@{held[1][1]}, and "
+                    f"{pinned_version} through {pin[0]}@{pin[1]}. One closure "
+                    f"holds one version of a module"
+                )
 
 
 def _facts(annotations, ranges, name):
@@ -372,7 +472,9 @@ def seal(conn, draft_path, *, actor_id, into=None, sealed_at=None, store=None):
 
     if store is not None:
         _pins_already_sealed(store, draft, sealed_at, draft_path.name)
+        _one_version_per_module(store, draft, draft_path.name)
     ranges = _slot_ranges(view, draft_path.name)
+    _roles(view, draft, draft_path.name)
     annotations = draft.get("annotations") or {}
     facts = _facts(annotations, ranges, draft_path.name)
 

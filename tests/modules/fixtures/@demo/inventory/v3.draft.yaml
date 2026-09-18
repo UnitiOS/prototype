@@ -1,0 +1,94 @@
+id: https://uniti.example/inventory
+name: demo_inventory
+title: Inventory
+description: >-
+  Demonstration data. What happened to the ingredients @demo/catalog names.
+  This version moves its pin to @uniti/core@v2 and @demo/catalog@v3, and says
+  what a StockMovement is: a Flow. Nothing is renamed. The same three slots the
+  application already added up now also answer core's three bindings, so a rule
+  can name the role instead of naming them.
+prefixes:
+  linkml: https://w3id.org/linkml/
+  uniti: https://w3id.org/uniti/core#
+  inv: https://uniti.example/inventory/
+default_prefix: inv
+default_range: string
+imports:
+  - linkml:types
+  - "@uniti/core@v2"
+  - "@demo/catalog@v3"
+classes:
+  Location:
+    description: A place where ingredients are kept.
+    mixins:
+      - Thing
+    slots:
+      - location_code
+      - location_label
+  StockMovement:
+    description: >-
+      A quantity of one ingredient arriving or leaving. Positive is in,
+      negative is out, in the ingredient's own unit. It fills core's Flow:
+      `movement_quantity` is the amount, `movement_ingredient` is what it
+      affects, and `movement_happened_on` is the moment.
+    mixins:
+      - Flow
+    slots:
+      - movement_code
+      - movement_ingredient
+      - movement_location
+      - movement_quantity
+      - movement_happened_on
+      - movement_reason
+slots:
+  location_code:
+    slot_uri: inv:location_code
+    identifier: true
+  location_label:
+    title: Location
+    slot_uri: inv:location_label
+  movement_code:
+    slot_uri: inv:movement_code
+    identifier: true
+  movement_ingredient:
+    title: Ingredient
+    slot_uri: inv:movement_ingredient
+    is_a: affects
+    range: Ingredient
+    description: >-
+      Which ingredient moved. It fills core's `affects` and narrows the range
+      from Resource to Ingredient — which is this module saying it is a
+      bakery's, not a general one.
+  movement_location:
+    title: Location
+    slot_uri: inv:movement_location
+    range: Location
+    description: >-
+      Where it moved to or from. Core has no role for a place, so this belongs
+      to nobody but this module: an application that groups by it is tied to
+      this module, and that is a choice the application makes with its eyes
+      open.
+  movement_quantity:
+    title: Quantity
+    slot_uri: inv:movement_quantity
+    is_a: amount
+    range: decimal
+    description: Signed, in the ingredient's unit. In is positive, out is negative.
+  movement_happened_on:
+    title: Happened on
+    slot_uri: inv:movement_happened_on
+    is_a: moment
+    range: date
+    description: >-
+      The day the goods actually moved. Until this version no rule read it: it
+      was stated two hundred times and totalled by nothing. Filling core's
+      `moment` is what gives it a reader.
+  movement_reason:
+    title: Reason
+    slot_uri: inv:movement_reason
+    description: >-
+      Why this movement happened, in the words of whoever recorded it. Read by
+      nobody: it is here to be read, not to be computed on.
+annotations:
+  valid_from: '2026-08-15T00:00:00+00:00'
+  transcript: v3.draft.txt

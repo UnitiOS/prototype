@@ -12,8 +12,8 @@
 import { useEffect, useState } from "react";
 import { ApiError, appApi, modulesApi } from "./api";
 import type {
-  Application, CellSource, ClassGraph as Graph, Clocks, Column, FormSpec,
-  ModuleGraph, Pin, Projection, Written,
+  Application, CellSource, ClassGraph as Graph, Clocks, Column, FitReport, FormSpec,
+  ModuleGraph, Pin, Projection, Roles, Written,
 } from "./api";
 import { ClassGraph } from "./ClassGraph";
 import { day, fromInput, instant, toInput } from "./format";
@@ -82,21 +82,27 @@ export function ApplicationPage(
               <button key={pinText(c)} className={`version-chip${on ? " version-chip-on" : ""}`}
                 aria-current={on}
                 onClick={() => onPick({ name: c.name, version: c.version, klass: null,
-                  column: null, keys: null, stating: false })}>
+                  column: null, keys: null, stating: false, against: null })}>
                 {pinText(c)}
               </button>
             );
           })}
         </nav>
       )}
-      {chosen && <ApplicationView pin={chosen} pick={pick} clocks={clocks} onPick={onPick} />}
+      {chosen && (
+        <ApplicationView pin={chosen} pick={pick} clocks={clocks} onPick={onPick}
+          siblings={(graph.data?.nodes ?? [])
+            .filter((n) => n.name === chosen.name)
+            .map((n) => n.version)} />
+      )}
     </>
   );
 }
 
 function ApplicationView(
-  { pin, pick, clocks, onPick }:
-  { pin: Pin; pick: AppPick; clocks: Clocks; onPick: (next: AppPick) => void },
+  { pin, pick, clocks, onPick, siblings }:
+  { pin: Pin; pick: AppPick; clocks: Clocks; onPick: (next: AppPick) => void;
+    siblings: string[] },
 ) {
   const klass = pick.klass;
   const app = useLoad<Application>(() => appApi.read(pin.name, pin.version), [pin.name, pin.version]);
@@ -127,6 +133,8 @@ function ApplicationView(
         {classes.error && <p className="failure" role="alert">{classes.error}</p>}
         {classes.data && <ClassGraph graph={classes.data} selected={focus} onSelect={setFocus} />}
       </section>
+
+      <RolesPanel pin={pin} pick={pick} onPick={onPick} siblings={siblings} />
 
       <main className="body">
         <div className="list">
@@ -176,10 +184,16 @@ function ruleText(col: Column): string {
   }
   if (rule.kind === "aggregate") {
     const by = Object.entries(rule.by ?? {}).map(([k, v]) => `${k} = ${v}`).join(", ");
-    return `Every ${rule.over} the log holds, ${rule.operator} of ${rule.measure}, grouped by ${by}.`;
+    const written = `Every ${rule.over} the log holds, ${rule.operator} of ${rule.measure}, grouped by ${by}.`;
+    const covers = rule.covers ?? [];
+    // A rule written against a role names nothing anybody owns, so the page
+    // has to say what it actually reached — otherwise the number has no
+    // visible source at all.
+    if (covers.length === 0 || covers.join() === rule.over) return written;
+    return `${written} ${rule.over} is a role: here it reaches ${covers.join(", ")}, through ${(rule.measure_uris ?? []).join(", ")}.`;
   }
   if (rule.kind === "parameter") {
-    return `Not computed from the rows: one fact the log holds under ${rule.slot_uri} about whatever ${rule.of} names. Where nobody stated one, the cell is empty.`;
+    return `Not computed from the rows: one fact the log holds under ${(rule.slot_uris ?? []).join(" or ")} about whatever ${rule.of} names. Where nobody stated one, the cell is empty.`;
   }
   return `Arithmetic over the columns beside it: ${rule.expression}`;
 }
@@ -529,5 +543,208 @@ function FormPanel(
         {!ready && <span className="quiet">A URI, who says so, and at least one field.</span>}
       </p>
     </section>
+  );
+}
+
+// ---------------------------------------------------------------- roles
+
+// What this application stands on, and what it would cost to stand on
+// something else. Both are read straight out of sealed content: nobody
+// maintains this page's contents, and it cannot drift from what the compiler
+// does, because it is the same walk.
+function RolesPanel(
+  { pin, pick, onPick, siblings }: {
+    pin: Pin; pick: AppPick; onPick: (next: AppPick) => void; siblings: string[];
+  },
+) {
+  const roles = useLoad<Roles>(() => appApi.roles(pin.name, pin.version),
+    [pin.name, pin.version]);
+  const others = siblings.filter((v) => v !== pin.version);
+  const against = pick.against && others.includes(pick.against) ? pick.against : null;
+
+  if (roles.error) return <p className="failure" role="alert">{roles.error}</p>;
+  if (!roles.data) return null;
+  const carried = roles.data.roles.filter((r) => r.bindings.length > 0 || r.filled_by.length > 0);
+
+  return (
+    <section className="panel roles">
+      <header className="detail-head">
+        <h3>What it stands on</h3>
+        <p className="quiet">
+          A role is an obligation, not a description of the world: a class mixes one in
+          and thereby promises to name a slot of its own for each binding. A rule written
+          against the role reaches whoever kept the promise — which is the only seam a
+          module can be replaced at.
+        </p>
+      </header>
+
+      <table className="grid roles-grid">
+        <thead>
+          <tr><th>Role</th><th>Binding</th><th>Filled by</th><th>Under the name</th></tr>
+        </thead>
+        <tbody>
+          {carried.map((role) =>
+            (role.bindings.length ? role.bindings : [null]).map((binding, i) => (
+              <tr key={`${role.name}-${binding?.name ?? i}`}>
+                {i === 0 && (
+                  <th scope="row" rowSpan={Math.max(role.bindings.length, 1)}>
+                    {role.name}
+                    <span className="quiet block">{role.module.name}</span>
+                  </th>
+                )}
+                <td>
+                  {binding ? (
+                    <>
+                      {binding.name}
+                      {binding.required && <span className="badge badge-must">must</span>}
+                      {binding.range && <span className="quiet"> → {binding.range}</span>}
+                    </>
+                  ) : <span className="quiet">obliges nothing of its own</span>}
+                </td>
+                <td>
+                  {role.filled_by.length === 0
+                    ? <span className="quiet">nobody yet</span>
+                    : role.filled_by.map((f) => (
+                        <span key={f.class} className="filler">
+                          {f.class}<span className="quiet"> · {f.module.name}</span>
+                        </span>
+                      ))}
+                </td>
+                <td>
+                  {binding && role.filled_by.map((f) => (
+                    <span key={f.class} className="filler">
+                      {f.bindings[binding.name] ?? <span className="quiet">—</span>}
+                    </span>
+                  ))}
+                </td>
+              </tr>
+            )))}
+        </tbody>
+      </table>
+
+      {others.length > 0 && (
+        <div className="swap">
+          <p className="quiet">
+            Weigh this version against another one of the same application: same rules,
+            different pins.
+          </p>
+          <nav className="chips chips-inline" aria-label="Compare against">
+            {others.map((v) => {
+              const on = against === v;
+              return (
+                <button key={v} className={`version-chip${on ? " version-chip-on" : ""}`}
+                  aria-current={on}
+                  onClick={() => onPick({ ...pick, against: on ? null : v })}>
+                  {pin.version} → {v}
+                </button>
+              );
+            })}
+          </nav>
+          {against && <FitPanel pin={pin} against={against} />}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function FitPanel({ pin, against }: { pin: Pin; against: string }) {
+  const fit = useLoad<FitReport>(() => appApi.fit(pin.name, pin.version, against),
+    [pin.name, pin.version, against]);
+
+  if (fit.error) return <p className="failure" role="alert">{fit.error}</p>;
+  if (!fit.data) return <p className="quiet">Working it out…</p>;
+  const f = fit.data;
+
+  return (
+    <div className={`fit${f.clean ? " fit-clean" : " fit-dark"}`}>
+      <p className="fit-verdict">
+        {f.clean
+          ? `Every rule still resolves. ${pin.version} can become ${against} without one of them being touched.`
+          : `${f.dark.length} ${f.dark.length === 1 ? "rule does" : "rules do"} not survive this move.`}
+      </p>
+
+      {(f.pins.removed.length > 0 || f.pins.added.length > 0) && (
+        <dl className="fit-block">
+          <dt>Pins</dt>
+          <dd>
+            {f.pins.removed.map((p) => (
+              <span key={pinText(p)} className="pill pill-out">− {pinText(p)}</span>))}
+            {f.pins.added.map((p) => (
+              <span key={pinText(p)} className="pill pill-in">+ {pinText(p)}</span>))}
+          </dd>
+        </dl>
+      )}
+
+      {f.roles.filter((r) => r.status !== "unchanged").length > 0 && (
+        <dl className="fit-block">
+          <dt>Roles</dt>
+          <dd>
+            {f.roles.filter((r) => r.status !== "unchanged").map((r) => (
+              <p key={r.name}>
+                <strong>{r.name}</strong> {r.status}: {r.before.join(", ") || "nobody"}
+                {" → "}{r.after.join(", ") || "nobody"}
+              </p>
+            ))}
+          </dd>
+        </dl>
+      )}
+
+      {f.dark.length > 0 && (
+        <dl className="fit-block">
+          <dt>Would go dark</dt>
+          <dd>
+            {f.dark.map((d, i) => (
+              <p key={i}>
+                <strong>{d.class}{d.column ? `.${d.column}` : ""}</strong>
+                <span className="quiet block">{d.why}</span>
+              </p>
+            ))}
+          </dd>
+        </dl>
+      )}
+
+      {f.rules.length > 0 && (
+        <dl className="fit-block">
+          <dt>Rules</dt>
+          <dd>
+            {f.rules.map((r) => (
+              <p key={`${r.class}.${r.column}`}>
+                <strong>{r.column}</strong>{" "}
+                <span className={`badge badge-${r.status}`}>{r.status}</span>
+                {r.status === "rebound" && (
+                  <span className="quiet block">
+                    {r.reads_before.join(", ")} → {r.reads_after.join(", ")}
+                  </span>
+                )}
+              </p>
+            ))}
+          </dd>
+        </dl>
+      )}
+
+      <dl className="fit-block">
+        <dt>The log keeps</dt>
+        <dd>
+          {f.orphaned.length === 0
+            ? <p className="quiet">Every predicate either side declares is still declared.</p>
+            : <>
+                <p>
+                  {f.orphaned_statements} statements under {f.orphaned.length}{" "}
+                  {f.orphaned.length === 1 ? "predicate" : "predicates"} that no module in the
+                  new closure declares. Nothing is deleted and nothing is migrated — they stop
+                  being read, and that is the whole of it.
+                </p>
+                <ul className="orphans">
+                  {f.orphaned.map((o) => (
+                    <li key={o.uri}>
+                      <span className="id">{o.uri}</span>
+                      <span className="quiet"> {o.held} · was {o.module.name}</span>
+                    </li>
+                  ))}
+                </ul>
+              </>}
+        </dd>
+      </dl>
+    </div>
   );
 }

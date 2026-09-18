@@ -98,8 +98,9 @@ def projection(conn, store, name, version, class_name, *, valid_at, as_of):
         if col["kind"] == "aggregate":
             spec = plan_["aggregates"][col["name"]]
             rule = {"kind": "aggregate", "operator": spec["operator"],
-                    "over": spec["over"], "measure": spec["measure_uri"],
-                    "by": spec["by"]}
+                    "over": spec["over"], "covers": spec["covers"],
+                    "measure": spec["measure"], "measure_uris": spec["measure_uris"],
+                    "by": spec["by_names"], "by_uris": spec["by"]}
         elif col["kind"] == "parameter":
             rule = {"kind": "parameter", **plan_["parameters"][col["name"]]}
         elif col["kind"] == "expression":
@@ -130,13 +131,25 @@ def projection(conn, store, name, version, class_name, *, valid_at, as_of):
     }
 
 
-def _standing(conn, subject_id, predicate_uri, by_uri, by_id, *, valid_at, as_of):
-    """One statement, resolved by the same rule everything else is resolved by."""
-    predicate_id = by_uri.get(predicate_uri)
-    if predicate_id is None:
+def _standing(conn, subject_id, predicate_uris, by_uri, by_id, *, valid_at, as_of):
+    """One statement, resolved by the same rule everything else is resolved by.
+
+    `predicate_uris` is a list because a rule written against a role stands for
+    one predicate per class filling it. A subject is of one class and states
+    only its own, so at most one of them answers; the first that does is it.
+    """
+    if isinstance(predicate_uris, str):
+        predicate_uris = [predicate_uris]
+    for predicate_uri in predicate_uris:
+        predicate_id = by_uri.get(predicate_uri)
+        if predicate_id is None:
+            continue
+        row = resolve_single(conn, subject_id=subject_id, predicate_id=predicate_id,
+                             valid_at=valid_at, as_of=as_of)
+        if row is not None:
+            break
+    else:
         return None
-    row = resolve_single(conn, subject_id=subject_id, predicate_id=predicate_id,
-                         valid_at=valid_at, as_of=as_of)
     if row is None:
         return None
     return {
@@ -186,18 +199,19 @@ def cell(conn, store, name, version, class_name, column, keys, *, valid_at, as_o
     if col["kind"] == "aggregate":
         spec = plan_["aggregates"][column]
         out["over"] = spec["over"]
+        out["covers"] = spec["covers"]
         out["operator"] = spec["operator"]
         for subject_id in _row_subjects(conn, map_, spec["over"], by_uri,
                                         valid_at=valid_at, as_of=as_of):
             grouped = all(
-                (_standing(conn, subject_id, slot_uri, by_uri, by_id,
+                (_standing(conn, subject_id, slot_uris, by_uri, by_id,
                            valid_at=valid_at, as_of=as_of) or {}).get("value")
                 == keys.get(key_column)
-                for key_column, slot_uri in spec["by"].items()
+                for key_column, slot_uris in spec["by"].items()
             )
             if not grouped:
                 continue
-            measure = _standing(conn, subject_id, spec["measure_uri"], by_uri, by_id,
+            measure = _standing(conn, subject_id, spec["measure_uris"], by_uri, by_id,
                                 valid_at=valid_at, as_of=as_of)
             if measure is not None:
                 out["statements"].append(measure)
@@ -214,7 +228,7 @@ def cell(conn, store, name, version, class_name, column, keys, *, valid_at, as_o
         out["entity"] = ({"uri": subject_uri, "id": subject_id}
                          if subject_id is not None else None)
         if subject_id is not None:
-            held = _standing(conn, subject_id, spec["slot_uri"], by_uri, by_id,
+            held = _standing(conn, subject_id, spec["slot_uris"], by_uri, by_id,
                              valid_at=valid_at, as_of=as_of)
             if held is not None:
                 out["statements"].append(held)

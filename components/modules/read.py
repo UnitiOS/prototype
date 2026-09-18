@@ -161,15 +161,22 @@ def class_graph(store, name, version):
     question a pin is actually about: a module pins another one so that its own
     classes can point at that one's classes.
 
-    Four kinds of join, and they are not the same kind of thing:
+    Five kinds of join, and they are not the same kind of thing:
 
         is_a        a class is a kind of another class.
+        fills       a class promises a role: it mixes one in and names a slot
+                    of its own for each binding the role carries. This is the
+                    only edge a module can be swapped at, because it is the
+                    only one whose target belongs to nobody.
         reference   a slot's value names an entity of another class. This is
                     the ordinary edge, and it crosses a module boundary
                     wherever a pinned module's class is the range.
         aggregate   a derived column reads every entity of another class and
                     totals one of its slots. The arrow runs to where the rows
-                    come from.
+                    come from — which, for a rule written against a role, is
+                    the role, and reaching a real class is one more hop along
+                    a `fills` edge. The picture shows that hop rather than
+                    collapsing it: the hop is the seam.
         parameter   a derived column reads one fact off the entity a key names.
 
     Nothing here is computed from the log. It is what the sealed versions say,
@@ -187,9 +194,36 @@ def class_graph(store, name, version):
         for slot_name, s in (document.get("slots") or {}).items():
             slots[slot_name] = {**(s or {}), "module": origin}
 
+    def parents(class_name):
+        """Everything above this class: its `is_a` chain and its mixins' too.
+
+        Both relations, because a role reaches a class through `mixins` and a
+        module's own hierarchy through `is_a`, and a slot inherited either way
+        is a slot the class has.
+        """
+        seen, stack = [], [class_name]
+        while stack:
+            current = stack.pop()
+            for above in ([classes[current].get("is_a")]
+                          + list(classes[current].get("mixins") or [])):
+                above = str(above) if above else None
+                if above in classes and above not in seen:
+                    seen.append(above)
+                    stack.append(above)
+        return seen
+
+    def inherited(class_name):
+        """Its own slots and every slot it gets from above, in that order."""
+        out = list(classes[class_name].get("slots") or [])
+        for above in parents(class_name):
+            out += [s for s in (classes[above].get("slots") or []) if s not in out]
+        return out
+
     def shape(class_name):
         """What kind of table this class would be, by the compiler's own rule."""
-        own = classes[class_name].get("slots") or []
+        if classes[class_name].get("abstract"):
+            return "role"
+        own = inherited(class_name)
         if any((slots.get(s) or {}) and _rule(slots[s]) == "aggregate" for s in own):
             return "derived"
         if any(bool((slots.get(s) or {}).get("designates_type")) for s in own):
@@ -200,9 +234,12 @@ def class_graph(store, name, version):
         "name": class_name,
         "module": classes[class_name]["module"],
         "is_a": classes[class_name].get("is_a"),
+        "fills": [str(m) for m in (classes[class_name].get("mixins") or [])
+                  if str(m) in classes],
+        "abstract": bool(classes[class_name].get("abstract")),
         "description": classes[class_name].get("description"),
         "shape": shape(class_name),
-        "slots": list(classes[class_name].get("slots") or []),
+        "slots": inherited(class_name),
     } for class_name in sorted(classes)]
 
     edges = []
@@ -215,7 +252,11 @@ def class_graph(store, name, version):
         parent = classes[class_name].get("is_a")
         if parent:
             edge(class_name, str(parent), "is_a", "is a")
-        for slot_name in classes[class_name].get("slots") or []:
+        for mixed in classes[class_name].get("mixins") or []:
+            # No label: the box the arrow lands in is the role's own name, and
+            # writing "fills" four times over would only crowd the picture.
+            edge(class_name, str(mixed), "fills", "")
+        for slot_name in inherited(class_name):
             slot = slots.get(slot_name)
             if slot is None:
                 continue

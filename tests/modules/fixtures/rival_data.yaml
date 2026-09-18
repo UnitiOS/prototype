@@ -1,0 +1,172 @@
+# Demonstration data, stated a second time under somebody else's vocabulary.
+#
+# Every movement below is the same movement as the one with the matching number
+# in demo_data.yaml: same ingredient, same signed quantity, same day it
+# happened, same day the log learned of it — including the delivery note for 12
+# June that was not found until 10 July.
+#
+# What differs is every word. `Movement` not `StockMovement`, `qty_delta` not
+# `movement_quantity`, `item` not `movement_ingredient`, `happened` not
+# `movement_happened_on`, and the prefix is `rv:` throughout. @rival/stock-moves
+# was written against @uniti/core alone and has never heard of @demo/inventory.
+#
+# The ingredients themselves are NOT restated. `item` points at `cat:ing_flour`,
+# the entity @demo/catalog already registered, because identity lives in the
+# kernel and is shared by everything that names it. A rival module replaces the
+# words for what happened; it does not replace the things it happened to.
+#
+# So: if @demo/stock@v3 reads the same totals out of this as @demo/stock@v2
+# reads out of demo_data.yaml, it is because both modules answered core's
+# questions — not because anything was translated.
+
+map: "@demo/stock@v3"
+purpose: demonstration
+
+actions:
+
+  - action: add_stores
+    actor: joko
+    valid_from: '2026-01-22T00:00:00+00:00'
+    occurred_at: '2026-01-22T09:00:00+00:00'
+    recorded_at: '2026-01-22T09:00:00+00:00'
+    note: Where things are kept, in this module's words.
+    entities:
+      - uri: rv:st_store
+        class: Store
+        facts: {store_ref: STORE, store_name: Dry store}
+      - uri: rv:st_chill
+        class: Store
+        facts: {store_ref: CHILL, store_name: Chiller}
+
+  - action: record_delivery
+    actor: joko
+    valid_from: '2026-06-02T00:00:00+00:00'
+    occurred_at: '2026-06-02T07:30:00+00:00'
+    recorded_at: '2026-06-02T07:30:00+00:00'
+    note: Dry goods in.
+    entities:
+      - uri: rv:mv_0001
+        class: Movement
+        facts: {move_ref: MV-0001, item: cat:ing_flour, qty_delta: 50, happened: '2026-06-02', kept_at: rv:st_store}
+      - uri: rv:mv_0002
+        class: Movement
+        facts: {move_ref: MV-0002, item: cat:ing_sugar, qty_delta: 25, happened: '2026-06-02', kept_at: rv:st_store}
+      - uri: rv:mv_0003
+        class: Movement
+        facts: {move_ref: MV-0003, item: cat:ing_salt, qty_delta: 5, happened: '2026-06-02', kept_at: rv:st_store}
+      - uri: rv:mv_0004
+        class: Movement
+        facts: {move_ref: MV-0004, item: cat:ing_yeast, qty_delta: 2, happened: '2026-06-02', kept_at: rv:st_store}
+
+  - action: record_delivery
+    actor: joko
+    valid_from: '2026-06-03T00:00:00+00:00'
+    occurred_at: '2026-06-03T07:15:00+00:00'
+    recorded_at: '2026-06-03T07:15:00+00:00'
+    note: Chilled goods in.
+    entities:
+      - uri: rv:mv_0005
+        class: Movement
+        facts: {move_ref: MV-0005, item: cat:ing_butter, qty_delta: 20, happened: '2026-06-03', kept_at: rv:st_chill}
+      - uri: rv:mv_0006
+        class: Movement
+        facts: {move_ref: MV-0006, item: cat:ing_milk, qty_delta: 40, happened: '2026-06-03', kept_at: rv:st_chill}
+      - uri: rv:mv_0007
+        class: Movement
+        facts: {move_ref: MV-0007, item: cat:ing_egg, qty_delta: 300, happened: '2026-06-03', kept_at: rv:st_chill}
+
+  - action: record_delivery
+    actor: joko
+    valid_from: '2026-06-04T00:00:00+00:00'
+    occurred_at: '2026-06-04T08:00:00+00:00'
+    recorded_at: '2026-06-04T08:00:00+00:00'
+    entities:
+      - uri: rv:mv_0008
+        class: Movement
+        facts: {move_ref: MV-0008, item: cat:ing_box, qty_delta: 500, happened: '2026-06-04', kept_at: rv:st_store}
+
+  - action: record_usage
+    actor: joko
+    valid_from: '2026-06-08T00:00:00+00:00'
+    occurred_at: '2026-06-08T18:00:00+00:00'
+    recorded_at: '2026-06-08T18:00:00+00:00'
+    note: What the first week of baking used. Out is negative, in the ingredient's own unit.
+    entities:
+      - uri: rv:mv_0009
+        class: Movement
+        facts: {move_ref: MV-0009, item: cat:ing_flour, qty_delta: -18, happened: '2026-06-08', kept_at: rv:st_store}
+      - uri: rv:mv_0010
+        class: Movement
+        facts: {move_ref: MV-0010, item: cat:ing_sugar, qty_delta: -6, happened: '2026-06-08', kept_at: rv:st_store}
+      - uri: rv:mv_0011
+        class: Movement
+        facts: {move_ref: MV-0011, item: cat:ing_butter, qty_delta: -7, happened: '2026-06-08', kept_at: rv:st_chill}
+      - uri: rv:mv_0012
+        class: Movement
+        facts: {move_ref: MV-0012, item: cat:ing_milk, qty_delta: -12, happened: '2026-06-08', kept_at: rv:st_chill}
+      - uri: rv:mv_0013
+        class: Movement
+        facts: {move_ref: MV-0013, item: cat:ing_egg, qty_delta: -90, happened: '2026-06-08', kept_at: rv:st_chill}
+      - uri: rv:mv_0014
+        class: Movement
+        facts: {move_ref: MV-0014, item: cat:ing_box, qty_delta: -140, happened: '2026-06-08', kept_at: rv:st_store}
+
+  - action: record_usage
+    actor: joko
+    valid_from: '2026-06-15T00:00:00+00:00'
+    occurred_at: '2026-06-15T18:00:00+00:00'
+    recorded_at: '2026-06-15T18:00:00+00:00'
+    entities:
+      - uri: rv:mv_0015
+        class: Movement
+        facts: {move_ref: MV-0015, item: cat:ing_flour, qty_delta: -21, happened: '2026-06-15', kept_at: rv:st_store}
+      - uri: rv:mv_0016
+        class: Movement
+        facts: {move_ref: MV-0016, item: cat:ing_sugar, qty_delta: -7, happened: '2026-06-15', kept_at: rv:st_store}
+      - uri: rv:mv_0017
+        class: Movement
+        facts: {move_ref: MV-0017, item: cat:ing_butter, qty_delta: -8, happened: '2026-06-15', kept_at: rv:st_chill}
+      - uri: rv:mv_0018
+        class: Movement
+        facts: {move_ref: MV-0018, item: cat:ing_milk, qty_delta: -14, happened: '2026-06-15', kept_at: rv:st_chill}
+      - uri: rv:mv_0019
+        class: Movement
+        facts: {move_ref: MV-0019, item: cat:ing_egg, qty_delta: -110, happened: '2026-06-15', kept_at: rv:st_chill}
+      - uri: rv:mv_0020
+        class: Movement
+        facts: {move_ref: MV-0020, item: cat:ing_box, qty_delta: -160, happened: '2026-06-15', kept_at: rv:st_store}
+
+  - action: record_waste
+    actor: joko
+    valid_from: '2026-06-16T00:00:00+00:00'
+    occurred_at: '2026-06-16T08:00:00+00:00'
+    recorded_at: '2026-06-16T08:00:00+00:00'
+    note: Milk left out overnight.
+    entities:
+      - uri: rv:mv_0021
+        class: Movement
+        facts: {move_ref: MV-0021, item: cat:ing_milk, qty_delta: -5, happened: '2026-06-16', kept_at: rv:st_chill}
+
+  - action: record_restock
+    actor: joko
+    valid_from: '2026-06-22T00:00:00+00:00'
+    occurred_at: '2026-06-22T07:30:00+00:00'
+    recorded_at: '2026-06-22T07:30:00+00:00'
+    entities:
+      - uri: rv:mv_0023
+        class: Movement
+        facts: {move_ref: MV-0023, item: cat:ing_flour, qty_delta: 50, happened: '2026-06-22', kept_at: rv:st_store}
+      - uri: rv:mv_0024
+        class: Movement
+        facts: {move_ref: MV-0024, item: cat:ing_sugar, qty_delta: 25, happened: '2026-06-22', kept_at: rv:st_store}
+
+  - action: record_delivery
+    actor: rina
+    valid_from: '2026-06-12T00:00:00+00:00'
+    occurred_at: '2026-07-10T11:00:00+00:00'
+    recorded_at: '2026-07-10T11:00:00+00:00'
+    note: A delivery note for 12 June, found in July. It was always true of the world; the log only learns it now, so it lands under June on one clock and under July on the other.
+    entities:
+      - uri: rv:mv_0022
+        class: Movement
+        facts: {move_ref: MV-0022, item: cat:ing_flour, qty_delta: 25, happened: '2026-06-12', kept_at: rv:st_store}

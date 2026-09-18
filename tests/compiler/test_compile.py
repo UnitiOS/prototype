@@ -45,7 +45,7 @@ def test_read_aggregate_parses_valid_where(map_):
     assert parsed["where"] == [
         {
             "slot_name": "transfer_to",
-            "slot_uri": "fx:transfer_to",
+            "slot_uris": ["fx:transfer_to"],
             "type_slot_uri": "fx:entity_class",
             "descendants": ["InnerPlace"],
         }
@@ -90,16 +90,16 @@ def test_aggregate_cte_includes_where_filter():
     spec = {
         "operator": "sum",
         "over": "Transfer",
-        "measure_uri": "fx:transfer_quantity",
+        "measure_uris": ["fx:transfer_quantity"],
         "measure_type": "numeric",
         "by": {
-            "rec_thing": "fx:transfer_thing",
-            "rec_place": "fx:transfer_to",
+            "rec_thing": ["fx:transfer_thing"],
+            "rec_place": ["fx:transfer_to"],
         },
         "where": [
             {
                 "slot_name": "transfer_to",
-                "slot_uri": "fx:transfer_to",
+                "slot_uris": ["fx:transfer_to"],
                 "type_slot_uri": "fx:entity_class",
                 "descendants": ["InnerPlace"],
             }
@@ -144,11 +144,11 @@ def test_aggregate_cte_includes_convert():
     spec = {
         "operator": "sum",
         "over": "Transfer",
-        "measure_uri": "fx:transfer_quantity",
+        "measure_uris": ["fx:transfer_quantity"],
         "measure_type": "numeric",
         "by": {
-            "rec_thing": "fx:transfer_thing",
-            "rec_place": "fx:transfer_to",
+            "rec_thing": ["fx:transfer_thing"],
+            "rec_place": ["fx:transfer_to"],
         },
         "convert": {
             "using": "MeasureConversion",
@@ -158,11 +158,11 @@ def test_aggregate_cte_includes_convert():
             "on": [
                 {
                     "conv_slot_uri": "fx:conversion_thing",
-                    "source_slot_uri": "fx:transfer_thing",
+                    "source_slot_uris": ["fx:transfer_thing"],
                 },
                 {
                     "conv_slot_uri": "fx:conversion_measure",
-                    "source_slot_uri": "fx:transfer_measure",
+                    "source_slot_uris": ["fx:transfer_measure"],
                 },
             ],
         },

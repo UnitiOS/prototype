@@ -1,0 +1,116 @@
+id: https://w3id.org/uniti/core
+name: uniti_core
+version: v2
+title: Uniti core
+description: 'The root module. It holds only what a mechanism already executes, so
+  that every module importing it is standing on something that does work rather than
+  on a vocabulary nothing reads.
+
+  v1 held one slot: the predicate under which an entity states which class it is.
+  This version adds the first roles. A role is not a description of the world and
+  does not say what an Item or an Order is — it is an obligation, phrased as what
+  a mechanism needs in order to run. A class mixes one in and thereby promises to
+  name a slot of its own for each binding the role carries; a rule written against
+  the role then reaches whichever class kept that promise, in whichever module, under
+  whatever names that module chose.
+
+  Nothing here reaches the log. A binding carries no `slot_uri`, and `slot_uri` is
+  not inherited, so a fact is always recorded under the concrete predicate its own
+  module declared. Changing a role invalidates no statement.'
+prefixes:
+  linkml: https://w3id.org/linkml/
+  uniti: https://w3id.org/uniti/core#
+default_prefix: uniti
+default_range: string
+imports:
+- linkml:types
+classes:
+  Thing:
+    abstract: true
+    mixin: true
+    description: 'Anything the log can say an entity is. It carries the one predicate
+      that says so and nothing else, so a class mixing it in inherits `entity_class`
+      instead of listing it.
+
+      Executed by the generator, which reads that predicate to decide which rows belong
+      to which table, and by the compiler, whose source CTE walks it downward to find
+      the subjects an aggregate runs over.'
+    slots:
+    - entity_class
+  Resource:
+    is_a: Thing
+    abstract: true
+    mixin: true
+    description: 'Something that persists and can be held, counted, or moved. It obliges
+      nothing of its own: it exists so that a module which moves things can say what
+      it moves without naming anybody''s class.
+
+      Executed by the compiler: `affects` ranges over it, so a module that never heard
+      of flour, fabric, or kilowatt-hours can still be told which of them a movement
+      was about.'
+  Event:
+    is_a: Thing
+    abstract: true
+    mixin: true
+    description: 'Something that happened, at a moment somebody can name. The moment
+      is the event''s own — when the goods moved — and is not the same as the kernel''s
+      `valid_from`, which is when the statement about it became true of the world.
+      They usually agree; nothing here yet makes them.
+
+      Executed by the compiler through `moment`.'
+    slots:
+    - moment
+  Flow:
+    is_a: Event
+    abstract: true
+    mixin: true
+    description: 'An event that moves a measurable amount of a resource. This is the
+      role that makes a balance possible: a total over time is a total over flows,
+      and a module that fills this can have its movements added up by an application
+      that has never seen it.
+
+      Executed by the compiler''s `aggregate`, which needs exactly three things and
+      takes all three from here: something to total, something to total it by, and
+      something that says which rows are in scope.'
+    slots:
+    - amount
+    - affects
+slots:
+  entity_class:
+    title: Class
+    slot_uri: uniti:entity_class
+    designates_type: true
+    range: string
+    description: Which class this entity is an instance of. Stated, never inferred.
+  moment:
+    title: Moment
+    abstract: true
+    required: true
+    range: date
+    description: 'When this event happened. A binding: the class filling it declares
+      a slot of its own with `is_a: moment`, and that slot''s predicate is what the
+      log holds.'
+  amount:
+    title: Amount
+    abstract: true
+    required: true
+    range: decimal
+    description: 'How much this flow moves, signed in whatever unit the resource is
+      counted in. In is positive, out is negative — so a balance is a sum and needs
+      no second rule to tell the two apart.
+
+      It says nothing about units. Totalling amounts that are not in the same unit
+      produces a wrong number that looks right, and nothing here prevents it yet.'
+  affects:
+    title: Affects
+    abstract: true
+    required: true
+    range: Resource
+    description: Which resource this flow moves. A class filling it may narrow the
+      range to a resource of its own; leaving it at Resource is what makes a module
+      usable by a business the author never thought of.
+annotations:
+  valid_from: '2026-07-01T00:00:00+00:00'
+  sealed_at: '2026-09-18T04:00:00+00:00'
+  supersedes: v1
+  transcript: v2.txt

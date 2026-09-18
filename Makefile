@@ -64,9 +64,12 @@ DEV_OPS_DSN := postgresql://uniti:uniti@localhost:5433/$(DEV_OPS_DB)
 # Example modules are sealed here, beside the real store; the first root wins.
 DEV_PACKAGES := build/dev/packages
 DEV_STORE    := $(DEV_PACKAGES);packages
-# The demonstration content: three modules and the facts stated under them.
-DEMO_DATA := tests/modules/fixtures/demo_data.yaml
-DEMO_APP  := $(DEV_PACKAGES)/@demo/stock/v1.yaml
+# The demonstration content: four modules and the facts stated under them.
+# The same movements are stated twice, once in @demo/inventory's words and once
+# in @rival/stock-moves', so the two applications can be compared on one log.
+DEMO_DATA  := tests/modules/fixtures/demo_data.yaml
+RIVAL_DATA := tests/modules/fixtures/rival_data.yaml
+DEMO_APP   := $(DEV_PACKAGES)/@demo/stock/v2.yaml
 
 # An empty development log, then the demonstration modules sealed into their
 # own store root, then the facts. Empty to begin with is the point: everything
@@ -80,6 +83,7 @@ dev-db: db venv
 	MSYS_NO_PATHCONV=1 $(DC) exec -T db psql -U uniti -d $(DEV_DB) 	    -v ON_ERROR_STOP=1 -f /kernel/001_schema.sql
 	UNITI_DSN=$(DEV_DSN) $(PY) scripts/dev_modules.py $(DEV_PACKAGES)
 	UNITI_DSN=$(DEV_DSN) UNITI_PACKAGES="$(DEV_STORE)" 	    $(PY) scripts/load_facts.py $(DEMO_DATA) --actor dev
+	UNITI_DSN=$(DEV_DSN) UNITI_PACKAGES="$(DEV_STORE)" 	    $(PY) scripts/load_facts.py $(RIVAL_DATA) --actor dev
 
 # Compile every table the demonstration application can fill into an
 # operational store of its own. The application only reads the log; this is the

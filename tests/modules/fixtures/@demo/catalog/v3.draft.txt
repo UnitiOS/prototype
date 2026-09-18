@@ -1,0 +1,21 @@
+Transcript, @demo/catalog v3. Demonstration content — none of this is real.
+
+Rina, who buys for the bakery, was asked one question: is an ingredient the
+same kind of thing as a category or a supplier?
+
+She said no, and the reason was practical rather than philosophical. You can
+have five kilos of flour and you cannot have five kilos of Dry Goods. Flour
+runs out. A category does not.
+
+That is the distinction core calls Resource, so Ingredient mixes it in and the
+other two do not. Nothing else changed: the predicates are the ones v2 already
+had, and every fact stated under them still stands.
+
+What this buys, which Rina did not need to care about: an inventory module can
+now be written by somebody who has never heard of a bakery. It says it moves a
+Resource, and the log says flour is one.
+
+The `ingredient_unit` slot was discussed and left alone. It records that flour
+is counted in kilos and eggs in pieces, and nothing reads it — core's `amount`
+has no unit binding yet, so two modules moving the same ingredient in different
+units would produce a wrong total quietly. Noted and not fixed here.

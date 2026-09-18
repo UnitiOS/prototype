@@ -1,0 +1,95 @@
+id: https://uniti.example/catalog
+name: demo_catalog
+title: Catalog
+description: >-
+  Demonstration data. The things a small bakery buys and keeps. This version
+  moves its pin to @uniti/core@v2 and says what its classes are: an Ingredient
+  is a Resource, which is the whole of what any inventory module needs to know
+  about it. Nothing is renamed and no predicate changes, so everything already
+  stated still stands.
+prefixes:
+  linkml: https://w3id.org/linkml/
+  uniti: https://w3id.org/uniti/core#
+  cat: https://uniti.example/catalog/
+default_prefix: cat
+default_range: string
+imports:
+  - linkml:types
+  - "@uniti/core@v2"
+classes:
+  Category:
+    description: A group an ingredient belongs to.
+    mixins:
+      - Thing
+    slots:
+      - category_code
+      - category_label
+  Supplier:
+    description: Somebody an ingredient is bought from.
+    mixins:
+      - Thing
+    slots:
+      - supplier_code
+      - supplier_label
+  Ingredient:
+    description: >-
+      Something bought, kept, and used up. It fills core's Resource, so a module
+      that moves things can say it moved one of these without having heard of a
+      bakery.
+    mixins:
+      - Resource
+    slots:
+      - ingredient_code
+      - ingredient_name
+      - ingredient_unit
+      - ingredient_category
+      - ingredient_supplier
+      - ingredient_reorder_level
+slots:
+  category_code:
+    slot_uri: cat:category_code
+    identifier: true
+  category_label:
+    title: Category
+    slot_uri: cat:category_label
+  supplier_code:
+    slot_uri: cat:supplier_code
+    identifier: true
+  supplier_label:
+    title: Supplier
+    slot_uri: cat:supplier_label
+  ingredient_code:
+    slot_uri: cat:ingredient_code
+    identifier: true
+  ingredient_name:
+    title: Ingredient
+    slot_uri: cat:ingredient_label
+    description: >-
+      What the ingredient is called. Renamed from `ingredient_label` in v2; the
+      predicate is unchanged, so everything already stated under it still
+      stands.
+  ingredient_unit:
+    title: Unit
+    slot_uri: cat:ingredient_unit
+    description: >-
+      The unit every quantity of this ingredient is counted in. Core's `amount`
+      says nothing about units yet, so nothing checks that two modules moving
+      this ingredient agree with this — it is written down and read by nobody.
+  ingredient_category:
+    title: Category
+    slot_uri: cat:ingredient_category
+    range: Category
+  ingredient_supplier:
+    title: Supplier
+    slot_uri: cat:ingredient_supplier
+    range: Supplier
+  ingredient_reorder_level:
+    title: Reorder level
+    slot_uri: cat:ingredient_reorder_level
+    range: decimal
+    description: >-
+      The quantity somebody decided not to fall below. Stated, never computed:
+      it is a judgement, and the log records who made it and when.
+annotations:
+  valid_from: '2026-08-01T00:00:00+00:00'
+  transcript: v3.draft.txt
