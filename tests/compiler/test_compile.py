@@ -59,8 +59,9 @@ def test_read_aggregate_refuses_unknown_where_condition(map_):
         "by": {"rec_thing": "transfer_thing"},
         "where": {"transfer_to": {"equals": "some place"}},
     }
-    with pytest.raises(MapError, match="a `where` condition must be `is_a`"):
+    with pytest.raises(MapError) as caught:
         _read_aggregate(map_, "test.slot", spec)
+    assert caught.value.code == "where_not_is_a"
 
 
 def test_read_aggregate_refuses_nonexistent_class(map_):
@@ -70,8 +71,10 @@ def test_read_aggregate_refuses_nonexistent_class(map_):
         "by": {"rec_thing": "transfer_thing"},
         "where": {"transfer_to": {"is_a": "NoSuchPlace"}},
     }
-    with pytest.raises(MapError, match="is not a class"):
+    with pytest.raises(MapError) as caught:
         _read_aggregate(map_, "test.slot", spec)
+    assert caught.value.code == "not_a_class"
+    assert "Transfer" in caught.value.repairs[0].options
 
 
 def test_read_aggregate_refuses_unknown_slot_in_where(map_):
@@ -81,8 +84,10 @@ def test_read_aggregate_refuses_unknown_slot_in_where(map_):
         "by": {"rec_thing": "transfer_thing"},
         "where": {"non_existent_slot": {"is_a": "InnerPlace"}},
     }
-    with pytest.raises(MapError, match="has no slot for"):
+    with pytest.raises(MapError) as caught:
         _read_aggregate(map_, "test.slot", spec)
+    assert caught.value.code == "no_such_slot"
+    assert "transfer_to" in caught.value.repairs[0].options
 
 
 def test_aggregate_cte_includes_where_filter():
@@ -125,8 +130,9 @@ def test_read_aggregate_rejects_malformed_convert(map_):
         "by": {"rec_thing": "transfer_thing"},
         "convert": {"using": "MeasureConversion", "on": {"conversion_measure": "transfer_measure"}},
     }
-    with pytest.raises(MapError, match="must have `using`, `on`, and `factor`"):
+    with pytest.raises(MapError) as caught:
         _read_aggregate(map_, "test.slot", spec)
+    assert caught.value.code == "convert_keys"
 
     # Non-existent class in convert.using
     spec = {
@@ -135,8 +141,9 @@ def test_read_aggregate_rejects_malformed_convert(map_):
         "by": {"rec_thing": "transfer_thing"},
         "convert": {"using": "NoSuchConversionClass", "on": {"x": "transfer_measure"}, "factor": "y"},
     }
-    with pytest.raises(MapError, match="is not a class"):
+    with pytest.raises(MapError) as caught:
         _read_aggregate(map_, "test.slot", spec)
+    assert caught.value.code == "not_a_class"
 
 
 def test_aggregate_cte_includes_convert():

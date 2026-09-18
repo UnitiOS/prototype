@@ -37,8 +37,10 @@ import yaml
 from linkml_runtime.utils.schemaview import SchemaView, load_schema_wrap
 
 ROOT = Path(__file__).resolve().parent.parent.parent
+sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "components"))
 
+from components.refusal import Refusal, Repair  # noqa: E402
 from ontology.resolve import load_versions  # noqa: E402
 
 MANIFEST = "package.yaml"
@@ -47,8 +49,10 @@ TAIL = re.compile(r"@[a-z0-9][a-z0-9_-]*/[a-z0-9][a-z0-9_-]*@v[1-9][0-9]*$")
 PIN = re.compile(r"^(?P<name>@[a-z0-9][a-z0-9_-]*/[a-z0-9][a-z0-9_-]*)@(?P<version>v[1-9][0-9]*)$")
 
 
-class ModuleError(ValueError):
+class ModuleError(Refusal, ValueError):
     """A module, a version, or an import that the store cannot stand behind."""
+
+    gate = "the module store"
 
 
 class Store:
@@ -75,18 +79,42 @@ class Store:
 
     def directory(self, name):
         if not NAME.match(name or ""):
-            raise ModuleError(f"{name!r} is not a module name; a name is @scope/name")
+            raise ModuleError(
+                "not_a_module_name",
+                where="the store",
+                expected="a module name of the form @scope/name",
+                got=f"{name!r}",
+                repairs=[Repair("name a module the store holds", options=self.names())],
+            )
         scope, local = name.split("/")
         for root in self.roots:
             candidate = root / scope / local
             if (candidate / MANIFEST).is_file():
                 return candidate
-        raise ModuleError(f"the store holds no module {name}")
+        raise ModuleError(
+            "no_such_module",
+            where="the store",
+            expected=f"a directory {name} holding a {MANIFEST}",
+            got="no such directory under any root",
+            repairs=[
+                Repair("name a module the store holds", options=self.names()),
+                Repair(
+                    "point UNITI_PACKAGES at the root that holds it",
+                    where=os.pathsep.join(str(root) for root in self.roots),
+                ),
+            ],
+        )
 
     def manifest(self, name):
         data = yaml.safe_load((self.directory(name) / MANIFEST).read_text(encoding="utf-8")) or {}
         if data.get("name") != name:
-            raise ModuleError(f"{name}/{MANIFEST} names itself {data.get('name')!r}")
+            raise ModuleError(
+                "manifest_disagrees",
+                where=f"{name}/{MANIFEST}",
+                expected=f"name: {name}, matching the directory it sits in",
+                got=f"{data.get('name')!r}",
+                repairs=[Repair(f"set `name: {name}`", where=f"{name}/{MANIFEST}")],
+            )
         return data
 
     def purpose(self, name):
@@ -104,10 +132,22 @@ class Store:
         return load_versions(self.directory(name))
 
     def path(self, name, version):
-        for held in self.versions(name):
-            if held["version"] == version:
-                return held["path"]
-        raise ModuleError(f"{name} has no sealed version {version}")
+        held = self.versions(name)
+        for version_held in held:
+            if version_held["version"] == version:
+                return version_held["path"]
+        raise ModuleError(
+            "no_such_version",
+            where=name,
+            expected=f"a sealed version {version}",
+            got=f"{len(held)} sealed here" if held else "nothing sealed here yet",
+            repairs=[
+                Repair(
+                    f"pin a version {name} has sealed",
+                    options=[v["version"] for v in held],
+                )
+            ],
+        )
 
     def module_of(self, directory):
         """The module a directory is, or None when it is not one of the store's."""
@@ -133,10 +173,41 @@ class Store:
             return match["name"], match["version"]
         if NAME.match(imp):
             raise ModuleError(
-                f"import {imp!r} names no version; an import pins one sealed version, "
-                f"such as {imp}@v1"
+                "import_not_pinned",
+                where="imports",
+                expected=f"one sealed version of {imp}, such as {imp}@v1",
+                got=f"{imp!r}, which names the module and no version",
+                repairs=[
+                    Repair(
+                        f"pin one version of {imp}",
+                        options=[f"{imp}@{v}" for v in self._held(imp)],
+                    )
+                ],
             )
-        raise ModuleError(f"import {imp!r} is neither a module@version nor a linkml: import")
+        raise ModuleError(
+            "import_not_understood",
+            where="imports",
+            expected="`@scope/name@vN` or a `linkml:` import",
+            got=f"{imp!r}",
+            repairs=[
+                Repair("import a sealed version this store holds",
+                       options=[f"{n}@{v}" for n in self.names() for v in self._held(n)]),
+                Repair("import one of LinkML's own schemas, which need no pin",
+                       options=["linkml:types"]),
+            ],
+        )
+
+    def _held(self, name):
+        """The versions of a module, or nothing when the store has no such module.
+
+        Only ever asked while assembling a repair, and a repair that cannot be
+        computed is an empty list rather than a second refusal thrown from
+        inside the first one.
+        """
+        try:
+            return [v["version"] for v in self.versions(name)]
+        except ModuleError:
+            return []
 
     def imports(self, document):
         """The pinned imports a schema document declares, each checked to exist."""
@@ -157,7 +228,20 @@ class Store:
 
         def visit(pin, trail):
             if pin in trail:
-                raise ModuleError(f"import cycle: {' -> '.join(f'{n}@{v}' for n, v in trail + [pin])}")
+                ring = [f"{n}@{v}" for n, v in trail + [pin]]
+                raise ModuleError(
+                    "import_cycle",
+                    where=f"{pin[0]}@{pin[1]}",
+                    expected="imports that reach an end",
+                    got=" -> ".join(ring),
+                    repairs=[
+                        Repair(
+                            "drop one import in the ring, or move what both sides "
+                            "need into a module below them",
+                            options=ring,
+                        )
+                    ],
+                )
             if pin in seen:
                 return
             for dependency in self.imports(self.document(*pin)):

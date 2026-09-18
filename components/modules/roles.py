@@ -33,7 +33,8 @@ sys.path.insert(0, str(ROOT / "components" / "compiler"))
 sys.path.insert(0, str(ROOT / "components" / "generator"))
 sys.path.insert(0, str(ROOT / "components" / "seal"))
 
-from compile import MapError, plan_for, tables  # noqa: E402
+from compile import plan_for, tables  # noqa: E402
+from components.refusal import Refusal  # noqa: E402
 from generate import read_map  # noqa: E402
 from seal import URI_PREDICATE  # noqa: E402
 
@@ -205,9 +206,12 @@ def _rules(store, name, version, map_=None):
     for class_name in tables(map_):
         try:
             plan_ = plan_for(map_, class_name)
-        except MapError as exc:
+        except Refusal as exc:
+            # The refusal travels whole. A swap report that said only "this
+            # breaks" would leave the reader to work out what to add, which is
+            # the one question they came here with.
             out[(class_name, None)] = {"class": class_name, "column": None,
-                                       "kind": "refused", "detail": str(exc)}
+                                       "kind": "refused", "refusal": exc.as_dict()}
             continue
         for column in plan_["columns"]:
             key = (class_name, column["name"])
@@ -289,12 +293,15 @@ def fit(store, name, version, against, *, conn=None):
     for key in sorted(set(rules_before) | set(rules_after), key=lambda k: (k[0], k[1] or "")):
         was, now = rules_before.get(key), rules_after.get(key)
         if now and now["kind"] == "refused":
-            dark.append({**now, "why": now.get("detail")})
+            dark.append({**now, "why": now["refusal"]["sentence"]})
             continue
         if key[0] in refused:
             continue
         if was and not now:
-            dark.append({**was, "why": "nothing in the new closure answers this rule"})
+            # Not a refusal: the new closure simply has nothing to say here,
+            # and there is no gate to ask for a repair.
+            dark.append({**was, "refusal": None,
+                         "why": "nothing in the new closure answers this rule"})
             continue
         if not was or not now:
             continue

@@ -11,9 +11,10 @@
 > - **Bukan spesifikasi.** Tidak ada di sini yang wajib dibangun.
 > - **Akan salah di beberapa tempat.** Bagian yang sudah diverifikasi terhadap
 >   kode ditandai ✓; sisanya adalah penilaian.
-> - **Sebagian sudah dibangun.** Irisan 2.5 dikerjakan pada 18 September 2026 dan
->   mengubah beberapa hal di sini dari usulan menjadi kode. Yang sudah berjalan
->   ditandai **[dibangun]**, dan pertanyaan yang terjawab olehnya ditandai di §12.
+> - **Sebagian sudah dibangun.** Irisan 2.5 dan 2.6 dikerjakan pada 18 September
+>   2026 dan mengubah beberapa hal di sini dari usulan menjadi kode. Yang sudah
+>   berjalan ditandai **[dibangun]**, dan pertanyaan yang terjawab olehnya
+>   ditandai di §12.
 > - **Beda dari `REFACTOR_P2.md`**, yang merupakan dokumen kerja sementara dan
 >   dihapus setelah refactoring selesai. Yang ini hidup lebih lama karena isinya
 >   tentang bentuk sistemnya, bukan tentang urutan pengerjaannya.
@@ -405,7 +406,7 @@ Ini *type-directed editing* — cara kerja lubang interaktif di Idris atau Agda,
 dipindahkan ke makna. Tidak pernah ada halaman kosong; selalu satu lubang dengan
 jawaban yang bisa dihitung.
 
-### 7.3 Penolakan — kenapa tidak, dan apa yang memperbaikinya
+### 7.3 Penolakan — kenapa tidak, dan apa yang memperbaikinya **[dibangun]**
 
 `MapError` sudah punya insting yang benar (lihat `compile.py:307`: menolak sambil
 menyebutkan pilihan yang sah). Yang kurang: penolakan itu **string**, bukan
@@ -420,6 +421,36 @@ MapError(code="slot_not_on_class",
 
 Satu sumber, tiga pembaca: kalimat untuk manusia, tombol perbaiki untuk Studio,
 hasil tool untuk agent.
+
+**Yang jadi di irisan 2.6** (`components/refusal/`): persis bentuk di atas, plus
+tiga hal yang baru kelihatan saat dikerjakan.
+
+1. **Kalimatnya diturunkan, tidak ditulis.** `str(refusal)` dirakit dari
+   `where`/`expected`/`got`. Kalau kalimat ditulis di samping strukturnya, itu
+   dua sumber, dan yang prosa adalah yang tidak pernah diperbarui.
+2. **`code` adalah daftar tertutup.** 62 kode di `refusal.CODES`, masing-masing
+   dengan satu baris artinya; konstruktor menolak kode yang tidak terdaftar, dan
+   satu test memindai kode gerbang untuk memastikan tidak ada yang menyelinap.
+   Daftar itu sendiri adalah dokumentasi: "apa saja yang bisa salah di sini"
+   terjawab tanpa membaca kode.
+3. **`repairs[].options` dihitung dari graph, bukan dinasihatkan.** Ini bagian
+   yang paling berharga dan paling mudah terlewat: `binding_unfilled` pada
+   sebuah kelas mengembalikan slot-slot kelas itu yang **range-nya cocok** dengan
+   pengikatnya (§7.2 dalam bentuk kecil), dan `not_a_class` pada `over`
+   mengembalikan dua daftar terpisah — kelas yang bisa jadi entity, dan **peran**
+   yang bisa ditulis sebagai gantinya. Yang kedua itu nasihat irisan 2.5 yang
+   datang sebagai instruksi, bukan sebagai pelajaran.
+
+Yang juga ikut: `gate` (siapa yang menolak — store, seal, generator, compiler),
+karena itu yang menentukan siapa yang bisa menjawabnya; dan `Repair.where`, file
+yang harus disunting, yang sering bukan file yang sedang dibaca.
+
+**Dan satu pembaca keempat yang tidak terduga:** `check()`
+(`components/modules/check.py`). Gerbang berhenti di masalah pertama — benar
+untuk gerbang, tidak berguna untuk halaman. `check` menjalankan pembaca yang
+sama dan **mengumpulkan** penolakannya, jadi orang melihat semuanya sekaligus.
+Itu juga yang akan dipakai Studio sambil orang mengetik, dan ia menerima map
+yang belum di-seal (`map_=`), yang persis kebutuhan draft.
 
 ### 7.4 Diff — apa yang berubah kalau saya lakukan ini
 
@@ -533,7 +564,7 @@ slogan.
 | irisan | isi | bukti di layar |
 |---|---|---|
 | ~~**2.5 peran**~~ **[selesai]** | core v2; resolusi slot abstrak; slot abstrak dilewati sebagai kolom; seal menolak peran tak terpenuhi dan closure berlian; `@rival/stock-moves`; panel peran + laporan kecocokan | pin ditukar, angkanya identik — 86/40/46 di kedua sisi |
-| **2.6 penolakan** | `MapError` terstruktur; setiap penolakan membawa perbaikannya | penolakan muncul dengan tombol perbaiki |
+| ~~**2.6 penolakan**~~ **[selesai]** | penolakan terstruktur di satu tempat (`components/refusal/`); 62 kode tertutup; `options` dihitung dari graph; `check()` mengumpulkan semuanya sekaligus | laporan kecocokan `v1 → v3` memperlihatkan aturan yang padam **berikut dua daftar jawaban yang sah** — kelas, dan peran |
 | **2.7 katalog** | katalog terhitung + enam diagnosa | halaman katalog; `movement_happened_on` menyala sebagai istilah mati |
 | **3 Studio** | penyunting digerakkan lubang + pratinjau angka langsung + seal dengan transkrip | seseorang membuat modul baru dan men-seal-nya **tanpa menulis YAML** |
 | **4 agent** | katalog + lubang + penolakan sebagai tool | pemilik toko bercerita di chat, keluar modul ter-seal, langkahnya ada di transkrip |

@@ -79,8 +79,9 @@ def cells(t):
 
 def test_a_draft_is_not_a_map():
     """It carries no version, and every assertion has to name one."""
-    with pytest.raises(MapError, match="not a sealed map"):
+    with pytest.raises(MapError) as caught:
         read_map(FIXTURES / "draft_fixture.yaml")
+    assert caught.value.code == "not_a_sealed_map"
 
 
 def test_the_columns_are_the_classs_induced_slots(map_):
@@ -99,8 +100,10 @@ def test_the_columns_are_the_classs_induced_slots(map_):
     # The parent's own table is the two slots it declares. The class column is
     # one of them, so a class's own table always shows what put a row in it.
     assert [c["name"] for c in columns(map_, "Held")] == ["g_class", "g_place"]
-    with pytest.raises(MapError, match="declares no class"):
+    with pytest.raises(MapError) as caught:
         columns(map_, "Sundae")
+    assert caught.value.code == "no_such_class"
+    assert "Parcel" in caught.value.repairs[0].options
 
 
 def test_the_table_is_what_the_log_says_at_those_clocks(conn, map_):

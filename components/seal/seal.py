@@ -76,9 +76,11 @@ import yaml
 from linkml_runtime import SchemaView
 
 ROOT = Path(__file__).resolve().parent.parent.parent
+sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "components" / "kernel"))
 sys.path.insert(0, str(ROOT / "components"))
 
+from components.refusal import Refusal, Repair  # noqa: E402
 from ontology.resolve import load_versions  # noqa: E402
 from perform import connect, perform  # noqa: E402
 
@@ -121,8 +123,10 @@ WHERE predicate_id = (
 """
 
 
-class DraftError(Exception):
+class DraftError(Refusal):
     """The draft cannot be sealed. Nothing has been written."""
+
+    gate = "seal"
 
 
 def _utc(value):
@@ -143,9 +147,18 @@ def _validate(text, name, store=None):
     """
     try:
         return store.view(text) if store is not None else SchemaView(text)
+    except Refusal:
+        # The store refusing an import is already a refusal with its own
+        # repairs. Wrapping it would bury them under a parse error.
+        raise
     except Exception as exc:
         raise DraftError(
-            f"{name} is not valid LinkML — {type(exc).__name__}: {exc}"
+            "not_linkml",
+            where=name,
+            expected="a schema LinkML can load",
+            got=f"{type(exc).__name__}: {exc}",
+            repairs=[Repair("fix what LinkML names above; it reads the file "
+                            "before anything here does", where=name)],
         ) from exc
 
 
@@ -187,8 +200,16 @@ def _slot_ranges(view, name):
             continue
         if not slot.slot_uri:
             raise DraftError(
-                f"{name}: slot '{slot_name}' declares no slot_uri, so it has no "
-                f"identity in the kernel"
+                "slot_without_uri",
+                where=f"{name}: {slot_name}",
+                expected="a `slot_uri`, which is a predicate's identity in the kernel",
+                got="none",
+                repairs=[Repair(
+                    f"declare `slot_uri: <prefix>:{slot_name}`. It is not derived "
+                    f"from the name: a rename would then orphan every fact "
+                    f"recorded before it",
+                    where=name,
+                )],
             )
         ranges.setdefault(slot.slot_uri, slot.range in classes)
     return ranges
@@ -207,6 +228,30 @@ def fillers(view, class_name, binding):
         for slot in view.class_induced_slots(class_name)
         if str(slot.name) in below and not slot.abstract
     )
+
+
+def candidates(view, class_name, binding):
+    """The class's own slots that could fill one binding, judged by range.
+
+    The hole, and the shapes that fit it. A binding ranging over a type is
+    filled by a slot of that type; one ranging over a class by a slot ranging
+    over that class or anything below it.
+
+    This does not guess which slot is right — that is the one thing only the
+    author knows. It is the finite set they are choosing from, which is what
+    turns "name a slot" into a list rather than a blank page.
+    """
+    wanted = str(binding.range) if binding.range else None
+    below = ({str(n) for n in view.class_descendants(wanted)}
+             if wanted in view.all_classes() else set())
+    out = []
+    for slot in view.class_induced_slots(class_name):
+        if slot.abstract:
+            continue
+        found = str(slot.range) if slot.range else None
+        if wanted is None or found == wanted or found in below:
+            out.append(str(slot.name))
+    return sorted(out)
 
 
 def _roles(view, draft, name):
@@ -247,17 +292,36 @@ def _roles(view, draft, name):
             filled = fillers(view, class_name, binding)
             if len(filled) > 1:
                 raise DraftError(
-                    f"{name}: {class_name} has {len(filled)} slots filling "
-                    f"'{binding}' — {', '.join(filled)}. A binding takes one, "
-                    f"and which one it is cannot be guessed"
+                    "binding_ambiguous",
+                    where=f"{class_name}.{binding}",
+                    expected=f"one slot filling '{binding}'",
+                    got=f"{len(filled)} — {', '.join(filled)}",
+                    repairs=[Repair(
+                        f"keep `is_a: {binding}` on the one that is the "
+                        f"{binding}, and take it off the rest. Which one that "
+                        f"is cannot be guessed, and guessing it would be a "
+                        f"wrong number that looks right",
+                        where=name,
+                        options=filled,
+                    )],
                 )
             if not filled and slot.required:
                 roles = ", ".join(str(r) for r in (view.get_class(class_name).mixins or [])) \
                     or "a role"
                 raise DraftError(
-                    f"{name}: {class_name} mixes in {roles}, which obliges it to "
-                    f"name one slot as '{binding}', and it names none. Declare a "
-                    f"slot with `is_a: {binding}`"
+                    "binding_unfilled",
+                    where=f"{class_name}.{binding}",
+                    expected=f"one slot with `is_a: {binding}`, which mixing in "
+                             f"{roles} obliges",
+                    got="none",
+                    repairs=[Repair(
+                        f"put `is_a: {binding}` on the slot of {class_name} that "
+                        f"is its {binding}"
+                        + (f" — the ones ranging over {slot.range}"
+                           if slot.range else ""),
+                        where=name,
+                        options=candidates(view, class_name, slot),
+                    )],
                 )
 
 
@@ -279,10 +343,16 @@ def _one_version_per_module(store, draft, name):
             held = seen.setdefault(pinned_name, (pinned_version, pin))
             if held[0] != pinned_version:
                 raise DraftError(
-                    f"{name} reaches {pinned_name} at two versions: "
-                    f"{held[0]} through {held[1][0]}@{held[1][1]}, and "
-                    f"{pinned_version} through {pin[0]}@{pin[1]}. One closure "
-                    f"holds one version of a module"
+                    "two_versions_of_a_module",
+                    where=name,
+                    expected=f"one version of {pinned_name} in the whole closure",
+                    got=f"{held[0]} through {held[1][0]}@{held[1][1]}, and "
+                        f"{pinned_version} through {pin[0]}@{pin[1]}",
+                    repairs=[Repair(
+                        f"move one of the two onto the other's version of "
+                        f"{pinned_name} and seal it, then pin that",
+                        options=[f"{held[1][0]}@{held[1][1]}", f"{pin[0]}@{pin[1]}"],
+                    )],
                 )
 
 
@@ -295,31 +365,66 @@ def _facts(annotations, ranges, name):
     """
     stated = annotations.get("facts") or []
     if not isinstance(stated, list):
-        raise DraftError(f"{name}: annotations.facts must be a list")
+        raise DraftError(
+            "facts_not_a_list",
+            where=f"{name}: annotations.facts",
+            expected="a list of facts",
+            got=type(stated).__name__,
+            repairs=[Repair("write each fact as one `- subject:` item", where=name)],
+        )
 
     facts = []
     for i, fact in enumerate(stated, start=1):
+        at = f"{name}: fact {i}"
         if not isinstance(fact, dict):
-            raise DraftError(f"{name}: fact {i} is not a mapping")
+            raise DraftError(
+                "fact_not_a_mapping",
+                where=at,
+                expected="subject, predicate and value",
+                got=type(fact).__name__,
+                repairs=[Repair("write the three keys under one `-` item", where=name)],
+            )
         keys = set(fact)
         if not keys >= set(FACT_KEYS) or not keys <= set(FACT_KEYS + FACT_OPTIONAL):
             raise DraftError(
-                f"{name}: fact {i} has keys {sorted(fact)}, expected "
-                f"{sorted(FACT_KEYS)} and optionally {sorted(FACT_OPTIONAL)}"
+                "fact_keys",
+                where=at,
+                expected=f"{', '.join(FACT_KEYS)}, and optionally "
+                         f"{', '.join(FACT_OPTIONAL)}",
+                got=", ".join(sorted(str(k) for k in fact)) or "nothing",
+                repairs=[Repair("use only these keys",
+                                where=name,
+                                options=FACT_KEYS + FACT_OPTIONAL)],
             )
         confidence = fact.get("confidence")
         if confidence is not None and confidence not in CONFIDENCE_LEVELS:
             raise DraftError(
-                f"{name}: fact {i} states confidence {confidence!r}, which is "
-                f"not one of {sorted(CONFIDENCE_LEVELS)}"
+                "fact_confidence",
+                where=at,
+                expected="a confidence the kernel knows",
+                got=f"{confidence!r}",
+                repairs=[Repair("state one of these, or leave it out — absent "
+                                "records NULL, which claims nothing",
+                                where=name, options=CONFIDENCE_LEVELS)],
             )
         if fact["predicate"] not in ranges:
             raise DraftError(
-                f"{name}: fact {i} names predicate {fact['predicate']!r}, which "
-                f"no slot in this draft declares"
+                "fact_predicate_unknown",
+                where=at,
+                expected="a predicate this draft declares a slot for",
+                got=f"{fact['predicate']!r}",
+                repairs=[Repair("state it under a slot_uri this draft declares",
+                                where=name, options=sorted(ranges))],
             )
         if fact["value"] is None or isinstance(fact["value"], (dict, list)):
-            raise DraftError(f"{name}: fact {i} must state one scalar value")
+            raise DraftError(
+                "fact_value_not_scalar",
+                where=at,
+                expected="one scalar value",
+                got="nothing" if fact["value"] is None else type(fact["value"]).__name__,
+                repairs=[Repair("state one value; a fact with several is several "
+                                "facts", where=name)],
+            )
         facts.append(
             {
                 "subject": str(fact["subject"]),
@@ -344,8 +449,17 @@ def _valid_from(annotations, name):
     stated = annotations.get("valid_from")
     if not stated:
         raise DraftError(
-            f"{name}: annotations declare no valid_from, so nothing says when "
-            f"this definition took effect"
+            "no_valid_from",
+            where=f"{name}: annotations",
+            expected="`valid_from`, the instant these definitions took effect",
+            got="none",
+            repairs=[Repair(
+                "state the date the business started doing it this way. It is "
+                "not defaulted: the seal instant would date the business from "
+                "the day somebody described it and leave every earlier period "
+                "empty",
+                where=name,
+            )],
         )
     return _utc(stated)
 
@@ -372,9 +486,17 @@ def _flat(annotations, name):
             continue
         if isinstance(value, (dict, list)):
             raise DraftError(
-                f"{name}: annotations.{key} is a {type(value).__name__}, and every "
-                f"annotation carried into a sealed version must be a scalar — a "
-                f"nested block leaks its keys into the version metadata"
+                "annotation_not_scalar",
+                where=f"{name}: annotations.{key}",
+                expected="a scalar",
+                got=type(value).__name__,
+                repairs=[Repair(
+                    f"flatten it, or move it onto the slot it is about. The "
+                    f"version resolver reads this block without tracking depth, "
+                    f"so a nested {key} leaks its own keys into the version "
+                    f"metadata and can silently replace valid_from",
+                    where=name,
+                )],
             )
 
 
@@ -390,12 +512,29 @@ def _transcript(annotations, draft_path, name):
     stated = annotations.get("transcript")
     if not stated:
         raise DraftError(
-            f"{name}: annotations declare no transcript, so nothing records the "
-            f"conversation this map came from"
+            "no_transcript",
+            where=f"{name}: annotations",
+            expected="`transcript`, naming the record of the conversation this came from",
+            got="none",
+            repairs=[Repair(
+                "write down why the map says what it says, and name the file. "
+                "It lands beside the version as vN.txt, which is the only place "
+                "the reasoning survives",
+                where=name,
+                options=sorted(p.name for p in draft_path.parent.glob("*.txt")),
+            )],
         )
     path = draft_path.parent / str(stated)
     if not path.is_file():
-        raise DraftError(f"{name}: names transcript {stated!r}, which is not a file")
+        raise DraftError(
+            "transcript_missing",
+            where=f"{name}: annotations.transcript",
+            expected=f"a file beside the draft, named relative to {draft_path.parent.name}/",
+            got=f"{stated!r}, which is not a file",
+            repairs=[Repair("name a file that is there",
+                            where=str(draft_path.parent),
+                            options=sorted(p.name for p in draft_path.parent.glob("*.txt")))],
+        )
     return path
 
 
@@ -411,8 +550,12 @@ def _next_version(into):
         match = _VERSION_NAME.match(version["version"])
         if match is None:
             raise DraftError(
-                f"{version['path'].name} carries version {version['version']!r}, "
-                f"which is not vN — the next number cannot be assigned"
+                "version_not_numbered",
+                where=version["path"].name,
+                expected="a version named vN, so the next number can be assigned",
+                got=f"{version['version']!r}",
+                repairs=[Repair("the version key is read from inside the file, "
+                                "never from its name", where=str(version["path"]))],
             )
         numbered.append((int(match.group(1)), version["version"]))
     if not numbered:
@@ -465,7 +608,15 @@ def seal(conn, draft_path, *, actor_id, into=None, sealed_at=None, store=None):
     sealed_at = _utc(sealed_at) if sealed_at else datetime.now(timezone.utc)
 
     if not draft_path.is_file():
-        raise DraftError(f"no draft at {draft_path}")
+        raise DraftError(
+            "no_draft",
+            where=str(draft_path),
+            expected="a draft to seal",
+            got="nothing at that path",
+            repairs=[Repair("name a file that is there",
+                            options=sorted(p.name for p in draft_path.parent.glob("*.yaml"))
+                            if draft_path.parent.is_dir() else ())],
+        )
     text = draft_path.read_text(encoding="utf-8")
     view = _validate(text, draft_path.name, store)
     draft = yaml.safe_load(text) or {}
@@ -495,7 +646,15 @@ def seal(conn, draft_path, *, actor_id, into=None, sealed_at=None, store=None):
     for existing in (path, transcript_path):
         if existing.exists():
             raise DraftError(
-                f"{existing} already exists — a sealed version is never rewritten"
+                "version_exists",
+                where=str(existing),
+                expected=f"nothing at {version}, the next free number",
+                got="a file already there",
+                repairs=[Repair(
+                    "a sealed version is never rewritten. Move the file aside "
+                    "if it is a leftover, and otherwise seal a new version",
+                    where=str(into),
+                )],
             )
 
     # The version file first: a write that fails after this leaves an orphan
@@ -591,11 +750,20 @@ def _pins_already_sealed(store, draft, sealed_at, name):
     was not there yet.
     """
     for pinned_name, pinned_version in store.imports(draft):
-        held = next(v for v in store.versions(pinned_name) if v["version"] == pinned_version)
+        versions = store.versions(pinned_name)
+        held = next(v for v in versions if v["version"] == pinned_version)
         if held["sealed_at"] > sealed_at:
             raise DraftError(
-                f"{name} pins {pinned_name}@{pinned_version}, sealed at "
-                f"{held['sealed_at'].isoformat()}, after this seal at {sealed_at.isoformat()}"
+                "pin_sealed_later",
+                where=f"{name}: {pinned_name}@{pinned_version}",
+                expected=f"a version sealed before this seal at {sealed_at.isoformat()}",
+                got=f"one sealed at {held['sealed_at'].isoformat()}",
+                repairs=[Repair(
+                    f"pin a version of {pinned_name} that existed by then; a "
+                    f"version records what was there when it was sealed",
+                    options=[f"{pinned_name}@{v['version']}" for v in versions
+                             if v["sealed_at"] <= sealed_at],
+                )],
             )
 
 
@@ -648,7 +816,15 @@ def register(conn, version_path, *, actor_id, recorded_at=None, store=None):
     """
     version_path = Path(version_path)
     if not version_path.is_file():
-        raise DraftError(f"no version at {version_path}")
+        raise DraftError(
+            "no_version_file",
+            where=str(version_path),
+            expected="a sealed version to register",
+            got="nothing at that path",
+            repairs=[Repair("name a file that is there",
+                            options=sorted(p.name for p in version_path.parent.glob("v*.yaml"))
+                            if version_path.parent.is_dir() else ())],
+        )
     text = version_path.read_text(encoding="utf-8")
     view = _validate(text, version_path.name, store)
     document = yaml.safe_load(text) or {}
@@ -656,15 +832,27 @@ def register(conn, version_path, *, actor_id, recorded_at=None, store=None):
     version = view.schema.version
     if not version:
         raise DraftError(
-            f"{version_path.name} carries no version, so it is a draft — "
-            f"seal it before registering it"
+            "not_sealed",
+            where=version_path.name,
+            expected="a `version:` key, which seal stamps",
+            got="none, so this is still a draft",
+            repairs=[Repair("seal it, then register the version that comes out",
+                            where=str(version_path))],
         )
 
     annotations = document.get("annotations") or {}
     if annotations.get("facts"):
         raise DraftError(
-            f"{version_path.name} still carries annotations.facts, so it is a "
-            f"draft — register states no facts, only the URIs a map names"
+            "still_a_draft",
+            where=f"{version_path.name}: annotations.facts",
+            expected="none: seal strips them, because a fact kept in the map is "
+                     "a fact living outside the log",
+            got=f"{len(annotations['facts'])} still here",
+            repairs=[Repair(
+                "register states no facts, only the URIs a map names. Seal this "
+                "as a version and register that instead",
+                where=str(version_path),
+            )],
         )
 
     ranges = _slot_ranges(view, version_path.name)
@@ -748,12 +936,18 @@ def main(argv=None):
         print(f"not sealed: --sealed-at is not an instant — {exc}", file=sys.stderr)
         return 2
 
+    # The store the draft's pins resolve through. Without one a module import
+    # is read as a path and fails far from the cause, as a traceback rather
+    # than as a refusal saying which versions there are.
+    from components.modules.store import Store
+    store = Store.from_env()
+
     if args.register:
         try:
             with connect() as conn:
-                result = register(conn, args.draft, actor_id=args.actor)
-        except DraftError as exc:
-            print(f"not registered: {exc}", file=sys.stderr)
+                result = register(conn, args.draft, actor_id=args.actor, store=store)
+        except Refusal as exc:
+            print(f"not registered: {exc.explain()}", file=sys.stderr)
             return 2
         print(f"registered {result['path']}  ({result['version']})")
         print(f"valid from {result['valid_from'].isoformat()}")
@@ -771,9 +965,10 @@ def main(argv=None):
                 actor_id=args.actor,
                 into=args.into,
                 sealed_at=sealed_at,
+                store=store,
             )
-    except DraftError as exc:
-        print(f"not sealed: {exc}", file=sys.stderr)
+    except Refusal as exc:
+        print(f"not sealed: {exc.explain()}", file=sys.stderr)
         return 2
 
     print(f"sealed  {result['path']}  ({result['version']})")

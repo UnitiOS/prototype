@@ -32,9 +32,11 @@ sys.path.insert(0, str(ROOT / "components" / "kernel"))
 sys.path.insert(0, str(ROOT / "components" / "provenance"))
 
 from components.api import application, kernel  # noqa: E402
+from components.modules import check as check_read  # noqa: E402
 from components.modules import read as modules_read  # noqa: E402
 from components.modules import roles as roles_read  # noqa: E402
 from components.modules.store import ModuleError, Store  # noqa: E402
+from components.refusal import Refusal  # noqa: E402
 from perform import connect  # noqa: E402
 from provenance import _registry  # noqa: E402
 
@@ -136,11 +138,27 @@ def _required(request, name):
     return value
 
 
+def _refused(exc):
+    """A refusal, as the response that carries all of it.
+
+    The sentence stays under `error`, where every caller already looks, and the
+    structure travels beside it under `refusal` — so a page can draw the repair
+    rather than print the sentence and leave the reader to work out the rest.
+
+    The store answering "that is not here" is a 404 and anything else is a 400:
+    the difference is whether the thing asked for exists, and that is exactly
+    what separates the store's refusals from the rest.
+    """
+    status = 404 if isinstance(exc, ModuleError) else 400
+    return JSON({"error": exc.sentence(), "refusal": exc.as_dict()},
+                status_code=status)
+
+
 def _modules(fn, *args, **kwargs):
     try:
         return JSON(fn(Store.from_env(), *args, **kwargs))
-    except ModuleError as exc:
-        raise HTTPException(404, str(exc))
+    except Refusal as exc:
+        return _refused(exc)
 
 
 async def modules(request: Request):
@@ -177,6 +195,16 @@ async def app_roles(request: Request):
                         _required(request, "version"))
 
 
+async def app_check(request: Request):
+    """Whether every rule of this application resolves, and what is in the way.
+
+    The same readers the compiler runs, over the same sealed content, with the
+    refusals collected instead of thrown. It writes nothing.
+    """
+    return _application(check_read.check, _required(request, "name"),
+                        _required(request, "version"))
+
+
 async def app_fit(request: Request):
     """What moving this application's pins to another version's would cost.
 
@@ -197,10 +225,8 @@ async def app_fit(request: Request):
 def _application(fn, *args, **kwargs):
     try:
         return JSON(fn(Store.from_env(), *args, **kwargs))
-    except ModuleError as exc:
-        raise HTTPException(404, str(exc))
-    except application.MapError as exc:
-        raise HTTPException(400, str(exc))
+    except Refusal as exc:
+        return _refused(exc)
 
 
 async def app_read(request: Request):
@@ -302,6 +328,7 @@ routes = [
     Route("/api/modules/classes", module_classes),
     Route("/api/app", app_read),
     Route("/api/app/roles", app_roles),
+    Route("/api/app/check", app_check),
     Route("/api/app/fit", app_fit),
     Route("/api/app/projection", app_projection),
     Route("/api/app/cell", app_cell),

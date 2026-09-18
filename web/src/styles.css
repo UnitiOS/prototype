@@ -574,3 +574,66 @@ details.fact:not([open]) > summary { border-bottom: 0; }
 .cg-edge-fills path { stroke: var(--stands); stroke-dasharray: 3 3; opacity: 0.8; }
 .cg-key-fills { color: var(--stands); }
 .cg-key-fills::before { border-top-style: dashed; }
+
+/* ------------------------------------------------------------- refusals */
+/* One shape wherever the system says no. The repair is the point of it: a
+   refusal that is only a sentence leaves the reader to work out the next move,
+   and leaves an agent to guess at it. */
+
+.refusal {
+  margin: 12px 0;
+  border: 1px solid var(--withdrawn);
+  border-left-width: 3px;
+  border-radius: 8px;
+  background: var(--surface);
+  overflow: hidden;
+}
+.refusal-head {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px;
+  margin: 0; padding: 8px 14px;
+  background: rgba(179, 69, 46, 0.08);
+  border-bottom: 1px solid var(--rule);
+}
+.refusal-gate { color: var(--withdrawn); font-size: var(--step--1); }
+.refusal-where { font-family: var(--mono); font-size: var(--step--1); }
+
+.refusal-body {
+  display: grid; grid-template-columns: 5.5rem 1fr; gap: 2px 10px;
+  margin: 0; padding: 10px 14px; font-size: var(--step--1);
+}
+.refusal-body dt { color: var(--ink-soft); }
+.refusal-body dd { margin: 0; }
+.refusal-got { font-family: var(--mono); }
+
+.repairs { border-top: 1px solid var(--rule); padding: 10px 14px; }
+.repairs-head { margin: 0 0 6px; font-size: var(--step--1); font-weight: 600; }
+.repairs > ul { margin: 0; padding: 0; list-style: none; }
+.repairs > ul > li + li { margin-top: 10px; }
+.repairs p { margin: 0 0 4px; font-size: var(--step--1); }
+
+/* The finite set of valid answers. Drawn as a set, because that is what it is:
+   in Studio each of these becomes something to pick. Deliberately uncoloured:
+   in this palette a colour is a statement's standing and means nothing else. */
+.options { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 0; padding: 0; list-style: none; }
+.options code {
+  display: inline-block; padding: 1px 8px;
+  border: 1px solid var(--rule); border-radius: 999px;
+  background: var(--field); font-family: var(--mono); font-size: var(--step--1);
+}
+
+.refusal-code {
+  margin: 0; padding: 6px 14px;
+  border-top: 1px solid var(--rule);
+  font-size: var(--step--1);
+}
+.refusal-code code { font-family: var(--mono); }
+
+/* Does this application hold? One line when it does. */
+.check { margin-top: 10px; }
+.check-verdict {
+  margin: 0; padding: 6px 12px; border-left: 3px solid var(--rule);
+  font-size: var(--step--1);
+}
+.check-clean .check-verdict { color: var(--stands); border-left-color: var(--stands); }
+.check-dark .check-verdict { color: var(--withdrawn); border-left-color: var(--withdrawn); }
+.check .quiet { margin: 4px 0 0; padding-left: 15px; font-size: var(--step--1); }

@@ -70,7 +70,9 @@ sys.path.insert(0, str(ROOT / "components" / "kernel"))
 # The map is read exactly as the generator reads it — same induced slots, same
 # rule for which entities are of a class — so the two cannot drift apart.
 from components.modules.store import Store  # noqa: E402
+from components.refusal import Refusal, Repair  # noqa: E402
 from generate import IDENTITY_COLUMN, MapError, columns, read_map, table_name  # noqa: E402
+from generate import _carriers as carriers  # noqa: E402
 from generate import _grid as grid  # noqa: E402
 from generate import _type_slot as type_slot  # noqa: E402
 from perform import connect as connect_kernel  # noqa: E402
@@ -79,6 +81,18 @@ from seal import URI_PREDICATE  # noqa: E402
 OPS_DSN = os.environ.get(
     "UNITI_OPS_DSN", "postgresql://uniti:uniti@localhost:5433/uniti_ops"
 )
+
+
+class CompileError(MapError):
+    """A rule this cannot execute. Nothing has been written.
+
+    The same refusal as the generator's, saying who is speaking. Which gate
+    refused decides who can answer it: a map the generator cannot read is a
+    file problem, and a rule the compiler cannot execute is a modelling one.
+    """
+
+    gate = "the compiler"
+
 
 # A range becomes a column type. A range that is a class or an enum holds a
 # name, so it is text: the operational store keeps the URI the log resolved to.
@@ -170,6 +184,31 @@ def _fillers(view, class_name, binding):
             if str(slot.name) in below and not slot.abstract]
 
 
+def _sources(map_):
+    """What an aggregate could run over, as (classes, roles).
+
+    Both halves are answers, and they are not the same answer. A class is what
+    an entity is; a role is what a class promised, and a rule written against
+    one reaches whoever kept the promise — which is the difference between a
+    rule that survives a module being replaced and one that does not.
+
+    Only classes carrying `designates_type` are here: without it nothing in the
+    log can say a subject is one, so there would be no rows. And only roles
+    something concrete descends from, because a role nothing fills has no rows
+    either.
+    """
+    view = map_["view"]
+    classes, roles = [], []
+    for name in sorted(str(n) for n in view.all_classes()):
+        if type_slot(map_, name) is None:
+            continue
+        if not view.get_class(name).abstract:
+            classes.append(name)
+        elif _covered(view, name):
+            roles.append(name)
+    return classes, roles
+
+
 def _bound(map_, where, over, slot_name, role):
     """Every predicate `slot_name` stands for, across the classes `over` covers.
 
@@ -188,33 +227,63 @@ def _bound(map_, where, over, slot_name, role):
     declared = {str(slot.name): slot for slot in view.class_induced_slots(over)}
     slot = declared.get(slot_name)
     if slot is None:
-        raise MapError(
-            f"{where}: `{role}` names {slot_name!r}, which {over} has no slot for"
+        raise CompileError(
+            "no_such_slot",
+            where=where,
+            expected=f"`{role}` to name a slot of {over}",
+            got=f"{slot_name!r}",
+            repairs=[Repair(f"name a slot {over} has", options=sorted(declared))],
         )
     if not slot.abstract:
         if not slot.slot_uri:
-            raise MapError(f"{where}: {over}.{slot_name} declares no slot_uri")
+            raise CompileError(
+                "slot_without_uri",
+                where=f"{where}: {over}.{slot_name}",
+                expected="a `slot_uri`, which is the predicate this reads",
+                got="none",
+                repairs=[Repair(f"declare a slot_uri on {slot_name} and seal again")],
+            )
         return [slot]
 
     found = []
     for class_name in _covered(view, over):
         filled = _fillers(view, class_name, slot_name)
         if len(filled) > 1:
-            raise MapError(
-                f"{where}: {class_name} has {len(filled)} slots filling "
-                f"'{slot_name}' — {', '.join(str(s.name) for s in filled)}. "
-                f"A binding takes one"
+            raise CompileError(
+                "binding_ambiguous",
+                where=f"{where}: {class_name}.{slot_name}",
+                expected=f"one slot filling '{slot_name}'",
+                got=f"{len(filled)} — {', '.join(str(s.name) for s in filled)}",
+                repairs=[Repair(
+                    f"keep `is_a: {slot_name}` on one of them and take it off "
+                    f"the rest, in whichever module declares {class_name}",
+                    options=[str(s.name) for s in filled],
+                )],
             )
         found += filled
     if not found:
-        raise MapError(
-            f"{where}: `{role}` names the binding {slot_name!r}, and no class "
-            f"below {over} fills it — {', '.join(_covered(view, over)) or 'nothing'} "
-            f"declare no slot with `is_a: {slot_name}`"
+        covered = _covered(view, over)
+        raise CompileError(
+            "binding_unfilled",
+            where=where,
+            expected=f"some class below {over} to fill the binding {slot_name!r}",
+            got=f"none: {', '.join(covered) or 'nothing'} below it",
+            repairs=[
+                Repair(f"declare a slot with `is_a: {slot_name}` on one of these",
+                       options=covered),
+                Repair(f"or write the rule against a slot they do have",
+                       options=sorted(declared)),
+            ],
         )
     for slot in found:
         if not slot.slot_uri:
-            raise MapError(f"{where}: {slot.name} declares no slot_uri")
+            raise CompileError(
+                "slot_without_uri",
+                where=f"{where}: {slot.name}",
+                expected="a `slot_uri`, which is the predicate this reads",
+                got="none",
+                repairs=[Repair(f"declare a slot_uri on {slot.name} and seal again")],
+            )
     return found
 
 
@@ -223,9 +292,17 @@ def _one_type(map_, where, slots, role):
     types = {_sql_type(map_, slot.range) for slot in slots}
     if len(types) > 1:
         detail = ", ".join(f"{s.name} is {_sql_type(map_, s.range)}" for s in slots)
-        raise MapError(
-            f"{where}: the slots filling `{role}` do not agree on a type — "
-            f"{detail}. One column has one type"
+        raise CompileError(
+            "types_disagree",
+            where=where,
+            expected=f"one type across the slots filling `{role}`, because one "
+                     f"column has one type",
+            got=detail,
+            repairs=[Repair(
+                "make the ranges agree in the modules that declare them, or "
+                "give each its own column",
+                options=[f"{s.name}: {s.range}" for s in slots],
+            )],
         )
     return types.pop()
 
@@ -236,14 +313,32 @@ def _read_aggregate(map_, where, spec):
     named = [key for key in spec if key in EMPTY]
     unknown = set(spec) - set(named) - {"over", "by", "where", "convert"}
     if len(named) != 1 or unknown:
-        raise MapError(
-            f"{where}: an aggregate is `over`, `by`, optional `where`, optional `convert` and one operator of "
-            f"{sorted(EMPTY)} — this one has {sorted(spec)}"
+        raise CompileError(
+            "aggregate_keys",
+            where=where,
+            expected=f"`over`, `by`, one operator of {sorted(EMPTY)}, and "
+                     f"optionally `where` and `convert`",
+            got=", ".join(sorted(str(k) for k in spec)) or "nothing",
+            repairs=[Repair("use these keys and no others",
+                            options=["over", "by", "where", "convert"] + sorted(EMPTY))],
         )
     operator = named[0]
     over = str(spec.get("over") or "")
     if over not in view.all_classes():
-        raise MapError(f"{where}: `over` names {over!r}, which is not a class")
+        raise CompileError(
+            "not_a_class",
+            where=where,
+            expected="`over` to name a class this application can see",
+            got=f"{over!r}",
+            repairs=[
+                Repair("name a class the log can say an entity is",
+                       options=_sources(map_)[0]),
+                Repair("or name a role, and the rule reaches whichever class "
+                       "fills it — which is what survives the module under it "
+                       "being replaced",
+                       options=_sources(map_)[1]),
+            ],
+        )
 
     def named_slot(slot_name, role):
         """One slot of the source class — the first of whatever fills the name."""
@@ -257,32 +352,68 @@ def _read_aggregate(map_, where, spec):
     measures = _bound(map_, where, over, spec[operator], operator)
     measure_type = _one_type(map_, where, measures, operator)
     if measure_type not in SUMMABLE:
-        raise MapError(
-            f"{where}: {operator} is over {', '.join(str(m.name) for m in measures)}, "
-            f"whose range is {measure_type} and cannot be totalled"
+        raise CompileError(
+            "not_summable",
+            where=where,
+            expected=f"`{operator}` over something numeric",
+            got=f"{', '.join(str(m.name) for m in measures)}, which is {measure_type}",
+            repairs=[Repair(
+                f"total a slot whose range is one of these",
+                options=sorted(name for name, sql in SQL_TYPE.items() if sql in SUMMABLE),
+            )],
         )
 
     by = as_dict(spec.get("by") or {})
     if not by:
-        raise MapError(f"{where}: an aggregate with no `by` groups nothing")
+        raise CompileError(
+            "no_grouping",
+            where=where,
+            expected="`by`, naming what each row of the table stands for",
+            got="none, which groups nothing",
+            repairs=[Repair(
+                "name one column of this class and the slot of the source that "
+                "fills it, as `by: {<column>: <slot>}`",
+                options=[str(slot.name) for slot in view.class_induced_slots(over)
+                         if not slot.abstract],
+            )],
+        )
 
     where_block = as_dict(spec.get("where") or {})
     parsed_where = []
     for slot_name, cond in where_block.items():
         cond_dict = as_dict(cond) if cond else {}
         if set(cond_dict) != {"is_a"}:
-            raise MapError(
-                f"{where}: a `where` condition must be `is_a` — got {sorted(cond_dict)}"
+            raise CompileError(
+                "where_not_is_a",
+                where=f"{where}: where.{slot_name}",
+                expected="`is_a`, naming the class the value must be",
+                got=", ".join(sorted(str(k) for k in cond_dict)) or "nothing",
+                repairs=[Repair(
+                    "a `where` narrows by what something is, and that is all it "
+                    "does here. Anything else is arithmetic in a column of its own",
+                    options=["is_a"],
+                )],
             )
         target_class = str(cond_dict["is_a"])
         if target_class not in view.all_classes():
-            raise MapError(
-                f"{where}: `where` names {target_class!r}, which is not a class"
+            raise CompileError(
+                "not_a_class",
+                where=f"{where}: where.{slot_name}",
+                expected="`is_a` to name a class this application can see",
+                got=f"{target_class!r}",
+                repairs=[Repair("name a class",
+                                options=sorted(str(n) for n in view.all_classes()))],
             )
         t_slot = type_slot(map_, target_class)
         if t_slot is None or not t_slot.slot_uri:
-            raise MapError(
-                f"{where}: {target_class} has no slot carrying designates_type"
+            raise CompileError(
+                "no_type_slot",
+                where=f"{where}: where.{slot_name}",
+                expected=f"{target_class} to carry a `designates_type` slot, so "
+                         f"the log can say a subject is one",
+                got="none",
+                repairs=[Repair("narrow by a class that carries one",
+                                options=carriers(map_))],
             )
         parsed_where.append({
             "slot_name": str(slot_name),
@@ -301,49 +432,99 @@ def _read_aggregate(map_, where, spec):
             convert_block["on"] = convert_block.pop("True")
         expected = {"using", "on", "factor"}
         if set(convert_block) != expected:
-            raise MapError(
-                f"{where}: a `convert` block must have `using`, `on`, and `factor` — got {sorted(str(k) for k in convert_block)}"
+            raise CompileError(
+                "convert_keys",
+                where=f"{where}: convert",
+                expected="`using`, `on` and `factor`",
+                got=", ".join(sorted(str(k) for k in convert_block)) or "nothing",
+                repairs=[Repair(
+                    "use these three keys. An unquoted `on:` is boolean True in "
+                    "YAML 1.1 and is read here as if it were the word",
+                    options=sorted(expected),
+                )],
             )
         using_class = str(convert_block["using"])
         if using_class not in view.all_classes():
-            raise MapError(
-                f"{where}: `convert.using` names {using_class!r}, which is not a class"
+            raise CompileError(
+                "not_a_class",
+                where=f"{where}: convert.using",
+                expected="a class this application can see",
+                got=f"{using_class!r}",
+                repairs=[Repair("name the class that holds the conversion",
+                                options=sorted(str(n) for n in view.all_classes()))],
             )
         using_slots = {slot.name: slot for slot in view.class_induced_slots(using_class)}
 
         factor_name = str(convert_block["factor"])
         factor_slot = using_slots.get(factor_name)
         if factor_slot is None:
-            raise MapError(
-                f"{where}: `convert.factor` names {factor_name!r}, which {using_class} has no slot for"
+            raise CompileError(
+                "no_such_slot",
+                where=f"{where}: convert.factor",
+                expected=f"a slot of {using_class}",
+                got=f"{factor_name!r}",
+                repairs=[Repair(f"name a slot {using_class} has",
+                                options=sorted(str(n) for n in using_slots))],
             )
         factor_type = _sql_type(map_, factor_slot.range)
         if factor_type not in SUMMABLE:
-            raise MapError(
-                f"{where}: `convert.factor` is over {factor_name}, whose range "
-                f"{factor_slot.range} is {factor_type} and cannot be totalled"
+            raise CompileError(
+                "not_summable",
+                where=f"{where}: convert.factor",
+                expected="a factor something numeric can be multiplied by",
+                got=f"{factor_name}, whose range {factor_slot.range} is {factor_type}",
+                repairs=[Repair(
+                    f"name a slot of {using_class} with a numeric range",
+                    options=sorted(str(s.name) for s in using_slots.values()
+                                   if _sql_type(map_, s.range) in SUMMABLE),
+                )],
             )
 
         t_slot = type_slot(map_, using_class)
         if t_slot is None or not t_slot.slot_uri:
-            raise MapError(
-                f"{where}: {using_class} has no slot carrying designates_type"
+            raise CompileError(
+                "no_type_slot",
+                where=f"{where}: convert.using",
+                expected=f"{using_class} to carry a `designates_type` slot, so "
+                         f"the log can say a subject is one",
+                got="none",
+                repairs=[Repair("convert using a class that carries one",
+                                options=carriers(map_))],
             )
 
         on_block = as_dict(convert_block["on"])
         if not on_block:
-            raise MapError(f"{where}: `convert.on` mapping cannot be empty")
+            raise CompileError(
+                "convert_on_empty",
+                where=f"{where}: convert.on",
+                expected=f"at least one pair matching a slot of {using_class} to "
+                         f"a slot of the source",
+                got="nothing",
+                repairs=[Repair(f"map one slot of {using_class} onto the source "
+                                f"slot it must equal",
+                                options=sorted(str(n) for n in using_slots))],
+            )
 
         parsed_on = []
         for conv_slot_name, src_slot_name in on_block.items():
             c_slot = using_slots.get(str(conv_slot_name))
             if c_slot is None:
-                raise MapError(
-                    f"{where}: `convert.on` names {conv_slot_name!r}, which {using_class} has no slot for"
+                raise CompileError(
+                    "no_such_slot",
+                    where=f"{where}: convert.on",
+                    expected=f"a slot of {using_class}",
+                    got=f"{conv_slot_name!r}",
+                    repairs=[Repair(f"name a slot {using_class} has",
+                                    options=sorted(str(n) for n in using_slots))],
                 )
             if not c_slot.slot_uri:
-                raise MapError(
-                    f"{where}: {using_class}.{conv_slot_name} declares no slot_uri"
+                raise CompileError(
+                    "slot_without_uri",
+                    where=f"{where}: {using_class}.{conv_slot_name}",
+                    expected="a `slot_uri`, which is the predicate this reads",
+                    got="none",
+                    repairs=[Repair(f"declare a slot_uri on {conv_slot_name} and "
+                                    f"seal again")],
                 )
             parsed_on.append({
                 "conv_slot_uri": c_slot.slot_uri,
@@ -389,20 +570,35 @@ def _read_parameter(map_, where, spec, keys, cols):
     """
     view = map_["view"]
     if set(spec) != {"of", "slot"}:
-        raise MapError(
-            f"{where}: a parameter is `of` and `slot` — this one has {sorted(spec)}"
+        raise CompileError(
+            "parameter_keys",
+            where=where,
+            expected="`of` and `slot`",
+            got=", ".join(sorted(str(k) for k in spec)) or "nothing",
+            repairs=[Repair("name the key column to read off, and the slot to "
+                            "read", options=["of", "slot"])],
         )
     of = str(spec["of"])
     if of not in keys:
-        raise MapError(
-            f"{where}: `of` names {of!r}, which is not one of this table's "
-            f"key columns {keys}"
+        raise CompileError(
+            "not_a_key_column",
+            where=where,
+            expected="`of` to name one of this table's key columns",
+            got=f"{of!r}",
+            repairs=[Repair("a parameter is read off a key, because a key is "
+                            "what a row stands for", options=keys)],
         )
     range_ = next(col["range"] for col in cols if col["name"] == of)
     if range_ not in view.all_classes():
-        raise MapError(
-            f"{where}: `of` names {of!r}, whose range {range_} is not a class, "
-            f"so its value names no entity to read a fact off"
+        raise CompileError(
+            "key_range_not_a_class",
+            where=where,
+            expected=f"a key whose value names an entity to read a fact off",
+            got=f"{of!r}, whose range {range_} is not a class",
+            repairs=[Repair("read off a key that ranges over a class",
+                            options=[col["name"] for col in cols
+                                     if col["name"] in keys
+                                     and col["range"] in view.all_classes()])],
         )
     wanted = str(spec["slot"])
     found = []
@@ -417,22 +613,43 @@ def _read_parameter(map_, where, spec, keys, cols):
             # which one that is may differ from class to class below the range.
             filled = _fillers(view, class_name, wanted)
             if len(filled) > 1:
-                raise MapError(
-                    f"{where}: {class_name} has {len(filled)} slots filling "
-                    f"'{wanted}' — {', '.join(str(s.name) for s in filled)}. "
-                    f"A binding takes one"
+                raise CompileError(
+                    "binding_ambiguous",
+                    where=f"{where}: {class_name}.{wanted}",
+                    expected=f"one slot filling '{wanted}'",
+                    got=f"{len(filled)} — {', '.join(str(s.name) for s in filled)}",
+                    repairs=[Repair(
+                        f"keep `is_a: {wanted}` on one of them and take it off "
+                        f"the rest, in whichever module declares {class_name}",
+                        options=[str(s.name) for s in filled],
+                    )],
                 )
             slot = filled[0] if filled else None
         if slot is None:
             continue
         if not slot.slot_uri:
-            raise MapError(f"{where}: {class_name}.{slot.name} declares no slot_uri")
+            raise CompileError(
+                "slot_without_uri",
+                where=f"{where}: {class_name}.{slot.name}",
+                expected="a `slot_uri`, which is the predicate this reads",
+                got="none",
+                repairs=[Repair(f"declare a slot_uri on {slot.name} and seal again")],
+            )
         if str(slot.slot_uri) not in found:
             found.append(str(slot.slot_uri))
     if not found:
-        raise MapError(
-            f"{where}: `slot` names {wanted!r}, which neither {range_} nor any "
-            f"class below it has a slot for"
+        below = _covered(view, range_)
+        raise CompileError(
+            "slot_not_below",
+            where=where,
+            expected=f"`slot` to name something {range_}, or a class below it, has",
+            got=f"{wanted!r}",
+            repairs=[Repair(
+                f"name a slot one of {', '.join(below) or range_} declares",
+                options=sorted({str(slot.name) for class_name in below
+                                for slot in view.class_induced_slots(class_name)
+                                if not slot.abstract}),
+            )],
         )
     return {"of": of, "slot": wanted, "slot_uris": found}
 
@@ -459,8 +676,15 @@ def plan(map_, class_name):
         where = f"{class_name}.{col['name']}"
         declared = sum(1 for rule in (annotation, parameter, expression) if rule)
         if declared > 1:
-            raise MapError(
-                f"{where} declares more than one rule, and a column has one"
+            raise CompileError(
+                "two_rules_on_a_column",
+                where=where,
+                expected="one rule, because a column is filled once",
+                got=", ".join(kind for kind, rule in
+                              (("aggregate", annotation), ("parameter", parameter),
+                               ("equals_expression", expression)) if rule),
+                repairs=[Repair("keep one and move the other to a column of its own",
+                                options=["aggregate", "parameter", "equals_expression"])],
             )
         if annotation:
             aggregates[col["name"]] = _read_aggregate(map_, where, annotation)
@@ -470,28 +694,58 @@ def plan(map_, class_name):
             expressions[col["name"]] = str(expression)
 
     if not aggregates:
-        raise MapError(
-            f"{class_name} carries no aggregate, so no rule here fills a table for it"
+        raise CompileError(
+            "no_aggregate",
+            where=class_name,
+            expected="at least one column carrying an `aggregate`",
+            got="none, so no rule fills a table for this class",
+            repairs=[Repair(
+                f"annotate one slot of {class_name} with an aggregate, or read "
+                f"it as a list of its own entities instead",
+                options=[col["name"] for col in cols],
+            )],
         )
 
     # TODO: must every aggregate on one class group by the same set? Refusing
     # is the narrow reading and no map has asked for the wide one yet.
     groupings = {tuple(sorted(spec["by"])) for spec in aggregates.values()}
     if len(groupings) > 1:
-        raise MapError(
-            f"the aggregates on {class_name} group by different sets "
-            f"{sorted(groupings)} — a row of one table has one grouping"
+        raise CompileError(
+            "groupings_disagree",
+            where=class_name,
+            expected="one grouping, because a row of one table stands for one thing",
+            got=" and ".join("(" + ", ".join(g) + ")" for g in sorted(groupings)),
+            repairs=[Repair(
+                "group every aggregate on this class the same way, or split the "
+                "odd one into a table of its own",
+                options=sorted(aggregates),
+            )],
         )
     grouped_by = set(next(iter(groupings)))
 
     names = {col["name"] for col in cols}
     stray = sorted(grouped_by - names)
     if stray:
-        raise MapError(f"{class_name} is grouped by {stray}, which it has no slot for")
+        raise CompileError(
+            "grouped_by_unknown",
+            where=class_name,
+            expected=f"`by` to name columns {class_name} has",
+            got=", ".join(stray),
+            repairs=[Repair("group by a column of this class", options=sorted(names))],
+        )
     derived = sorted(
         grouped_by & (set(aggregates) | set(expressions) | set(stated)))
     if derived:
-        raise MapError(f"{class_name} is grouped by {derived}, which it derives")
+        raise CompileError(
+            "grouped_by_derived",
+            where=class_name,
+            expected="a grouping of columns nothing derives",
+            got=", ".join(derived) + ", which this class derives",
+            repairs=[Repair(
+                "group by a column the source states, not one computed from it",
+                options=sorted(names - set(aggregates) - set(expressions) - set(stated)),
+            )],
+        )
 
     # The grouping in the class's own column order, so the table reads the way
     # the map wrote it rather than the way an annotation happened to be keyed.
@@ -546,15 +800,27 @@ def plan_entities(map_, class_name):
     that declares a slot of that name is refused rather than shadowed.
     """
     if type_slot(map_, class_name) is None:
-        raise MapError(
-            f"{class_name} has no slot carrying designates_type, so nothing in "
-            f"the log can say an entity is one and it has no rows to project"
+        raise CompileError(
+            "no_type_slot",
+            where=class_name,
+            expected="one slot carrying `designates_type: true`",
+            got="none, so nothing in the log can say an entity is one",
+            repairs=[Repair(
+                f"put {class_name} below a class that carries one, or give this "
+                f"class an aggregate so its table is a grouping instead",
+                options=carriers(map_),
+            )],
         )
     cols = columns(map_, class_name)
     if any(col["name"] == IDENTITY_COLUMN for col in cols):
-        raise MapError(
-            f"{class_name} declares a slot called {IDENTITY_COLUMN!r}, which is "
-            f"the column a projection carries its subject's URI in"
+        raise CompileError(
+            "identity_column_taken",
+            where=f"{class_name}.{IDENTITY_COLUMN}",
+            expected=f"no slot named {IDENTITY_COLUMN!r}",
+            got="one, and that is the column a projection carries its subject's URI in",
+            repairs=[Repair(f"rename the slot; {IDENTITY_COLUMN} is the "
+                            f"compiler's, and a row nothing could name could "
+                            f"not be pointed at")],
         )
 
     planned = [{
@@ -588,9 +854,14 @@ def plan_for(map_, class_name):
     say an entity is, is a list of them. Nothing else decides it.
     """
     if class_name not in map_["view"].all_classes():
-        raise MapError(
-            f"{map_['path'].name} declares no class {class_name!r} — it has "
-            f"{sorted(str(name) for name in map_['view'].all_classes())}"
+        raise CompileError(
+            "no_such_class",
+            where=map_["path"].name,
+            expected="a class this map declares",
+            got=f"{class_name!r}",
+            repairs=[Repair("name a class the map can see",
+                            options=sorted(str(name) for name
+                                           in map_["view"].all_classes()))],
         )
     for slot in map_["view"].class_induced_slots(class_name):
         if _annotation(slot, "aggregate"):
@@ -646,15 +917,27 @@ def _source_cte(map_, over, alias):
     """The subjects the log says are of a class, or of one below it."""
     slot = type_slot(map_, over)
     if slot is None or not slot.slot_uri:
-        raise MapError(
-            f"{over} has no slot carrying designates_type, so nothing in the "
-            f"log can say a subject is one and no aggregate can run over it"
+        raise CompileError(
+            "no_type_slot",
+            where=over,
+            expected="one slot carrying `designates_type: true`",
+            got="none, so nothing in the log can say a subject is one",
+            repairs=[Repair(f"run the aggregate over a class that carries one",
+                            options=carriers(map_))],
         )
     covered = _covered(map_["view"], over)
     if not covered:
-        raise MapError(
-            f"{over} is a role and nothing below it is a class an entity can "
-            f"be, so there are no rows to run over"
+        raise CompileError(
+            "role_has_no_rows",
+            where=over,
+            expected=f"at least one class below {over} that an entity can be",
+            got="none: everything below it is abstract",
+            repairs=[Repair(
+                f"pin a module whose class mixes in {over}. A role is what "
+                f"somebody promises, never what something is",
+                options=[str(name) for name in map_["view"].all_classes()
+                         if not map_["view"].get_class(name).abstract],
+            )],
         )
     names = ", ".join(_lit(name) for name in covered)
     return (
@@ -777,22 +1060,38 @@ def _column_sql(plan_, name, aliases, stack=()):
         return "NULL"
 
     if name in stack:
-        raise MapError(
-            f"{plan_['class']}.{name} is written in terms of itself, "
-            f"through {' -> '.join(stack + (name,))}"
+        raise CompileError(
+            "expression_cycle",
+            where=f"{plan_['class']}.{name}",
+            expected="an expression over the columns beside it",
+            got="one written in terms of itself, through "
+                + " -> ".join(stack + (name,)),
+            repairs=[Repair("break the ring: one of these must be stated or "
+                            "aggregated rather than computed",
+                            options=list(stack + (name,)))],
         )
     text = plan_["expressions"][name]
     if not _ARITHMETIC.match(_REF.sub(" ", text)):
-        raise MapError(
-            f"{plan_['class']}.{name}: {text!r} is more than arithmetic over "
-            f"the columns beside it, and that is all an expression may be here"
+        raise CompileError(
+            "expression_not_arithmetic",
+            where=f"{plan_['class']}.{name}",
+            expected="arithmetic over {columns}, and nothing else",
+            got=f"{text!r}",
+            repairs=[Repair(
+                "keep to + - * / ( ) and the columns beside it. The language "
+                "stays smaller than SQL on purpose: a swap report can only be "
+                "exact while every rule can be read whole"
+            )],
         )
     known = {c["name"] for c in plan_["columns"]}
     for referenced in _REF.findall(text):
         if referenced.strip() not in known:
-            raise MapError(
-                f"{plan_['class']}.{name} names {{{referenced}}}, "
-                f"which {plan_['class']} has no slot for"
+            raise CompileError(
+                "expression_names_unknown",
+                where=f"{plan_['class']}.{name}",
+                expected=f"columns {plan_['class']} has",
+                got="{" + referenced + "}",
+                repairs=[Repair("name a column beside it", options=sorted(known))],
             )
     return "(" + _REF.sub(
         lambda m: _column_sql(plan_, m.group(1).strip(), aliases, stack + (name,)), text
@@ -1064,9 +1363,15 @@ def main(argv=None):
         map_ = read_map(args.map, Store.from_env())
         classes = args.klass or (_aggregate_classes(map_) + _entity_classes(map_))
         if not classes:
-            raise MapError(
-                f"{args.map} declares neither an aggregate nor a class the log "
-                f"can say an entity is one of")
+            raise CompileError(
+                "nothing_to_compile",
+                where=args.map,
+                expected="a class carrying an aggregate, or one the log can say "
+                         "an entity is",
+                got="neither",
+                repairs=[Repair("annotate a slot with an aggregate, or pin a "
+                                "module whose classes carry designates_type")],
+            )
 
         with connect_kernel() as kernel, psycopg.connect(OPS_DSN) as ops:
             for class_name in classes:
@@ -1086,8 +1391,8 @@ def main(argv=None):
                         render(built), encoding="utf-8", newline="\n")
                     print(f"wrote {into / table}.sql and .txt")
         return 0
-    except MapError as exc:
-        print(f"not compiled: {exc}", file=sys.stderr)
+    except Refusal as exc:
+        print(f"not compiled: {exc.explain()}", file=sys.stderr)
         return 2
     except psycopg.OperationalError as exc:
         print(f"not compiled: no store at {OPS_DSN} — {exc}", file=sys.stderr)

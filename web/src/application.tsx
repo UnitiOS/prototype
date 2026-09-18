@@ -12,15 +12,19 @@
 import { useEffect, useState } from "react";
 import { ApiError, appApi, modulesApi } from "./api";
 import type {
-  Application, CellSource, ClassGraph as Graph, Clocks, Column, FitReport, FormSpec,
-  ModuleGraph, Pin, Projection, Roles, Written,
+  Application, CellSource, CheckReport, ClassGraph as Graph, Clocks, Column, FitReport,
+  FormSpec, ModuleGraph, Pin, Projection, Refusal as RefusalSpec, Roles, Written,
 } from "./api";
 import { ClassGraph } from "./ClassGraph";
+import { Failure, RefusalCard } from "./Refusal";
 import { day, fromInput, instant, toInput } from "./format";
 import type { AppPick } from "./route";
 
 function useLoad<T>(load: (() => Promise<T>) | null, deps: unknown[]) {
-  const [state, setState] = useState<{ data?: T; error?: string }>({});
+  // The refusal travels beside the sentence, because a page that keeps only
+  // the sentence has thrown away the repair.
+  const [state, setState] =
+    useState<{ data?: T; error?: string; refusal?: RefusalSpec | null }>({});
   useEffect(() => {
     if (!load) { setState({}); return; }
     let live = true;
@@ -28,6 +32,7 @@ function useLoad<T>(load: (() => Promise<T>) | null, deps: unknown[]) {
       .then((data) => live && setState({ data }))
       .catch((e) => live && setState({
         error: e instanceof ApiError ? e.message : "Something failed while reading the API.",
+        refusal: e instanceof ApiError ? e.refusal : null,
       }));
     return () => { live = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -64,10 +69,17 @@ export function ApplicationPage(
   }, [graph.data]);
 
   const chosen = pick.name && pick.version ? { name: pick.name, version: pick.version } : null;
+  // Every sealed version of the chosen application, oldest first. Not only the
+  // newest: what a move would cost is asked from the version somebody is on,
+  // and that is usually an older one.
+  const siblings = (graph.data?.nodes ?? [])
+    .filter((n) => n.name === chosen?.name)
+    .map((n) => n.version)
+    .sort((a, b) => Number(a.slice(1)) - Number(b.slice(1)));
 
   return (
     <>
-      {graph.error && <p className="failure" role="alert">{graph.error}</p>}
+      {graph.error && <Failure error={graph.error} refusal={graph.refusal} />}
       {graph.data && candidates.length === 0 && (
         <p className="empty">
           No sealed version pins another one, so there is nothing here yet that composes.
@@ -89,11 +101,25 @@ export function ApplicationPage(
           })}
         </nav>
       )}
+      {chosen && siblings.length > 1 && (
+        <nav className="chips chips-inline" aria-label="Versions of this application">
+          <span className="quiet">Version</span>
+          {siblings.map((v) => {
+            const on = chosen.version === v;
+            return (
+              <button key={v} className={`version-chip${on ? " version-chip-on" : ""}`}
+                aria-current={on}
+                onClick={() => onPick({ name: chosen.name, version: v, klass: null,
+                  column: null, keys: null, stating: false, against: null })}>
+                {v}
+              </button>
+            );
+          })}
+        </nav>
+      )}
       {chosen && (
         <ApplicationView pin={chosen} pick={pick} clocks={clocks} onPick={onPick}
-          siblings={(graph.data?.nodes ?? [])
-            .filter((n) => n.name === chosen.name)
-            .map((n) => n.version)} />
+          siblings={siblings} />
       )}
     </>
   );
@@ -109,7 +135,7 @@ function ApplicationView(
   const classes = useLoad<Graph>(() => modulesApi.classes(pin.name, pin.version), [pin.name, pin.version]);
   const [focus, setFocus] = useState<string | null>(null);
 
-  if (app.error) return <p className="failure" role="alert">{app.error}</p>;
+  if (app.error) return <Failure error={app.error} refusal={app.refusal} />;
   if (!app.data) return <p className="quiet">Reading…</p>;
   const a = app.data;
   const chosen = klass ?? (a.tables[0]?.class ?? null);
@@ -129,8 +155,9 @@ function ApplicationView(
             {a.tables.length === 1 ? "table" : "tables"}, and declares {a.tables.filter((t) => t.module?.name === a.name).length} of the classes behind them.
           </p>
           {a.description && <p>{a.description}</p>}
+          <CheckStrip pin={pin} />
         </header>
-        {classes.error && <p className="failure" role="alert">{classes.error}</p>}
+        {classes.error && <Failure error={classes.error} refusal={classes.refusal} />}
         {classes.data && <ClassGraph graph={classes.data} selected={focus} onSelect={setFocus} />}
       </section>
 
@@ -171,6 +198,35 @@ function ApplicationView(
           : <p className="empty">This application fills no table yet.</p>}
       </main>
     </>
+  );
+}
+
+// Does this application hold? The same readers the compiler runs, with the
+// refusals collected instead of thrown — a gate stops at the first problem,
+// and somebody deciding what to fix wants all of them at once.
+function CheckStrip({ pin }: { pin: Pin }) {
+  const check = useLoad<CheckReport>(() => appApi.check(pin.name, pin.version),
+    [pin.name, pin.version]);
+
+  if (check.error) return <Failure error={check.error} refusal={check.refusal} />;
+  if (!check.data) return null;
+  const c = check.data;
+  const hollow = c.tables.flatMap((t) => t.unfilled.map((u) => `${t.class}.${u}`));
+
+  return (
+    <div className={`check${c.clean ? " check-clean" : " check-dark"}`}>
+      <p className="check-verdict">
+        {c.clean
+          ? `Every rule resolves. All ${c.tables.length} tables compile as they stand.`
+          : `${c.refusals.length} of ${c.tables.length} tables do not compile as they stand.`}
+      </p>
+      {hollow.length > 0 && (
+        <p className="quiet">
+          No rule reaches {hollow.join(", ")}, so {hollow.length === 1 ? "it is a column" : "they are columns"} of nulls.
+        </p>
+      )}
+      {c.refusals.map((r, i) => <RefusalCard key={i} refusal={r} at={r.class} />)}
+    </div>
   );
 }
 
@@ -227,10 +283,10 @@ function ProjectionView(
   // Bumped after a submission, so the table is worked out again from a log
   // that now holds one more statement. Nothing is invalidated; it is derived.
   const [written, setWritten] = useState(0);
-  const { data, error } = useLoad<Projection>(
+  const { data, error, refusal } = useLoad<Projection>(
     () => appApi.projection(pin.name, pin.version, klass, clocks),
     [pin.name, pin.version, klass, clocks.validAt.getTime(), clocks.asOf.getTime(), written]);
-  if (error) return <p className="failure" role="alert">{error}</p>;
+  if (error) return <Failure error={error} refusal={refusal} at={klass} />;
   if (!data) return <p className="quiet">Deriving…</p>;
 
   // Which cell is open lives in the URL, in key-column order, so a link to a
@@ -352,11 +408,11 @@ function CellPanel(
   { pin, klass, column, keys, clocks }:
   { pin: Pin; klass: string; column: string; keys: Record<string, string>; clocks: Clocks },
 ) {
-  const { data, error } = useLoad<CellSource>(
+  const { data, error, refusal } = useLoad<CellSource>(
     () => appApi.cell(pin.name, pin.version, klass, column, keys, clocks),
     [pin.name, pin.version, klass, column, JSON.stringify(keys),
       clocks.validAt.getTime(), clocks.asOf.getTime()]);
-  if (error) return <p className="failure" role="alert">{error}</p>;
+  if (error) return <Failure error={error} refusal={refusal} />;
   if (!data) return <p className="chips quiet">Reading the log…</p>;
 
   if (data.kind === "expression") {
@@ -428,7 +484,7 @@ function FormPanel(
   { pin, klass, clocks, onWritten }:
   { pin: Pin; klass: string; clocks: Clocks; onWritten: () => void },
 ) {
-  const { data, error } = useLoad<FormSpec>(
+  const { data, error, refusal } = useLoad<FormSpec>(
     () => appApi.form(pin.name, pin.version, klass, clocks),
     [pin.name, pin.version, klass]);
   const [values, setValues] = useState<Record<string, string>>({});
@@ -436,10 +492,10 @@ function FormPanel(
   const [actor, setActor] = useState("");
   const [validFrom, setValidFrom] = useState(toInput(clocks.validAt));
   const [busy, setBusy] = useState(false);
-  const [failed, setFailed] = useState<string | null>(null);
+  const [failed, setFailed] = useState<{ error: string; refusal: RefusalSpec | null } | null>(null);
   const [done, setDone] = useState<Written | null>(null);
 
-  if (error) return <p className="failure" role="alert">{error}</p>;
+  if (error) return <Failure error={error} refusal={refusal} at={klass} />;
   if (!data) return <p className="quiet">Reading the map…</p>;
 
   const send = async () => {
@@ -457,7 +513,10 @@ function FormPanel(
       setSubject("");
       onWritten();
     } catch (e) {
-      setFailed(e instanceof ApiError ? e.message : "The submission failed.");
+      setFailed({
+        error: e instanceof ApiError ? e.message : "The submission failed.",
+        refusal: e instanceof ApiError ? e.refusal : null,
+      });
     } finally {
       setBusy(false);
     }
@@ -526,7 +585,7 @@ function FormPanel(
           carries the class, and submitting states it. Nobody types the class in.
         </p>
       )}
-      {failed && <p className="failure" role="alert">{failed}</p>}
+      {failed && <Failure error={failed.error} refusal={failed.refusal} at={klass} />}
       {done && (
         <p className="rule">
           Written: {done.assertions} statements
@@ -562,7 +621,7 @@ function RolesPanel(
   const others = siblings.filter((v) => v !== pin.version);
   const against = pick.against && others.includes(pick.against) ? pick.against : null;
 
-  if (roles.error) return <p className="failure" role="alert">{roles.error}</p>;
+  if (roles.error) return <Failure error={roles.error} refusal={roles.refusal} />;
   if (!roles.data) return null;
   const carried = roles.data.roles.filter((r) => r.bindings.length > 0 || r.filled_by.length > 0);
 
@@ -578,6 +637,16 @@ function RolesPanel(
         </p>
       </header>
 
+      {carried.length === 0 && (
+        <p className="empty">
+          Nothing this version pins declares a role, so there is nothing here yet for a
+          rule to be written against. Its rules name classes in the modules under it, and
+          replacing one of those modules breaks them — which is what the comparison
+          below says in numbers.
+        </p>
+      )}
+
+      {carried.length > 0 && (
       <table className="grid roles-grid">
         <thead>
           <tr><th>Role</th><th>Binding</th><th>Filled by</th><th>Under the name</th></tr>
@@ -621,6 +690,7 @@ function RolesPanel(
             )))}
         </tbody>
       </table>
+      )}
 
       {others.length > 0 && (
         <div className="swap">
@@ -651,7 +721,7 @@ function FitPanel({ pin, against }: { pin: Pin; against: string }) {
   const fit = useLoad<FitReport>(() => appApi.fit(pin.name, pin.version, against),
     [pin.name, pin.version, against]);
 
-  if (fit.error) return <p className="failure" role="alert">{fit.error}</p>;
+  if (fit.error) return <Failure error={fit.error} refusal={fit.refusal} />;
   if (!fit.data) return <p className="quiet">Working it out…</p>;
   const f = fit.data;
 
@@ -694,10 +764,13 @@ function FitPanel({ pin, against }: { pin: Pin; against: string }) {
           <dt>Would go dark</dt>
           <dd>
             {f.dark.map((d, i) => (
-              <p key={i}>
-                <strong>{d.class}{d.column ? `.${d.column}` : ""}</strong>
-                <span className="quiet block">{d.why}</span>
-              </p>
+              d.refusal
+                ? <RefusalCard key={i} refusal={d.refusal}
+                    at={`${d.class}${d.column ? `.${d.column}` : ""}`} />
+                : <p key={i}>
+                    <strong>{d.class}{d.column ? `.${d.column}` : ""}</strong>
+                    <span className="quiet block">{d.why}</span>
+                  </p>
             ))}
           </dd>
         </dl>

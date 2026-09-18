@@ -24,6 +24,7 @@ sys.path.insert(0, str(ROOT / "components" / "kernel"))
 from compile import MapError, plan_for, preview, sql_text, tables  # noqa: E402
 from compile import _REF as EXPRESSION_REFS  # noqa: E402
 from components.modules import read as modules_read  # noqa: E402
+from components.refusal import Repair  # noqa: E402
 from generate import IDENTITY_COLUMN, form, read_map, submit, table_name  # noqa: E402
 from generate import _registry, _row_subjects, _type_slot  # noqa: E402
 from resolve import resolve_single  # noqa: E402
@@ -187,8 +188,12 @@ def cell(conn, store, name, version, class_name, column, keys, *, valid_at, as_o
     col = next((c for c in plan_["columns"] if c["name"] == column), None)
     if col is None:
         raise MapError(
-            f"{class_name} has no column {column!r} — it has "
-            f"{[c['name'] for c in plan_['columns']]}"
+            "no_such_column",
+            where=class_name,
+            expected="a column of this table",
+            got=f"{column!r}",
+            repairs=[Repair("open a column the table has",
+                            options=[c["name"] for c in plan_["columns"]])],
         )
     by_uri, by_id = _registry(conn)
     out = {"name": name, "version": version, "class": class_name,

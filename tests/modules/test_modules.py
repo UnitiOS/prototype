@@ -64,26 +64,43 @@ def test_the_store_holds_every_version_in_order(built):
         {"name": CORE, "version": "v1"}, {"name": CATALOG, "version": "v1"}]
 
 
-@pytest.mark.parametrize("imports, refusal", [
-    (["linkml:types", "@uniti/core"], "names no version"),
-    (["linkml:types", "@uniti/core@v9"], "has no sealed version v9"),
-    (["linkml:types", "@nobody/nothing@v1"], "holds no module @nobody/nothing"),
-    (["linkml:types", "some/local/file"], "neither a module@version"),
-    (["linkml:types", "some/local/@uniti/core@v1"], "neither a module@version"),
+@pytest.mark.parametrize("imports, code", [
+    (["linkml:types", "@uniti/core"], "import_not_pinned"),
+    (["linkml:types", "@uniti/core@v9"], "no_such_version"),
+    (["linkml:types", "@nobody/nothing@v1"], "no_such_module"),
+    (["linkml:types", "some/local/file"], "import_not_understood"),
+    (["linkml:types", "some/local/@uniti/core@v1"], "import_not_understood"),
 ])
-def test_an_import_must_pin_a_sealed_version(conn, built, tmp_path, imports, refusal):
+def test_an_import_must_pin_a_sealed_version(conn, built, tmp_path, imports, code):
+    """The store refuses, and says so as itself.
+
+    It is not wrapped as a parse error on the way out: which gate refused
+    decides who can answer it, and the store's own refusal carries the versions
+    that would have been accepted.
+    """
     target = built.directory(CATALOG)
     before = sorted(p.name for p in target.iterdir())
-    with pytest.raises(DraftError, match=refusal):
+    with pytest.raises(ModuleError) as caught:
         seal(conn, _draft(tmp_path, imports), actor_id="test", into=target, store=built)
+    assert caught.value.code == code
+    assert caught.value.gate == "the module store"
     assert sorted(p.name for p in target.iterdir()) == before
 
 
+def test_an_unpinned_import_is_told_which_versions_there_are(conn, built, tmp_path):
+    """The repair is the list, not the advice: a pin is chosen, never invented."""
+    with pytest.raises(ModuleError) as caught:
+        seal(conn, _draft(tmp_path, ["linkml:types", CORE]), actor_id="test",
+             into=built.directory(CATALOG), store=built)
+    assert caught.value.repairs[0].options == (f"{CORE}@v1", f"{CORE}@v2")
+
+
 def test_a_version_cannot_pin_one_sealed_after_it(conn, built, tmp_path):
-    with pytest.raises(DraftError, match="after this seal"):
+    with pytest.raises(DraftError) as caught:
         seal(conn, _draft(tmp_path, ["linkml:types", "@uniti/core@v1"]), actor_id="test",
              into=built.directory(CATALOG), sealed_at="2020-01-01T00:00:00+00:00",
              store=built)
+    assert caught.value.code == "pin_sealed_later"
 
 
 def test_a_pinned_import_keeps_its_meaning_when_the_module_moves_on(conn, tmp_path):
@@ -234,8 +251,10 @@ def test_the_graph_draws_pins_and_supersessions(built):
 
 
 def test_a_module_name_is_checked(built):
-    with pytest.raises(ModuleError, match="not a module name"):
+    with pytest.raises(ModuleError) as caught:
         built.directory("catalog")
+    assert caught.value.code == "not_a_module_name"
+    assert CATALOG in caught.value.repairs[0].options
 
 
 def test_the_api_reads_the_store_in_the_environment(conn, built, monkeypatch):

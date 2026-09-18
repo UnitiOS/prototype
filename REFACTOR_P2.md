@@ -235,9 +235,18 @@ turunan yang sudah ada; dan **ya, core menyediakan kelas akar** yang membawa
 
 ### Irisan 2.6: Penolakan yang bisa ditindaklanjuti
 
-- **Mekanisme:** `MapError` membawa struktur (`code`, `where`, `expected`, `got`,
+- **Mekanisme:** penolakan membawa struktur (`code`, `where`, `expected`, `got`,
   `repairs`), bukan cuma prosa. Satu sumber, tiga pembaca: kalimat untuk manusia,
   tombol perbaiki untuk Studio, hasil tool untuk agent.
+  - satu tipe dasar di `components/refusal/`, empat gerbang yang menyebut
+    dirinya: store, seal, generator, compiler
+  - kalimatnya **diturunkan** dari strukturnya, bukan ditulis di sampingnya
+  - `code` adalah daftar tertutup; konstruktor menolak kode yang tidak terdaftar
+  - `repairs[].options` dihitung dari graph: himpunan berhingga jawaban yang sah
+  - `check()` menjalankan pembaca yang sama dan **mengumpulkan** penolakannya,
+    karena gerbang berhenti di yang pertama dan halaman tidak boleh
+- **Yang dilihat:** kartu penolakan yang sama di mana pun sistem menolak, dan
+  laporan kecocokan yang menyebut apa yang harus ditambahkan.
 - **Selesai jika:** setiap penolakan di layar datang bersama perbaikannya.
 
 ### Irisan 2.7: Katalog dan kesehatan graph
@@ -368,6 +377,26 @@ menghitung lintas modul.
   membangun map hipotetis di memori: dokumen versi ini dengan `imports` milik versi
   itu. Tidak pernah di-seal, tidak pernah ditulis; kalau ditolak, penolakan itulah
   jawabannya.
+- **Test yang mencocokkan prosa adalah test yang menahan prosa.** Sembilan belas
+  test mencocokkan potongan kalimat penolakan, jadi memperbaiki kata-kata sebuah
+  penolakan berarti memperbaiki test — persis insentif yang salah untuk pesan
+  yang paling sering dibaca orang. Sekarang semuanya mencocokkan `code`, dan
+  beberapa di antaranya juga memeriksa `options`, yang justru memperkuat: sebuah
+  test sekarang menyatakan *jawaban apa yang ditawarkan*, bukan bagaimana
+  penolakannya dieja.
+- **Gerbang berhenti; halaman tidak boleh.** Compiler menolak tabel pertama yang
+  bermasalah dan diam soal sisanya — benar untuk gerbang yang sedang di tengah
+  memancarkan SQL, tidak berguna untuk orang yang memutuskan apa yang harus
+  diperbaiki. `check()` memisahkan keduanya tanpa menduplikasi satu pun aturan:
+  pembacanya sama persis, hanya penolakannya dikumpulkan.
+- **Penolakan store tidak lagi dibungkus seal.** Dulu import yang tidak bisa
+  diresolusi keluar sebagai "bukan LinkML yang sah", yang menyembunyikan
+  perbaikannya. Sekarang penolakan store lewat utuh, karena **siapa yang
+  menolak** menentukan siapa yang bisa menjawabnya.
+- **CLI seal tidak pernah memberi store.** Akibatnya sebuah draft yang memin
+  modul jatuh sebagai `FileNotFoundError` di tengah LinkML, bukan sebagai
+  penolakan. Ditemukan saat menguji pembaca terminal irisan 2.6; sekarang
+  `main()` membangun `Store.from_env()` seperti generator dan compiler.
 - **Sebuah peran tidak boleh dapat tabel.** Tidak ada apa pun di log yang pernah
   menjadi `Flow`, jadi tabel entity untuknya akan kosong. Akibatnya: medan yang
   ber-range peran (seperti `item` di `@rival`) membaca pilihannya dari log, bukan
@@ -387,7 +416,7 @@ menghitung lintas modul.
 | 1 | selesai, menunggu Anda melihatnya: store modul berversi (`components/modules`), import dipin dan diperiksa seal, `@uniti/core` di-seal sebagai v1, linimasa + detail versi + diff di aplikasi; 110 test lulus |
 | 2 | selesai, menunggu Anda melihatnya: aplikasi sebagai versi yang memin (`components/api/application.py`), compiler dieksekusi lintas modul dengan test angka, pintu tulis massal `scripts/load_facts.py`, form yang menulis ke kernel, dan penelusuran satu sel sampai ke pernyataan yang menopangnya; graph kelas lintas modul + tabel proyeksi + penjelasan aturan per kolom di aplikasi web; fixture diganti tiga modul demonstrasi yang menandai dirinya di graph dan di kernel; 134 test lulus |
 | 2.5 | selesai, menunggu Anda melihatnya: `@uniti/core@v2` membawa peran (`Thing`, `Resource`, `Event`, `Flow`) dan tiga pengikat; seal menolak kelas yang mengaku peran tanpa memenuhinya, dan menolak closure yang memuat satu modul di dua versi; compiler meresolusi slot abstrak ke predikat konkret tiap kelas pengisi; `@rival/stock-moves@v1` sebagai modul saingan yang menulis ulang semua namanya; `@demo/stock@v3` memindahkan pin tanpa mengubah satu baris aturan dan menghasilkan angka identik; panel peran + laporan kecocokan di aplikasi web; 153 test lulus |
-| 2.6 | belum dimulai |
+| 2.6 | selesai, menunggu Anda melihatnya: `components/refusal/` — penolakan sebagai data dengan kalimat yang diturunkan darinya, 62 kode tertutup, dan `repairs[].options` yang dihitung dari graph; empat gerbang menyebut dirinya; `check()` mengumpulkan semua penolakan sekaligus dan menerima map yang belum di-seal; API mengirim strukturnya di samping kalimatnya; satu kartu penolakan di semua permukaan, dan laporan kecocokan membawa penolakannya utuh; test penolakan sekarang mencocokkan `code`, bukan prosa; 163 test lulus |
 | 2.7 | belum dimulai |
 | 3 | belum dimulai |
 | 4 | belum dimulai |

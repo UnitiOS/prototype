@@ -57,7 +57,28 @@ export interface Point {
 
 export interface Clocks { validAt: Date; asOf: Date }
 
-export class ApiError extends Error {}
+// ---- refusals -------------------------------------------------------------
+// A refusal is data before it is a sentence, so the page can draw the way out
+// rather than print a paragraph and leave the reader to work it out. `options`
+// is the finite set of valid answers, computed from the graph: in Studio it
+// becomes a list to pick from, and here it is at least visible.
+
+export interface Repair { do: string; where: string | null; options: string[] }
+
+export interface Refusal {
+  code: string; means: string; gate: string;
+  where: string; expected: string; got: string; sentence: string;
+  repairs: Repair[];
+}
+
+export class ApiError extends Error {
+  readonly refusal: Refusal | null;
+
+  constructor(message: string, refusal: Refusal | null = null) {
+    super(message);
+    this.refusal = refusal;
+  }
+}
 
 function clockParams(c: Clocks): Record<string, string> {
   return { valid_at: c.validAt.toISOString(), as_of: c.asOf.toISOString() };
@@ -75,7 +96,8 @@ async function get<T>(path: string, params: Record<string, string | number> = {}
   }
   const body = await response.json().catch(() => null);
   if (!response.ok) {
-    throw new ApiError(body?.error ?? `The API answered ${response.status}.`);
+    throw new ApiError(body?.error ?? `The API answered ${response.status}.`,
+                       body?.refusal ?? null);
   }
   return body as T;
 }
@@ -93,7 +115,8 @@ async function post<T>(path: string, body: unknown): Promise<T> {
   }
   const answer = await response.json().catch(() => null);
   if (!response.ok) {
-    throw new ApiError(answer?.error ?? `The API answered ${response.status}.`);
+    throw new ApiError(answer?.error ?? `The API answered ${response.status}.`,
+                       answer?.refusal ?? null);
   }
   return answer as T;
 }
@@ -296,15 +319,26 @@ export interface FitReport {
            covered_before: string[]; covered_after: string[];
            reads_before: string[]; reads_after: string[];
            status: "unchanged" | "rebound" }[];
-  dark: { class: string; column: string | null; why: string }[];
+  // A rule that does not survive the move, with the refusal that stopped it —
+  // repairs and all, so "what must I add" is answered on the page. Null where
+  // there is no gate to ask: the new closure simply has nothing to say here.
+  dark: { class: string; column: string | null; why: string; refusal: Refusal | null }[];
   orphaned: { uri: string; module: Pin; held: number }[];
   orphaned_statements: number;
   clean: boolean;
 }
 
+export interface CheckReport {
+  name: string; version: string; clean: boolean;
+  tables: { class: string; holds: boolean; shape: string | null;
+            columns: number; unfilled: string[] }[];
+  refusals: (Refusal & { class: string })[];
+}
+
 export const appApi = {
   read: (name: string, version: string) => get<Application>("/api/app", { name, version }),
   roles: (name: string, version: string) => get<Roles>("/api/app/roles", { name, version }),
+  check: (name: string, version: string) => get<CheckReport>("/api/app/check", { name, version }),
   fit: (name: string, version: string, against: string) =>
     get<FitReport>("/api/app/fit", { name, version, against }),
   projection: (name: string, version: string, klass: string, c: Clocks) =>

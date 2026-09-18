@@ -59,6 +59,7 @@ sys.path.insert(0, str(ROOT / "components" / "kernel"))
 sys.path.insert(0, str(ROOT / "components"))
 
 from components.modules.store import Store  # noqa: E402
+from components.refusal import Refusal, Repair  # noqa: E402
 from perform import connect, perform  # noqa: E402
 from resolve import resolve_single  # noqa: E402
 from seal import URI_PREDICATE  # noqa: E402
@@ -123,8 +124,10 @@ ORDER BY a.subject_id, a.predicate_id,
 """
 
 
-class MapError(Exception):
-    """The map cannot be generated from. Nothing has been written."""
+class MapError(Refusal):
+    """The map cannot be read this way. Nothing has been written."""
+
+    gate = "the generator"
 
 
 def _utc(value):
@@ -146,7 +149,15 @@ def read_map(path, store=None):
     """
     path = Path(path)
     if not path.is_file():
-        raise MapError(f"no map at {path}")
+        raise MapError(
+            "no_map",
+            where=str(path),
+            expected="a sealed version file",
+            got="nothing at that path",
+            repairs=[Repair("name a file that is there",
+                            options=sorted(p.name for p in path.parent.glob("v*.yaml"))
+                            if path.parent.is_dir() else ())],
+        )
     text = path.read_text(encoding="utf-8")
     view = store.view(text) if store is not None else SchemaView(text)
     if store is None:
@@ -156,12 +167,22 @@ def read_map(path, store=None):
         pinned = [str(i) for i in (view.schema.imports or []) if str(i).startswith("@")]
         if pinned:
             raise MapError(
-                f"{path.name} pins {', '.join(pinned)}, so it is only whole in a "
-                f"module store — read it with one"
+                "pins_need_a_store",
+                where=path.name,
+                expected="a module store to resolve the pins through",
+                got=f"none, and this map pins {', '.join(pinned)}",
+                repairs=[Repair("read it with a store: read_map(path, Store.from_env())")],
             )
     version = view.schema.version
     if not version:
-        raise MapError(f"{path.name} carries no version, so it is not a sealed map")
+        raise MapError(
+            "not_a_sealed_map",
+            where=path.name,
+            expected="a `version:` key, which seal stamps",
+            got="none, so this is still a draft",
+            repairs=[Repair("seal it first, and read the version that comes out",
+                            where=path.name)],
+        )
     # How the kernel names this map. With more than one module in the store a
     # bare `v1` names nothing, so a version sealed into a module is recorded as
     # `@scope/name@vN` — the same label `seal` writes.
@@ -183,8 +204,12 @@ def columns(map_, class_name):
     view = map_["view"]
     if class_name not in view.all_classes():
         raise MapError(
-            f"{map_['path'].name} declares no class {class_name!r} — it has "
-            f"{sorted(view.all_classes())}"
+            "no_such_class",
+            where=map_["path"].name,
+            expected="a class this map declares",
+            got=f"{class_name!r}",
+            repairs=[Repair("name a class the map can see",
+                            options=sorted(str(n) for n in view.all_classes()))],
         )
     classes = set(view.all_classes())
     out = []
@@ -242,6 +267,20 @@ def _type_slot(map_, class_name):
         if slot.designates_type:
             return slot
     return None
+
+
+def _carriers(map_):
+    """Every class in this map that already carries a `designates_type` slot.
+
+    The answer to "this one has none" is to put it below one that has: which
+    classes those are is a fact about the closure, not advice, so a refusal can
+    hand them over instead of describing them.
+    """
+    view = map_["view"]
+    return sorted(
+        str(name) for name in view.all_classes()
+        if any(slot.designates_type for slot in view.class_induced_slots(name))
+    )
 
 
 def _registry(conn):
@@ -362,8 +401,14 @@ def form(conn, map_, class_name, *, valid_at=None, as_of=None):
     cols = columns(map_, class_name)
     if _type_slot(map_, class_name) is None:
         raise MapError(
-            f"{class_name} has no slot carrying designates_type, so nothing in "
-            f"the log can say an entity is one — it has a table and no form"
+            "no_type_slot",
+            where=class_name,
+            expected="one slot carrying `designates_type: true`",
+            got="none, so nothing in the log can say an entity is one",
+            repairs=[Repair(
+                f"give {class_name} a class above it that carries the slot, or "
+                f"declare one on it",
+                options=_carriers(map_))],
         )
     valid_at = valid_at or _NOW()
     as_of = as_of or _NOW()
@@ -509,10 +554,20 @@ def submit(conn, map_, class_name, *, subject, values, actor_id,
     unknown = sorted((set(values) | set(revokes)) - set(fields))
     if unknown:
         raise MapError(
-            f"{class_name} has no field {unknown} — it has {sorted(fields)}"
+            "no_such_field",
+            where=class_name,
+            expected="fields this class has",
+            got=", ".join(unknown),
+            repairs=[Repair(f"name a field of {class_name}", options=sorted(fields))],
         )
     if not values and not revokes:
-        raise MapError(f"nothing entered for {subject}")
+        raise MapError(
+            "nothing_entered",
+            where=subject,
+            expected="at least one value entered, or one statement withdrawn",
+            got="neither",
+            repairs=[Repair("fill in a field", options=sorted(fields))],
+        )
 
     withdrawn = [name for name in revokes if name not in values]
 
@@ -715,7 +770,16 @@ def main(argv=None):
             values = {}
             for pair in args.set:
                 if "=" not in pair:
-                    raise MapError(f"--set {pair} is not FIELD=VALUE")
+                    raise MapError(
+                        "not_field_value",
+                        where="--set",
+                        expected="FIELD=VALUE",
+                        got=f"{pair!r}",
+                        repairs=[Repair(
+                            "write the field, an equals sign, and the value",
+                            options=[c["name"] + "=..." for c in columns(map_, args.klass)],
+                        )],
+                    )
                 field, value = pair.split("=", 1)
                 values[field] = value
             result = submit(conn, map_, args.klass, subject=args.subject,
@@ -729,8 +793,8 @@ def main(argv=None):
             for name in values:
                 print(f"  {args.subject}  {name}  {values[name]}")
             return 0
-    except MapError as exc:
-        print(f"not generated: {exc}", file=sys.stderr)
+    except Refusal as exc:
+        print(f"not generated: {exc.explain()}", file=sys.stderr)
         return 2
 
 

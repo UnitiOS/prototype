@@ -322,8 +322,9 @@ def test_a_map_without_the_store_cannot_be_read(world):
     against. This is the refusal that keeps a half-resolved map from being
     compiled as if it were whole.
     """
-    with pytest.raises(MapError, match="only whole in a module store"):
+    with pytest.raises(MapError) as caught:
         read_map(world.path(APP_NAME, APP_VERSION))
+    assert caught.value.code == "pins_need_a_store"
 
 
 def test_a_class_nothing_can_be_an_instance_of_has_no_table(app_map):
@@ -459,9 +460,12 @@ def test_a_cell_of_an_entity_table_is_one_statement(conn, world):
 
 
 def test_a_column_that_is_not_there_is_refused(conn, world):
-    with pytest.raises(MapError, match="no column"):
+    """And the refusal hands back the columns that are, not just a complaint."""
+    with pytest.raises(MapError) as caught:
         application.cell(conn, world, APP_NAME, APP_VERSION, "IngredientStock",
                          "nothing", {}, valid_at="2026-06-30", as_of="2026-09-18")
+    assert caught.value.code == "no_such_column"
+    assert "quantity_on_hand" in caught.value.repairs[0].options
 
 
 # ----------------------------------------------------------------- the form

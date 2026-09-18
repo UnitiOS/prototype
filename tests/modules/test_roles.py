@@ -118,9 +118,11 @@ def test_claiming_a_role_and_not_filling_it_is_refused(conn, built, tmp_path):
         classes={"Delivery": {"mixins": ["Flow"], "slots": ["delivery_ref"]}},
         slots={"delivery_ref": {"slot_uri": "pb:delivery_ref", "identifier": True}},
     )
-    with pytest.raises(DraftError, match="obliges it to name one slot as 'amount'"):
+    with pytest.raises(DraftError) as caught:
         seal(conn, draft, actor_id="test", into=tmp_path / "out", store=built)
     assert not (tmp_path / "out").exists()
+    assert caught.value.code == "binding_unfilled"
+    assert caught.value.where == "Delivery.amount"
 
 
 def test_two_slots_filling_one_binding_is_refused(conn, built, tmp_path):
@@ -140,8 +142,12 @@ def test_two_slots_filling_one_binding_is_refused(conn, built, tmp_path):
             "day": {"is_a": "moment", "slot_uri": "pb:day", "range": "date"},
         },
     )
-    with pytest.raises(DraftError, match="2 slots filling 'amount' — gross, net"):
+    with pytest.raises(DraftError) as caught:
         seal(conn, draft, actor_id="test", into=tmp_path / "out", store=built)
+    assert caught.value.code == "binding_ambiguous"
+    # The repair is the choice itself: both slots, and the instruction to keep
+    # `is_a: amount` on one. Nothing here picks for the author.
+    assert caught.value.repairs[0].options == ("gross", "net")
 
 
 def test_one_closure_holds_one_version_of_a_module(conn, built, tmp_path):
@@ -157,8 +163,10 @@ def test_one_closure_holds_one_version_of_a_module(conn, built, tmp_path):
         # @demo/catalog@v2 pins core v1; this draft pins core v2 itself.
         imports=["linkml:types", f"{CORE}@v2", f"{CATALOG}@v2"],
     )
-    with pytest.raises(DraftError, match=f"reaches {CORE} at two versions"):
+    with pytest.raises(DraftError) as caught:
         seal(conn, draft, actor_id="test", into=tmp_path / "out", store=built)
+    assert caught.value.code == "two_versions_of_a_module"
+    assert CORE in caught.value.expected
 
 
 def test_a_rule_naming_a_binding_the_source_does_not_carry_is_refused(built):
@@ -175,8 +183,12 @@ def test_a_rule_naming_a_binding_the_source_does_not_carry_is_refused(built):
     not seal.
     """
     map_ = read_map(built.path(APP_NAME, APP_VERSION), built)
-    with pytest.raises(MapError, match="which Resource has no slot for"):
+    with pytest.raises(MapError) as caught:
         _bound(map_, "probe", "Resource", "amount", "sum")
+    assert caught.value.code == "no_such_slot"
+    # And it hands back what Resource does have, so the next attempt is a
+    # choice from a list rather than another guess.
+    assert "entity_class" in caught.value.repairs[0].options
 
 
 # ---- a binding is a hole, not a column ------------------------------------
