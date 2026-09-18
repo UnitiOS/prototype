@@ -3,6 +3,11 @@
 > Dokumen ini hidup selama proses refactoring saja, lalu dihapus. Isinya **bukan**
 > konteks permanen dan bukan catatan keputusan jangka panjang. Hanya arah, urutan
 > kerja, dan hal yang masih harus diputuskan.
+>
+> Dokumen tetangganya, **`DESIGN_NOTES.md`**, berumur lebih panjang: isinya bentuk
+> sistemnya — core, peran, Studio — dan juga bukan aturan, hanya referensi supaya
+> diskusi yang sama tidak diulang. Yang di sini adalah *urutan kerja*; yang di sana
+> adalah *kenapa*.
 
 ---
 
@@ -94,8 +99,12 @@ Prinsip mekanisme yang ikut terbawa. Semuanya sudah terbukti di P1:
   bagaimana ia bekerja di belakang layar, sehingga arahan dan keputusan bisa akurat.
 - **Test lebih dulu untuk mekanismenya,** tapi irisan belum selesai sebelum ada
   yang bisa dilihat di layar.
-- **Tidak ada file konteks** (`CLAUDE.md`, `DECISIONS.md`, log). Dokumen ini
-  satu-satunya, dan dihapus di akhir.
+- **Tidak ada file konteks yang mengikat** (`CLAUDE.md`, `DECISIONS.md`, log).
+  Dokumen kerja ini satu-satunya, dan dihapus di akhir. Sejak 18 September 2026
+  ada satu pengecualian yang disengaja: `DESIGN_NOTES.md`, catatan referensi yang
+  **tidak mengikat apa pun** — ia ada supaya diskusi panjang tidak perlu diulang,
+  bukan supaya ada yang harus dipatuhi. Kalau kode membuktikan sebaliknya, kode
+  yang benar.
 - **Kode domain-agnostic.** Tidak ada istilah dari data uji di kode. Semua isi
   domain hidup di `tests/modules/fixtures/` — modul `@demo/*` dan `demo_data.yaml` —
   dan setiap modul di sana menyatakan `purpose: demonstration`, yang terbawa sampai
@@ -203,17 +212,44 @@ Standar hanya bermakna kalau ada yang menegakkan atau menjalankannya, jadi core
 didesain setelah generator dan compiler membaca modul (irisan 2), dan sebelum
 Studio (irisan 3) yang harus dipandu olehnya.
 
-- **Pertanyaan yang dijawab:** kategori apa yang ada di core, apa yang diwajibkan
-  tiap kategori pada sebuah kelas, dan mekanisme mana yang menegakkannya.
-  Setiap baris core harus menyebut eksekutornya; tanpa itu ia tidak masuk.
-- **Bahan bandingan:** REA (Resource–Event–Agent), BFO (benda dan kejadian), gist,
-  serta mixin dan abstract class di LinkML — keputusan P1 "hanya `is_a`, tanpa
-  mixin" perlu ditinjau ulang untuk core.
-- **Pertanyaan konkret yang sudah muncul:** apakah core menyediakan kelas akar
-  yang membawa `entity_class`, sehingga setiap kelas modul mewarisinya, atau
-  setiap kelas menyebut slot itu sendiri seperti sekarang.
-- **Yang dilihat:** modul contoh ditulis ulang mengikuti standar, dan gerbang
-  menolak modul yang melanggarnya, dengan alasan yang terbaca.
+> Arah, alasan, dan detail teknisnya ada di **`DESIGN_NOTES.md`** — catatan
+> referensi, bukan aturan. Yang di bawah ini hanya ruang lingkup irisannya.
+
+Tiga pertanyaan yang dibuka irisan ini sudah punya jawaban usulan di sana:
+kategori core adalah **peran** (kelas abstrak yang menyatakan kewajiban, bukan isi
+dunia); peran diisi lewat **`mixins:`**, bukan `is_a` — jadi keputusan P1 "hanya
+`is_a`" memang ditinjau ulang, dan mixin terbukti bekerja dengan penelusuran
+turunan yang sudah ada; dan **ya, core menyediakan kelas akar** yang membawa
+`entity_class`, karena kelas akar adalah tempat kewajiban menempel.
+
+- **Mekanisme:**
+  - core v2: `Thing`, `Resource`, `Event`, `Flow`; slot abstrak `amount`,
+    `moment`, `affects`. Setiap baris menyebut eksekutornya.
+  - resolusi slot abstrak ke slot konkret di `named_slot`
+  - slot abstrak dilewati sebagai kolom (kalau tidak, muncul kolom hantu)
+  - seal menolak kelas yang mengaku peran tapi tidak memenuhinya
+- **Yang dilihat:** panel peran, laporan kecocokan, dan `@rival/*` — modul kedua
+  dengan nama-nama berbeda, ditulis tanpa melihat nama modul pertama.
+- **Selesai jika:** aplikasi memindahkan pin-nya dari satu modul inventory ke
+  modul saingan **tanpa diubah**, dan angkanya identik.
+
+### Irisan 2.6: Penolakan yang bisa ditindaklanjuti
+
+- **Mekanisme:** `MapError` membawa struktur (`code`, `where`, `expected`, `got`,
+  `repairs`), bukan cuma prosa. Satu sumber, tiga pembaca: kalimat untuk manusia,
+  tombol perbaiki untuk Studio, hasil tool untuk agent.
+- **Selesai jika:** setiap penolakan di layar datang bersama perbaikannya.
+
+### Irisan 2.7: Katalog dan kesehatan graph
+
+- **Mekanisme:** katalog yang dihitung dari isi ter-seal (peran, modul, kelas,
+  siapa mengisi apa) — bisa dikueri, bukan dokumen. Enam diagnosa: istilah mati,
+  kolom hampa, kelas kosong, peran tak terisi, pin tertinggal, fakta yatim.
+- **Selesai jika:** `inv:movement_happened_on` muncul sebagai istilah mati — 245
+  pernyataan, nol pembaca — tanpa ada yang menuliskannya.
+
+**2.6 dan 2.7 mendahului Studio.** Permukaan jelajah Studio adalah katalog, dan
+penyuntingnya digerakkan penolakan.
 
 ### Irisan 3: Studio manual (tanpa LLM)
 
@@ -279,8 +315,10 @@ menghitung lintas modul.
 |---|---|---|---|
 | 1 | Teknologi UI | awal irisan 0b | API JSON Python (Starlette/uvicorn, sudah terpasang) yang dipakai bersama oleh UI dan agent, ditambah frontend React + TypeScript + Vite (Node 22 sudah ada). Graph, diff, dan chat streaming butuh UI interaktif yang sungguhan. |
 | ~~2~~ | ~~Isi `ontology_version` pada assertion di dunia modular~~ | **dijawab di irisan 2** | **Versi aplikasi.** Lihat keputusan di bawah. |
-| 3 | Isi `@uniti/core` | berjalan | Hipotesis. Hanya yang dibutuhkan mekanisme yang masuk; archetype menunggu bukti. |
+| 3 | Isi `@uniti/core` | irisan 2.5 | **Peran, bukan kamus istilah.** Ukurannya terikat pada jumlah eksekutor, bukan jumlah domain: ~30 deklarasi saat dewasa. Rumus, tiga lapis (`core` / `@uniti/*` / ekosistem), dan aturan pertumbuhannya di `DESIGN_NOTES.md` §4. |
 | 4 | Penyedia LLM untuk agent | irisan 4 | — |
+| 5 | Koherensi: dua modul mengisi peran yang sama → hitung ganda | irisan 2.5 | `DESIGN_NOTES.md` §10.3. Harus dijawab sebelum ada yang rugi. |
+| 6 | Satuan, dan waktu yang punya dua sumber tanpa penjaga | sesudah 2.5 | `DESIGN_NOTES.md` §10.4–10.5 |
 
 ---
 
@@ -310,6 +348,15 @@ menghitung lintas modul.
 - **Jebakan YAML 1.1 di map P1:** kunci `on:` tanpa tanda kutip di blok `convert`
   terbaca sebagai boolean `True`. Beberapa aturan di map demo P1 terkena ini tanpa
   ada yang menolaknya. Seal atau compiler harus menolaknya (irisan 1 atau 2).
+- **Slot abstrak ikut terinduksi sebagai kolom.** Saat memverifikasi mekanisme
+  peran: `class_induced_slots()` mengembalikan slot abstrak milik mixin
+  (`amount`, `affects`) bersama slot konkret kelasnya, dengan `slot_uri = None`.
+  Tanpa penanganan, generator memunculkan kolom hantu berisi NULL di setiap
+  proyeksi dan medan kosong di setiap form. `columns()` dan `plan()` harus
+  melewati slot yang `abstract: true` (irisan 2.5).
+- **`slot_uri` tidak diwariskan dari slot induk** — terverifikasi. Itu yang
+  membuat peran tidak pernah sampai ke kernel: log selamanya hanya berisi predikat
+  konkret, jadi mengubah peran tidak membatalkan satu pun pernyataan.
 
 ---
 
@@ -322,6 +369,9 @@ menghitung lintas modul.
 | 1.5 | selesai: core dikecilkan ke `entity_class` dan di-reset sebagai v1, modul contoh lepas dari archetype, kernel pengembangan dimulai kosong |
 | 1 | selesai, menunggu Anda melihatnya: store modul berversi (`components/modules`), import dipin dan diperiksa seal, `@uniti/core` di-seal sebagai v1, linimasa + detail versi + diff di aplikasi; 110 test lulus |
 | 2 | selesai, menunggu Anda melihatnya: aplikasi sebagai versi yang memin (`components/api/application.py`), compiler dieksekusi lintas modul dengan test angka, pintu tulis massal `scripts/load_facts.py`, form yang menulis ke kernel, dan penelusuran satu sel sampai ke pernyataan yang menopangnya; graph kelas lintas modul + tabel proyeksi + penjelasan aturan per kolom di aplikasi web; fixture diganti tiga modul demonstrasi yang menandai dirinya di graph dan di kernel; 134 test lulus |
+| 2.5 | belum dimulai — arah dan detail teknisnya dicatat di `DESIGN_NOTES.md` |
+| 2.6 | belum dimulai |
+| 2.7 | belum dimulai |
 | 3 | belum dimulai |
 | 4 | belum dimulai |
 | 5 | belum dimulai |

@@ -5,7 +5,9 @@ business's own logic carried in a graph rather than in code.
 
 > **P2 is being refactored** on branch `p2/refactor`. What is being built, in
 > what order, and how to go back to an earlier state is in `REFACTOR_P2.md`.
-> This README describes only what exists now.
+> Why it is shaped this way — what `@uniti/core` is for, how large it may grow,
+> and how Studio and an agent read the graph — is in `DESIGN_NOTES.md`, which is
+> reference rather than rules. This README describes only what exists now.
 
 ## The mechanisms
 
