@@ -104,8 +104,14 @@ def test_a_version_sees_what_it_imports_and_says_where_it_came_from(built):
     by_name = {c["name"]: c for c in detail["classes"]}
     assert by_name["Movement"]["from"] == {"name": MOVEMENTS, "version": "v2"}
     assert by_name["ThingGroup"]["from"] == {"name": THINGS, "version": "v2"}
-    assert by_name["Resource"]["from"] == {"name": CORE, "version": "v1"}
     assert detail["classes"][0]["from"]["name"] == MOVEMENTS
+
+    # The one thing core holds is the predicate a class fact is stated under,
+    # and every module sees the same one.
+    by_slot = {s["name"]: s for s in detail["slots"]}
+    assert by_slot["entity_class"]["from"] == {"name": CORE, "version": "v1"}
+    assert by_slot["entity_class"]["designates_type"] is True
+    assert "Movement" in by_name and by_name["Movement"]["slots"][0] == "entity_class"
 
     used = read.version(built, THINGS, "v1")["imported_by"]
     assert used == [{"name": MOVEMENTS, "version": "v1"}]

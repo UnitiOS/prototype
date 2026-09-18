@@ -12,9 +12,9 @@ imports:
   - "@uniti/core@v1"
 classes:
   Thing:
-    is_a: Resource
     description: Something that can be counted.
     slots:
+      - entity_class
       - thing_code
       - thing_label
 slots:

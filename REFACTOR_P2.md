@@ -186,6 +186,24 @@ Anda lihat*.
 - **Selesai jika:** proyeksi di satu modul menghitung dari event modul lain lewat
   `slot_uri` bersama, dan angkanya bisa ditelusuri.
 
+### Irisan 2.5: Core sebagai standar
+
+Standar hanya bermakna kalau ada yang menegakkan atau menjalankannya, jadi core
+didesain setelah generator dan compiler membaca modul (irisan 2), dan sebelum
+Studio (irisan 3) yang harus dipandu olehnya.
+
+- **Pertanyaan yang dijawab:** kategori apa yang ada di core, apa yang diwajibkan
+  tiap kategori pada sebuah kelas, dan mekanisme mana yang menegakkannya.
+  Setiap baris core harus menyebut eksekutornya; tanpa itu ia tidak masuk.
+- **Bahan bandingan:** REA (Resource–Event–Agent), BFO (benda dan kejadian), gist,
+  serta mixin dan abstract class di LinkML — keputusan P1 "hanya `is_a`, tanpa
+  mixin" perlu ditinjau ulang untuk core.
+- **Pertanyaan konkret yang sudah muncul:** apakah core menyediakan kelas akar
+  yang membawa `entity_class`, sehingga setiap kelas modul mewarisinya, atau
+  setiap kelas menyebut slot itu sendiri seperti sekarang.
+- **Yang dilihat:** modul contoh ditulis ulang mengikuti standar, dan gerbang
+  menolak modul yang melanggarnya, dengan alasan yang terbaca.
+
 ### Irisan 3: Studio manual (tanpa LLM)
 
 - **Mekanisme:**
@@ -238,6 +256,9 @@ menghitung lintas modul.
 | Branch | Branch baru `p2/refactor` dari keadaan sekarang; file yang tidak dipakai dihapus; kembali lewat tag | Perbaikan yang berguna (pengaman test DB, pembersihan istilah domain) sudah ada di keadaan sekarang |
 | Versi modul | Setiap seal menghasilkan versi baru yang tidak bisa diubah. Import menyebut versi persis (`@community/x@v1`), tanpa rentang. Pindah ke versi baru = seal ulang modul pengimpor. Studio mengusulkan versi sealed terakhir secara otomatis. | Makna tidak pernah berubah diam-diam. Rentang versi bisa ditambahkan nanti; pin persis sulit ditambahkan belakangan. |
 | Kernel | Satu kernel untuk semua modul dan data. Satu operational DB per aplikasi (turunan, boleh dibuang). | Integrasi antar modul terjadi lewat `slot_uri` di satu registry. Multi-kernel adalah soal isolasi, belum dibutuhkan, dan pintunya tetap terbuka karena semua komponen menerima DSN. |
+| Isi core selama refactor | Core minimal: hanya `entity_class`, satu-satunya bagian core yang dijalankan mekanisme hari ini. Standarnya didesain di irisan 2.5. | Lima archetype percobaan lalu tidak mengubah perilaku gerbang, generator, atau compiler mana pun, dan masih membawa sisa istilah data uji. |
+| Cara menggantinya | `core@v1` di-reset di branch ini, bukan di-seal sebagai v2. | Melanggar "versi sealed tidak pernah diedit", tetapi sah selama masih refactor dan belum ada yang bergantung padanya. Disetujui 18 September 2026. |
+| Kernel pengembangan | Dimulai kosong. Tidak ada lagi seed sintetis 200 assertion di sana; seed itu hanya dipakai `make check` di database test. | Semua yang tampil di penjelajah kernel harus berasal dari mekanisme yang bisa ditelusuri: seal, registrasi, atau isian form. |
 
 ### Masih terbuka
 
@@ -264,9 +285,6 @@ menghitung lintas modul.
   tetap diputuskan di irisan 2.
 - **Import ke versi yang di-seal belakangan.** Seal kini menolak draft yang memin
   versi yang di-seal setelah draft itu sendiri.
-- **`@uniti/core` v1 masih membawa slot `is_temperature_controlled`** pada
-  `PhysicalLocation`, sisa data uji P1. Isi core adalah keputusan Anda; perubahan
-  apa pun menjadi core v2.
 - **Jebakan YAML 1.1 di map P1:** kunci `on:` tanpa tanda kutip di blok `convert`
   terbaca sebagai boolean `True`. Beberapa aturan di map demo P1 terkena ini tanpa
   ada yang menolaknya. Seal atau compiler harus menolaknya (irisan 1 atau 2).
@@ -279,6 +297,7 @@ menghitung lintas modul.
 |---|---|
 | 0a | selesai: file lama dihapus, fondasi lepas dari linter, istilah domain di test dinetralkan (compiler punya fixture netral sendiri), Makefile dan README ditulis ulang; 82 test lulus, replay identik |
 | 0b | selesai, menunggu Anda melihatnya: API baca kernel (`components/api`), aplikasi web (`web/`) dengan penjelajah kernel dan bidang jam; seed sintetis dinetralkan dan menamai entity lewat registry `uniti:uri`; 96 test lulus |
+| 1.5 | selesai: core dikecilkan ke `entity_class` dan di-reset sebagai v1, modul contoh lepas dari archetype, kernel pengembangan dimulai kosong |
 | 1 | selesai, menunggu Anda melihatnya: store modul berversi (`components/modules`), import dipin dan diperiksa seal, `@uniti/core` di-seal sebagai v1, linimasa + detail versi + diff di aplikasi; 110 test lulus |
 | 2 | belum dimulai |
 | 3 | belum dimulai |

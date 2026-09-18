@@ -12,16 +12,16 @@ imports:
   - "@uniti/core@v1"
 classes:
   Thing:
-    is_a: Resource
     description: Something that can be counted.
     slots:
+      - entity_class
       - thing_code
       - thing_name
       - thing_size
   ThingGroup:
-    is_a: Resource
     description: A named set of things.
     slots:
+      - entity_class
       - group_code
 slots:
   thing_code:

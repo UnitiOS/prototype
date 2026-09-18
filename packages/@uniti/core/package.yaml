@@ -1,3 +1,5 @@
 name: "@uniti/core"
 title: Uniti core
-description: The root module every other module may import.
+description: >-
+  The root module every other module may import. Minimal by rule — a version
+  carries only what some mechanism executes.

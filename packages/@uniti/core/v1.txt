@@ -1,6 +1,12 @@
 Transcript, @uniti/core v1.
 
-Not a conversation. The content was written by hand during the first P2
-attempt, as two files (archetypes and base types), and is carried here
-unchanged apart from the examples in four descriptions. It is a hypothesis:
-nothing yet executes the archetypes, and v2 is where evidence changes it.
+Not a conversation. The first attempt at this module carried five archetypes
+(Agent, Resource, Commitment, Event, Projection) with an identity slot each,
+and three common classes. Nothing executed any of it: no gate, generator or
+compiler behaved differently because a class descended from one archetype
+rather than another, and the content still carried words from a trial domain.
+
+So it is cut back to what is executed today, and the standard a core should
+set — which categories exist, and what each one obliges a class to carry — is
+a design to be made against mechanisms that enforce it, and sealed as a later
+version.

@@ -13,9 +13,9 @@ imports:
   - "@example/things@v2"
 classes:
   Movement:
-    is_a: Event
     description: A quantity of one thing, or of a group of things, moving.
     slots:
+      - entity_class
       - movement_thing
       - movement_group
       - movement_quantity

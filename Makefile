@@ -63,12 +63,13 @@ DEV_DSN := postgresql://uniti:uniti@localhost:5433/$(DEV_DB)
 DEV_PACKAGES := build/dev/packages
 DEV_STORE    := $(DEV_PACKAGES);packages
 
-# Create the development log if absent, fill it with the synthetic seed, and
-# seal the example modules into their own store root. The seed resets the
-# kernel first, so this replaces whatever the log held.
+# An empty development log, then the example modules sealed into their own
+# store root. Empty is the point: everything the explorer shows afterwards was
+# put there by a mechanism you can follow — a seal, a registration, a form.
+# 001_schema.sql drops the three tables first, so this replaces what was held.
 dev-db: db venv
 	@$(DC) exec -T db psql -U uniti -d postgres -tAc 	    "SELECT 1 FROM pg_database WHERE datname = '$(DEV_DB)'" | grep -q 1 	    || $(DC) exec -T db createdb -U uniti $(DEV_DB)
-	UNITI_DSN=$(DEV_DSN) $(PY) scripts/seed_200.py
+	MSYS_NO_PATHCONV=1 $(DC) exec -T db psql -U uniti -d $(DEV_DB) 	    -v ON_ERROR_STOP=1 -f /kernel/001_schema.sql
 	UNITI_DSN=$(DEV_DSN) $(PY) scripts/dev_modules.py $(DEV_PACKAGES)
 
 # Build the web application into web/dist.

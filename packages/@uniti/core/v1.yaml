@@ -2,8 +2,12 @@ id: https://w3id.org/uniti/core
 name: uniti_core
 version: v1
 title: Uniti core
-description: 'The root module: five archetypes every class may descend from, the slot
-  that names an entity''s class, and three common specialisations.'
+description: 'The root module. It holds only what a mechanism already executes, so
+  that every module importing it is standing on something that does work rather than
+  on a vocabulary nothing reads. Today that is one slot: the predicate under which
+  an entity states which class it is. The generator reads it to decide which rows
+  belong to which table, and it is one predicate across every module, so a class fact
+  written by one module is the same fact to all of them.'
 prefixes:
   linkml: https://w3id.org/linkml/
   uniti: https://w3id.org/uniti/core#
@@ -11,226 +15,16 @@ default_prefix: uniti
 default_range: string
 imports:
 - linkml:types
-classes:
-  CoreClass:
-    description: Root of all ontological entities in UnitiOS. Carries identity and
-      polymorphic type slots.
-    slots:
-    - entity_class
-  Agent:
-    is_a: CoreClass
-    description: Who Archetype — Autonomous entity possessing agency, operational
-      authority, or contractual capacity (Person, Organization, AI Agent).
-    slots:
-    - agent_id
-    - agent_name
-    - agent_kind
-    - agent_role
-    annotations:
-      archetype: agent
-  Resource:
-    is_a: CoreClass
-    description: What Archetype — Tangible or digital asset of economic value that
-      is tracked, stored, consumed, or produced.
-    slots:
-    - resource_id
-    - resource_name
-    - standard_unit
-    - resource_category
-    annotations:
-      archetype: resource
-  Commitment:
-    is_a: CoreClass
-    description: Agreement Archetype — Executory agreement or future promise binding
-      two Agents under a defined lifecycle status.
-    slots:
-    - commitment_id
-    - commitment_status
-    - commitment_initiator
-    - commitment_partner
-    - commitment_valid_until
-    annotations:
-      archetype: commitment
-  Event:
-    is_a: CoreClass
-    description: Occurrence Archetype — Irreversible historical fact that occurred
-      at a specific point in time in the physical or digital domain.
-    slots:
-    - event_id
-    - event_kind
-    - happened_at
-    - recorded_by
-    annotations:
-      archetype: event
-  Projection:
-    is_a: CoreClass
-    description: Digital Twin Archetype — Derived computational lens or state aggregation
-      deterministically calculated by the compiler.
-    slots:
-    - projection_id
-    - computed_at
-    annotations:
-      archetype: projection
-  Person:
-    is_a: Agent
-    description: Individual human being possessing legal identity and operational
-      role in enterprise processes.
-    slots:
-    - person_first_name
-    - person_last_name
-    - person_email
-  Organization:
-    is_a: Agent
-    description: Legal entity, company, division, vendor, or independent commercial
-      organization.
-    slots:
-    - org_legal_name
-    - org_tax_id
-    - org_website
-  PhysicalLocation:
-    is_a: Resource
-    description: Spatial or physical place where assets are held, inspected, or dispatched.
-    slots:
-    - location_code
-    - location_address
-    - is_temperature_controlled
+classes: {}
 slots:
   entity_class:
     title: Class
     slot_uri: uniti:entity_class
     designates_type: true
     range: string
-    description: Specific ontological class discriminator of this entity.
-  agent_id:
-    title: Agent Identifier
-    slot_uri: uniti:agent_id
-    identifier: true
-    range: string
-    description: Permanent unique identifier of the Agent.
-  agent_name:
-    title: Agent Name
-    slot_uri: uniti:agent_name
-    range: string
-    description: Canonical or common name of the Agent.
-  agent_kind:
-    title: Agent Kind
-    slot_uri: uniti:agent_kind
-    range: string
-    description: Categorization of the agent (e.g., Person, Organization, AutonomousBot).
-  agent_role:
-    title: Role
-    slot_uri: uniti:agent_role
-    range: string
-    description: Primary operational role or persona assumed by this Agent.
-  resource_id:
-    title: Resource Identifier
-    slot_uri: uniti:resource_id
-    identifier: true
-    range: string
-    description: Permanent unique identifier of the Resource.
-  resource_name:
-    title: Resource Name
-    slot_uri: uniti:resource_name
-    range: string
-    description: Human-readable name of the resource or asset.
-  standard_unit:
-    title: Standard Unit
-    slot_uri: uniti:standard_unit
-    range: string
-    description: Reference unit of measure.
-  resource_category:
-    title: Category
-    slot_uri: uniti:resource_category
-    range: string
-    description: Taxonomy or classification code of the asset.
-  commitment_id:
-    title: Commitment Identifier
-    slot_uri: uniti:commitment_id
-    identifier: true
-    range: string
-    description: Unique document number or contractual identifier.
-  commitment_status:
-    title: Status
-    slot_uri: uniti:commitment_status
-    range: string
-    description: Current lifecycle state (e.g., DRAFT, SUBMITTED, APPROVED, FULFILLED).
-  commitment_initiator:
-    title: Initiated By
-    slot_uri: uniti:commitment_initiator
-    range: Agent
-    description: Agent originating or asserting this commitment.
-  commitment_partner:
-    title: Partner Agent
-    slot_uri: uniti:commitment_partner
-    range: Agent
-    description: Counterparty or recipient agent bound by this agreement.
-  commitment_valid_until:
-    title: Valid Until
-    slot_uri: uniti:commitment_valid_until
-    range: datetime
-    description: Expiration timestamp or deadline for commitment fulfillment.
-  event_id:
-    title: Event Identifier
-    slot_uri: uniti:event_id
-    identifier: true
-    range: string
-    description: Permanent unique identifier of this historical occurrence.
-  event_kind:
-    title: Event Kind
-    slot_uri: uniti:event_kind
-    range: string
-    description: Event classification code.
-  happened_at:
-    title: Happened At
-    slot_uri: uniti:happened_at
-    range: datetime
-    description: Real-world occurrence timestamp (bitemporal valid_at).
-  recorded_by:
-    title: Recorded By
-    slot_uri: uniti:recorded_by
-    range: Agent
-    description: Agent responsible for asserting and logging this event.
-  projection_id:
-    title: Projection Identifier
-    slot_uri: uniti:projection_id
-    identifier: true
-    range: string
-    description: Unique identifier of the digital twin projection record.
-  computed_at:
-    title: Computed At
-    slot_uri: uniti:computed_at
-    range: datetime
-    description: Timestamp when this projection was computed.
-  person_first_name:
-    slot_uri: uniti:person_first_name
-    range: string
-  person_last_name:
-    slot_uri: uniti:person_last_name
-    range: string
-  person_email:
-    slot_uri: uniti:person_email
-    range: string
-  org_legal_name:
-    slot_uri: uniti:org_legal_name
-    range: string
-  org_tax_id:
-    slot_uri: uniti:org_tax_id
-    range: string
-  org_website:
-    slot_uri: uniti:org_website
-    range: string
-  location_code:
-    slot_uri: uniti:location_code
-    identifier: true
-    range: string
-  location_address:
-    slot_uri: uniti:location_address
-    range: string
-  is_temperature_controlled:
-    slot_uri: uniti:is_temperature_controlled
-    range: boolean
+    description: Which class this entity is an instance of. Stated, never inferred.
 annotations:
   valid_from: '2026-01-01T00:00:00+00:00'
-  sealed_at: '2026-09-17T08:38:15.550083+00:00'
+  sealed_at: '2026-09-18T02:37:23.356303+00:00'
   supersedes: null
   transcript: v1.txt
