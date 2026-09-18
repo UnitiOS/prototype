@@ -390,3 +390,5 @@ details.fact > summary h3::before {
 }
 details.fact[open] > summary h3::before { transform: rotate(90deg); }
 details.fact:not([open]) > summary { border-bottom: 0; }
+
+.under { color: var(--ink-soft); }

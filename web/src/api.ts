@@ -41,6 +41,7 @@ export interface IntentRow {
   id: string; occurred_at: string; actor_id: string; agent_id: string | null;
   action_name: string; reason_code: string | null; note: string | null;
   assertions: number; minted: number; recorded_at: string | null;
+  ontology_version: string | null;
 }
 
 export interface IntentDetail {

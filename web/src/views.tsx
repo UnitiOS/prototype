@@ -204,7 +204,10 @@ export function ActionList({ selected, open }: { selected: string | null; open: 
               aria-current={selected === i.id}
               onClick={() => open("actions", i.id)}
             >
-              <span>{i.action_name.replace(/_/g, " ")}</span>
+              <span>
+                {i.action_name.replace(/_/g, " ")}
+                {i.ontology_version && <span className="id under"> {i.ontology_version}</span>}
+              </span>
               <span className="quiet">
                 {day(i.occurred_at)}, {i.actor_id}, {i.assertions} {i.assertions === 1 ? "statement" : "statements"}
               </span>

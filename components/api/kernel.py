@@ -199,7 +199,9 @@ def intents(conn, *, limit=50, offset=0):
                    i.reason_code, i.note,
                    (SELECT count(*) FROM assertion a WHERE a.intent_id = i.id) AS assertions,
                    (SELECT count(*) FROM entity e WHERE e.intent_id = i.id) AS minted,
-                   (SELECT max(a.recorded_at) FROM assertion a WHERE a.intent_id = i.id) AS recorded_at
+                   (SELECT max(a.recorded_at) FROM assertion a WHERE a.intent_id = i.id) AS recorded_at,
+                   (SELECT string_agg(DISTINCT a.ontology_version, ', ')
+                      FROM assertion a WHERE a.intent_id = i.id) AS ontology_version
             FROM intent i
             ORDER BY i.occurred_at DESC, i.id
             LIMIT %(limit)s OFFSET %(offset)s

@@ -134,7 +134,10 @@ def test_intent_shows_what_it_wrote(client):
     first = next(i for i in minting if i["minted"])
     body = client.get(f"/api/kernel/intents/{first['id']}").json()
     assert len(body["minted"]) == 19
+    # An intent that only mints entities states nothing, so it names no version.
+    assert first["ontology_version"] is None
     one = next(i for i in minting if i["assertions"] == 1)
+    assert one["ontology_version"] == "v0"
     body = client.get(f"/api/kernel/intents/{one['id']}").json()
     assert len(body["assertions"]) == 1
     assert body["assertions"][0]["intent_id"] == one["id"]
