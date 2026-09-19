@@ -12,7 +12,7 @@
 > - **Akan salah di beberapa tempat.** Bagian yang sudah diverifikasi terhadap
 >   kode ditandai ✓; sisanya adalah penilaian.
 > - **Sebagian sudah dibangun.** Irisan 2.5 dan 2.6 dikerjakan pada 18 September
->   2026 dan mengubah beberapa hal di sini dari usulan menjadi kode. Yang sudah
+>   2026, irisan 2.7 pada 19 September 2026, dan mengubah beberapa hal di sini dari usulan menjadi kode. Yang sudah
 >   berjalan ditandai **[dibangun]**, dan pertanyaan yang terjawab olehnya
 >   ditandai di §12.
 > - **Beda dari `REFACTOR_P2.md`**, yang merupakan dokumen kerja sementara dan
@@ -374,7 +374,7 @@ Keterbatasan itu bukan harga yang dibayar; itu barang yang dibeli.
 Tidak satu pun dari empat artefak ini boleh ditulis tangan. Semuanya diturunkan
 dari isi yang sudah ter-seal, jadi tidak bisa basi.
 
-### 7.1 Katalog — apa yang ada
+### 7.1 Katalog — apa yang ada **[dibangun]**
 
 Peran dan kewajibannya; modul, versi, apa yang dideklarasikan dan di-pin; per
 kelas: peran apa yang diisinya, aturan apa yang membacanya. **Inilah "API
@@ -389,6 +389,15 @@ dibangun sebagai dokumen, menggantinya nanti mahal.
 `core:Flow`, deskripsi adalah satu-satunya pembeda yang dipunyai agent — dan
 manusia — untuk memilih. Usulan: seal menolak pengisi peran yang tidak punya
 deskripsi.
+
+**Yang jadi di irisan 2.7** (`components/modules/catalogue.py`): satu daftar
+entri — modul, peran, kelas, slot — dari versi ter-seal *terbaru* tiap modul,
+dengan `find()` yang menyaring berdasarkan teks, jenis, peran/pengikat yang
+diisi (`fills`), modul pemilik, dan modul yang di-pin (`pins`, "siapa yang kena
+kalau X berubah"). Satu keputusan yang tidak ada di usulan: **"dibaca oleh"
+melihat lebih lebar** — semua versi ter-seal, bukan hanya yang terbaru — karena
+aplikasi yang masih memin versi lama tetap membaca. Usulan menolak pengisi peran
+tanpa deskripsi belum dibangun.
 
 ### 7.2 Lubang — apa yang bisa saya lakukan di sini
 
@@ -541,7 +550,7 @@ ontologi melayang jadi tidak berguna tanpa ada yang sadar.
 **Graph tidak bisa diverifikasi dengan dibaca; ia bisa diverifikasi dengan
 dijalankan.** Studio harus membuat penjalanan itu terus-menerus.
 
-### 8.4 Kurasi: laporan kesehatan graph
+### 8.4 Kurasi: laporan kesehatan graph **[dibangun]**
 
 Enam diagnosa. Semua bahannya sudah ada di kode.
 
@@ -557,6 +566,28 @@ Enam diagnosa. Semua bahannya sudah ada di kode.
 Yang terakhir membuat "copot modul tanpa kehilangan data" jadi nyata, bukan
 slogan.
 
+**Yang jadi di irisan 2.7** (`components/modules/health.py`), dengan tiga
+koreksi terhadap tabel di atas:
+
+1. **Dibaca terhadap satu aplikasi, bukan seluruh store.** "Dibaca nol aturan"
+   hanya bermakna terhadap sekumpulan aturan tertentu, dan sekumpulan aturan
+   adalah closure satu versi. Konsekuensinya: fakta yatim berarti "tidak
+   dideklarasikan modul mana pun *di aplikasi ini*", dan tiap temuan menyebut
+   modul mana di store yang *masih* mendeklarasikannya — kosong berarti yatim
+   sungguhan.
+2. **Pembaca termasuk mekanisme, bukan hanya aturan.** Slot identifier dibaca
+   generator (untuk menamai subjek), slot `designates_type` dibaca generator
+   dan compiler. Tanpa itu setiap kode dan identitas terlihat mati.
+3. **Angkanya 24, bukan 245.** 245 berasal dari data P1. Kernel pengembangan P2
+   memuat 24 perpindahan, dan laporan menghitung apa yang ada di log.
+
+Istilah mati tetap panjang (sepuluh di `@demo/stock@v2`), karena label dan
+catatan memang dibaca orang, bukan dihitung. Yang membedakan
+`movement_happened_on` adalah bahwa ia **mengisi pengikat** — `moment` — dan
+tak satu aturan pun membaca `moment`. Itu diurutkan pertama, dan itu temuan
+yang sebenarnya: core v2 menulis bahwa `Event` "dieksekusi compiler lewat
+`moment`", dan belum ada yang melakukannya.
+
 ---
 
 ## 9. Rencana per irisan
@@ -565,7 +596,7 @@ slogan.
 |---|---|---|
 | ~~**2.5 peran**~~ **[selesai]** | core v2; resolusi slot abstrak; slot abstrak dilewati sebagai kolom; seal menolak peran tak terpenuhi dan closure berlian; `@rival/stock-moves`; panel peran + laporan kecocokan | pin ditukar, angkanya identik — 86/40/46 di kedua sisi |
 | ~~**2.6 penolakan**~~ **[selesai]** | penolakan terstruktur di satu tempat (`components/refusal/`); 62 kode tertutup; `options` dihitung dari graph; `check()` mengumpulkan semuanya sekaligus | laporan kecocokan `v1 → v3` memperlihatkan aturan yang padam **berikut dua daftar jawaban yang sah** — kelas, dan peran |
-| **2.7 katalog** | katalog terhitung + enam diagnosa | halaman katalog; `movement_happened_on` menyala sebagai istilah mati |
+| ~~**2.7 katalog**~~ **[selesai]** | katalog terhitung + enam diagnosa | halaman katalog; `movement_happened_on` menyala sebagai istilah mati — 24 pernyataan, mengisi `moment`, nol pembaca |
 | **3 Studio** | penyunting digerakkan lubang + pratinjau angka langsung + seal dengan transkrip | seseorang membuat modul baru dan men-seal-nya **tanpa menulis YAML** |
 | **4 agent** | katalog + lubang + penolakan sebagai tool | pemilik toko bercerita di chat, keluar modul ter-seal, langkahnya ada di transkrip |
 | **5 uji Anda** | integrasi dua modul milik Anda sendiri lewat chat | — |

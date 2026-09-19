@@ -20,7 +20,7 @@ import { Failure, RefusalCard } from "./Refusal";
 import { day, fromInput, instant, toInput } from "./format";
 import type { AppPick } from "./route";
 
-function useLoad<T>(load: (() => Promise<T>) | null, deps: unknown[]) {
+export function useLoad<T>(load: (() => Promise<T>) | null, deps: unknown[]) {
   // The refusal travels beside the sentence, because a page that keeps only
   // the sentence has thrown away the repair.
   const [state, setState] =
@@ -43,7 +43,7 @@ function useLoad<T>(load: (() => Promise<T>) | null, deps: unknown[]) {
 const pinText = (p: Pin) => `${p.name}@${p.version}`;
 
 /** A version nothing else pins, which pins something itself: a root of the graph. */
-function roots(graph: ModuleGraph): Pin[] {
+export function roots(graph: ModuleGraph): Pin[] {
   const imports = graph.edges.filter((e) => e.kind === "imports");
   const pinned = new Set(imports.map((e) => `${e.to.name}@${e.to.version}`));
   return graph.nodes

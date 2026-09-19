@@ -5,11 +5,13 @@
 //   #/modules?name=@x/y&version=v2&compare=v1     the module store
 //   #/app?name=@x/y&version=v1&class=Thing&column=c&keys=a,b   one cell of it
 //   #/app?name=@x/y&version=v1&against=v2                      what a swap costs
+//   #/catalogue?q=..&kind=slot&fills=moment&name=@x/y&version=v2  what the store
+//                                          holds, and one application's health
 
 import { useEffect, useState } from "react";
 import type { Clocks } from "./api";
 
-export type Tab = "entities" | "actions" | "log" | "modules" | "app";
+export type Tab = "entities" | "actions" | "log" | "modules" | "app" | "catalogue";
 
 export interface ModulePick { name: string | null; version: string | null; compare: string | null }
 
@@ -27,15 +29,24 @@ export interface AppPick {
   against: string | null;
 }
 
+// What the catalogue is narrowed to, and which application its health report
+// is read against. Every filter is in the URL, so a search can be sent to
+// somebody as a link.
+export interface CataloguePick {
+  q: string | null; kind: string | null; fills: string | null;
+  name: string | null; version: string | null;
+}
+
 export interface Route {
   tab: Tab; id: string | null; clocks: Clocks; module: ModulePick; app: AppPick;
+  catalogue: CataloguePick;
 }
 
 function parse(hash: string): Route {
   const [path, query = ""] = hash.replace(/^#\/?/, "").split("?");
   const [first, id] = path.split("/");
-  const tab: Tab = first === "actions" || first === "log" || first === "modules" || first === "app"
-    ? first : "entities";
+  const tab: Tab = first === "actions" || first === "log" || first === "modules"
+    || first === "app" || first === "catalogue" ? first : "entities";
   const params = new URLSearchParams(query);
   const read = (name: string) => {
     const raw = params.get(name);
@@ -44,7 +55,7 @@ function parse(hash: string): Route {
   };
   return {
     tab,
-    id: tab === "modules" || tab === "app" ? null : id || null,
+    id: tab === "modules" || tab === "app" || tab === "catalogue" ? null : id || null,
     clocks: { validAt: read("valid_at"), asOf: read("as_of") },
     module: { name: params.get("name"), version: params.get("version"), compare: params.get("compare") },
     app: {
@@ -52,6 +63,10 @@ function parse(hash: string): Route {
       klass: params.get("class"), column: params.get("column"),
       keys: params.get("keys"), stating: params.get("new") === "1",
       against: params.get("against"),
+    },
+    catalogue: {
+      q: params.get("q"), kind: params.get("kind"), fills: params.get("fills"),
+      name: params.get("name"), version: params.get("version"),
     },
   };
 }
@@ -74,6 +89,14 @@ export function href(route: Route): string {
     if (keys) query.set("keys", keys);
     if (stating) query.set("new", "1");
     if (against) query.set("against", against);
+  }
+  if (route.tab === "catalogue") {
+    const { q, kind, fills, name, version } = route.catalogue;
+    if (q) query.set("q", q);
+    if (kind) query.set("kind", kind);
+    if (fills) query.set("fills", fills);
+    if (name) query.set("name", name);
+    if (version) query.set("version", version);
   }
   query.set("valid_at", route.clocks.validAt.toISOString());
   query.set("as_of", route.clocks.asOf.toISOString());

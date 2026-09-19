@@ -85,7 +85,7 @@ button, input { font: inherit; color: inherit; }
   margin-bottom: 20px;
 }
 .brand { margin: 0; font-size: var(--step-2); font-weight: 600; letter-spacing: -0.01em; }
-.areas { display: flex; gap: 4px; }
+.areas { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
 .area {
   border: 0; background: none; cursor: pointer;
   font-size: var(--step-1); color: var(--ink-soft);
@@ -637,3 +637,54 @@ details.fact:not([open]) > summary { border-bottom: 0; }
 .check-clean .check-verdict { color: var(--stands); border-left-color: var(--stands); }
 .check-dark .check-verdict { color: var(--withdrawn); border-left-color: var(--withdrawn); }
 .check .quiet { margin: 4px 0 0; padding-left: 15px; font-size: var(--step--1); }
+
+/* ---- catalogue and health ----------------------------------------------
+   No status colour here: nothing on this page is a statement's standing, and
+   a finding is not a failure. The kinds are told apart by their label. */
+.catalogue, .health { padding: 8px 16px 12px; }
+.catalogue-controls {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin: 4px 0 8px;
+}
+.catalogue-search { flex: 1 1 260px; min-width: 0; }
+.catalogue-search input { margin-bottom: 0; }
+.catalogue-fills { display: flex; align-items: center; gap: 6px; }
+.catalogue-fills select {
+  border: 1px solid var(--rule); border-radius: 6px; background: var(--surface);
+  color: inherit; padding: 3px 6px; font: inherit;
+}
+.chip-count { opacity: 0.7; font-size: var(--step--1); }
+.catalogue-count { margin: 4px 0; font-size: var(--step--1); }
+.entries { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.entry { border: 1px solid var(--rule); border-radius: 8px; padding: 8px 12px; min-width: 0; }
+.entry-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.entry-head .badge { margin-left: 0; }
+.entry-text {
+  margin: 4px 0; font-size: var(--step--1); color: var(--ink-soft);
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+}
+.entry-facts {
+  display: grid; grid-template-columns: max-content 1fr; gap: 2px 12px;
+  margin: 6px 0 0; font-size: var(--step--1);
+}
+.entry-facts dt { color: var(--ink-soft); }
+.entry-facts dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.entry-facts .link { margin-right: 8px; }
+.health-pick { margin-top: 6px; }
+.health-closure { font-size: var(--step--1); margin: 8px 0; }
+.diagnoses { display: grid; gap: 8px; }
+.diagnosis { border-left: 3px solid var(--ink-soft); padding: 2px 0 2px 12px; }
+.diagnosis-none { border-left-color: var(--rule); }
+.diagnosis h3 { margin: 0; font-size: var(--step-0, 1rem); display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.diagnosis-count { font-variant-numeric: tabular-nums; font-weight: 600; }
+.diagnosis-none .diagnosis-count { color: var(--ink-soft); font-weight: 400; }
+.diagnosis-code { font-size: 0.75rem; font-weight: 400; }
+.diagnosis-why { margin: 2px 0 4px; font-size: var(--step--1); max-width: 72ch; }
+.findings { margin: 0; padding-left: 18px; font-size: var(--step--1); display: grid; gap: 2px; }
+.findings li { overflow-wrap: anywhere; }
+.terms { margin-top: 12px; font-size: var(--step--1); }
+.terms summary { cursor: pointer; color: var(--ink-soft); }
+.terms table { margin-top: 6px; }
+@media (max-width: 640px) {
+  .entry-facts { grid-template-columns: 1fr; }
+  .entry-facts dt { margin-top: 4px; }
+}

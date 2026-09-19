@@ -356,3 +356,75 @@ export const appApi = {
     actor: string; valid_from: string; values: Record<string, string>; note?: string;
   }) => post<Written>("/api/app/state", body),
 };
+
+// ---- the catalogue, and the graph's health --------------------------------
+// Both are computed from sealed content on every read. Nothing here is a
+// document somebody maintains, so nothing here can be out of date.
+
+export type CatalogueKind = "module" | "role" | "class" | "slot";
+
+export interface RuleRef { module: Pin; rule: string; kind: string }
+
+export interface CatalogueEntry {
+  kind: CatalogueKind; name: string; module: Pin; title: string | null;
+  description: string; fills: string[];
+  // module
+  purpose?: string | null; versions?: string[]; pins?: Pin[];
+  declares?: { classes: string[]; slots: string[] };
+  // role
+  bindings?: Binding[]; filled_by?: { class: string; module: Pin }[];
+  // class
+  statable?: boolean; slots?: string[];
+  // slot
+  uri?: string | null; range?: string | null; abstract?: boolean; on?: string[];
+  // role, class, slot
+  read_by?: RuleRef[];
+}
+
+export interface CatalogueFound {
+  entries: CatalogueEntry[];
+  counts: Record<CatalogueKind, number>;
+  held: Record<CatalogueKind, number>;
+  roles: string[]; bindings: string[]; modules: string[];
+}
+
+export interface CatalogueQuery {
+  q?: string | null; kind?: string | null; fills?: string | null;
+  module?: string | null; pins?: string | null;
+}
+
+export type DiagnosisCode =
+  | "dead_term" | "empty_column" | "empty_class"
+  | "unfilled_role" | "lagging_pin" | "orphaned_fact";
+
+// One finding. Which fields it carries depends on the diagnosis; the sentence
+// is assembled from them on the server and is never stored apart from them.
+export interface Finding {
+  sentence: string;
+  uri?: string; slot?: string; module?: Pin | string; on?: string[];
+  fills?: string | null; held?: number;
+  class?: string; column?: string; read_by?: string[];
+  role?: string; bindings?: string[]; candidates?: string[];
+  pinned?: string; latest?: string; newer?: string[]; pinned_by?: Pin[];
+  declared_by?: { name: string; versions: string[] }[];
+}
+
+export interface Diagnosis { code: DiagnosisCode; means: string; findings: Finding[] | null }
+
+export interface Term {
+  uri: string; slot: string; module: Pin; on: string[]; fills: string | null;
+  held: number | null; read_by: { rule: string; kind: string; reader: string }[];
+}
+
+export interface HealthReport {
+  name: string; version: string; counted: boolean; modules: Pin[];
+  terms: Term[]; diagnoses: Diagnosis[]; refusals: (Refusal & { class: string })[];
+}
+
+export const catalogueApi = {
+  find: (query: CatalogueQuery) =>
+    get<CatalogueFound>("/api/catalogue", Object.fromEntries(
+      Object.entries(query).filter(([, v]) => v) as [string, string][])),
+  health: (name: string, version: string) =>
+    get<HealthReport>("/api/app/health", { name, version }),
+};

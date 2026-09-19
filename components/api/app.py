@@ -32,7 +32,9 @@ sys.path.insert(0, str(ROOT / "components" / "kernel"))
 sys.path.insert(0, str(ROOT / "components" / "provenance"))
 
 from components.api import application, kernel  # noqa: E402
+from components.modules import catalogue as catalogue_read  # noqa: E402
 from components.modules import check as check_read  # noqa: E402
+from components.modules import health as health_read  # noqa: E402
 from components.modules import read as modules_read  # noqa: E402
 from components.modules import roles as roles_read  # noqa: E402
 from components.modules.store import ModuleError, Store  # noqa: E402
@@ -205,6 +207,37 @@ async def app_check(request: Request):
                         _required(request, "version"))
 
 
+async def catalogue(request: Request):
+    """The catalogue, narrowed by whichever filters the query gives.
+
+    Computed from the store on every read, so it cannot be stale. Each filter
+    is optional; none given is the whole store.
+    """
+    params = request.query_params
+    kind = params.get("kind") or None
+    if kind and kind not in catalogue_read.KINDS:
+        raise HTTPException(400, f"kind is one of {', '.join(catalogue_read.KINDS)}")
+    return _modules(lambda store: catalogue_read.find(
+        catalogue_read.catalogue(store), text=params.get("q") or None, kind=kind,
+        fills=params.get("fills") or None, module=params.get("module") or None,
+        pins=params.get("pins") or None))
+
+
+async def app_health(request: Request):
+    """The six diagnoses for one application, counted against the log.
+
+    Without a log the three that need a count come back as not counted, and the
+    rest are still answered: they are read from the sealed closure alone.
+    """
+    name = _required(request, "name")
+    version = _required(request, "version")
+    try:
+        with connect(os.environ.get("UNITI_DSN"), connect_timeout=3) as conn:
+            return _application(health_read.health, name, version, conn=conn)
+    except psycopg.OperationalError:
+        return _application(health_read.health, name, version, conn=None)
+
+
 async def app_fit(request: Request):
     """What moving this application's pins to another version's would cost.
 
@@ -327,7 +360,9 @@ routes = [
     Route("/api/modules/diff", module_diff),
     Route("/api/modules/classes", module_classes),
     Route("/api/app", app_read),
+    Route("/api/catalogue", catalogue),
     Route("/api/app/roles", app_roles),
+    Route("/api/app/health", app_health),
     Route("/api/app/check", app_check),
     Route("/api/app/fit", app_fit),
     Route("/api/app/projection", app_projection),

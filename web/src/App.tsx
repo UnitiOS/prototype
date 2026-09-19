@@ -6,6 +6,7 @@ import { day, fromInput, toInput } from "./format";
 import { useRoute } from "./route";
 import { ModulesPage } from "./modules";
 import { ApplicationPage } from "./application";
+import { CataloguePage } from "./catalogue";
 import type { Tab } from "./route";
 import { ActionList, ActionView, EntityList, EntityView, LogView } from "./views";
 
@@ -19,6 +20,7 @@ const AREAS: { tab: Tab; label: string }[] = [
   { tab: "entities", label: "Kernel" },
   { tab: "modules", label: "Modules" },
   { tab: "app", label: "Application" },
+  { tab: "catalogue", label: "Catalogue" },
 ];
 
 export function App() {
@@ -40,9 +42,10 @@ export function App() {
   const open = (tab: "entities" | "actions", id: string) => go({ ...route, tab, id });
   const inModules = route.tab === "modules";
   const inApp = route.tab === "app";
+  const inCatalogue = route.tab === "catalogue";
   // The clocks are what a projection is read at, so they belong to both the
   // kernel explorer and the application. Only the module store is timeless.
-  const inKernel = !inModules && !inApp;
+  const inKernel = !inModules && !inApp && !inCatalogue;
 
   const now = () => {
     const t = new Date();
@@ -55,7 +58,8 @@ export function App() {
         <h1 className="brand">Uniti</h1>
         <nav className="areas" aria-label="Areas">
           {AREAS.map(({ tab, label }) => {
-            const on = tab === "modules" ? inModules : tab === "app" ? inApp : inKernel;
+            const on = tab === "modules" ? inModules : tab === "app" ? inApp
+              : tab === "catalogue" ? inCatalogue : inKernel;
             return (
               <button key={tab} className={`area${on ? " area-on" : ""}`} aria-current={on}
                 onClick={() => go({ ...route, tab, id: null })}>
@@ -80,7 +84,12 @@ export function App() {
         <ModulesPage pick={route.module} onPick={(module) => go({ ...route, module })} />
       )}
 
-      {!inModules && <>
+      {inCatalogue && (
+        <CataloguePage pick={route.catalogue}
+          onPick={(catalogue, replace) => go({ ...route, catalogue }, replace)} />
+      )}
+
+      {!inModules && !inCatalogue && <>
       <section className="clocks" aria-label="Clocks">
         <div className="clock-fields">
           <label className="clock">

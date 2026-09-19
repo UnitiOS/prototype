@@ -254,8 +254,20 @@ turunan yang sudah ada; dan **ya, core menyediakan kelas akar** yang membawa
 - **Mekanisme:** katalog yang dihitung dari isi ter-seal (peran, modul, kelas,
   siapa mengisi apa) — bisa dikueri, bukan dokumen. Enam diagnosa: istilah mati,
   kolom hampa, kelas kosong, peran tak terisi, pin tertinggal, fakta yatim.
+  - `catalogue()` + `find()` di `components/modules/catalogue.py`: dari versi
+    terbaru tiap modul; "dibaca oleh" dari semua versi ter-seal
+  - `health()` di `components/modules/health.py`: enam diagnosa terhadap satu
+    aplikasi dan log-nya, dengan kalimat yang diturunkan dari datanya seperti
+    penolakan; tanpa log, tiga yang butuh hitungan dilaporkan "tidak dihitung",
+    bukan kosong
+  - `python -m components.modules find|health`, `/api/catalogue`,
+    `/api/app/health`
+- **Yang dilihat:** area **Catalogue** di aplikasi web: pencarian dengan saringan
+  jenis dan "fills", lalu laporan kesehatan untuk satu versi yang dipilih, plus
+  tabel semua predikat, berapa kali dinyatakan, dan siapa pembacanya.
 - **Selesai jika:** `inv:movement_happened_on` muncul sebagai istilah mati — 245
-  pernyataan, nol pembaca — tanpa ada yang menuliskannya.
+  pernyataan, nol pembaca — tanpa ada yang menuliskannya. *(Di P2 angkanya 24:
+  245 adalah data P1.)*
 
 **2.6 dan 2.7 mendahului Studio.** Permukaan jelajah Studio adalah katalog, dan
 penyuntingnya digerakkan penolakan.
@@ -404,6 +416,25 @@ menghitung lintas modul.
   adalah pengikat `label` di core dengan generator sebagai eksekutornya — dan itu
   contoh "eksekutor dulu, peran diekstrak" yang ditemukan, bukan diantisipasi.
 
+- **Janji core yang belum ditepati.** Laporan kesehatan menemukan sesuatu yang
+  tidak dicari: core v2 menulis bahwa `Event` "dieksekusi compiler lewat
+  `moment`", dan tidak ada kode yang membaca `moment`. Kedua pengisinya
+  (`movement_happened_on`, `happened`) adalah istilah mati di setiap aplikasi.
+  Deskripsi fixture `@demo/inventory@v3` juga keliru ("mengisi `moment` yang
+  memberinya pembaca"). Core v2 sudah ter-seal, jadi teksnya tidak diubah;
+  perbaikannya adalah eksekutor untuk `moment` — yaitu pertanyaan waktu yang
+  masih terbuka (#6) — atau v3 yang tidak mengklaimnya.
+- **"Mati" harus dibaca terhadap satu aplikasi.** Versi store-wide membuat
+  `inv:movement_quantity` terlihat mati (versi terbaru `@demo/stock` memin
+  saingan), padahal `@demo/stock@v2` membacanya. Katalog menjawab sisi
+  store-wide: "dibaca oleh" di sana melihat semua versi ter-seal.
+- **Mekanisme adalah pembaca.** Definisi pertama (hanya aturan compiler)
+  menandai setiap kode identitas sebagai mati. Generator membaca identifier dan
+  slot kelas; itu dihitung.
+- **Lebar minimum Chrome headless** sekitar 500px, jadi tangkapan layar 390px
+  terpotong di semua halaman, termasuk yang tidak berubah. Tata letak diperiksa
+  di 520px. Navigasi area sekarang boleh membungkus baris.
+
 ---
 
 ## 9. Status
@@ -417,7 +448,7 @@ menghitung lintas modul.
 | 2 | selesai, menunggu Anda melihatnya: aplikasi sebagai versi yang memin (`components/api/application.py`), compiler dieksekusi lintas modul dengan test angka, pintu tulis massal `scripts/load_facts.py`, form yang menulis ke kernel, dan penelusuran satu sel sampai ke pernyataan yang menopangnya; graph kelas lintas modul + tabel proyeksi + penjelasan aturan per kolom di aplikasi web; fixture diganti tiga modul demonstrasi yang menandai dirinya di graph dan di kernel; 134 test lulus |
 | 2.5 | selesai, menunggu Anda melihatnya: `@uniti/core@v2` membawa peran (`Thing`, `Resource`, `Event`, `Flow`) dan tiga pengikat; seal menolak kelas yang mengaku peran tanpa memenuhinya, dan menolak closure yang memuat satu modul di dua versi; compiler meresolusi slot abstrak ke predikat konkret tiap kelas pengisi; `@rival/stock-moves@v1` sebagai modul saingan yang menulis ulang semua namanya; `@demo/stock@v3` memindahkan pin tanpa mengubah satu baris aturan dan menghasilkan angka identik; panel peran + laporan kecocokan di aplikasi web; 153 test lulus |
 | 2.6 | selesai, menunggu Anda melihatnya: `components/refusal/` — penolakan sebagai data dengan kalimat yang diturunkan darinya, 62 kode tertutup, dan `repairs[].options` yang dihitung dari graph; empat gerbang menyebut dirinya; `check()` mengumpulkan semua penolakan sekaligus dan menerima map yang belum di-seal; API mengirim strukturnya di samping kalimatnya; satu kartu penolakan di semua permukaan, dan laporan kecocokan membawa penolakannya utuh; test penolakan sekarang mencocokkan `code`, bukan prosa; 163 test lulus |
-| 2.7 | belum dimulai |
+| 2.7 | selesai, menunggu Anda melihatnya: katalog terhitung yang bisa dikueri (`components/modules/catalogue.py`) dan enam diagnosa kesehatan per aplikasi (`components/modules/health.py`), lewat CLI, API, dan area Catalogue di aplikasi web; `inv:movement_happened_on` ditemukan sebagai istilah mati di `@demo/stock@v2` — 24 pernyataan, mengisi `moment`, nol pembaca — dan sebagai fakta yang tak terlihat di `@demo/stock@v3`; 173 test lulus |
 | 3 | belum dimulai |
 | 4 | belum dimulai |
 | 5 | belum dimulai |
