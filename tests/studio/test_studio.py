@@ -181,6 +181,52 @@ def test_a_class_nothing_can_ever_be_says_so(world):
     assert not [h for h in after["holes"] if h["kind"] == "class_has_no_rows"]
 
 
+# ---- the map --------------------------------------------------------------
+
+def test_the_map_carries_what_the_draft_points_at_and_stops_there(world):
+    """The neighbourhood a module sits in, not the whole of what it pins.
+
+    A module pins a vocabulary and uses a corner of it. What belongs on a map
+    beside your own classes is what you point at, and what those point at in
+    turn — so Category and Supplier arrive because Ingredient names them, not
+    because the same module happens to declare them.
+
+    Roles are never on it. A role is a shape a class claims, and it belongs
+    drawn on that class rather than standing beside it as another thing.
+    """
+    name = "@probe/neighbours"
+    step(world, name, "start", title="Neighbours",
+         description="A module that points at somebody else's.")
+    step(world, name, "add_class", **{"class": "Movement",
+                                      "description": "Something moving."})
+    step(world, name, "add_slot", slot="movement_thing",
+         description="What moved.")
+    step(world, name, "attach", **{"class": "Movement", "slot": "movement_thing"})
+
+    # Nothing pointed at yet, so nothing stands beside it.
+    assert reading.state(world, name)["borrowed"] == []
+
+    step(world, name, "pin", module=f"{dev_modules.CATALOG}@v3")
+    step(world, name, "set_slot", slot="movement_thing",
+         field="range", value="Ingredient")
+
+    report = reading.state(world, name)
+    assert [held["name"] for held in report["borrowed"]] == [
+        "Category", "Ingredient", "Supplier"]
+    assert {held["module"]["name"] for held in report["borrowed"]} == {
+        dev_modules.CATALOG}
+    # Ingredient is pointed at; the other two are reached through it.
+    ingredient = next(h for h in report["borrowed"] if h["name"] == "Ingredient")
+    assert "Category" in [s["range"] for s in ingredient["slots"]]
+    assert ingredient["fills"] == ["Resource"]
+    # Sight is wider than the map, and that is the point of the map.
+    assert report["sees"]["classes"] > len(report["borrowed"]) + 1
+    assert not {"Thing", "Resource", "Flow", "Event"} & {
+        held["name"] for held in report["borrowed"]}
+
+    step(world, name, "discard")
+
+
 # ---- one judge ------------------------------------------------------------
 
 def test_what_the_studio_calls_clean_is_what_seal_seals(world, conn):

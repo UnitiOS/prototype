@@ -294,12 +294,24 @@ yang kedua memperlihatkan akibatnya dan menutupnya.
     deskripsi yang belum ditulis).
   - `draft.txt` mencatat tiap langkah dan menjadi transkrip seal.
   - `python -m components.studio`, `/api/studio/*`.
-- **Yang dilihat:** area **Studio** dengan tiga kolom — yang sedang dibangun,
-  lubang tempat Anda berdiri (satu pertanyaan, jawaban dienumerasi), dan apa
-  yang akan dilakukannya (tabel, kata gerbang, kecocokan peran, diff, langkah).
+- **Yang dilihat:** area **Studio** sebagai **peta**. Sebuah modul adalah graph,
+  jadi halamannya graph: node adalah jenis hal, garis adalah isian yang menunjuk
+  jenis hal lain, yang dipijak digambar samar di atas yang dibangun. Klik node
+  untuk panel yang mengatakan semua tentangnya; tarik titik di bawah node ke
+  node lain untuk membuat relasi. Kata-katanya kata orang yang tahu subjeknya,
+  bukan kata kompiler — dan di mana kata awam akan jadi tebakan tentang subjek
+  seseorang, halaman memakai tulisan modulnya sendiri (deskripsi sebuah pengikat
+  yang mengubah `moment` jadi pertanyaan yang bisa dijawab). Seluruh kosakata
+  mesin tetap ada, di balik satu tutup **Behind the scenes**.
 - **Selesai jika:** modul lengkap — termasuk aplikasi dengan aggregate,
   parameter dan expression — dibangun dari nol tanpa satu baris YAML, dan
   `seal` menerimanya.
+
+  Tiga kolom yang pertama kali dibangun memenuhi syarat itu dan tetap tidak
+  bisa dipakai: mekanismenya benar, layarnya memamerkan bagian dalam mesin.
+  Peta di atas adalah pembangunan ulangnya, dan syarat "selesai" untuk sebuah
+  irisan UI sekarang ditambah satu: **seorang yang tahu bisnisnya, bukan
+  kompilernya, bisa membacanya tanpa kamus.**
 
 **3.2 Angka langsung dan seal**
 
@@ -487,6 +499,39 @@ menghitung lintas modul.
   hanya dipakai Studio berarti medan yang hanya dipelihara Studio; bentuk
   `where` dipegang oleh test.
 
+- **Mekanisme yang benar tidak membuat layar yang bisa dipakai.** Tiga kolom
+  pertama memenuhi setiap syarat "selesai" irisan 3.1 dan tetap tak terbaca:
+  setiap kata di layar — *class*, *slot*, *binding*, `binding_unfilled`,
+  "fills Flow" — adalah kata kompiler, satu fakta muncul tiga kali dalam tiga
+  kosakata, dan tidak ada gambar sama sekali padahal yang dibangun adalah
+  graph. Syarat "selesai" untuk irisan UI ditambah: bisa dibaca tanpa kamus.
+- **Kata awam yang domain-agnostic harus dibaca, bukan ditulis.** Menerjemahkan
+  `moment` jadi "kapan" di kode adalah menanam istilah satu peran ke dalam
+  Studio. Yang dipakai halaman adalah `description` pengikat itu sendiri —
+  "When this event happened." dari `@uniti/core` — jadi pertanyaannya berbunyi
+  *"Which field of Wastage says when this event happened?"*, dan peran yang
+  dibuat orang lain besok terbaca sama baiknya. Untuk itu `_bindings` mulai
+  membawa `title`. Satu-satunya kamus yang ditulis di kode adalah tipe kolom
+  (`decimal` → "number"), dan itu himpunan tertutup milik compiler, bukan
+  milik subjek siapa pun.
+- **Peta bukan katalog.** Yang layak digambar di sebelah kelas Anda adalah apa
+  yang Anda tunjuk, lalu apa yang *itu* tunjuk — keterjangkauan, bukan seluruh
+  isi modul yang dipin. `@demo/wastage` menunjuk Ingredient, dan Category serta
+  Supplier ikut karena Ingredient menamai keduanya; sisanya tidak. Peran tidak
+  pernah jadi node: peran adalah bentuk yang diklaim sebuah kelas, digambar
+  *pada* kelas itu.
+- **Target sebuah tarikan dihitung dari koordinat, bukan dari hover.** Versi
+  pertama melacak node yang sedang dilewati lewat `onPointerEnter`. Itu gagal
+  diuji dan akan gagal di layar sentuh, yang tidak punya hover sama sekali;
+  tarikan cepat juga bisa melewati sebuah kotak tanpa pernah memasukinya.
+  Sekarang node tujuan dicari dari titik lepas.
+- **Ekstensi Chrome tidak tersambung, jadi kanvasnya diuji lewat iframe.**
+  Halaman sekali pakai yang memuat Studio dalam iframe dan menembakkan
+  `PointerEvent` sintetis: klik node, tarik garis, jawab pertanyaan. Yang
+  ditemukan olehnya adalah bug hover di atas. Catatan: `pointerenter` tidak
+  merambat, jadi React tidak pernah melihatnya — yang satu ini keterbatasan
+  probe, tapi ia menunjuk ke masalah yang nyata.
+
 ---
 
 ## 9. Status
@@ -501,7 +546,8 @@ menghitung lintas modul.
 | 2.5 | selesai, menunggu Anda melihatnya: `@uniti/core@v2` membawa peran (`Thing`, `Resource`, `Event`, `Flow`) dan tiga pengikat; seal menolak kelas yang mengaku peran tanpa memenuhinya, dan menolak closure yang memuat satu modul di dua versi; compiler meresolusi slot abstrak ke predikat konkret tiap kelas pengisi; `@rival/stock-moves@v1` sebagai modul saingan yang menulis ulang semua namanya; `@demo/stock@v3` memindahkan pin tanpa mengubah satu baris aturan dan menghasilkan angka identik; panel peran + laporan kecocokan di aplikasi web; 153 test lulus |
 | 2.6 | selesai, menunggu Anda melihatnya: `components/refusal/` — penolakan sebagai data dengan kalimat yang diturunkan darinya, 62 kode tertutup, dan `repairs[].options` yang dihitung dari graph; empat gerbang menyebut dirinya; `check()` mengumpulkan semua penolakan sekaligus dan menerima map yang belum di-seal; API mengirim strukturnya di samping kalimatnya; satu kartu penolakan di semua permukaan, dan laporan kecocokan membawa penolakannya utuh; test penolakan sekarang mencocokkan `code`, bukan prosa; 163 test lulus |
 | 2.7 | selesai, menunggu Anda melihatnya: katalog terhitung yang bisa dikueri (`components/modules/catalogue.py`) dan enam diagnosa kesehatan per aplikasi (`components/modules/health.py`), lewat CLI, API, dan area Catalogue di aplikasi web; `inv:movement_happened_on` ditemukan sebagai istilah mati di `@demo/stock@v2` — 24 pernyataan, mengisi `moment`, nol pembaca — dan sebagai fakta yang tak terlihat di `@demo/stock@v3`; 173 test lulus |
-| 3.1 | selesai, menunggu Anda melihatnya: draft sebagai berkas yang hanya berubah lewat 24 operasi tertutup (`components/studio/`), lubang yang dihitung dari pembaca gerbang itu sendiri — `uri_refusals` dan `role_refusals` jadi generator supaya bisa dikumpulkan — dan lima pertanyaan terbuka yang tidak ditolak siapa pun; `draft.txt` menjadi transkrip seal; CLI, API, dan area Studio tiga kolom di aplikasi web; satu aplikasi lengkap dengan aggregate, parameter dan expression dibangun dari nol tanpa satu baris YAML dan diterima `seal`; 190 test lulus |
+| 3.1 | selesai, menunggu Anda melihatnya: draft sebagai berkas yang hanya berubah lewat 24 operasi tertutup (`components/studio/`), lubang yang dihitung dari pembaca gerbang itu sendiri — `uri_refusals` dan `role_refusals` jadi generator supaya bisa dikumpulkan — dan lima pertanyaan terbuka yang tidak ditolak siapa pun; `draft.txt` menjadi transkrip seal; CLI, API, dan area Studio di aplikasi web; satu aplikasi lengkap dengan aggregate, parameter dan expression dibangun dari nol tanpa satu baris YAML dan diterima `seal`; 191 test lulus |
+| 3.1 UI | dibangun ulang setelah Anda melihat yang pertama dan tidak mengerti sama sekali: tiga kolom istilah kompiler diganti **peta** (`web/src/graph.tsx`) — node jenis hal, garis relasi, yang dipijak samar di atas, klik untuk panel, tarik untuk membuat relasi; pertanyaan dirangkai dari deskripsi pengikatnya sendiri sehingga tetap domain-agnostic; `state()` menambah `borrowed` (keterjangkauan, bukan seluruh yang dipin); semua kosakata mesin pindah ke satu tutup *Behind the scenes*; 191 test lulus |
 | 3.2 | belum dimulai |
 | 4 | belum dimulai |
 | 5 | belum dimulai |

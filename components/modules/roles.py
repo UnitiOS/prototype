@@ -87,6 +87,10 @@ def _bindings(classes, slots, role):
             if slot.get("abstract") and slot_name not in [b["name"] for b in out]:
                 out.append({
                     "name": slot_name,
+                    # What the module that declared it calls it in prose. A
+                    # reader is shown this and not the slot name, which is the
+                    # name an expression is written with.
+                    "title": str(slot.get("title") or slot_name),
                     "required": bool(slot.get("required")),
                     "range": slot.get("range"),
                     "description": slot.get("description") or "",

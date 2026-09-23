@@ -13,9 +13,10 @@
 >   kode ditandai ✓; sisanya adalah penilaian.
 > - **Sebagian sudah dibangun.** Irisan 2.5 dan 2.6 dikerjakan pada 18 September
 >   2026, irisan 2.7 pada 19 September 2026, dan irisan 3.1 — separuh pertama
->   Studio — pada 23 September 2026. Semuanya mengubah beberapa hal di sini dari
->   usulan menjadi kode. Yang sudah berjalan ditandai **[dibangun]**, dan
->   pertanyaan yang terjawab olehnya ditandai di §12.
+>   Studio — pada 23 September 2026, layarnya dibangun ulang sebagai peta pada
+>   hari yang sama. Semuanya mengubah beberapa hal di sini dari usulan menjadi
+>   kode, dan §8.2 justru dibantah olehnya. Yang sudah berjalan ditandai
+>   **[dibangun]**, dan pertanyaan yang terjawab olehnya ditandai di §12.
 > - **Beda dari `REFACTOR_P2.md`**, yang merupakan dokumen kerja sementara dan
 >   dihapus setelah refactoring selesai. Yang ini hidup lebih lama karena isinya
 >   tentang bentuk sistemnya, bukan tentang urutan pengerjaannya.
@@ -547,22 +548,38 @@ sekali, dapat keduanya.
 Studio bukan aplikasi baru — ia separuh lagi dari aplikasi yang sudah jalan. Yang
 ada sekarang bisa *melihat* hasil graph; Studio adalah tempat graph-nya dibuat.
 
-**Metafora utamanya bukan kanvas.** Kanvas node-dan-panah mengundang orang
-menggambar apa saja lalu ditolak — persis pengalaman yang mau dihindari. Graph ini
-bertipe dan berkewajiban, jadi: **kanvas adalah petanya, checklist adalah
-jalannya.** `ClassGraph.tsx` tetap ada sebagai pandangan dan alat pemahaman, tapi
-penyuntingan terjadi dengan menjawab, bukan menggambar.
+**~~Metafora utamanya bukan kanvas.~~ Metafora utamanya kanvas — yang tidak
+bebas.** Catatan ini semula menolak kanvas: node-dan-panah mengundang orang
+menggambar apa saja lalu ditolak. Keberatannya benar; kesimpulannya terlalu
+jauh, dan tiga kolom yang dibangun atas dasar itu ternyata tidak terbaca sama
+sekali oleh orang yang tahu subjeknya. Yang hilang dari catatan ini adalah
+bahwa keduanya bisa sekaligus:
 
-| kolom | isi |
+> **Peta adalah halamannya, dan setiap gerakan di atasnya adalah satu langkah
+> dari daftar tertutup.** Menarik garis dari satu jenis hal ke jenis hal lain
+> bukan menggambar; itu `add_slot` dengan range sebuah kelas, lalu `attach`.
+> Tidak ada gerakan yang bisa menghasilkan dokumen yang tidak terurai, jadi
+> "menggambar apa saja lalu ditolak" tidak pernah terjadi.
+
+Sebuah modul *adalah* graph. Menyembunyikan graph-nya dari halaman yang
+membuatnya berarti meminta orang membayangkan benda yang sedang mereka pegang.
+
+| bagian | isi |
 |---|---|
-| kiri | yang sedang dibangun: kelas, slot, aturan — dengan kewajiban yang belum terpenuhi ditandai |
-| tengah | lubang tempat Anda berdiri: satu pertanyaan, jawaban dienumerasi dari registry |
-| kanan | apa yang akan dilakukannya: laporan kecocokan **dan angka sungguhan** |
+| peta | jenis hal sebagai node, isian yang menunjuk jenis hal lain sebagai garis; yang dipijak digambar samar di atas yang dibangun; jumlah pertanyaan sebagai lencana pada node |
+| panel | apa pun yang dipilih di peta: apa itu, bentuk yang diklaimnya dan mana yang belum dipenuhi, isinya, dan **pertanyaannya lebih dulu** |
+| di balik tutup | seluruh kosakata mesin: kata gerbang, diff, daftar 24 langkah, transkrip, berkas YAML-nya |
 
-**Yang jadi di irisan 3.1** (`web/src/studio.tsx`): ketiga kolomnya, kecuali
-angka sungguhan di kolom kanan — itu §8.3, dan irisan 3.2. Kolom kanan
-sekarang berisi tabel yang akan dibangun, apa kata gerbangnya, kecocokan peran
-per pengikat, diff terhadap versi yang akan digantikan, dan daftar langkahnya.
+**Yang jadi di irisan 3.1** (`web/src/studio.tsx`, `web/src/graph.tsx`): peta,
+panel, dan tutupnya — kecuali angka sungguhan, yang §8.3 dan irisan 3.2.
+
+**Kata awam tidak boleh ditulis di kode.** Menerjemahkan `moment` jadi "kapan"
+menanam istilah satu peran ke dalam Studio, dan peran yang dibuat orang lain
+besok tidak akan kebagian. Yang dipakai halaman adalah `description` pengikat
+itu sendiri: *"When this event happened."* dari `@uniti/core` jadi pertanyaan
+*"Which field of Wastage says when this event happened?"*. Satu-satunya kamus
+yang ditulis di kode adalah tipe kolom (`decimal` → "number") — himpunan
+tertutup milik compiler, bukan milik subjek siapa pun.
 
 Dua hal yang baru kelihatan saat dikerjakan:
 
@@ -715,7 +732,7 @@ Daftar ini menghemat lebih banyak diskusi daripada daftar rencana.
 | tidak dilakukan | alasan |
 |---|---|
 | Core sebagai kamus istilah universal (canonical data model) | §2 — gagal berkali-kali; core bicara kewajiban, bukan tentang dunia |
-| Kanvas graph bebas sebagai penyunting utama | §8.2 — mengundang menggambar apa saja lalu ditolak |
+| Kanvas graph **bebas** sebagai penyunting utama | §8.2 — mengundang menggambar apa saja lalu ditolak. Kanvas yang **tidak** bebas justru penyunting utamanya: setiap gerakan adalah satu langkah dari daftar tertutup |
 | SQL atau ekspresi bebas di dalam map | §6 — mematikan analisis, laporan kecocokan, dan agent |
 | Duck typing: menyimpulkan peran dari bentuk | makna justru yang tidak bisa disimpulkan dari bentuk; sebuah `decimal` bisa harga atau berat |
 | `owl:sameAs`-style penyimpulan identitas | §10.6 |

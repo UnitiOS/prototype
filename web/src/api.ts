@@ -297,7 +297,8 @@ export interface Written {
 // ---- roles, and what a swap would cost ------------------------------------
 
 export interface Binding {
-  name: string; required: boolean; range: string | null; description: string;
+  name: string; title: string; required: boolean;
+  range: string | null; description: string;
 }
 
 export interface Role {
@@ -479,12 +480,20 @@ export interface DraftRole {
   filled_by: { class: string; bindings: Record<string, string | null> }[];
 }
 
+/** A class from a module this draft pins, reachable from something it declares.
+ *  What the map draws around what you are building, and cannot change. */
+export interface DraftBorrowed {
+  name: string; description: string; module: Pin; fills: string[];
+  slots: { name: string; range: string | null; identifier: boolean }[];
+}
+
 export interface DraftState {
   name: string; title: string | null; description: string | null;
   purpose: string | null; valid_from: string | null;
   versions: string[]; revises: string | null; becomes: string;
   pins: Pin[]; sees: { classes: number; slots: number };
   classes: DraftClass[]; slots: DraftSlot[]; roles: DraftRole[];
+  borrowed: DraftBorrowed[];
   tables: CheckReport["tables"];
   refusals: Refusal[]; holes: Hole[]; blocking: number;
   steps: StepSpec[]; taken: string; diff: ModuleDiff["diff"];

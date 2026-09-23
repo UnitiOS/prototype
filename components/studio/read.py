@@ -380,6 +380,55 @@ def _roles_of(store, document):
     return out
 
 
+def _borrowed(store, document):
+    """The classes from pinned modules this draft actually sits among.
+
+    A map is not a catalogue. What belongs on it is what this module points at
+    — the range of one of its slots, or what one of its classes specialises —
+    and then whatever those point at in turn. Reachability, not everything
+    pinned: a module pins a whole vocabulary and uses a corner of it, and
+    drawing the whole vocabulary is how a map stops being readable.
+
+    Roles are not here. A role is a shape a class claims, and it belongs drawn
+    on the class that claimed it, not standing beside it as another thing.
+    """
+    classes, slots = seen(store, document)
+    own = document.get("classes") or {}
+
+    def points_at(body):
+        out = [(body or {}).get("is_a")]
+        for slot_name in ((body or {}).get("slots") or []):
+            out.append((slots.get(slot_name) or {}).get("range"))
+        return [str(n) for n in out if n]
+
+    wanted = [str((b or {}).get("range")) for b in (document.get("slots") or {}).values()
+              if (b or {}).get("range")]
+    for body in own.values():
+        wanted += points_at(body)
+
+    found = {}
+    while wanted:
+        class_name = wanted.pop()
+        body = classes.get(class_name)
+        if class_name in found or class_name in own or body is None:
+            continue
+        if body.get("abstract"):
+            continue
+        found[class_name] = body
+        wanted += points_at(body)
+
+    return [{
+        "name": class_name,
+        "description": body.get("description") or "",
+        "module": body["module"],
+        "fills": [str(m) for m in (body.get("mixins") or [])],
+        "slots": [{"name": s,
+                   "range": (slots.get(s) or {}).get("range"),
+                   "identifier": bool((slots.get(s) or {}).get("identifier"))}
+                  for s in (body.get("slots") or [])],
+    } for class_name, body in sorted(found.items())]
+
+
 def _rule_of(body):
     if (body or {}).get("equals_expression"):
         return {"kind": "expression", "spec": str(body["equals_expression"])}
@@ -449,6 +498,7 @@ def state(store, name):
             "on": attached.get(slot_name, []),
         } for slot_name, body in sorted(own_slots.items())],
         "roles": _roles_of(store, document),
+        "borrowed": _borrowed(store, document),
         "tables": found["tables"],
         "refusals": found["refusals"],
         "holes": found_holes,

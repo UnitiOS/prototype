@@ -689,19 +689,22 @@ details.fact:not([open]) > summary { border-bottom: 0; }
   .entry-facts dt { margin-top: 4px; }
 }
 
-/* The studio. Three columns, and the middle one is where somebody works, so it
-   is the widest and the only one with a colour: a question that blocks a seal
-   is marked, and nothing else is. A hole is not a failure — it is the next
-   thing to say — so the mark is the "known" blue, never the withdrawn red. */
-.studio { padding: 8px 16px 16px; }
-.studio-head h2 { margin: 4px 0; font-size: var(--step-1); }
-.studio-head > .quiet { margin: 0 0 8px; max-width: 72ch; font-size: var(--step--1); }
-.studio-picker {
-  display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px 12px;
-  margin-bottom: 8px;
+
+/* The studio. A module is a graph, so the page is a map with a panel beside
+   it. The map carries the meaning and the panel carries the words; nothing is
+   coloured that is not saying something. A question is the "known" blue and
+   never the withdrawn red, because a question is the next thing to say and
+   not a failure. What the module is built on is drawn faint, because it is
+   real and true and not yours to change here. */
+.studio { padding: 8px 16px 16px; display: grid; gap: 10px; }
+
+.studio-bar {
+  display: flex; flex-wrap: wrap; align-items: flex-start;
+  justify-content: space-between; gap: 8px 16px;
 }
-.draft-rows { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
-.draft-rows .quiet { margin: 0; align-self: center; font-size: var(--step--1); }
+.studio-open { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.studio-open .quiet { margin: 0; font-size: var(--step--1); }
+.studio-standing { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .draft-row {
   display: flex; flex-direction: column; align-items: flex-start; gap: 1px;
   border: 1px solid var(--rule); border-radius: 8px; background: var(--surface);
@@ -710,90 +713,201 @@ details.fact:not([open]) > summary { border-bottom: 0; }
 .draft-row-on { border-color: var(--known); box-shadow: inset 0 0 0 1px var(--known); }
 .draft-name { font-family: var(--mono); font-size: var(--step--1); }
 .draft-row .quiet { font-size: 0.75rem; }
+.chip {
+  border: 1px solid var(--rule); border-radius: 999px; padding: 2px 10px;
+  font-size: var(--step--1);
+}
+.chip-good { color: var(--stands); border-color: var(--stands); }
+.chip-asks { color: var(--known); border-color: var(--known); }
+.studio-what { margin: 0; max-width: 84ch; font-size: var(--step--1); }
+.button-small { padding: 2px 8px; font-size: var(--step--1); }
+.button-go { border-color: var(--known); color: var(--known); }
+.button-warn { border-color: var(--withdrawn); color: var(--withdrawn); }
+.as-link {
+  border: 0; background: none; padding: 0 0 0 8px; cursor: pointer;
+  color: var(--known); font-size: var(--step--1); text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.close { float: right; }
+
 .start-form {
-  flex: 1 1 100%; display: grid; gap: 6px 12px; align-items: end;
+  display: grid; gap: 6px 12px; align-items: end;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   border: 1px solid var(--rule); border-radius: 8px; padding: 10px 12px;
   background: var(--surface);
 }
-.start-form label, .step-form label, .answer label {
+.start-form label, .step-form label, .make label, .answer label {
   display: grid; gap: 2px; min-width: 0; font-size: var(--step--1);
 }
-.start-form label > span, .step-form label > span, .answer label > span {
-  color: var(--ink-soft);
-}
+.start-form label > span, .step-form label > span,
+.make label > span, .answer label > span { color: var(--ink-soft); }
 .start-form .wide { grid-column: 1 / -1; }
-.start-form input, .start-form textarea,
-.step-form input, .step-form select, .answer input, .answer select {
+.start-form input, .start-form textarea, .step-form input, .step-form select,
+.make input, .make select, .make textarea,
+.answer input, .answer select, .answer textarea {
   border: 1px solid var(--rule); border-radius: 6px; background: var(--ground);
-  color: inherit; padding: 4px 6px; font: inherit; min-width: 0;
+  color: inherit; padding: 4px 6px; font: inherit; min-width: 0; resize: vertical;
 }
-.start-form textarea { font: inherit; resize: vertical; }
 
-.studio-columns {
-  display: grid; gap: 12px; align-items: start;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1fr);
+/* ---- the floor: map, and the panel that says what is on it ---- */
+
+.studio-floor {
+  display: grid; gap: 12px; align-items: stretch;
+  grid-template-columns: minmax(0, 1.9fr) minmax(300px, 1fr);
 }
-.studio-column {
+/* An explicit height, so the row the canvas sits in is a definite size and
+   `height: 100%` on the svg has something to resolve against. Left to grow by
+   its content, an svg with a viewBox takes the viewBox's aspect ratio and the
+   map ends up as tall as whatever it happens to be drawing. */
+.map {
+  position: relative; border: 1px solid var(--rule); border-radius: 10px;
+  background: var(--surface); height: 660px; display: grid;
+  grid-template-rows: minmax(0, 1fr) auto; overflow: hidden;
+}
+.map-frame { display: block; width: 100%; height: 100%; touch-action: none; }
+.map-tools {
+  display: flex; align-items: center; gap: 10px; padding: 6px 10px;
+  border-top: 1px solid var(--rule); background: var(--ground);
+}
+.map-tools .quiet { margin: 0; font-size: 0.75rem; }
+
+/* A box. Yours is drawn on the surface with a full edge; what you build on is
+   drawn faint, and hovering it does nothing, because it cannot be changed. */
+.map-node { cursor: grab; }
+.map-box {
+  fill: var(--surface); stroke: var(--rule); stroke-width: 1.5;
+}
+.map-node-own .map-box { fill: var(--surface); stroke: var(--ink-soft); }
+.map-node-theirs .map-box {
+  fill: var(--ground); stroke: var(--rule); stroke-dasharray: 4 3;
+}
+.map-node-asks .map-box { stroke: var(--known); }
+.map-node-on .map-box { stroke: var(--focus); stroke-width: 2.5; }
+.map-node-target .map-box { stroke: var(--stands); stroke-width: 2.5; }
+.map-name {
+  font: 600 13px var(--sans); fill: var(--ink); pointer-events: none;
+}
+.map-node-theirs .map-name { fill: var(--ink-soft); font-weight: 500; }
+.map-field { font: 400 10.5px var(--mono); pointer-events: none; }
+.map-field-name { fill: var(--ink); }
+.map-node-theirs .map-field-name { fill: var(--ink-soft); }
+.map-field-holds { fill: var(--later); }
+.map-field-mark { fill: var(--known); }
+.map-field-rest { fill: var(--later); font-style: italic; }
+.map-field-asks .map-field-name { fill: var(--known); }
+.map-fills {
+  font: 500 9.5px var(--sans); fill: var(--stands); pointer-events: none;
+  letter-spacing: 0.04em;
+}
+.map-asks { fill: var(--known); }
+.map-asks-count {
+  font: 700 10px var(--sans); fill: var(--surface); pointer-events: none;
+}
+.map-handle {
+  fill: var(--surface); stroke: var(--known); stroke-width: 2; cursor: crosshair;
+  opacity: 0;
+}
+.map-node:hover .map-handle, .map-node-on .map-handle { opacity: 1; }
+
+.map-edge line { stroke: var(--ink-soft); stroke-width: 1.4; }
+.map-edge-theirs line { stroke: var(--rule); stroke-dasharray: 4 3; }
+.map-edge-lit line { stroke: var(--focus); stroke-width: 2; }
+/* A name sits on top of its line and of anything lying across it, so it is
+   drawn with a halo of the page behind it rather than a box of its own. */
+.map-said {
+  font: 400 10.5px var(--mono); fill: var(--later); pointer-events: none;
+  stroke: var(--surface); stroke-width: 3.5px; paint-order: stroke;
+  stroke-linejoin: round;
+}
+.map-said.map-edge-lit { fill: var(--ink); }
+.map-head { fill: var(--ink-soft); }
+.map-drawing {
+  stroke: var(--known); stroke-width: 2; stroke-dasharray: 5 4;
+  pointer-events: none;
+}
+
+/* ---- the panel ---- */
+
+.studio-panel {
   border: 1px solid var(--rule); border-radius: 10px; background: var(--surface);
-  padding: 10px 12px; min-width: 0;
+  padding: 12px 14px; min-width: 0; max-height: 720px; overflow: auto;
 }
-.studio-column h3 { margin: 0 0 6px; font-size: var(--step-0); }
-.studio-column h4 { margin: 12px 0 4px; font-size: var(--step--1); color: var(--ink-soft); }
-.studio-column h5 { margin: 6px 0 2px; font-size: var(--step--1); }
-.becomes { margin: 0 0 6px; font-size: var(--step--1); }
-.pins { font-size: 0.75rem; margin: 0 0 8px; overflow-wrap: anywhere; }
+.studio-panel h3 {
+  margin: 0 0 6px; font-size: var(--step-1); font-family: var(--mono);
+  font-weight: 600;
+}
+.studio-panel h4 {
+  margin: 14px 0 4px; font-size: var(--step--1); color: var(--ink-soft);
+  text-transform: lowercase; letter-spacing: 0.02em;
+}
 .said { margin: 2px 0; font-size: var(--step--1); max-width: 68ch; }
-.built { border-top: 1px solid var(--rule); padding-top: 6px; margin-top: 6px; }
-.built h4 {
-  margin: 0; color: var(--ink); font-size: var(--step-0);
-  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px;
+.settled { color: var(--stands); font-size: var(--step--1); max-width: 68ch; }
+.plain { list-style: none; margin: 4px 0 0; padding: 0; font-size: var(--step--1); }
+.fields { list-style: none; margin: 4px 0 0; padding: 0; font-size: var(--step--1); }
+.fields > li {
+  border-top: 1px solid var(--rule); padding: 5px 0; overflow-wrap: anywhere;
 }
-.built-slots { list-style: none; margin: 4px 0 0; padding: 0; font-size: var(--step--1); }
-.built-slots li { overflow-wrap: anywhere; }
+.fields > li:first-child { border-top: 0; }
+.fields p { margin: 1px 0 0; }
 .tag {
   border: 1px solid var(--rule); border-radius: 999px; padding: 0 6px;
-  font-size: 0.7rem; color: var(--ink-soft); font-weight: 400;
+  margin-left: 5px; font-size: 0.7rem; color: var(--ink-soft); font-weight: 400;
 }
-.tag-open { border-color: var(--known); color: var(--known); }
-.studio-danger { margin-top: 12px; display: flex; gap: 6px; flex-wrap: wrap; }
-.button-warn { border-color: var(--withdrawn); color: var(--withdrawn); }
+.tag-role { border-color: var(--stands); color: var(--stands); }
+.tag-rule { border-color: var(--known); color: var(--known); }
+.shape { border-top: 1px solid var(--rule); padding-top: 6px; margin-top: 6px; }
+.shape p { margin: 0; font-size: var(--step--1); }
+.bindings { list-style: none; margin: 4px 0 0; padding: 0; font-size: var(--step--1); }
+.bindings li { display: flex; gap: 4px; align-items: baseline; }
+.bindings .mark { display: inline-block; width: 1.2em; flex: none; }
+.bindings .met .mark { color: var(--stands); }
+.bindings .unmet .mark { color: var(--known); }
 
-.studio-middle { background: var(--surface); }
+.asks { margin: 8px 0; display: grid; gap: 8px; }
 .hole {
   border: 1px solid var(--rule); border-left: 3px solid var(--rule);
-  border-radius: 8px; padding: 8px 10px; margin-bottom: 8px;
+  border-radius: 8px; padding: 8px 10px; background: var(--ground);
 }
 .hole-blocking { border-left-color: var(--known); }
-.hole-question { margin: 0; font-weight: 600; }
-.hole-where { margin: 2px 0 6px; font-size: var(--step--1); overflow-wrap: anywhere; }
-.hole-kind { margin: 6px 0 0; font-size: 0.7rem; }
-.hole-refusal summary { cursor: pointer; color: var(--ink-soft); font-size: var(--step--1); }
+.hole-question { margin: 0 0 3px; font-weight: 600; }
+.hole .quiet { margin: 0 0 6px; font-size: var(--step--1); }
 .answer { display: flex; flex-wrap: wrap; align-items: end; gap: 6px; }
-.answer label { flex: 1 1 180px; }
-.settled { color: var(--stands); font-size: var(--step--1); max-width: 68ch; }
-.something-else { margin-top: 10px; }
-.something-else summary { cursor: pointer; color: var(--ink-soft); }
-.something-else > .quiet { font-size: var(--step--1); max-width: 68ch; }
+.answer select, .answer input, .answer textarea { flex: 1 1 170px; }
+.make {
+  display: grid; gap: 6px; border: 1px solid var(--known); border-radius: 8px;
+  padding: 10px 12px; margin-top: 8px;
+}
+.make h3 { margin: 0; font-size: var(--step-0); font-family: var(--sans); }
+.make h3::first-letter { text-transform: uppercase; }
+.make .quiet { margin: 0; font-size: var(--step--1); }
+.studio-danger {
+  margin-top: 16px; padding-top: 10px; border-top: 1px solid var(--rule);
+  display: flex; gap: 6px; flex-wrap: wrap;
+}
+
+/* ---- behind the scenes: everything in the machinery's own words ---- */
+
+.behind {
+  border: 1px solid var(--rule); border-radius: 10px; background: var(--surface);
+  padding: 8px 12px;
+}
+.behind > summary { cursor: pointer; color: var(--ink-soft); }
+.behind > .quiet { font-size: var(--step--1); max-width: 78ch; }
+.behind-grid {
+  display: grid; gap: 14px; align-items: start; margin-top: 6px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+.behind-grid h4 { margin: 0 0 4px; font-size: var(--step--1); color: var(--ink-soft); }
 .steps { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 2px; }
 .step-name {
   display: block; width: 100%; text-align: left; border: 0; background: none;
   padding: 2px 4px; border-radius: 6px; cursor: pointer; font-size: var(--step--1);
 }
-.step-name:hover { background: var(--field); }
-.step-name-on { background: var(--field); }
+.step-name:hover, .step-name-on { background: var(--field); }
 .step-form {
   display: grid; gap: 6px 10px; align-items: end; padding: 8px 4px 10px;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
 }
-
-.role-fit { border-top: 1px solid var(--rule); padding-top: 6px; margin-top: 6px; }
-.role-filler { margin-top: 4px; font-size: var(--step--1); }
-.role-filler p { margin: 0; }
-.bindings { list-style: none; margin: 2px 0 0; padding: 0 0 0 4px; }
-.bindings .mark { display: inline-block; width: 1.2em; }
-.bindings .met .mark { color: var(--stands); }
-.bindings .unmet .mark { color: var(--known); }
 .diff-rows { margin: 4px 0 0; font-size: var(--step--1); }
 .diff-rows > div { display: grid; grid-template-columns: max-content 1fr; gap: 2px 12px; }
 .diff-rows dt { color: var(--ink-soft); }
@@ -806,6 +920,8 @@ details.fact:not([open]) > summary { border-bottom: 0; }
   max-height: 340px; overflow: auto; font-size: 0.75rem; white-space: pre-wrap;
 }
 
-@media (max-width: 1100px) {
-  .studio-columns { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 1000px) {
+  .studio-floor { grid-template-columns: minmax(0, 1fr); }
+  .map { height: 440px; }
+  .studio-panel { max-height: none; }
 }
