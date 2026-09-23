@@ -20,7 +20,8 @@ What is asserted here:
 
 And one read over the top: `check` runs the compiler's own readers and
 collects what they refuse, because a gate stops at the first problem and a
-person wants all of them.
+person wants all of them. The seal does the same through generators, which is
+why the scan below counts a `yield` as a refusal too.
 """
 
 import os
@@ -58,6 +59,7 @@ GATES = {
     "components/compiler/compile.py": "CompileError",
     "components/api/application.py": "MapError",
     "components/modules/store.py": "ModuleError",
+    "components/studio/draft.py": "StudioError",
 }
 
 
@@ -110,8 +112,12 @@ def test_every_code_the_gates_raise_is_written_down():
     It also catches the other direction: a raise site still passing prose as
     its first argument would not match, and the counts would disagree.
     """
-    literal = re.compile(r'raise (?:DraftError|MapError|ModuleError|CompileError)\(\s*"([a-z_]+)"')
-    any_raise = re.compile(r"raise (?:DraftError|MapError|ModuleError|CompileError)\(")
+    # `raise` or `yield`: a reader that can refuse more than once hands its
+    # refusals back one at a time, so that a gate can stop at the first and a
+    # page can collect them all. Both are the gate saying no.
+    gate = r"(?:raise|yield) (?:DraftError|MapError|ModuleError|CompileError|StudioError)"
+    literal = re.compile(gate + r'\(\s*"([a-z_]+)"')
+    any_raise = re.compile(gate + r"\(")
 
     raised, sites = set(), 0
     for path, gate in GATES.items():

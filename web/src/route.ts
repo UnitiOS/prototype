@@ -7,11 +7,12 @@
 //   #/app?name=@x/y&version=v1&against=v2                      what a swap costs
 //   #/catalogue?q=..&kind=slot&fills=moment&name=@x/y&version=v2  what the store
 //                                          holds, and one application's health
+//   #/studio?name=@x/y                            the draft being built
 
 import { useEffect, useState } from "react";
 import type { Clocks } from "./api";
 
-export type Tab = "entities" | "actions" | "log" | "modules" | "app" | "catalogue";
+export type Tab = "entities" | "actions" | "log" | "modules" | "app" | "catalogue" | "studio";
 
 export interface ModulePick { name: string | null; version: string | null; compare: string | null }
 
@@ -37,16 +38,21 @@ export interface CataloguePick {
   name: string | null; version: string | null;
 }
 
+// Which draft is open. One name, because a draft belongs to a module and a
+// module has at most one: the version that does not exist yet.
+export interface StudioPick { name: string | null }
+
 export interface Route {
   tab: Tab; id: string | null; clocks: Clocks; module: ModulePick; app: AppPick;
-  catalogue: CataloguePick;
+  catalogue: CataloguePick; studio: StudioPick;
 }
 
 function parse(hash: string): Route {
   const [path, query = ""] = hash.replace(/^#\/?/, "").split("?");
   const [first, id] = path.split("/");
   const tab: Tab = first === "actions" || first === "log" || first === "modules"
-    || first === "app" || first === "catalogue" ? first : "entities";
+    || first === "app" || first === "catalogue" || first === "studio"
+    ? first : "entities";
   const params = new URLSearchParams(query);
   const read = (name: string) => {
     const raw = params.get(name);
@@ -55,7 +61,8 @@ function parse(hash: string): Route {
   };
   return {
     tab,
-    id: tab === "modules" || tab === "app" || tab === "catalogue" ? null : id || null,
+    id: tab === "modules" || tab === "app" || tab === "catalogue"
+      || tab === "studio" ? null : id || null,
     clocks: { validAt: read("valid_at"), asOf: read("as_of") },
     module: { name: params.get("name"), version: params.get("version"), compare: params.get("compare") },
     app: {
@@ -68,6 +75,7 @@ function parse(hash: string): Route {
       q: params.get("q"), kind: params.get("kind"), fills: params.get("fills"),
       name: params.get("name"), version: params.get("version"),
     },
+    studio: { name: params.get("name") },
   };
 }
 
@@ -97,6 +105,9 @@ export function href(route: Route): string {
     if (fills) query.set("fills", fills);
     if (name) query.set("name", name);
     if (version) query.set("version", version);
+  }
+  if (route.tab === "studio" && route.studio.name) {
+    query.set("name", route.studio.name);
   }
   query.set("valid_at", route.clocks.validAt.toISOString());
   query.set("as_of", route.clocks.asOf.toISOString());

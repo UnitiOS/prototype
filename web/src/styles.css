@@ -688,3 +688,124 @@ details.fact:not([open]) > summary { border-bottom: 0; }
   .entry-facts { grid-template-columns: 1fr; }
   .entry-facts dt { margin-top: 4px; }
 }
+
+/* The studio. Three columns, and the middle one is where somebody works, so it
+   is the widest and the only one with a colour: a question that blocks a seal
+   is marked, and nothing else is. A hole is not a failure — it is the next
+   thing to say — so the mark is the "known" blue, never the withdrawn red. */
+.studio { padding: 8px 16px 16px; }
+.studio-head h2 { margin: 4px 0; font-size: var(--step-1); }
+.studio-head > .quiet { margin: 0 0 8px; max-width: 72ch; font-size: var(--step--1); }
+.studio-picker {
+  display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px 12px;
+  margin-bottom: 8px;
+}
+.draft-rows { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+.draft-rows .quiet { margin: 0; align-self: center; font-size: var(--step--1); }
+.draft-row {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 1px;
+  border: 1px solid var(--rule); border-radius: 8px; background: var(--surface);
+  padding: 4px 10px; cursor: pointer; text-align: left;
+}
+.draft-row-on { border-color: var(--known); box-shadow: inset 0 0 0 1px var(--known); }
+.draft-name { font-family: var(--mono); font-size: var(--step--1); }
+.draft-row .quiet { font-size: 0.75rem; }
+.start-form {
+  flex: 1 1 100%; display: grid; gap: 6px 12px; align-items: end;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  border: 1px solid var(--rule); border-radius: 8px; padding: 10px 12px;
+  background: var(--surface);
+}
+.start-form label, .step-form label, .answer label {
+  display: grid; gap: 2px; min-width: 0; font-size: var(--step--1);
+}
+.start-form label > span, .step-form label > span, .answer label > span {
+  color: var(--ink-soft);
+}
+.start-form .wide { grid-column: 1 / -1; }
+.start-form input, .start-form textarea,
+.step-form input, .step-form select, .answer input, .answer select {
+  border: 1px solid var(--rule); border-radius: 6px; background: var(--ground);
+  color: inherit; padding: 4px 6px; font: inherit; min-width: 0;
+}
+.start-form textarea { font: inherit; resize: vertical; }
+
+.studio-columns {
+  display: grid; gap: 12px; align-items: start;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1fr);
+}
+.studio-column {
+  border: 1px solid var(--rule); border-radius: 10px; background: var(--surface);
+  padding: 10px 12px; min-width: 0;
+}
+.studio-column h3 { margin: 0 0 6px; font-size: var(--step-0); }
+.studio-column h4 { margin: 12px 0 4px; font-size: var(--step--1); color: var(--ink-soft); }
+.studio-column h5 { margin: 6px 0 2px; font-size: var(--step--1); }
+.becomes { margin: 0 0 6px; font-size: var(--step--1); }
+.pins { font-size: 0.75rem; margin: 0 0 8px; overflow-wrap: anywhere; }
+.said { margin: 2px 0; font-size: var(--step--1); max-width: 68ch; }
+.built { border-top: 1px solid var(--rule); padding-top: 6px; margin-top: 6px; }
+.built h4 {
+  margin: 0; color: var(--ink); font-size: var(--step-0);
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px;
+}
+.built-slots { list-style: none; margin: 4px 0 0; padding: 0; font-size: var(--step--1); }
+.built-slots li { overflow-wrap: anywhere; }
+.tag {
+  border: 1px solid var(--rule); border-radius: 999px; padding: 0 6px;
+  font-size: 0.7rem; color: var(--ink-soft); font-weight: 400;
+}
+.tag-open { border-color: var(--known); color: var(--known); }
+.studio-danger { margin-top: 12px; display: flex; gap: 6px; flex-wrap: wrap; }
+.button-warn { border-color: var(--withdrawn); color: var(--withdrawn); }
+
+.studio-middle { background: var(--surface); }
+.hole {
+  border: 1px solid var(--rule); border-left: 3px solid var(--rule);
+  border-radius: 8px; padding: 8px 10px; margin-bottom: 8px;
+}
+.hole-blocking { border-left-color: var(--known); }
+.hole-question { margin: 0; font-weight: 600; }
+.hole-where { margin: 2px 0 6px; font-size: var(--step--1); overflow-wrap: anywhere; }
+.hole-kind { margin: 6px 0 0; font-size: 0.7rem; }
+.hole-refusal summary { cursor: pointer; color: var(--ink-soft); font-size: var(--step--1); }
+.answer { display: flex; flex-wrap: wrap; align-items: end; gap: 6px; }
+.answer label { flex: 1 1 180px; }
+.settled { color: var(--stands); font-size: var(--step--1); max-width: 68ch; }
+.something-else { margin-top: 10px; }
+.something-else summary { cursor: pointer; color: var(--ink-soft); }
+.something-else > .quiet { font-size: var(--step--1); max-width: 68ch; }
+.steps { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 2px; }
+.step-name {
+  display: block; width: 100%; text-align: left; border: 0; background: none;
+  padding: 2px 4px; border-radius: 6px; cursor: pointer; font-size: var(--step--1);
+}
+.step-name:hover { background: var(--field); }
+.step-name-on { background: var(--field); }
+.step-form {
+  display: grid; gap: 6px 10px; align-items: end; padding: 8px 4px 10px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.role-fit { border-top: 1px solid var(--rule); padding-top: 6px; margin-top: 6px; }
+.role-filler { margin-top: 4px; font-size: var(--step--1); }
+.role-filler p { margin: 0; }
+.bindings { list-style: none; margin: 2px 0 0; padding: 0 0 0 4px; }
+.bindings .mark { display: inline-block; width: 1.2em; }
+.bindings .met .mark { color: var(--stands); }
+.bindings .unmet .mark { color: var(--known); }
+.diff-rows { margin: 4px 0 0; font-size: var(--step--1); }
+.diff-rows > div { display: grid; grid-template-columns: max-content 1fr; gap: 2px 12px; }
+.diff-rows dt { color: var(--ink-soft); }
+.diff-rows dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.diff-rows dd code { margin-right: 8px; }
+.taken { margin-top: 10px; font-size: var(--step--1); }
+.taken summary { cursor: pointer; color: var(--ink-soft); }
+.taken pre {
+  margin: 6px 0 0; padding: 8px; background: var(--ground); border-radius: 6px;
+  max-height: 340px; overflow: auto; font-size: 0.75rem; white-space: pre-wrap;
+}
+
+@media (max-width: 1100px) {
+  .studio-columns { grid-template-columns: minmax(0, 1fr); }
+}

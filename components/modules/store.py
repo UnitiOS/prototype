@@ -105,6 +105,21 @@ class Store:
             ],
         )
 
+    def place(self, name):
+        """Where a module of this name lives, or would live if it existed.
+
+        The first root, because that is the one the store reads first: a module
+        started there is the one found afterwards, and a development root put
+        ahead of the real one is how a draft stays out of it.
+        """
+        try:
+            return self.directory(name)
+        except ModuleError as exc:
+            if exc.code != "no_such_module":
+                raise
+            scope, local = name.split("/")
+            return self.roots[0] / scope / local
+
     def manifest(self, name):
         data = yaml.safe_load((self.directory(name) / MANIFEST).read_text(encoding="utf-8")) or {}
         if data.get("name") != name:

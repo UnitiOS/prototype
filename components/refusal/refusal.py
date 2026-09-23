@@ -25,10 +25,11 @@ The sentence is **derived**, never written beside the structure. A refusal
 carrying both would have two places to disagree, and the prose is the one
 nobody updates.
 
-Three gates raise these, and each says which it is, because the answer to
+Four gates raise these, and each says which it is, because the answer to
 "who can fix this" differs: `DraftError` is the seal refusing to make a
-version, `MapError` is the generator or the compiler refusing to read one, and
-`ModuleError` is the store refusing to find one.
+version, `MapError` is the generator or the compiler refusing to read one,
+`ModuleError` is the store refusing to find one, and `StudioError` is the
+studio refusing to perform a step on a draft.
 
 `repairs` is not decoration and is not optional in spirit. A refusal with no
 repair is a dead end, and the only honest ones are the few where the answer is
@@ -114,6 +115,21 @@ CODES = {
     "expression_cycle": "an expression written in terms of itself",
     "expression_not_arithmetic": "an expression that is more than arithmetic",
     "expression_names_unknown": "an expression naming a column that does not exist",
+
+    # ---- the studio: a draft being built ----------------------------------
+    "not_an_operation": "a step the studio does not perform",
+    "operation_arguments": "a step given arguments it does not take",
+    "module_exists": "a module the store already holds",
+    "draft_open": "a module whose draft is already open",
+    "nothing_sealed": "a module with no sealed version to revise",
+    "name_taken": "a name something in this draft already uses",
+    "not_in_draft": "a class or slot nothing this draft can see declares",
+    "not_yours": "a class or slot of a pinned module, which a draft cannot change",
+    "not_a_field": "a field that is not one this thing has",
+    "not_a_role": "a class that is not a role, so nothing can claim it",
+    "not_a_binding": "a slot that is not a binding any role obliges",
+    "not_attached": "a slot that is not on the class",
+    "not_a_pin": "an import this draft does not hold",
 
     # ---- the command line -------------------------------------------------
     "not_field_value": "a `--set` argument that is not FIELD=VALUE",

@@ -39,6 +39,8 @@ from components.modules import read as modules_read  # noqa: E402
 from components.modules import roles as roles_read  # noqa: E402
 from components.modules.store import ModuleError, Store  # noqa: E402
 from components.refusal import Refusal  # noqa: E402
+from components.studio import draft as studio_draft  # noqa: E402
+from components.studio import read as studio_read  # noqa: E402
 from perform import connect  # noqa: E402
 from provenance import _registry  # noqa: E402
 
@@ -342,6 +344,47 @@ async def app_state(request: Request):
             note=body.get("note") or None))
 
 
+async def studio_drafts(request: Request):
+    """Every draft open in the store, and what each one would supersede."""
+    return _modules(studio_draft.drafts)
+
+
+async def studio_state(request: Request):
+    """One draft: what is being built, the holes in it, and what it would do."""
+    return _modules(studio_read.state, _required(request, "name"))
+
+
+async def studio_step(request: Request):
+    """Perform one operation on one draft, and answer with the draft after it.
+
+    A write, and the only one the API makes that does not reach the kernel: a
+    draft is a file until somebody seals it. The step is named from the closed
+    list, so a body naming anything else is refused before a file is touched.
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(400, "the body is not JSON")
+    if not isinstance(body, dict):
+        raise HTTPException(400, "the body is not an object")
+    for field in ("name", "step"):
+        if not body.get(field):
+            raise HTTPException(400, f"{field} is required")
+    args = body.get("args") or {}
+    if not isinstance(args, dict):
+        raise HTTPException(400, "args is not an object")
+
+    name, step = str(body["name"]), str(body["step"])
+    try:
+        store = Store.from_env()
+        studio_draft.apply(store, name, step, args)
+        if step == "discard":
+            return JSON({"name": name, "discarded": True})
+        return JSON(studio_read.state(store, name))
+    except Refusal as exc:
+        return _refused(exc)
+
+
 async def _error(request: Request, exc: HTTPException):
     return JSON({"error": exc.detail}, status_code=exc.status_code)
 
@@ -369,6 +412,9 @@ routes = [
     Route("/api/app/cell", app_cell),
     Route("/api/app/form", app_form),
     Route("/api/app/state", app_state, methods=["POST"]),
+    Route("/api/studio/drafts", studio_drafts),
+    Route("/api/studio/draft", studio_state),
+    Route("/api/studio/step", studio_step, methods=["POST"]),
 ]
 if DIST.is_dir():
     routes.append(Mount("/", StaticFiles(directory=DIST, html=True)))

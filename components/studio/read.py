@@ -1,0 +1,465 @@
+"""read — what a draft is, what is missing from it, and what may be done next.
+
+> Never show the whole graph. Show the hole the person is standing in, what it
+> obliges, and the finite set that can fill it.
+
+That is the whole of this file. A draft is read here exactly as the gates read
+it — the seal's own checks and the compiler's planner, nothing invented — and
+what they refuse becomes a question with its answers attached.
+
+Two kinds of question, and the difference is whether anything is blocked:
+
+    a refusal      the seal or the compiler would say no. It carries `where`,
+                   `expected`, `got` and repairs whose `options` are computed
+                   from the graph, and the step that answers it is named.
+    an opening     nothing is refused, and something is still unfinished: a
+                   class nothing can ever be, a slot no class carries, a
+                   description nobody wrote. Listed in `OPEN` below.
+
+The gates stop at the first problem, which is right for a gate and useless for
+somebody editing. So the two readers that can refuse more than once —
+`seal.uri_refusals` and `seal.role_refusals` — are generators, and `check`
+already collects the compiler's. No rule is re-implemented here; if it were,
+the studio would say a draft is fine and `seal` would refuse it, which is the
+failure the first attempt at this was built out of.
+
+Nothing here writes.
+"""
+
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent.parent
+sys.path.insert(0, str(ROOT / "components" / "compiler"))
+sys.path.insert(0, str(ROOT / "components" / "generator"))
+sys.path.insert(0, str(ROOT / "components" / "seal"))
+
+from compile import tables  # noqa: E402
+from components.modules import diff as diff_read  # noqa: E402
+from components.modules.check import check  # noqa: E402
+from components.modules.roles import _above, _bindings, _fills  # noqa: E402
+from components.refusal import Refusal  # noqa: E402
+from components.studio.draft import (  # noqa: E402
+    CLASS_FIELDS, DRAFT, FIELDS, OPERATIONS, SLOT_FIELDS, open_draft, path,
+    ranges, seen, text_of, transcript,
+)
+from seal import (  # noqa: E402
+    _facts, _one_version_per_module, _pins_already_sealed, _slot_ranges,
+    _transcript, _valid_from, _validate, role_refusals, uri_refusals,
+)
+
+# What is unfinished without anything refusing it. A closed list, like the
+# refusal codes are, and for the same reason: "what else is there to do here"
+# is answerable without reading the code. None of these stops a seal — a
+# module may perfectly well declare a class nobody ever states — and every one
+# of them is something the author probably did not mean.
+OPEN = {
+    "nothing_declared": "a draft with no class in it yet",
+    "class_is_empty": "a class carrying no slot",
+    "class_has_no_rows": "a class nothing can be stated to be and no rule derives",
+    "slot_is_loose": "a slot no class carries, so nothing is ever stated under it",
+    "nothing_said_about_it": "a class or slot with no description, which is what "
+                            "somebody choosing between two modules reads",
+}
+
+# Which step answers which refusal. Small and closed on purpose: a refusal the
+# studio cannot name a step for is still a hole, and its repairs still carry
+# the options — it just has no button. Inventing a step for every code would
+# be guessing on behalf of the author.
+#
+# `where` is read for the names, because that is where the gate put them. The
+# two shapes are the gates' own and a test holds them to it.
+ANSWERS = ("binding_unfilled", "binding_ambiguous", "slot_without_uri",
+           "no_valid_from")
+
+
+def _map(store, name, document):
+    """The draft read as a map: everything but the version it does not have.
+
+    Every reader that only reads takes one. Nothing that writes to the kernel
+    is ever given one, because an assertion has to name the version it was
+    stated under, and a draft is not a version.
+    """
+    view = _validate(text_of(document), DRAFT, store)
+    return {"path": path(store, name), "view": view, "version": None,
+            "label": f"{name}@draft"}
+
+
+def inspect(store, name, document):
+    """Every refusal this draft would meet, collected instead of thrown.
+
+    The seal's readers first, then the compiler's. A draft that cannot be
+    parsed or whose pins do not resolve stops here with one refusal: there is
+    nothing below it to read, and a page full of consequences of one missing
+    import helps nobody.
+    """
+    out = {"refusals": [], "tables": [], "map": None}
+    try:
+        map_ = _map(store, name, document)
+    except Refusal as exc:
+        out["refusals"].append(exc.as_dict())
+        return out
+    out["map"] = map_
+    view = map_["view"]
+    annotations = document.get("annotations") or {}
+
+    missing_uris = [r for r in uri_refusals(view, DRAFT)]
+    out["refusals"] += [r.as_dict() for r in missing_uris]
+    out["refusals"] += [r.as_dict() for r in role_refusals(view, document, DRAFT)]
+
+    def collect(reader, *args):
+        try:
+            reader(*args)
+        except Refusal as exc:
+            out["refusals"].append(exc.as_dict())
+
+    # As it would be sealed now: a pin to a version sealed after this moment
+    # is the one thing about a draft that can go wrong by the clock alone.
+    collect(_pins_already_sealed, store, document,
+            datetime.now(timezone.utc), DRAFT)
+    collect(_one_version_per_module, store, document, DRAFT)
+    collect(_valid_from, annotations, DRAFT)
+    collect(_transcript, annotations, path(store, name), DRAFT)
+    if not missing_uris:
+        # Facts are checked against the predicates the draft declares, so a
+        # draft still missing one of those is asked about that first.
+        collect(_facts, annotations, _slot_ranges(view, DRAFT), DRAFT)
+
+    report = check(store, name, "draft", map_=map_)
+    out["refusals"] += report["refusals"]
+    out["tables"] = report["tables"]
+    return out
+
+
+def _about(refusal):
+    """The names a gate put in `where`, for the step that answers it.
+
+    `binding_unfilled` and `binding_ambiguous` write `Class.binding`;
+    `slot_without_uri` writes `file: slot`. Read here rather than carried as
+    extra fields, because a refusal's shape is the same for every reader and a
+    field only the studio used would be a field only the studio maintained.
+    """
+    where = refusal["where"]
+    if refusal["code"] in ("binding_unfilled", "binding_ambiguous"):
+        class_name, _, binding = where.partition(".")
+        return {"class": class_name, "binding": binding}
+    if refusal["code"] == "slot_without_uri":
+        _, _, slot = where.partition(": ")
+        return {"slot": slot}
+    return {}
+
+
+def _step_for(refusal):
+    """The one step that answers this refusal, where the studio has one."""
+    code, about = refusal["code"], _about(refusal)
+    options = [o for repair in refusal["repairs"] for o in repair["options"]]
+    if code == "binding_unfilled":
+        return {"op": "bind", "args": {"binding": about["binding"]},
+                "choose": "slot", "options": options}
+    if code == "binding_ambiguous":
+        return {"op": "unbind", "args": {}, "choose": "slot", "options": options}
+    if code == "slot_without_uri":
+        return {"op": "set_slot",
+                "args": {"slot": about["slot"], "field": "slot_uri"},
+                "choose": "value", "options": []}
+    if code == "no_valid_from":
+        return {"op": "set", "args": {"field": "valid_from"},
+                "choose": "value", "options": []}
+    return None
+
+
+def _question(kind, where, detail):
+    """One hole in a question, assembled from its parts and never stored apart."""
+    if kind == "binding_unfilled":
+        return (f"which slot of {detail.get('class')} is its "
+                f"{detail.get('binding')}?")
+    if kind == "binding_ambiguous":
+        return (f"two slots say they are {detail.get('class')}'s "
+                f"{detail.get('binding')} — which one is not?")
+    if kind == "slot_without_uri":
+        return f"what predicate is {detail.get('slot')} recorded under?"
+    if kind == "no_valid_from":
+        return "when did these definitions take effect?"
+    if kind == "nothing_declared":
+        return "what kinds of thing does this module know about?"
+    if kind == "class_is_empty":
+        return f"what is said about a {where}?"
+    if kind == "class_has_no_rows":
+        return f"how would anything ever become a {where}?"
+    if kind == "slot_is_loose":
+        return f"which class is {where} said about?"
+    if kind == "nothing_said_about_it":
+        return f"what is {where}?"
+    return f"what about {where}?"
+
+
+def _hole(kind, where, *, blocking, because, detail=None, step=None, refusal=None):
+    return {"kind": kind, "where": where, "blocking": blocking,
+            "question": _question(kind, where, detail or {}),
+            "because": because, "step": step, "refusal": refusal}
+
+
+def _carriers(store, document):
+    """Every role in sight that brings a slot saying which class an entity is.
+
+    The answer to "how would anything become one of these": claim a role that
+    carries the predicate, and the log can say it. Computed rather than named,
+    so a second module declaring such a role is offered too.
+    """
+    classes, slots = seen(store, document)
+    out = []
+    for role, body in classes.items():
+        if not body.get("abstract"):
+            continue
+        reach = [role] + sorted(_above(classes, role))
+        carried = [s for c in reach for s in (classes[c].get("slots") or [])]
+        if any((slots.get(s) or {}).get("designates_type") for s in carried):
+            out.append(role)
+    return sorted(out)
+
+
+def with_rows_of(map_):
+    """Every class this draft would build a table for, by the compiler's rule.
+
+    A class outside it is not refused: it compiles, and it is empty forever.
+    That is the difference between `class_has_no_rows` and a refusal.
+    """
+    if map_ is None:
+        return set()
+    try:
+        return set(tables(map_))
+    except Refusal:
+        # Nothing to compile is itself an answer, and it is already among the
+        # refusals if it mattered. The openings below do not need it.
+        return set()
+
+
+def holes(store, name, document, found):
+    """Every question this draft is standing in, the blocking ones first.
+
+    `found` is what `inspect` collected. A refusal becomes a hole with the step
+    that answers it; the rest are the openings in `OPEN`, which nothing refuses
+    and which are the difference between a module that compiles and a module
+    somebody else can use.
+    """
+    out = []
+    for refusal in found["refusals"]:
+        hole = _hole(refusal["code"], refusal["where"], blocking=True,
+                     because=refusal["expected"], detail=_about(refusal),
+                     step=_step_for(refusal), refusal=refusal)
+        if refusal["code"] not in ANSWERS:
+            # No step to name, so no question of the studio's own either: the
+            # refusal already says it, in the words of whichever gate refused.
+            hole["question"] = refusal["sentence"]
+        out.append(hole)
+
+    own_classes = document.get("classes") or {}
+    own_slots = document.get("slots") or {}
+    if not own_classes:
+        out.append(_hole("nothing_declared", name, blocking=False,
+                         because=OPEN["nothing_declared"],
+                         step={"op": "add_class", "args": {}, "choose": "class",
+                               "options": []}))
+
+    with_rows = with_rows_of(found["map"])
+    carried = _carriers(store, document)
+    attached = {s for body in own_classes.values()
+                for s in ((body or {}).get("slots") or [])}
+    for class_name, body in sorted(own_classes.items()):
+        body = body or {}
+        if body.get("abstract"):
+            continue
+        if not body.get("slots"):
+            out.append(_hole("class_is_empty", class_name, blocking=False,
+                             because=OPEN["class_is_empty"],
+                             step={"op": "attach", "args": {"class": class_name},
+                                   "choose": "slot", "options": sorted(own_slots)}))
+        elif class_name not in with_rows:
+            out.append(_hole("class_has_no_rows", class_name, blocking=False,
+                             because=OPEN["class_has_no_rows"],
+                             step={"op": "fill_role", "args": {"class": class_name},
+                                   "choose": "role", "options": carried}))
+        if not body.get("description"):
+            out.append(_hole("nothing_said_about_it", class_name, blocking=False,
+                             because=OPEN["nothing_said_about_it"],
+                             step={"op": "set_class",
+                                   "args": {"class": class_name,
+                                            "field": "description"},
+                                   "choose": "value", "options": []}))
+
+    for slot_name, body in sorted(own_slots.items()):
+        body = body or {}
+        if slot_name not in attached and not body.get("abstract"):
+            out.append(_hole("slot_is_loose", slot_name, blocking=False,
+                             because=OPEN["slot_is_loose"],
+                             step={"op": "attach", "args": {"slot": slot_name},
+                                   "choose": "class",
+                                   "options": sorted(own_classes)}))
+        if not body.get("description"):
+            out.append(_hole("nothing_said_about_it", slot_name, blocking=False,
+                             because=OPEN["nothing_said_about_it"],
+                             step={"op": "set_slot",
+                                   "args": {"slot": slot_name,
+                                            "field": "description"},
+                                   "choose": "value", "options": []}))
+    return sorted(out, key=lambda h: (not h["blocking"], h["where"]))
+
+
+_FIELDS_OF = {"set": FIELDS, "set_class": CLASS_FIELDS, "set_slot": SLOT_FIELDS}
+
+
+def steps(store, name, document):
+    """Every operation, with the answers that fit this draft as it stands.
+
+    This is the list the form draws and the list the agent chooses from, and
+    it is one list. An argument whose answers are a finite set carries them;
+    one that depends on another argument says which — `column` is a slot of
+    whichever class was named, and that class is not known until it is.
+    """
+    classes, slots = seen(store, document)
+    own_classes = sorted(document.get("classes") or {})
+    own_slots = sorted(document.get("slots") or {})
+    pinned = [str(i) for i in (document.get("imports") or [])
+              if not str(i).startswith("linkml:")]
+    options = {
+        "own_class": own_classes,
+        "own_slot": own_slots,
+        "class": sorted(classes),
+        "slot": sorted(slots),
+        "role": sorted(c for c, b in classes.items() if b.get("abstract")),
+        "binding": sorted(s for s, b in slots.items() if b.get("abstract")),
+        "range": ranges(store, document),
+        "pin": sorted(f"{n}@{v['version']}" for n in store.names()
+                      if n != name for v in store.versions(n)),
+        "held_pin": pinned,
+    }
+
+    def argument(op, key, kind, required):
+        out = {"name": key, "kind": kind, "required": required,
+               "options": list(options.get(kind, ()))}
+        if kind == "field":
+            out["options"] = list(_FIELDS_OF[op])
+        if kind == "column":
+            out["depends"] = "class"
+        return out
+
+    return [{
+        "op": op,
+        "does": spec["does"],
+        "takes": [argument(op, k, v, True) for k, v in spec["takes"].items()]
+                 + [argument(op, k, v, False) for k, v in spec["may"].items()],
+    } for op, spec in OPERATIONS.items()]
+
+
+def _roles_of(store, document):
+    """Every role in sight, and how far this draft's own classes have filled it.
+
+    The picture §7.2 asks for: the role, what it obliges, and a tick or a hole
+    per binding. Read off the documents, the same way the store's own role
+    panel reads them, so a draft and a sealed version look alike on the page.
+    """
+    classes, slots = seen(store, document)
+    out = []
+    for role in sorted(c for c, b in classes.items() if b.get("abstract")):
+        bindings = _bindings(classes, slots, role)
+        filled = []
+        for class_name in sorted(document.get("classes") or {}):
+            if (classes[class_name].get("abstract")
+                    or role not in _above(classes, class_name)):
+                continue
+            filled.append({
+                "class": class_name,
+                "bindings": {b["name"]: (_fills(classes, slots, class_name,
+                                                b["name"]) or [None])[0]
+                             for b in bindings},
+            })
+        out.append({"name": role, "module": classes[role]["module"],
+                    "description": classes[role].get("description") or "",
+                    "bindings": bindings, "filled_by": filled})
+    return out
+
+
+def _rule_of(body):
+    if (body or {}).get("equals_expression"):
+        return {"kind": "expression", "spec": str(body["equals_expression"])}
+    for kind in ("aggregate", "parameter"):
+        held = ((body or {}).get("annotations") or {}).get(kind)
+        if held is not None:
+            if isinstance(held, dict) and set(held) == {"value"}:
+                held = held["value"]
+            return {"kind": kind, "spec": held}
+    return None
+
+
+def state(store, name):
+    """One draft, everything about it, in one read.
+
+    The three columns of the studio in one object: what is being built, the
+    holes to stand in, and what it would do — the checks, the diff against the
+    version this would supersede, and the steps taken so far.
+    """
+    # The store first: a name it does not hold is its refusal to make, not a
+    # missing draft, and the two are answered by different people.
+    manifest = store.manifest(name)
+    document = open_draft(store, name)
+    found = inspect(store, name, document)
+    held = [v["version"] for v in store.versions(name)]
+    revises = held[-1] if held else None
+    own_classes = document.get("classes") or {}
+    own_slots = document.get("slots") or {}
+    attached = {}
+    for class_name, body in own_classes.items():
+        for slot_name in ((body or {}).get("slots") or []):
+            attached.setdefault(slot_name, []).append(class_name)
+
+    classes, slots = seen(store, document)
+    annotations = document.get("annotations") or {}
+    found_holes = holes(store, name, document, found)
+    with_rows = with_rows_of(found["map"])
+    return {
+        "name": name,
+        "title": document.get("title"),
+        "description": document.get("description"),
+        "purpose": manifest.get("purpose"),
+        "valid_from": annotations.get("valid_from"),
+        "versions": held,
+        "revises": revises,
+        "becomes": f"v{len(held) + 1}",
+        "pins": [{"name": p[0], "version": p[1]} for p in store.imports(document)],
+        "sees": {"classes": len(classes), "slots": len(slots)},
+        "classes": [{
+            "name": class_name,
+            "description": (body or {}).get("description") or "",
+            "fills": [str(m) for m in ((body or {}).get("mixins") or [])],
+            "is_a": (body or {}).get("is_a"),
+            "slots": list((body or {}).get("slots") or []),
+            "has_rows": class_name in with_rows,
+        } for class_name, body in sorted(own_classes.items())],
+        "slots": [{
+            "name": slot_name,
+            "title": str((body or {}).get("title") or slot_name),
+            "description": (body or {}).get("description") or "",
+            "slot_uri": (body or {}).get("slot_uri"),
+            "range": (body or {}).get("range"),
+            "identifier": bool((body or {}).get("identifier")),
+            "designates_type": bool((body or {}).get("designates_type")),
+            "binds": (body or {}).get("is_a"),
+            "rule": _rule_of(body),
+            "on": attached.get(slot_name, []),
+        } for slot_name, body in sorted(own_slots.items())],
+        "roles": _roles_of(store, document),
+        "tables": found["tables"],
+        "refusals": found["refusals"],
+        "holes": found_holes,
+        "blocking": sum(1 for h in found_holes if h["blocking"]),
+        "steps": steps(store, name, document),
+        "taken": transcript(store, name),
+        "diff": diff_read.compare(store.document(name, revises) if revises else {},
+                                  document),
+        "sealable": not found["refusals"],
+        "document": text_of(document),
+    }
+
+
+__all__ = ["OPEN", "holes", "inspect", "state", "steps", "with_rows_of"]

@@ -162,6 +162,37 @@ def _validate(text, name, store=None):
         ) from exc
 
 
+def uri_refusals(view, name):
+    """Every slot with no `slot_uri`, as the refusal each one would raise.
+
+    A generator, because a gate and a page want different things from the same
+    rule: `seal` raises the first and stops, and a draft being edited wants all
+    of them at once. The rule is read here once, so the two cannot drift.
+    """
+    for slot_name in view.schema.slots:
+        slot = view.induced_slot(slot_name)
+        if slot.abstract or slot.slot_uri:
+            # An abstract slot is a binding, not a predicate. It names a hole
+            # that whichever class fills the role fills with a slot of its
+            # own, so nothing is ever stated under it and it needs no identity
+            # in the kernel. This is what keeps roles out of the log entirely:
+            # `slot_uri` is not inherited, so a fact is always recorded under
+            # the concrete predicate, and changing a role invalidates nothing.
+            continue
+        yield DraftError(
+            "slot_without_uri",
+            where=f"{name}: {slot_name}",
+            expected="a `slot_uri`, which is a predicate's identity in the kernel",
+            got="none",
+            repairs=[Repair(
+                f"declare `slot_uri: <prefix>:{slot_name}`. It is not derived "
+                f"from the name: a rename would then orphan every fact "
+                f"recorded before it",
+                where=name,
+            )],
+        )
+
+
 def _slot_ranges(view, name):
     """Every `slot_uri` the draft declares, and whether its range is a class.
 
@@ -186,32 +217,14 @@ def _slot_ranges(view, name):
     about it would be one predicate meaning two things — unguarded, and a line
     in OPEN.md rather than a refusal invented here.
     """
+    for refusal in uri_refusals(view, name):
+        raise refusal
     classes = set(view.all_classes())
     ranges = {}
     for slot_name in view.schema.slots:
         slot = view.induced_slot(slot_name)
-        if slot.abstract:
-            # A binding, not a predicate. It names a hole that whichever class
-            # fills the role fills with a slot of its own, so nothing is ever
-            # stated under it and it needs no identity in the kernel. This is
-            # what keeps roles out of the log entirely: `slot_uri` is not
-            # inherited, so a fact is always recorded under the concrete
-            # predicate, and changing a role invalidates nothing.
-            continue
-        if not slot.slot_uri:
-            raise DraftError(
-                "slot_without_uri",
-                where=f"{name}: {slot_name}",
-                expected="a `slot_uri`, which is a predicate's identity in the kernel",
-                got="none",
-                repairs=[Repair(
-                    f"declare `slot_uri: <prefix>:{slot_name}`. It is not derived "
-                    f"from the name: a rename would then orphan every fact "
-                    f"recorded before it",
-                    where=name,
-                )],
-            )
-        ranges.setdefault(slot.slot_uri, slot.range in classes)
+        if not slot.abstract:
+            ranges.setdefault(slot.slot_uri, slot.range in classes)
     return ranges
 
 
@@ -255,6 +268,12 @@ def candidates(view, class_name, binding):
 
 
 def _roles(view, draft, name):
+    """Raise the first unmet claim. The rule itself is in `role_refusals`."""
+    for refusal in role_refusals(view, draft, name):
+        raise refusal
+
+
+def role_refusals(view, draft, name):
     """Every class this draft declares fills the roles it claims, exactly once.
 
     A role is a class core declares `abstract`, carrying `abstract` slots that
@@ -279,6 +298,9 @@ def _roles(view, draft, name):
     Only the draft's own classes are checked. An imported class was checked
     when it was sealed, and an error about somebody else's module here would
     name a file the reader cannot change.
+
+    A generator, for the same reason `uri_refusals` is one: the gate raises the
+    first of these and a draft being edited shows all of them, off one rule.
     """
     for class_name in (draft.get("classes") or {}):
         if class_name not in view.all_classes():
@@ -291,7 +313,7 @@ def _roles(view, draft, name):
             binding = str(slot.name)
             filled = fillers(view, class_name, binding)
             if len(filled) > 1:
-                raise DraftError(
+                yield DraftError(
                     "binding_ambiguous",
                     where=f"{class_name}.{binding}",
                     expected=f"one slot filling '{binding}'",
@@ -308,7 +330,7 @@ def _roles(view, draft, name):
             if not filled and slot.required:
                 roles = ", ".join(str(r) for r in (view.get_class(class_name).mixins or [])) \
                     or "a role"
-                raise DraftError(
+                yield DraftError(
                     "binding_unfilled",
                     where=f"{class_name}.{binding}",
                     expected=f"one slot with `is_a: {binding}`, which mixing in "

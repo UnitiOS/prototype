@@ -274,18 +274,41 @@ penyuntingnya digerakkan penolakan.
 
 ### Irisan 3: Studio manual (tanpa LLM)
 
+Dipecah dua karena keduanya utuh sendiri-sendiri: yang pertama membuat versinya,
+yang kedua memperlihatkan akibatnya dan menutupnya.
+
+**3.1 Draft, operasi, dan lubang**
+
 - **Mekanisme:**
-  - Operasi draft yang deterministik: tambah, ubah, hapus, rename kelas, slot,
-    dan aturan.
-  - Validasi yang sama persis dengan `seal`.
-  - Katalog dari registry kernel.
-- **Yang dilihat:**
-  - editor draft lewat form
-  - validasi langsung
-  - diff draft terhadap versi terakhir
-  - seal dengan konfirmasi
-- **Selesai jika:** Anda bisa membuat modul lengkap tanpa menulis YAML, dan
-  setiap penolakan menjelaskan dirinya.
+  - Draft adalah `draft.yaml` di direktori modulnya sendiri — satu-satunya
+    berkas di store yang boleh disunting.
+  - Operasi deterministik dari **daftar tertutup** (24 di `OPERATIONS`): tambah,
+    ubah, hapus, rename kelas, slot, dan aturan; klaim peran; isi pengikat; pin.
+    Tidak ada yang menulis YAML — sebuah langkah dipilih dari himpunan yang
+    dienumerasi dan sistem yang menulis berkasnya.
+  - Validasi yang sama persis dengan `seal`: `uri_refusals` dan `role_refusals`
+    jadi generator, sehingga gerbang berhenti di yang pertama dan halaman
+    mengumpulkan semuanya. Tidak ada hakim kedua.
+  - Lubang = penolakan yang belum dipicu, ditambah lima *open question* yang
+    tidak ditolak siapa pun (kelas kosong, slot lepas, kelas tanpa baris,
+    deskripsi yang belum ditulis).
+  - `draft.txt` mencatat tiap langkah dan menjadi transkrip seal.
+  - `python -m components.studio`, `/api/studio/*`.
+- **Yang dilihat:** area **Studio** dengan tiga kolom — yang sedang dibangun,
+  lubang tempat Anda berdiri (satu pertanyaan, jawaban dienumerasi), dan apa
+  yang akan dilakukannya (tabel, kata gerbang, kecocokan peran, diff, langkah).
+- **Selesai jika:** modul lengkap — termasuk aplikasi dengan aggregate,
+  parameter dan expression — dibangun dari nol tanpa satu baris YAML, dan
+  `seal` menerimanya.
+
+**3.2 Angka langsung dan seal**
+
+- **Mekanisme:** `preview()` atas draft yang belum di-seal, terhadap log
+  sungguhan; seal dari halaman dengan konfirmasi.
+- **Yang dilihat:** kolom kanan menampilkan angka sungguhan yang berubah sambil
+  aturannya diubah; tombol seal dengan diff dan konfirmasi.
+- **Selesai jika:** Anda bisa membuat modul lengkap tanpa menulis YAML **dan
+  men-seal-nya dari layar**, dan setiap penolakan menjelaskan dirinya.
 
 ### Irisan 4: Agent di Studio
 
@@ -435,6 +458,35 @@ menghitung lintas modul.
   terpotong di semua halaman, termasuk yang tidak berubah. Tata letak diperiksa
   di 520px. Navigasi area sekarang boleh membungkus baris.
 
+- **Lubang dan penolakan adalah benda yang sama.** Rencana irisan 3 menyebut
+  "validasi yang sama persis dengan `seal`" sebagai mekanisme tersendiri.
+  Ternyata tidak ada yang perlu dibangun untuk itu: sebuah lubang *adalah*
+  penolakan yang belum dipicu, dan `repairs[].options` dari irisan 2.6 sudah
+  berisi himpunan jawaban yang sah. Yang harus ditambahkan cuma cara
+  mengumpulkannya — dua pembaca `seal` diubah jadi generator. Kalau Studio
+  dibangun sebelum 2.6, kita akan menulis penghitung lubang kedua.
+- **Sebuah operasi tidak boleh menilai.** `bind` memeriksa bahwa slotnya milik
+  draft ini dan pengikatnya memang pengikat; ia **tidak** memeriksa bahwa
+  kelasnya mewajibkan pengikat itu. Yang begitu diserahkan ke pembacanya, dan
+  muncul sebagai lubang pada bacaan berikutnya. Aturannya: operasi menolak yang
+  tidak bisa ia kerjakan sama sekali, bukan yang membuat drafnya belum benar.
+- **Modul dengan nol kelas bisa di-seal.** Itu benar dan sempat terlihat salah:
+  sebuah modul kosong tidak melanggar apa pun. Ia muncul sebagai *open question*
+  (`nothing_declared`), bukan penolakan.
+- **Identitas predikat tetap ditulis, bukan diturunkan.** Studio menawarkan
+  `<prefix>:<nama_slot>` sebagai usulan dan menuliskannya **harfiah** ke berkas;
+  `rename_slot` mempertahankannya. Jadi prinsip "slot_uri tidak diturunkan dari
+  nama" tetap utuh sambil `add_slot` tetap satu langkah.
+- **`from components.studio import holes` mengambil fungsinya, bukan modulnya.**
+  `__init__.py` yang mengekspor fungsi bernama sama dengan berkasnya menimpa
+  nama submodulnya. Berkasnya dinamai ulang jadi `read.py`, sejajar dengan
+  `components/modules/read.py`.
+- **Apa yang dibaca Studio dari sebuah penolakan.** Langkah yang menjawab
+  `binding_unfilled` perlu tahu kelas dan pengikatnya, dan itu ada di `where`
+  (`Kelas.pengikat`) — bukan sebagai medan tersendiri. Menambah medan yang
+  hanya dipakai Studio berarti medan yang hanya dipelihara Studio; bentuk
+  `where` dipegang oleh test.
+
 ---
 
 ## 9. Status
@@ -449,6 +501,7 @@ menghitung lintas modul.
 | 2.5 | selesai, menunggu Anda melihatnya: `@uniti/core@v2` membawa peran (`Thing`, `Resource`, `Event`, `Flow`) dan tiga pengikat; seal menolak kelas yang mengaku peran tanpa memenuhinya, dan menolak closure yang memuat satu modul di dua versi; compiler meresolusi slot abstrak ke predikat konkret tiap kelas pengisi; `@rival/stock-moves@v1` sebagai modul saingan yang menulis ulang semua namanya; `@demo/stock@v3` memindahkan pin tanpa mengubah satu baris aturan dan menghasilkan angka identik; panel peran + laporan kecocokan di aplikasi web; 153 test lulus |
 | 2.6 | selesai, menunggu Anda melihatnya: `components/refusal/` — penolakan sebagai data dengan kalimat yang diturunkan darinya, 62 kode tertutup, dan `repairs[].options` yang dihitung dari graph; empat gerbang menyebut dirinya; `check()` mengumpulkan semua penolakan sekaligus dan menerima map yang belum di-seal; API mengirim strukturnya di samping kalimatnya; satu kartu penolakan di semua permukaan, dan laporan kecocokan membawa penolakannya utuh; test penolakan sekarang mencocokkan `code`, bukan prosa; 163 test lulus |
 | 2.7 | selesai, menunggu Anda melihatnya: katalog terhitung yang bisa dikueri (`components/modules/catalogue.py`) dan enam diagnosa kesehatan per aplikasi (`components/modules/health.py`), lewat CLI, API, dan area Catalogue di aplikasi web; `inv:movement_happened_on` ditemukan sebagai istilah mati di `@demo/stock@v2` — 24 pernyataan, mengisi `moment`, nol pembaca — dan sebagai fakta yang tak terlihat di `@demo/stock@v3`; 173 test lulus |
-| 3 | belum dimulai |
+| 3.1 | selesai, menunggu Anda melihatnya: draft sebagai berkas yang hanya berubah lewat 24 operasi tertutup (`components/studio/`), lubang yang dihitung dari pembaca gerbang itu sendiri — `uri_refusals` dan `role_refusals` jadi generator supaya bisa dikumpulkan — dan lima pertanyaan terbuka yang tidak ditolak siapa pun; `draft.txt` menjadi transkrip seal; CLI, API, dan area Studio tiga kolom di aplikasi web; satu aplikasi lengkap dengan aggregate, parameter dan expression dibangun dari nol tanpa satu baris YAML dan diterima `seal`; 190 test lulus |
+| 3.2 | belum dimulai |
 | 4 | belum dimulai |
 | 5 | belum dimulai |

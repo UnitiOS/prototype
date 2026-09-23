@@ -12,9 +12,10 @@
 > - **Akan salah di beberapa tempat.** Bagian yang sudah diverifikasi terhadap
 >   kode ditandai ✓; sisanya adalah penilaian.
 > - **Sebagian sudah dibangun.** Irisan 2.5 dan 2.6 dikerjakan pada 18 September
->   2026, irisan 2.7 pada 19 September 2026, dan mengubah beberapa hal di sini dari usulan menjadi kode. Yang sudah
->   berjalan ditandai **[dibangun]**, dan pertanyaan yang terjawab olehnya
->   ditandai di §12.
+>   2026, irisan 2.7 pada 19 September 2026, dan irisan 3.1 — separuh pertama
+>   Studio — pada 23 September 2026. Semuanya mengubah beberapa hal di sini dari
+>   usulan menjadi kode. Yang sudah berjalan ditandai **[dibangun]**, dan
+>   pertanyaan yang terjawab olehnya ditandai di §12.
 > - **Beda dari `REFACTOR_P2.md`**, yang merupakan dokumen kerja sementara dan
 >   dihapus setelah refactoring selesai. Yang ini hidup lebih lama karena isinya
 >   tentang bentuk sistemnya, bukan tentang urutan pengerjaannya.
@@ -399,7 +400,7 @@ melihat lebih lebar** — semua versi ter-seal, bukan hanya yang terbaru — kar
 aplikasi yang masih memin versi lama tetap membaca. Usulan menolak pengisi peran
 tanpa deskripsi belum dibangun.
 
-### 7.2 Lubang — apa yang bisa saya lakukan di sini
+### 7.2 Lubang — apa yang bisa saya lakukan di sini **[dibangun]**
 
 Yang paling menentukan untuk tidak overwhelming. Diberi graph setengah jadi, apa
 penyelesaian yang sah?
@@ -414,6 +415,29 @@ Movement mengisi Flow
 Ini *type-directed editing* — cara kerja lubang interaktif di Idris atau Agda,
 dipindahkan ke makna. Tidak pernah ada halaman kosong; selalu satu lubang dengan
 jawaban yang bisa dihitung.
+
+**Yang jadi di irisan 3.1** (`components/studio/read.py`), dengan satu hal yang
+ternyata lebih penting dari bentuk lubangnya sendiri:
+
+1. **Lubang bukan konstruksi baru; ia penolakan yang belum dipicu.** Yang
+   menghitung "belum terisi" adalah `seal.role_refusals` — pembaca milik gerbang
+   itu sendiri — dan daftar jawabannya adalah `repairs[].options` milik irisan
+   2.6, yang memang sudah dihitung dari range. Studio tidak menilai apa pun;
+   ia menjalankan pembaca yang sama dan **mengumpulkan**. Kalau ia menilai
+   sendiri, kita akan punya dua hakim lagi, dan itu persis kegagalan percobaan
+   P2 yang pertama.
+2. **Agar bisa dikumpulkan, dua pembaca seal jadi generator.**
+   `uri_refusals` dan `role_refusals` menghasilkan penolakan satu per satu;
+   `seal` mengambil yang pertama dan berhenti (itu yang dilakukan gerbang),
+   halaman mengambil semuanya. Satu aturan, dua pembaca — sama seperti `check`
+   untuk compiler di irisan 2.6.
+3. **Ada lubang yang tidak ditolak siapa pun,** dan itu justru yang membedakan
+   modul yang bisa dikompilasi dari modul yang bisa dipakai orang lain: kelas
+   tanpa slot, slot yang tidak menempel di kelas mana pun, kelas yang tidak
+   akan pernah punya baris, dan **deskripsi yang belum ditulis**. Daftarnya
+   tertutup (`OPEN`, lima baris) persis seperti `refusal.CODES`. Usulan §7.1
+   "seal menolak pengisi peran tanpa deskripsi" jadi tidak perlu: Studio
+   menanyakannya tanpa gerbang harus menolaknya.
 
 ### 7.3 Penolakan — kenapa tidak, dan apa yang memperbaikinya **[dibangun]**
 
@@ -518,7 +542,7 @@ Ini sekaligus menjawab soal editor tanpa agent: **mekanismenya sama persis.** Fo
 editor dan chat adalah dua muka dari satu daftar langkah sah. Bangun daftarnya
 sekali, dapat keduanya.
 
-### 8.2 Bentuknya
+### 8.2 Bentuknya **[separuh dibangun]**
 
 Studio bukan aplikasi baru — ia separuh lagi dari aplikasi yang sudah jalan. Yang
 ada sekarang bisa *melihat* hasil graph; Studio adalah tempat graph-nya dibuat.
@@ -534,6 +558,25 @@ penyuntingan terjadi dengan menjawab, bukan menggambar.
 | kiri | yang sedang dibangun: kelas, slot, aturan — dengan kewajiban yang belum terpenuhi ditandai |
 | tengah | lubang tempat Anda berdiri: satu pertanyaan, jawaban dienumerasi dari registry |
 | kanan | apa yang akan dilakukannya: laporan kecocokan **dan angka sungguhan** |
+
+**Yang jadi di irisan 3.1** (`web/src/studio.tsx`): ketiga kolomnya, kecuali
+angka sungguhan di kolom kanan — itu §8.3, dan irisan 3.2. Kolom kanan
+sekarang berisi tabel yang akan dibangun, apa kata gerbangnya, kecocokan peran
+per pengikat, diff terhadap versi yang akan digantikan, dan daftar langkahnya.
+
+Dua hal yang baru kelihatan saat dikerjakan:
+
+1. **Daftar langkah adalah mekanismenya, bukan formulirnya.** Dua puluh empat
+   operasi di `OPERATIONS`, tertutup seperti `CODES`, masing-masing dengan
+   *kind* per argumen — dan `steps()` mengubah kind itu menjadi daftar jawaban
+   yang muat sekarang. Halaman menggambarnya sebagai kontrol; agent di irisan 4
+   memilih dari daftar yang sama. §8.1 menyebut ini konsekuensi untuk agent;
+   ternyata ia juga yang membuat halamannya tidak mungkin menulis YAML yang
+   salah.
+2. **Transkrip tidak perlu ditulis siapa pun.** `seal` mewajibkan transkrip, dan
+   di Studio transkrip itu adalah daftar langkah yang diambil — `draft.txt`,
+   satu baris per operasi, yang disalin keluar sebagai `vN.txt`. Di irisan 4
+   percakapan menggantikan daftar itu, dan bentuknya sudah ada.
 
 ### 8.3 Properti terpenting: umpan balik numerik langsung
 
@@ -597,7 +640,8 @@ yang sebenarnya: core v2 menulis bahwa `Event` "dieksekusi compiler lewat
 | ~~**2.5 peran**~~ **[selesai]** | core v2; resolusi slot abstrak; slot abstrak dilewati sebagai kolom; seal menolak peran tak terpenuhi dan closure berlian; `@rival/stock-moves`; panel peran + laporan kecocokan | pin ditukar, angkanya identik — 86/40/46 di kedua sisi |
 | ~~**2.6 penolakan**~~ **[selesai]** | penolakan terstruktur di satu tempat (`components/refusal/`); 62 kode tertutup; `options` dihitung dari graph; `check()` mengumpulkan semuanya sekaligus | laporan kecocokan `v1 → v3` memperlihatkan aturan yang padam **berikut dua daftar jawaban yang sah** — kelas, dan peran |
 | ~~**2.7 katalog**~~ **[selesai]** | katalog terhitung + enam diagnosa | halaman katalog; `movement_happened_on` menyala sebagai istilah mati — 24 pernyataan, mengisi `moment`, nol pembaca |
-| **3 Studio** | penyunting digerakkan lubang + pratinjau angka langsung + seal dengan transkrip | seseorang membuat modul baru dan men-seal-nya **tanpa menulis YAML** |
+| ~~**3.1 Studio: draft**~~ **[selesai]** | draft sebagai file + 24 operasi tertutup + lubang dari pembaca gerbang | modul lengkap dibangun dari nol **tanpa menulis YAML**, dan `seal` menerimanya |
+| **3.2 Studio: angka dan seal** | pratinjau angka langsung dari aturan yang belum di-seal + seal dengan konfirmasi | angka sungguhan berubah sambil aturannya diketik |
 | **4 agent** | katalog + lubang + penolakan sebagai tool | pemilik toko bercerita di chat, keluar modul ter-seal, langkahnya ada di transkrip |
 | **5 uji Anda** | integrasi dua modul milik Anda sendiri lewat chat | — |
 

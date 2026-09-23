@@ -428,3 +428,73 @@ export const catalogueApi = {
   health: (name: string, version: string) =>
     get<HealthReport>("/api/app/health", { name, version }),
 };
+
+// ---- the studio -----------------------------------------------------------
+//
+// A draft is the one thing in the store that can be edited, and it is edited
+// only by steps from a closed list. So the client never builds a document: it
+// names a step and the answers it chose, and the server writes the file and
+// sends the whole draft back — the holes recomputed, the gates re-run.
+
+export interface DraftRow {
+  name: string; title: string | null; purpose: string | null;
+  versions: string[]; revises: string | null; steps: number;
+}
+
+/** One argument of one step, and the finite set of answers where there is one. */
+export interface StepArgument {
+  name: string; kind: string; required: boolean; options: string[];
+  // Named where the answers cannot be listed until another argument is: a
+  // column is a slot of whichever class was chosen.
+  depends?: string;
+}
+
+export interface StepSpec { op: string; does: string; takes: StepArgument[] }
+
+/** What to do next, where the answers to it are. */
+export interface Step {
+  op: string; args: Record<string, string>; choose: string; options: string[];
+}
+
+export interface Hole {
+  kind: string; where: string; blocking: boolean;
+  question: string; because: string;
+  step: Step | null; refusal: Refusal | null;
+}
+
+export interface DraftClass {
+  name: string; description: string; fills: string[]; is_a: string | null;
+  slots: string[]; has_rows: boolean;
+}
+
+export interface DraftSlot {
+  name: string; title: string; description: string; slot_uri: string | null;
+  range: string | null; identifier: boolean; designates_type: boolean;
+  binds: string | null; rule: { kind: string; spec: unknown } | null;
+  on: string[];
+}
+
+export interface DraftRole {
+  name: string; module: Pin | null; description: string; bindings: Binding[];
+  filled_by: { class: string; bindings: Record<string, string | null> }[];
+}
+
+export interface DraftState {
+  name: string; title: string | null; description: string | null;
+  purpose: string | null; valid_from: string | null;
+  versions: string[]; revises: string | null; becomes: string;
+  pins: Pin[]; sees: { classes: number; slots: number };
+  classes: DraftClass[]; slots: DraftSlot[]; roles: DraftRole[];
+  tables: CheckReport["tables"];
+  refusals: Refusal[]; holes: Hole[]; blocking: number;
+  steps: StepSpec[]; taken: string; diff: ModuleDiff["diff"];
+  sealable: boolean; document: string;
+}
+
+export const studioApi = {
+  drafts: () => get<DraftRow[]>("/api/studio/drafts"),
+  draft: (name: string) => get<DraftState>("/api/studio/draft", { name }),
+  step: (name: string, step: string, args: Record<string, string>) =>
+    post<DraftState & { discarded?: boolean }>(
+      "/api/studio/step", { name, step, args }),
+};
