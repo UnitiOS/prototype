@@ -45,9 +45,11 @@ import argparse
 import os
 import re
 import sys
+import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
+import psycopg
 from linkml_runtime import SchemaView
 from psycopg.rows import dict_row
 
@@ -74,6 +76,34 @@ LOG = "the log"
 # The column a projection of entities carries its subject's URI in. It is the
 # compiler's, not the map's, and it is here because both sides need the name.
 IDENTITY_COLUMN = "entity_uri"
+
+# A range becomes a column type. A range that is a class or an enum holds a
+# name, so it is text: the operational store keeps the URI the log resolved to.
+# Held here rather than in the compiler because two gates read it: the
+# compiler casts a value to it, and `submit` asks the same cast before the
+# value is written, so what the form accepts the compiler can always read.
+SQL_TYPE = {
+    "string": "text",
+    "uri": "text",
+    "uriorcurie": "text",
+    "curie": "text",
+    "ncname": "text",
+    "date": "date",
+    "datetime": "timestamptz",
+    "time": "time",
+    "integer": "bigint",
+    "decimal": "numeric",
+    "double": "double precision",
+    "float": "double precision",
+    "boolean": "boolean",
+}
+
+
+def sql_type(map_, range_):
+    if range_ in map_["view"].all_classes() or range_ in map_["view"].all_enums():
+        return "text"
+    return SQL_TYPE.get(str(range_), "text")
+
 
 # Every URI the log has ever registered, both ways round.
 _REGISTRY_SQL = """
@@ -453,15 +483,96 @@ def _NOW():
     return datetime.now(timezone.utc)
 
 
+def _values_hold(conn, map_, class_name, fields, values, by_uri, by_id, *,
+                 valid_at, as_of):
+    """Every value is one its field can hold, or nothing is written.
+
+    A literal is put to the cast the compiler will make when it reads it —
+    asked of the database, under a savepoint, so there is one judge of what a
+    `decimal` or a `date` is and it is the one that would otherwise fail the
+    whole table later. An entity field names one of the entities the form
+    offers at the same clocks, read by the same reader: a URI nobody
+    recognises is not an entity to mint on the spot, and something the log
+    holds as another class, or not yet, is not one of these.
+    """
+    for name, value in values.items():
+        field = fields[name]
+        where = f"{class_name}.{name}"
+        if field["ref"]:
+            held = _row_subjects(conn, map_, field["range"], by_uri,
+                                 valid_at=valid_at, as_of=as_of)
+            if by_uri.get(str(value)) in held:
+                continue
+            raise MapError(
+                "not_among_the_choices",
+                where=where,
+                expected=f"one of the {field['range']} the log holds at "
+                         f"these clocks",
+                got=f"{value!r}",
+                repairs=[Repair(f"choose one the form offers for {name}",
+                                options=sorted(by_id[i] for i in held))],
+            )
+        cast = sql_type(map_, field["range"])
+        if cast == "text":
+            continue
+        try:
+            with conn.transaction(), conn.cursor() as cur:
+                cur.execute(f"SELECT %s::{cast}", (str(value),))
+        except psycopg.Error:
+            raise MapError(
+                "value_not_of_type",
+                where=where,
+                expected=f"a {field['range']}, which is read as {cast}",
+                got=f"{value!r}",
+                repairs=[Repair(f"enter {name} as a {field['range']}")],
+            ) from None
+
+
+def _revokes_hold(conn, class_name, fields, subject, revokes, by_uri):
+    """Every withdrawal names a statement this subject made under this field.
+
+    The kernel only asks that a revoked row exists. An id copied from the
+    wrong line would withdraw somebody else's statement and say nothing, so
+    the door asks the one thing the form knows: whose row, under which field.
+    """
+    subject_id = by_uri.get(subject)
+    for name, revoked in revokes.items():
+        predicate_id = by_uri.get(fields[name]["uri"])
+        mine = []
+        if subject_id is not None and predicate_id is not None:
+            with conn.cursor() as cur:
+                cur.execute("SELECT id FROM assertion WHERE subject_id = %s "
+                            "AND predicate_id = %s ORDER BY seq",
+                            (subject_id, predicate_id))
+                mine = [str(row[0]) for row in cur.fetchall()]
+        try:
+            if str(uuid.UUID(str(revoked))) in mine:
+                continue
+        except ValueError:
+            pass
+        raise MapError(
+            "revokes_another_statement",
+            where=f"{class_name}.{name}",
+            expected=f"the id of a statement {subject} made under {name}",
+            got=f"{revoked!r}",
+            repairs=[Repair(f"name one of the statements {subject} made under "
+                            f"{name}", options=mine)],
+        )
+
+
 def submit(conn, map_, class_name, *, subject, values, actor_id,
            valid_from=None, recorded_at=None, revokes=None, source=None,
            authority=None, confidence=None, reason_code=None, note=None):
     """One form submission: one intent, N assertions.
 
     `values` is keyed by field name, which is the slot's name in the map. A
-    URI never seen before — the subject, or the entity a ref field names — is
-    registered under `uniti:uri` exactly as `seal` registers one, so the form
-    and the seal put the same entity in the log rather than two.
+    subject never seen before is registered under `uniti:uri` exactly as `seal`
+    registers one, so the form and the seal put the same entity in the log
+    rather than two. An entity field is different: it names one of the
+    entities the form offers at the same clocks, or the submission is refused
+    — and so is a literal its field's type cannot hold, and a withdrawal of a
+    statement this subject did not make under that field. Nothing is written
+    until all of it holds.
 
     `revokes` is keyed by field name too, and each value is the id of an
     earlier assertion this submission withdraws. A field in both `values` and
@@ -509,9 +620,13 @@ def submit(conn, map_, class_name, *, subject, values, actor_id,
             repairs=[Repair("fill in a field", options=sorted(fields))],
         )
 
+    by_uri, by_id = _registry(conn)
+    _values_hold(conn, map_, class_name, fields, values, by_uri, by_id,
+                 valid_at=valid_from or _NOW(), as_of=recorded_at or _NOW())
+    _revokes_hold(conn, class_name, fields, subject, revokes, by_uri)
+
     withdrawn = [name for name in revokes if name not in values]
 
-    by_uri, _ = _registry(conn)
     named = [subject] + [f["uri"] for f in fields.values()
                          if f["name"] in values or f["name"] in revokes]
     named += [str(v) for name, v in values.items() if fields[name]["ref"]]

@@ -72,6 +72,7 @@ sys.path.insert(0, str(ROOT / "components" / "kernel"))
 from components.modules.store import Store  # noqa: E402
 from components.refusal import Refusal, Repair  # noqa: E402
 from generate import IDENTITY_COLUMN, MapError, columns, read_map, table_name  # noqa: E402
+from generate import SQL_TYPE, sql_type as _sql_type  # noqa: E402
 from generate import _carriers as carriers  # noqa: E402
 from generate import _grid as grid  # noqa: E402
 from generate import _type_slot as type_slot  # noqa: E402
@@ -93,24 +94,6 @@ class CompileError(MapError):
 
     gate = "the compiler"
 
-
-# A range becomes a column type. A range that is a class or an enum holds a
-# name, so it is text: the operational store keeps the URI the log resolved to.
-SQL_TYPE = {
-    "string": "text",
-    "uri": "text",
-    "uriorcurie": "text",
-    "curie": "text",
-    "ncname": "text",
-    "date": "date",
-    "datetime": "timestamptz",
-    "time": "time",
-    "integer": "bigint",
-    "decimal": "numeric",
-    "double": "double precision",
-    "float": "double precision",
-    "boolean": "boolean",
-}
 
 # Which operators an aggregate may name, and what each one is over no rows.
 # A group one aggregate makes and another does not is not an absence of an
@@ -145,12 +128,6 @@ def _annotation(slot, name):
         if str(key) == name:
             return as_dict(annotation.value)
     return None
-
-
-def _sql_type(map_, range_):
-    if range_ in map_["view"].all_classes() or range_ in map_["view"].all_enums():
-        return "text"
-    return SQL_TYPE.get(str(range_), "text")
 
 
 def _any_of(uris):

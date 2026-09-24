@@ -663,3 +663,105 @@ def test_a_form_offers_what_the_log_holds_at_its_clocks(conn, world, app_map):
     assert field["options_from"] == "the log"
     _, june = offered("2026-06-30")
     assert "cat:ing_cocoa" not in june and "cat:ing_flour" in june
+
+
+def _counts(conn):
+    with conn.cursor() as cur:
+        cur.execute("SELECT (SELECT count(*) FROM assertion), (SELECT count(*) FROM entity)")
+        return cur.fetchone()
+
+
+def _refused_at_the_door(conn, world, code, **submission):
+    before = _counts(conn)
+    with pytest.raises(MapError) as raised:
+        application.state(conn, world, APP_NAME, APP_VERSION, "StockMovement",
+                          actor_id="test", **submission)
+    assert raised.value.code == code, str(raised.value)
+    assert _counts(conn) == before
+    return raised.value
+
+
+def test_a_value_its_field_cannot_hold_is_refused_at_the_door(conn, world):
+    """"twenty" in a number field used to reach the log as text and break the
+    whole table at the next compile. The door asks the same cast the compiler
+    will make, and refuses before anything is written."""
+    refused = _refused_at_the_door(
+        conn, world, "value_not_of_type", subject="inv:mv_0110",
+        values={"movement_code": "MV-0110", "movement_quantity": "twenty"},
+        valid_from="2026-08-10T00:00:00+00:00")
+    assert refused.where == "StockMovement.movement_quantity"
+    _refused_at_the_door(
+        conn, world, "value_not_of_type", subject="inv:mv_0110",
+        values={"movement_code": "MV-0110", "movement_happened_on": "10/08/2026x"},
+        valid_from="2026-08-10T00:00:00+00:00")
+
+
+def test_a_reference_must_be_one_of_the_choices_the_form_offers(conn, world):
+    """An entity field names an entity the form would have offered at the same
+    clocks — never a URI minted on the spot because nobody recognised it."""
+    unknown = _refused_at_the_door(
+        conn, world, "not_among_the_choices", subject="inv:mv_0111",
+        values={"movement_code": "MV-0111", "movement_ingredient": "cat:ing_nothing"},
+        valid_from="2026-08-11T00:00:00+00:00")
+    assert "cat:ing_flour" in unknown.repairs[0].options
+
+    # Something the log holds, but not one of these.
+    _refused_at_the_door(
+        conn, world, "not_among_the_choices", subject="inv:mv_0111",
+        values={"movement_code": "MV-0111", "movement_ingredient": "inv:loc_store"},
+        valid_from="2026-08-11T00:00:00+00:00")
+
+    # One of these, but not yet at the moment the movement happened.
+    application.state(conn, world, APP_NAME, APP_VERSION, "Ingredient",
+                      subject="cat:ing_vanilla", values={"ingredient_code": "ING-VAN"},
+                      actor_id="test", valid_from="2026-09-01T00:00:00+00:00")
+    _refused_at_the_door(
+        conn, world, "not_among_the_choices", subject="inv:mv_0111",
+        values={"movement_code": "MV-0111", "movement_ingredient": "cat:ing_vanilla"},
+        valid_from="2026-08-11T00:00:00+00:00")
+    application.state(conn, world, APP_NAME, APP_VERSION, "StockMovement",
+                      subject="inv:mv_0111", actor_id="test",
+                      values={"movement_code": "MV-0111",
+                              "movement_ingredient": "cat:ing_vanilla"},
+                      valid_from="2026-09-02T00:00:00+00:00")
+
+
+def test_a_withdrawal_names_a_statement_of_this_field_on_this_subject(conn, world):
+    """An id from somewhere else would withdraw somebody else's row, silently."""
+    first = application.state(
+        conn, world, APP_NAME, APP_VERSION, "StockMovement", subject="inv:mv_0112",
+        actor_id="test", values={"movement_code": "MV-0112", "movement_quantity": "4"},
+        valid_from="2026-08-12T00:00:00+00:00")
+    other = application.state(
+        conn, world, APP_NAME, APP_VERSION, "StockMovement", subject="inv:mv_0113",
+        actor_id="test", values={"movement_code": "MV-0113", "movement_quantity": "5"},
+        valid_from="2026-08-12T00:00:00+00:00")
+
+    elsewhere = _refused_at_the_door(
+        conn, world, "revokes_another_statement", subject="inv:mv_0112",
+        values={"movement_quantity": "6"},
+        revokes={"movement_quantity": other["stated"]["movement_quantity"]},
+        valid_from="2026-08-12T00:00:00+00:00")
+    assert elsewhere.repairs[0].options == (first["stated"]["movement_quantity"],)
+    _refused_at_the_door(
+        conn, world, "revokes_another_statement", subject="inv:mv_0112", values={},
+        revokes={"movement_quantity": first["stated"]["movement_code"]},
+        valid_from="2026-08-12T00:00:00+00:00")
+    _refused_at_the_door(
+        conn, world, "revokes_another_statement", subject="inv:mv_0112", values={},
+        revokes={"movement_quantity": "not-an-id"},
+        valid_from="2026-08-12T00:00:00+00:00")
+
+
+def test_the_api_sends_a_refusal_at_the_door_as_one(conn, world, monkeypatch):
+    from starlette.testclient import TestClient
+    from components.api.app import app
+
+    monkeypatch.setenv("UNITI_PACKAGES", os.pathsep.join(str(r) for r in world.roots))
+    conn.commit()
+    posted = TestClient(app).post("/api/app/state", json={
+        "name": APP_NAME, "version": APP_VERSION, "class": "StockMovement",
+        "subject": "inv:mv_0114", "actor": "test",
+        "values": {"movement_quantity": "a lot"}})
+    assert posted.status_code == 400
+    assert posted.json()["refusal"]["code"] == "value_not_of_type"
