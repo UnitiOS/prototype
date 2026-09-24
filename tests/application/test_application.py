@@ -631,3 +631,35 @@ def test_a_form_can_correct_and_withdraw_what_it_wrote(conn, world, monkeypatch)
         "name": APP_NAME, "version": APP_VERSION, "class": "StockMovement",
         "subject": "inv:mv_0103", "actor": "test", "revokes": ["x"]})
     assert not_a_mapping.status_code == 400
+
+
+def test_a_form_offers_what_the_log_holds_at_its_clocks(conn, world, app_map):
+    """An entity added through one form is a choice in the next one at once.
+
+    Choices used to come out of the operational store whenever it held a
+    table for the class, and nothing but a compile fills that store — so an
+    ingredient added a minute ago could not be chosen, and the screen forces a
+    choice from the list. The operational store also stands at whatever clocks
+    it was last filled at, while a form is asked at a pair of its own. The log
+    answers at the pair asked, which is how every projection is already read.
+    """
+    with psycopg.connect(os.environ["UNITI_OPS_DSN"]) as ops:
+        compile_class(conn, ops, app_map, "Ingredient",
+                      valid_at="2026-06-30", as_of="2026-09-18")
+
+    application.state(conn, world, APP_NAME, APP_VERSION, "Ingredient",
+                      subject="cat:ing_cocoa",
+                      values={"ingredient_code": "ING-COCOA", "ingredient_name": "Cocoa"},
+                      actor_id="test", valid_from="2026-08-01T00:00:00+00:00")
+
+    def offered(valid_at):
+        built = application.form_of(conn, world, APP_NAME, APP_VERSION, "StockMovement",
+                                    valid_at=valid_at, as_of=AFTER_THIS_RUN)
+        field = next(f for f in built["fields"] if f["name"] == "movement_ingredient")
+        return field, {o["uri"]: o["label"] for o in field["options"]}
+
+    field, august = offered("2026-08-31")
+    assert august["cat:ing_cocoa"] == "ING-COCOA"
+    assert field["options_from"] == "the log"
+    _, june = offered("2026-06-30")
+    assert "cat:ing_cocoa" not in june and "cat:ing_flour" in june

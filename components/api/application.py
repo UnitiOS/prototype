@@ -267,10 +267,8 @@ def form_of(conn, store, name, version, class_name, *, valid_at, as_of):
     Nothing here is written per class. The map says which slots the class has
     and what each one ranges over; a field over a class range offers the
     entities of that class, so choosing one writes an edge rather than a
-    string. `options_from` says whether those choices were read out of the
-    operational store, which is the read a form is meant to make, or out of the
-    log, which is the fallback for a class nothing has compiled — the page says
-    which happened rather than rounding it off.
+    string. `options_from` says where those choices were read — the log, at
+    this form's clocks — so the page can say it rather than leave it implied.
     """
     map_ = _map(store, name, version)
     built = form(conn, map_, class_name, valid_at=valid_at, as_of=as_of)

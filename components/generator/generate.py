@@ -28,10 +28,10 @@ A form is the same slots, asked for rather than reported. `submit()` turns the
 entered values into one `perform()` call — one form submission is one intent —
 and the value comes straight back out of `resolve_single()`.
 
-    the store  the choices a field over a class range offers, where the
-               operational store holds a projection of that class. A form
-               reads the operational database; the read of the kernel beside
-               it is the fallback for a class nothing has compiled.
+    the log    the choices a field over a class range offers: the entities
+               of that class the log holds at the form's clocks. Not the
+               operational store, which only a compile fills and which stands
+               at the clocks it was filled at.
 
 Run:
     generate.py table  <map>/v1.yaml <Class> --out build/<class>.txt
@@ -48,7 +48,6 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-import psycopg
 from linkml_runtime import SchemaView
 from psycopg.rows import dict_row
 
@@ -68,15 +67,8 @@ from seal import URI_PREDICATE  # noqa: E402
 FORM_SOURCE = "human_stated"
 MINT_SOURCE = "system_derived"
 
-# The operational store. Read here for one thing only — the choices a field
-# over a class range offers — and never written.
-OPS_DSN = os.environ.get(
-    "UNITI_OPS_DSN", "postgresql://uniti:uniti@localhost:5433/uniti_ops"
-)
-
-# Where a dropdown's choices were read. The operational store is the read a
-# form is meant to make; the log is the fallback and is named as one.
-STORE = "the operational store"
+# Where a dropdown's choices were read. Named rather than implied, so a page
+# can say it.
 LOG = "the log"
 
 # The column a projection of entities carries its subject's URI in. It is the
@@ -427,31 +419,19 @@ def form(conn, map_, class_name, *, valid_at=None, as_of=None):
 def _options(conn, map_, class_name, *, valid_at, as_of):
     """The choices a field over a class range offers, and where they came from.
 
-    Returned as (pairs, source), where source is `STORE` or `LOG`. Which of the
-    two answered is not an implementation detail a page may round off: one of
-    them is the read this system claims to make and the other is the read it
-    forbids, so the caller is told which happened and can say so on the page.
+    Returned as (pairs, source), and the source is always `LOG`: the entities
+    the log says are of that class, or of one below it, at the clocks the form
+    was asked at, each labelled by whatever the map says identifies it.
 
-    Two paths, and the first one is the one that should exist. Where the
-    operational store holds a projection of that class the choices are read
-    from it, which is what every other read a form does is meant to be: forms
-    read the operational database, never the log.
-
-    The second path reads the kernel, and it is here because a class with no
-    projection would otherwise have an empty list rather than a wrong one. It
-    is the read path `CLAUDE.md` forbids and `OPEN.md` has carried since 6 Sep;
-    it closes for a map when every class its ref fields range over is
-    compiled.
-
-    The two do not answer at the same clocks and cannot: the store stands at
-    whatever pair it was last filled at, and the kernel is read at the pair
-    asked for here. That is what deriving the store means, not a discrepancy
-    to be repaired by reaching back into the log.
+    These were once read out of the operational store whenever it held a table
+    for the class, and that was wrong twice over. Nothing but a compile fills
+    that store, so an entity added through one form could not be chosen in the
+    next until somebody compiled again — and the screen only lets a person
+    choose from the list. And the store stands at whatever clocks it was last
+    filled at, while a form is asked at a pair of its own. Every projection the
+    application shows is already read from the log at the pair asked; the
+    choices beside it now are too.
     """
-    projected = _projected_options(map_, class_name)
-    if projected is not None:
-        return projected, STORE
-
     by_uri, by_id = _registry(conn)
     identifier = _identifier(map_, class_name)
     label_id = by_uri.get(identifier.slot_uri) if identifier else None
@@ -467,46 +447,6 @@ def _options(conn, map_, class_name, *, valid_at, as_of):
         out.append((by_id.get(subject_id, f"<{subject_id}>"), label))
     out.sort()
     return out, LOG
-
-
-def _projected_options(map_, class_name):
-    """The same pairs, out of the operational store, or None if it has none.
-
-    None is the answer whenever the store cannot supply them — no table for
-    this class, or no store at all — and it is not an error: the caller falls
-    back to the log, and a map whose classes are all compiled never reaches
-    that branch.
-    """
-    identifier = _identifier(map_, class_name)
-    label = str(identifier.name) if identifier else None
-    table = table_name(class_name)
-    try:
-        with psycopg.connect(OPS_DSN) as ops, ops.cursor() as cur:
-            cur.execute("SELECT to_regclass(%s)", (table,))
-            (exists,) = cur.fetchone()
-            if exists is None:
-                return None
-            cur.execute(
-                "SELECT column_name FROM information_schema.columns "
-                "WHERE table_name = %s",
-                (table,),
-            )
-            held = {name for (name,) in cur.fetchall()}
-            if IDENTITY_COLUMN not in held:
-                return None
-            if label not in held:
-                label = None
-            cur.execute(
-                'SELECT "{}", {} FROM "{}"'.format(
-                    IDENTITY_COLUMN,
-                    '"' + label.replace('"', '""') + '"' if label else "NULL",
-                    table,
-                )
-            )
-            return sorted((uri, "" if name is None else str(name))
-                          for uri, name in cur.fetchall())
-    except psycopg.Error:
-        return None
 
 
 def _NOW():
