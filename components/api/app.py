@@ -308,6 +308,11 @@ async def app_form(request: Request):
 async def app_state(request: Request):
     """One form submission. The only write this API makes.
 
+    `revokes`, when given, is field name -> the id of an assertion this
+    submission withdraws: beside a value for the same field, a correction;
+    alone, a withdrawal. The answer's `stated` gives the ids a later
+    correction names.
+
     It is one `perform()` underneath, exactly as a seal is: one intent, N
     assertions, nothing edited. The response names the intent, so whatever was
     written can be opened in the kernel explorer straight away.
@@ -324,6 +329,9 @@ async def app_state(request: Request):
     values = body.get("values") or {}
     if not isinstance(values, dict):
         raise HTTPException(400, "values is not an object")
+    revokes = body.get("revokes") or {}
+    if not isinstance(revokes, dict):
+        raise HTTPException(400, "revokes is not an object of field -> assertion id")
 
     valid_from = body.get("valid_from")
     if valid_from:
@@ -341,7 +349,7 @@ async def app_state(request: Request):
             conn, store, body["name"], body["version"], body["class"],
             subject=str(body["subject"]), values=values,
             actor_id=str(body["actor"]), valid_from=valid_from,
-            note=body.get("note") or None))
+            note=body.get("note") or None, revokes=revokes))
 
 
 async def studio_drafts(request: Request):

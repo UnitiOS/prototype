@@ -570,3 +570,64 @@ def test_the_api_takes_a_form_and_gives_back_the_cell(conn, world, monkeypatch):
     missing = client.get("/api/app/cell", params={
         "name": APP_NAME, "version": APP_VERSION, "class": "IngredientStock"})
     assert missing.status_code == 400
+
+
+def test_a_form_can_correct_and_withdraw_what_it_wrote(conn, world, monkeypatch):
+    """A mistake typed into a form is taken back through the same form.
+
+    The kernel has held `revokes` since P1 and `submit` takes it; the API did
+    not pass it on, so a person who typed 30 for 3 had no way to say so from
+    the screen. A correction names the row it replaces, and the log keeps
+    both: read before the correction, the number is the mistaken one.
+    """
+    from starlette.testclient import TestClient
+    from components.api.app import app
+
+    monkeypatch.setenv("UNITI_PACKAGES", os.pathsep.join(str(r) for r in world.roots))
+    conn.commit()
+    client = TestClient(app)
+
+    def box_on_hand(as_of):
+        _, rows = _rows(conn, world, "2026-08-31", as_of)
+        return rows["cat:ing_box"][0]
+
+    typed = client.post("/api/app/state", json={
+        "name": APP_NAME, "version": APP_VERSION, "class": "StockMovement",
+        "subject": "inv:mv_0103", "actor": "test",
+        "valid_from": "2026-08-06T00:00:00+00:00",
+        "values": {"movement_code": "MV-0103", "movement_ingredient": "cat:ing_box",
+                   "movement_location": "inv:loc_store", "movement_quantity": "30"},
+    })
+    assert typed.status_code == 200, typed.json()
+    stated = typed.json()["stated"]
+    assert set(stated) >= {"movement_code", "movement_quantity"}
+    between = datetime.now(timezone.utc).isoformat()
+
+    corrected = client.post("/api/app/state", json={
+        "name": APP_NAME, "version": APP_VERSION, "class": "StockMovement",
+        "subject": "inv:mv_0103", "actor": "test",
+        "valid_from": "2026-08-06T00:00:00+00:00",
+        "values": {"movement_quantity": "3"},
+        "revokes": {"movement_quantity": stated["movement_quantity"]},
+        "note": "30 was a typing mistake for 3",
+    })
+    assert corrected.status_code == 200, corrected.json()
+    assert box_on_hand(AFTER_THIS_RUN) == "203"
+    assert box_on_hand(between) == "230"
+
+    # A withdrawal says "we were wrong" with nothing in its place, and only
+    # that: the class is not stated a second time alongside it.
+    withdrawn = client.post("/api/app/state", json={
+        "name": APP_NAME, "version": APP_VERSION, "class": "StockMovement",
+        "subject": "inv:mv_0103", "actor": "test",
+        "valid_from": "2026-08-06T00:00:00+00:00",
+        "revokes": {"movement_quantity": corrected.json()["stated"]["movement_quantity"]},
+    })
+    assert withdrawn.status_code == 200, withdrawn.json()
+    assert withdrawn.json()["assertions"] == 1
+    assert box_on_hand(AFTER_THIS_RUN) == "200"
+
+    not_a_mapping = client.post("/api/app/state", json={
+        "name": APP_NAME, "version": APP_VERSION, "class": "StockMovement",
+        "subject": "inv:mv_0103", "actor": "test", "revokes": ["x"]})
+    assert not_a_mapping.status_code == 400

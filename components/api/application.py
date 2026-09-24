@@ -297,12 +297,17 @@ def form_of(conn, store, name, version, class_name, *, valid_at, as_of):
 
 
 def state(conn, store, name, version, class_name, *, subject, values, actor_id,
-          valid_from=None, note=None):
+          valid_from=None, note=None, revokes=None):
     """One form submission: one intent, N assertions, through the same gate.
 
     The purpose the application's manifest declares rides along on the intent,
     so a fact typed into a demonstration is marked as one exactly like a fact
     that was sealed or loaded into it.
+
+    `revokes` is field name -> the id of an earlier assertion this submission
+    withdraws, exactly as `submit` takes it: with a value beside it, a
+    correction; alone, a withdrawal. `stated` in the answer is where those ids
+    come from.
     """
     map_ = _map(store, name, version)
     purpose = store.manifest(name).get("purpose")
@@ -312,14 +317,17 @@ def state(conn, store, name, version, class_name, *, subject, values, actor_id,
     # Nothing in the log is a member of a class until something says so, and a
     # form that left it out would write an entity no table has a row for. The
     # map names the slot that carries it; this does not.
-    if type_slot is not None:
+    # A withdrawal alone states nothing, the class included: it says "we were
+    # wrong" and only that.
+    if type_slot is not None and entered:
         entered[str(type_slot.name)] = class_name
     written = submit(conn, map_, class_name, subject=subject, values=entered,
                      actor_id=actor_id, valid_from=valid_from,
-                     reason_code=purpose, note=note)
+                     reason_code=purpose, note=note, revokes=revokes)
     return {"intent_id": written["intent_id"], "subject_id": written["subject_id"],
             "assertions": len(written["assertions"]),
             "minted": len(written["minted"]),
+            "stated": {k: str(v) for k, v in written["stated"].items()},
             "class": class_name, "subject": subject,
             "ontology_version": map_["label"]}
 
