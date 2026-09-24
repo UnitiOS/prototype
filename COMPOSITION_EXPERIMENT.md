@@ -393,6 +393,66 @@ Dicatat, tidak diperbaiki:
   di `build/exp/smoke-transcript.jsonl`.
 - `uniti_dev`, `uniti_dev_ops`, dan `build/dev/` tidak disentuh.
 
+### Tahap pelaksanaan langkah 3–8
+
+Atas permintaan pemilik, langkah 3–8 dipecah menjadi tahap dengan titik
+periksa di akhir masing-masing, supaya progres dan arahnya bisa diikuti.
+Mekanisme tetap tidak diubah di tahap mana pun (§10).
+
+| tahap | langkah | isi | titik periksa pemilik |
+|---|---|---|---|
+| A | 3 | cerita PT Maju + angka kebenaran (dihitung dua kali: oleh penulis cerita, dan oleh pelaksana dari tabel kejadian) | cerita, letak jebakan, angka kebenaran |
+| B | 4, gelombang 1 | `stok-a` (Odoo) ∥ `stok-b` (ERPNext) → seal | cara dua penulis independen memodelkan stok; nasib T4 |
+| C | 4, gelombang 2 | `pembelian`, `mitra`, `buku-besar` → seal | apa yang dipakai ulang dari katalog; T1, T6, T8 |
+| D | 5 | implementer menyusun `@ptmaju` → seal | pertanyaan mana yang bisa diungkapkan; T9 |
+| E | 6 | staf memasukkan W1–W4; perbandingan tiap akhir minggu | setelah W2 dan setelah W4 |
+| F | 7 | tukar `stok-a` → `stok-b`, kecocokan, kesehatan, T10, koreksi | tabel hasil §8 terisi |
+| G | 8 + ⛩ | perbaikan minimal per ✗/☠, lalu gerbang | keputusan gerbang |
+
+### Tahap A: cerita dan angka kebenaran
+
+- **Penulis cerita** (subagent tanpa alat, tidak diberi tahu soal sistem apa
+  pun) menulis Agustus 2026 PT Maju: 6 bahan, 4 pemasok, 5 pelanggan, 2
+  gudang, 60 kejadian bisnis dalam 87 baris. Berkasnya di `build/exp/story/`:
+  `story.md` utuh, `profile.md`, dan dua belas bagian `W<n>-<departemen>.md`
+  — satu-satunya yang nanti dilihat staf departemen itu.
+- **Jebakan yang tertanam di cerita:** satuan beli ≠ satuan stok untuk lima
+  bahan (sak 25 kg, karung 50 kg, karton 15 kg, karton 20 bungkus); PO banyak
+  baris dengan penerimaan sebagian dan dua baris masih terbuka di akhir bulan;
+  retur gula ke pemasok dengan nota kredit; pembayaran tunai dan transfer,
+  sebagian-sebagian; **CV Kakao Lestari** pemasok cokelat sekaligus pelanggan
+  terigu, dengan nama berbeda di tiap departemen; **setiap truk pemasok
+  dicatat dua kali** — Gudang (BPB) dan Pembelian (SJ vs PO); **kiriman
+  DP-7731** tiba di GC 7 Agu, baru dicatat 19 Agu; **salah ketik** cokelat
+  500 kg (seharusnya 50) pada 12 Agu, dikoreksi 15 Agu; biaya standar terigu
+  naik 9.000 → 9.400 per kg mulai 18 Agu.
+- **Yang tidak ada di cerita dan memang bukan tugasnya:** T1, T4, dan T10
+  datang dari penulis modul dan dari pelaksana.
+- **Dua perbedaan dari rencana yang dicatat:** retur berasal dari stok Juli,
+  jadi tidak menyentuh baris PO mana pun (T9 tetap diuji lewat PO banyak baris
+  dan penerimaan sebagian). Ada piutang (faktur penjualan dan penerimaan dari
+  pelanggan) yang tidak ditanyakan lima pertanyaan; dibiarkan sebagai muatan
+  bagi `buku-besar`.
+- **Angka kebenaran dihitung dua kali, terpisah:** oleh penulis cerita (Part
+  3 dari hasilnya), dan oleh pelaksana lewat `build/exp/story/truth.py` dari
+  catatan departemen, bukan dari tabel penulis. **Semua angka sama:** stok per
+  bahan per gudang, nilai stok, utang per pemasok, baris PO terbuka, dan
+  selisih per baris, pada akhir W1–W4 dan pada "31 Agu tanpa kiriman
+  terlambat". Keluarannya di `truth.txt`. Angka kunci akhir bulan: nilai stok
+  **Rp 152.835.000**, utang **Rp 58.400.000** (S1 25,4 jt · S2 17,4 jt ·
+  S3 13,5 jt · S4 2,1 jt), baris terbuka **PO-03 susu (4 sak)** dan **PO-06
+  gula (8 karung)**.
+- **Pasangan jam yang akan dibandingkan dengan sistem.** `truth.py` juga
+  menghitung angka "seperti tercatat pada hari itu":
+  - kiriman terlambat: `valid_at` 7 Agu, `as_of` sebelum dicatat → margarin
+    GC 60 dan susu GC 50; sesudahnya → 210 dan 150;
+  - salah ketik: `valid_at` 14 Agu, `as_of` sebelum koreksi → cokelat GU 580;
+    sesudahnya → 130.
+
+  "31 Agu tanpa kiriman terlambat" tidak bisa dibaca lewat `as_of`, karena
+  entri berjalan kronologis dan semua yang dicatat sesudah 19 Agu ikut hilang.
+  Angka itu disimpan hanya sebagai pembanding hitungan.
+
 ### Tabel hasil
 
 *(bentuk §8)*
