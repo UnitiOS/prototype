@@ -453,6 +453,71 @@ Mekanisme tetap tidak diubah di tahap mana pun (§10).
   entri berjalan kronologis dan semua yang dicatat sesudah 19 Agu ikut hilang.
   Angka itu disimpan hanya sebagai pembanding hitungan.
 
+### Tahap B: dua modul stok
+
+Brief di `build/exp/briefs/` (`primer.md` bersama, `stok-a.md`, `stok-b.md`).
+Bentuk Odoo diperiksa ke dokumentasi publiknya (lokasi dan lokasi virtual; UoM
+dan Purchase UoM dengan rasio per kategori). Untuk ERPNext, halaman yang dibuka
+tidak menyebut rinciannya; bentuk yang dipakai (buku besar stok, `actual_qty`
+bertanda, `conversion_factor` ke satuan stok) berasal dari pengetahuan
+pelaksana dan belum dicocokkan dengan dokumentasinya. Kedua penulis bekerja
+bersamaan, tanpa melihat satu sama lain, repo, atau cerita.
+
+| | `@alpha/stock@v1` (Odoo) | `@beta/stock@v1` (ERPNext) |
+|---|---|---|
+| kelas | UomCategory, Uom, Product, Location, Warehouse, StockMove | UOM, Item, UOMConversion, Warehouse, StockEntry, StockEntryDetail, StockLedgerEntry, Bin |
+| peran | Product → Resource; StockMove → **Event, bukan Flow**; sisanya Thing | Item → Resource (+Thing); **StockLedgerEntry → Flow** (`actual_qty`/`item`/`posting_date`); StockEntry → Event |
+| arah | qty selalu positif, dari `source_location` ke `destination_location` | tanda `actual_qty`; transfer = dua entri |
+| satuan | move menyimpan satuannya; `product_qty` = qty × rasio ÷ rasio (expression) | buku besar selalu dalam satuan stok; `transfer_qty` = qty × faktor (expression) di baris dokumen |
+| stok di tangan | tidak dihitung modul ("aplikasi harus group by product dan location") | `Bin.qty_on_hand` = aggregate `actual_qty` per item per gudang |
+| panggilan / ditolak | 102 / 1 (`not_attached`) | 136 / 1 (`operation_arguments`) |
+
+- **T4: tidak diam.** Penulis Odoo menolak mengisi `Flow` dan menjelaskan
+  sebabnya: `amount` harus bertanda, sedangkan satu move Odoo sekaligus "masuk"
+  untuk satu lokasi dan "keluar" untuk lokasi lain. Konsekuensinya: aplikasi
+  yang ditulis terhadap `Flow` tidak akan melihat satu pun pergerakan
+  `@alpha/stock`. Ini diuji di Tahap D/F. **Prosa core bertanda memilih
+  pemenang** (§2 butir 4): bentuk Odoo tidak bisa mengisi satu-satunya peran
+  yang membuat saldo bisa dijumlahkan.
+- **Laporan penulis cocok dengan transkrip** (jumlah panggilan per perintah
+  dan penolakannya). Keduanya mengaku melanggar aturan 1 secara kecil: output
+  klien dipotong dengan `sed`/`head`/`tail`. Tidak ada berkas yang dibuka.
+
+**Temuan yang tidak diprediksi (belum diperbaiki, sesuai §10):**
+
+- **U1 ☠ — dua modul berbagi predikat tanpa suara.** Kedua penulis memilih
+  prefix `stk`, yang di-expand ke namespace berbeda
+  (`https://uniti.example/alpha/stock/` dan `.../beta/stock/`). Registry
+  kernel menyimpan `slot_uri` sebagai **CURIE mentah**, jadi `stk:uom` dan
+  `stk:warehouse_name` milik `@beta/stock` jatuh ke entity predikat yang sudah
+  didaftarkan `@alpha/stock`. Seal hanya melaporkan "25 URIs minted" untuk 27
+  slot. `uom` di alpha berarti "satuan stok sebuah Product"; di beta, "satuan
+  sebuah baris atau konversi". Keduanya sekarang satu predikat di log. Ini
+  lebih dalam dari T1: bukan nama kelas di LinkML, tetapi identitas predikat
+  di kernel, padahal prinsipnya "identitas predikat adalah `slot_uri`".
+- **U2 — nama kelas telanjang di `entity_class`** (item terbuka lama, sekarang
+  konkret). Kedua modul punya kelas `Warehouse`, dan fakta kelas disimpan
+  sebagai nama, bukan URI. Ditambah U1 (`stk:warehouse_name` bersama),
+  gudang yang dicatat lewat alpha akan terbaca sebagai `Warehouse` beta
+  setelah penukaran di Tahap F. Hasilnya mungkin terlihat "berhasil", padahal
+  kebetulan.
+- **U3 ☠ — aturan di kelas entity tidak pernah dijalankan.** `plan_entities`
+  memperlakukan setiap kolom sebagai kolom "stated", jadi `parameter` dan
+  `expression` di kelas tanpa aggregate selalu NULL. Kolomnya malah muncul
+  sebagai medan formulir yang bisa diketik orang. Seal, check, dan lubang
+  Studio tidak bersuara. Kedua modul kena: `product_qty` (alpha, justru kolom
+  yang menurut penulisnya harus dijumlahkan) dan `transfer_qty` (beta).
+- **U4 — sintaks ekspresi tidak pernah diajarkan dan tidak diperiksa di
+  gerbang.** Kedua penulis menulis `qty * conversion_factor` tanpa `{kolom}`.
+  Compiler akan menolaknya (`expression_not_arithmetic`), tetapi hanya saat
+  memancarkan SQL tabel ber-aggregate. Karena U3, penolakan itu tidak pernah
+  terjadi. Deskripsi langkah `expression` tidak menyebut kurung kurawal, dan
+  primer eksperimen juga tidak.
+- **U5 👁 — aggregate mengubah bentuk kelas.** Penulis ERPNext menaruh
+  aggregate di `Item`, dan `Item` berubah dari daftar entity menjadi tabel
+  ber-group ("A class the map gives an aggregate is a grouping"). Ini terlihat
+  di draft ("Item (grouped)"). Penulisnya menyadarinya dan menariknya kembali.
+
 ### Tabel hasil
 
 *(bentuk §8)*
