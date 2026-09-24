@@ -371,6 +371,28 @@ Dicatat, tidak diperbaiki:
   yang salah memilih subjek akan menabraknya; kalau terjadi, dicatat sebagai
   temuan eksperimen.
 
+### Langkah 2: lingkungan dan klien
+
+- `scratch/exp/env.sh` (tiga variabel + `UNITI_API=http://localhost:8300`),
+  `scratch/exp/setup.sh` (membuat `uniti_exp` dan `uniti_exp_ops`, menerapkan
+  skema kernel, mendaftarkan `@uniti/core` v1 dan v2). Root store pertama
+  `build/exp/packages`; draft modul baru jatuh ke sana.
+- API di port 8300 dengan tiga variabel itu; web app ikut tersaji di sana.
+- **Klien:** `sh scratch/exp/u.sh --as <siapa> <perintah>`. Perintah: `ops`,
+  `step`, `draft`, `seal` (memanggil CLI seal), `catalogue`, `app`, `form`,
+  `submit`, `read`, `table`. `submit` meminta formulir pada `valid_from` yang
+  sama lebih dulu dan menolak medan rujukan yang tidak ditawarkan ("REFUSED BY
+  THE SCREEN"), sebelum API ditanya. Setiap panggilan dicatat ke
+  `build/exp/transcript.jsonl` (waktu, pemeran, perintah, argumen, jawaban
+  utuh).
+- **Uji asap** dengan modul sekali pakai `@smoke/*`, lalu dihapus dan log
+  direset: 21 langkah Studio → seal; aplikasi dengan aggregate atas `Flow` →
+  seal; submit; penolakan layar (rujukan tak ditawarkan); penolakan pintu
+  (`value_not_of_type`); koreksi 50 → 5 lewat `--revoke`; angka 5 di
+  proyeksi, 0 baris pada `valid_at` sebelum pergerakan. Transkripnya disimpan
+  di `build/exp/smoke-transcript.jsonl`.
+- `uniti_dev`, `uniti_dev_ops`, dan `build/dev/` tidak disentuh.
+
 ### Tabel hasil
 
 *(bentuk §8)*
