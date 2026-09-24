@@ -104,7 +104,8 @@ Prinsip mekanisme yang ikut terbawa. Semuanya sudah terbukti di P1:
   ada satu pengecualian yang disengaja: `DESIGN_NOTES.md`, catatan referensi yang
   **tidak mengikat apa pun** — ia ada supaya diskusi panjang tidak perlu diulang,
   bukan supaya ada yang harus dipatuhi. Kalau kode membuktikan sebaliknya, kode
-  yang benar.
+  yang benar. Sejak 24 September 2026 ada satu dokumen kerja lagi,
+  `COMPOSITION_EXPERIMENT.md`: rencana irisan 2.8, dihapus bersama dokumen ini.
 - **Kode domain-agnostic.** Tidak ada istilah dari data uji di kode. Semua isi
   domain hidup di `tests/modules/fixtures/` — modul `@demo/*` dan `demo_data.yaml` —
   dan setiap modul di sana menyatakan `purpose: demonstration`, yang terbawa sampai
@@ -271,6 +272,43 @@ turunan yang sudah ada; dan **ya, core menyediakan kelas akar** yang membawa
 
 **2.6 dan 2.7 mendahului Studio.** Permukaan jelajah Studio adalah katalog, dan
 penyuntingnya digerakkan penolakan.
+
+### Irisan 2.8: Uji komposisi — apakah peran bertahan di pemakaian nyata
+
+Disisipkan sesudah 3.1 dan **sebelum 3.2**, pada 24 September 2026. Rencana
+lengkapnya di **`COMPOSITION_EXPERIMENT.md`**; yang di bawah ini hanya
+kesimpulannya.
+
+- **Kenapa:** peran sederhana di depan, tetapi kemungkinannya meledak di
+  belakang. Ini bukan masalah skala, tetapi klaim utama sistem modular, dan P1
+  tidak pernah mengujinya karena seluruh graph-nya ditulis satu penulis. Kalau
+  klaim ini tidak masuk akal di pemakaian nyata, Studio dan agent dibangun di
+  atas sesuatu yang tidak bekerja.
+- **Tujuan yang diuji:** bukan "tidak ada konflik" (tidak ada standar yang bisa
+  menjanjikannya), melainkan **tidak ada konflik yang diam**: setiap
+  ketidakcocokan antar modul ditolak, terlihat, terdeteksi dari data, atau
+  diselesaikan dengan penyelarasan eksplisit. Core tetap kecil (≤ ±30
+  deklarasi, hanya yang deklaratif dan dibaca eksekutor) dan tidak menjadi
+  bahasa pemrograman.
+- **Hipotesis:** kombinasi modul tak terbatas, tetapi jenis ketidakcocokannya
+  terbatas (sepuluh jenis: nama, versi, pengikat, tanda, satuan, keluasan,
+  pencatatan ganda, identitas, struktur, pergeseran arti). Satu sudah terbukti
+  diam sebelum eksperimen: dua modul yang menamai kelas sama, yang satu hilang
+  tanpa suara.
+- **Cara:** skenario distributor fiktif selama satu bulan. Modul bergaya
+  Odoo dan ERPNext ditulis oleh subagent yang tidak melihat sistem maupun satu
+  sama lain; aplikasi disusun oleh subagent implementer; data dimasukkan oleh
+  subagent staf **lewat langkah Studio, seal, dan pintu formulir yang sudah
+  ada, satu aksi demi satu aksi**, bukan lewat YAML atau database. Angka
+  dibandingkan dengan angka kebenaran setiap akhir minggu.
+- **Sebelum mulai:** empat celah pintu ditutup — `aggregate` di Studio belum
+  menerima `where`/`convert`, formulir belum bisa mengoreksi, pilihan formulir
+  basi sampai compile ulang, dan nilai tidak diperiksa di pintu.
+- **Gerbang:** lanjut, sesuaikan, atau pikir ulang, dengan kriteria yang
+  disetujui di awal. Posisi mundurnya adalah komposisi eksplisit.
+- **Dijalankan di sesi terpisah.**
+
+**Hasil:** *belum ada.*
 
 ### Irisan 3: Studio manual (tanpa LLM)
 
@@ -548,6 +586,7 @@ menghitung lintas modul.
 | 2.7 | selesai, menunggu Anda melihatnya: katalog terhitung yang bisa dikueri (`components/modules/catalogue.py`) dan enam diagnosa kesehatan per aplikasi (`components/modules/health.py`), lewat CLI, API, dan area Catalogue di aplikasi web; `inv:movement_happened_on` ditemukan sebagai istilah mati di `@demo/stock@v2` — 24 pernyataan, mengisi `moment`, nol pembaca — dan sebagai fakta yang tak terlihat di `@demo/stock@v3`; 173 test lulus |
 | 3.1 | selesai, menunggu Anda melihatnya: draft sebagai berkas yang hanya berubah lewat 24 operasi tertutup (`components/studio/`), lubang yang dihitung dari pembaca gerbang itu sendiri — `uri_refusals` dan `role_refusals` jadi generator supaya bisa dikumpulkan — dan lima pertanyaan terbuka yang tidak ditolak siapa pun; `draft.txt` menjadi transkrip seal; CLI, API, dan area Studio di aplikasi web; satu aplikasi lengkap dengan aggregate, parameter dan expression dibangun dari nol tanpa satu baris YAML dan diterima `seal`; 191 test lulus |
 | 3.1 UI | dibangun ulang setelah Anda melihat yang pertama dan tidak mengerti sama sekali: tiga kolom istilah kompiler diganti **peta** (`web/src/graph.tsx`) — node jenis hal, garis relasi, yang dipijak samar di atas, klik untuk panel, tarik untuk membuat relasi; pertanyaan dirangkai dari deskripsi pengikatnya sendiri sehingga tetap domain-agnostic; `state()` menambah `borrowed` (keterjangkauan, bukan seluruh yang dipin); semua kosakata mesin pindah ke satu tutup *Behind the scenes*; 191 test lulus |
-| 3.2 | belum dimulai |
+| 2.8 | direncanakan 24 September 2026, dijalankan di sesi terpisah: uji komposisi dengan subagent sebagai penulis modul, implementer, dan staf, lewat gerbang yang sudah ada; rencana di `COMPOSITION_EXPERIMENT.md`; **mendahului 3.2** |
+| 3.2 | belum dimulai; menunggu gerbang irisan 2.8 |
 | 4 | belum dimulai |
 | 5 | belum dimulai |

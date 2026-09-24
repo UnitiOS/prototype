@@ -1,0 +1,380 @@
+# Eksperimen komposisi — apakah peran bertahan di pemakaian nyata
+
+> **Dokumen kerja sementara**, sama statusnya dengan `REFACTOR_P2.md`: hidup
+> selama eksperimen ini, lalu dihapus. Kesimpulan dan hasilnya dipindahkan ke
+> `REFACTOR_P2.md` irisan 2.8, yang merujuk ke sini.
+>
+> Ditulis 24 September 2026 dari satu percakapan analisis. **Dijalankan di sesi
+> lain.** Sesi pelaksana membaca dokumen ini dari awal sampai akhir sebelum
+> menyentuh apa pun, dan mengisi bagian **Hasil** di akhir. Kode tetap yang
+> benar: kalau sesuatu di sini ternyata tidak cocok dengan kode, catat di
+> Hasil, jangan diam-diam disesuaikan.
+
+---
+
+## 1. Pertanyaannya
+
+Demo tepung membuktikan peran di skala terkecil: satu peran (`Flow`), dua modul
+yang saling bisa ditukar (`@demo/inventory` dan `@rival/stock-moves`), dan
+angka yang sama di kedua sisi (86 · 60 · 26). Pemilik proyek menangkap sesuatu
+yang benar:
+
+- Peran terlihat sederhana di depan, tetapi kemungkinannya meledak di belakang:
+  satu hal bisa mengambil banyak peran, banyak modul bisa mengisi satu peran,
+  dan ada arti yang tidak tertangkap bentuk.
+- **Ini bukan masalah skala, tetapi masalah utama.** Di P1 masalah ini tidak
+  muncul karena seluruh graph ditulis satu penulis secara eksplisit. Tanpa
+  sambungan antar modul, tidak ada konflik. P1 tidak pernah menguji klaim
+  modular, dan klaim modular itulah yang membedakan Uniti.
+- Core tidak boleh membesar sampai menjadi bahasa pemrograman. Tujuan awal core
+  dan modul adalah **standardisasi supaya tidak ada konflik antar modul atau
+  versi.**
+
+Kalau klaim modular tidak masuk akal di pemakaian nyata, sistemnya tidak akan
+bekerja. Jadi ini dibuktikan **sebelum** irisan 3.2 dan 4.
+
+## 2. Tujuan yang diuji
+
+"Tidak ada konflik" tidak bisa dicapai standar apa pun. Konflik ada dua jenis:
+
+| jenis | contoh | bisa dicegah mekanisme? |
+|---|---|---|
+| **struktur** | nama, versi, bentuk, pengikat | ya, tanpa core membesar |
+| **arti** | tanda, satuan, waktu, pencatatan ganda, identitas | tidak seluruhnya; usaha ke sana berakhir sebagai *canonical data model* (ISO 15926) |
+
+Maka target yang diuji adalah:
+
+> **Tidak ada konflik yang diam.** Setiap ketidakcocokan antar modul jatuh ke
+> salah satu dari empat jalur: ditolak saat seal, terlihat di laporan
+> kecocokan, terdeteksi dari data di laporan kesehatan, atau diselesaikan
+> dengan satu pernyataan penyelarasan yang eksplisit. Angka salah tanpa ada
+> yang bersuara adalah satu-satunya hasil yang fatal.
+
+### Batas core: uji masuk
+
+Sesuatu boleh masuk core hanya kalau keempatnya "ya":
+
+1. Ada eksekutor yang membacanya (`DESIGN_NOTES.md` §4.3).
+2. Deklaratif: nilai dari himpunan tertutup, atau penunjuk ke satu slot. Tanpa
+   kondisi, fungsi, atau perulangan.
+3. Dibutuhkan minimal dua modul yang ditulis terpisah (§5, eksekutor dulu,
+   peran diekstrak).
+4. Tidak memilih pemenang di antara dua cara memodelkan yang sama-sama masuk
+   akal (§4.4).
+
+Anggaran keras: **core ≤ ±30 deklarasi.** Kebutuhan lain punya tempat yang
+boleh tumbuh: eksekutor compiler (daftar tertutup), `@uniti/*`, modul
+penyelarasan, dan deklarasi di aplikasi. Batas "standar lawan bahasa
+pemrograman": **setiap aturan tetap bisa dianalisis tanpa dijalankan**, karena
+hanya dengan itu laporan kecocokan tetap tepat.
+
+## 3. Hipotesis: jenis ketidakcocokan terbatas
+
+Kombinasi modul tak terbatas, tapi jenis ketidakcocokan antar modul terbatas
+(riset integrasi database sudah mengklasifikasikannya puluhan tahun). Kalau
+setiap jenis punya jalur jawaban, kerumitannya terikat. Tabel ini adalah
+**prediksi**; eksperimen membuktikan atau membantah tiap barisnya.
+
+| # | jenis | contoh ERP | prediksi hari ini | jalur jawaban yang diduga |
+|---|---|---|---|---|
+| T1 | nama | dua modul sama-sama punya `Product` | **diam** (lihat §4) | tolak, atau nama diberi awalan modul |
+| T2 | versi | modul A di core v2, B di core v3 | ditolak | – |
+| T3 | pengikat ganda | `qty_gross` dan `qty_net` sama-sama mengaku `amount` | ditolak | – |
+| T4 | tanda / arah | qty positif + lokasi asal/tujuan (gaya Odoo) lawan qty bertanda (gaya ERPNext) | **diam** | deklarasi arah di core + penolakan compiler |
+| T5 | satuan | sak 25 kg lawan kg | **diam** (`convert` ada, penolakan campuran belum) | deklarasi `unit` + compiler menolak campuran |
+| T6 | keluasan | `over: Flow` ikut menjumlah arus uang | terlihat (`covers`) | persempit: `where is_a`, peran turunan, atau sebut kelas |
+| T7 | pencatatan ganda | penerimaan dicatat di modul pembelian **dan** inventory | **diam** | aplikasi menyatakan sumber resmi + deteksi dari data |
+| T8 | identitas | `Supplier` di satu modul = `Partner` di modul lain | tidak ada jalur | modul penyelarasan (dinyatakan orang, tidak disimpulkan; `DESIGN_NOTES.md` §10.6) |
+| T9 | struktur | PO dengan header + banyak baris; modul lain datar; "hutang per supplier" lewat PO | kemungkinan tak terungkapkan (compiler belum punya jalur relasi/koleksi) | pertumbuhan compiler, bukan core |
+| T10 | pergeseran arti antar versi | v2 mengubah qty dari bruto ke neto dengan `slot_uri` yang sama | **diam** | seal menuntut predikat baru bila arti berubah (sulit dideteksi) |
+
+Prediksi yang paling penting untuk dipatahkan: **T7 dan T6.** Dugaan penulis
+dokumen ini adalah aturan "jumlahkan semua `Flow`" terlalu kasar untuk ERP
+nyata, sehingga manfaat menulis terhadap peran menyusut menjadi "berguna di
+sambungan antar sedikit modul", bukan penjumlahan otomatis atas ekosistem.
+Eksperimen harus menjawab ini dengan bukti.
+
+## 4. Yang sudah dibuktikan sebelum eksperimen
+
+**T1 di tingkat LinkML.** Dua modul yang sama-sama mendeklarasikan `Item`, dan
+satu aplikasi yang mengimpor keduanya:
+
+```
+a.yaml:  Item {a_code, a_weight}     b.yaml:  Item {b_sku}
+app.yaml imports [a, b]  ->  Item = {b_sku}, description "B's item"
+```
+
+Kelas milik A hilang tanpa suara. `seal.py:350` (`_one_version_per_module`)
+hanya menolak **satu modul dalam dua versi**, dan komentarnya sendiri mengakui
+LinkML "whichever merged last would win silently". Yang belum dibuktikan:
+bahwa ini juga lolos lewat `seal()` Uniti. **Sengaja tidak diperbaiki sebelum
+eksperimen**, karena penulis modul yang independen kemungkinan besar akan
+menabraknya sendiri, dan itu bukti yang lebih kuat daripada jebakan yang
+ditanam.
+
+## 5. Kesiapan sistem
+
+Eksperimen meniru pengguna sungguhan: **modul lewat langkah Studio dan seal,
+data lewat pintu formulir yang dipakai layar, satu aksi demi satu aksi.**
+Tidak ada YAML yang ditulis tangan, tidak ada `load_facts.py`, tidak ada tulis
+langsung ke database.
+
+### Jalur yang dilalui
+
+| siapa | apa | pintu resmi | ada? |
+|---|---|---|---|
+| penulis modul | membuat draft | `POST /api/studio/step` `{name, step, args}`; `GET /api/studio/draft?name=` (lubang, pilihan, `steps`) | ✓ |
+| penulis modul | membekukan | `python -m components.modules seal @scope/name --actor <who>` → `seal()` | ✓ hanya CLI |
+| implementer | pin + aturan | Studio `pin`, `aggregate`, `parameter`, `expression` | ⚠ G1 |
+| staf | melihat formulir | `GET /api/app/form?name=&version=&class=` | ✓ |
+| staf | mengirim | `POST /api/app/state` `{name, version, class, subject, actor, values, valid_from?, note?}` | ✓ |
+| staf | mengoreksi / menarik | – | ✗ G2 |
+| pengamat | angka, sel, kesehatan, kecocokan | `/api/app/projection`, `/api/app/cell`, `/api/app/health`, `/api/app/fit`, `/api/app/check` | ✓ |
+
+### Celah yang ditutup sebelum eksperimen (langkah 1)
+
+Semuanya perbaikan pintu, bukan mekanisme baru. Masing-masing dengan test lebih
+dulu, satu commit per celah, dan **dikonfirmasi ke pemilik proyek di langkah 0**
+sebelum dikerjakan.
+
+- **G1. `aggregate` di Studio lebih sempit dari compiler.** `draft.py:993`
+  hanya menulis `over`, `sum`, `by`. Compiler sudah menerima
+  `where: {slot: {is_a: Kelas}}` dan `convert` (`compile.py:381`, `:425`).
+  Tanpa ini T5 dan T6 tidak bisa diungkapkan lewat gerbang. Perbaikan:
+  `where` dan `convert` sebagai argumen opsional (`may`) langkah `aggregate`;
+  compiler tetap satu-satunya hakim.
+- **G2. Koreksi tidak bisa lewat formulir.** `submit()` menerima `revokes`
+  (`generate.py:526`), `/api/app/state` tidak meneruskannya (`app.py:340`).
+  Perbaikan: teruskan `revokes` (nama medan → id assertion yang ditarik).
+- **G3. Pilihan formulir basi sampai compile ulang.** Medan rujukan membaca
+  pilihannya dari database operasional bila tabelnya ada (`generate.py:473`),
+  dan tabel itu tidak ikut diperbarui oleh submit. Layar memaksa medan rujukan
+  dipilih dari daftar (`application.tsx:563`), jadi staf tidak bisa memilih
+  supplier yang baru ditambahkan. Rekomendasi: pilihan dibaca dari log pada
+  jam yang diminta (cabang cadangannya sudah ada). Alternatif: harness
+  menjalankan compile ulang setelah setiap submit, meniru operator.
+- **G4. Nilai tidak diperiksa di pintu.** Semua nilai disimpan sebagai teks
+  (`generate.py:595`) dan baru di-cast compiler, jadi satu nilai "dua puluh" di
+  medan desimal menggagalkan seluruh tabel. Lewat API, rujukan ke URI yang tidak
+  dikenal langsung dibuatkan entity baru tanpa suara. Rekomendasi: tolak di
+  pintu dengan penolakan terstruktur (`components/refusal`): nilai harus cocok
+  tipenya, rujukan harus entity yang ada di kelas range-nya. Tanpa ini, hasil
+  eksperimen tercampur antara salah ketik staf dan kegagalan komposisi.
+
+### Dicatat sebagai temuan, tidak diperbaiki dulu
+
+- **G5.** Satu formulir satu subjek: PO lima baris = enam aksi. Mempengaruhi
+  kejujuran "satu tindakan = satu intent".
+- **G6.** `recorded_at` selalu waktu sekarang (benar: pengguna tidak boleh
+  memundurkan jam kernel). Cerita satu bulan tercatat dalam beberapa menit;
+  "dicatat terlambat" disimulasikan dengan urutan pemasukan. `as_of` tetap
+  bisa diuji dalam skala menit.
+- **G7.** Database operasional dipakai bersama per nama tabel; dua aplikasi
+  dengan tabel `Item` saling timpa. Eksperimen memakai database sendiri.
+- **G8.** Bentrok nama kelas (§4).
+
+## 6. Rancangan
+
+### Lingkungan
+
+- Database `uniti_exp` dan `uniti_exp_ops`. Skema kernel diterapkan ke yang
+  pertama. `@uniti/core` v1 dan v2 didaftarkan dengan
+  `python -m components.modules register @uniti/core v2 --actor exp`.
+- Root store sendiri, misalnya `build/exp/packages`, diikuti `packages` sebagai
+  root kedua (`UNITI_PACKAGES="build/exp/packages;packages"`).
+- API sendiri di port 8300 dengan tiga variabel itu.
+- **Jangan menyentuh `uniti_dev`, `uniti_dev_ops`, atau `build/dev/`.**
+
+### Satu pintu untuk semua subagent
+
+Skrip klien tipis (di luar `components/`, misalnya `scratch/` atau scratchpad
+sesi) dengan perintah: `draft`, `step`, `seal`, `catalogue`, `form`, `submit`,
+`read`. Aturannya:
+
+- Meniru layar persis: medan rujukan **hanya** diisi dari pilihan yang
+  ditawarkan `form`; subjek dan nilai lain diketik bebas.
+- Setiap panggilan dicatat ke satu berkas transkrip (waktu, pemeran, perintah,
+  argumen, jawaban), sehingga eksperimen bisa diputar ulang dan diaudit.
+- `seal` memanggil CLI seal; ini gerbang resmi yang sama dengan `seal()`.
+
+### Pemeran
+
+| subagent | melihat | tidak melihat |
+|---|---|---|
+| penulis cerita | tidak ada soal Uniti; menulis kejadian satu bulan PT Maju dalam bahasa bisnis | semua sistem |
+| penulis `stok-a` (gaya Odoo) ∥ `stok-b` (gaya ERPNext) | deskripsi peran core, daftar langkah Studio, klien | satu sama lain, repo, cerita |
+| penulis `pembelian`, `mitra`, `buku-besar` | seperti di atas **+ katalog** modul yang sudah di-seal | repo, cerita |
+| implementer `@ptmaju` | katalog, lima pertanyaan bisnis, klien | repo, cerita, angka kebenaran |
+| staf gudang, pembelian, keuangan | bagian cerita masing-masing, formulir aplikasi | yang lain |
+| sesi pelaksana | semuanya: mengatur, mengamati, membandingkan | – |
+
+Kosakata gaya Odoo/ERPNext dipakai sebagai **bentuk**, dicek ke dokumentasi
+publik keduanya saat menulis brief. Datanya karangan; setiap modul menyatakan
+`purpose: demonstration`. Kode komponen tetap bebas istilah domain.
+
+**Keterbatasan yang harus dicatat di Hasil:** subagent secara teknis bisa
+membaca repo. Kemandirian dijaga dengan instruksi dan satu pintu klien, bukan
+sandbox. Setiap subagent melaporkan semua perintah yang dijalankannya, dan
+pelaksana memeriksanya.
+
+### Skenario: PT Maju, satu bulan
+
+Distributor bahan kue, dua gudang, membeli dari supplier, menjual ke toko roti.
+
+**Lima pertanyaan aplikasi** (untuk implementer):
+1. stok per bahan per gudang
+2. nilai stok
+3. hutang per supplier
+4. PO yang belum diterima
+5. selisih antara yang dipesan dan yang diterima
+
+**Jebakan**, masing-masing satu jenis di §3. Sebagian ditanam di cerita,
+sebagian dibiarkan muncul sendiri:
+
+| jebakan | jenis | cara muncul |
+|---|---|---|
+| dua modul menamai kelas sama | T1 | dibiarkan muncul |
+| qty positif + arah lawan qty bertanda | T4 | dari gaya `stok-a` / `stok-b` |
+| bahan dibeli per sak 25 kg, dipakai per kg | T5 | ditanam di cerita |
+| pembayaran kas juga `Flow` | T6 | dari `buku-besar` |
+| truk yang sama dicatat staf gudang dan staf pembelian | T7 | dibiarkan muncul (dua formulir tersedia) |
+| supplier yang juga pelanggan | T8 | ditanam di cerita |
+| PO banyak baris, penerimaan sebagian, retur ke supplier | T9 | ditanam di cerita |
+| satu modul di v2 mengubah arti qty | T10 | pelaksana meminta revisi pada satu penulis |
+| penerimaan yang baru ketahuan belakangan; satu salah ketik lalu dikoreksi | dua jam, G2 | ditanam di cerita |
+
+### Angka kebenaran
+
+Dihitung dari cerita **sebelum** compiler dijalankan, tanpa Uniti (tangan atau
+spreadsheet), untuk lima pertanyaan, per akhir minggu 1–4, dan untuk dua
+pasangan jam (sekarang; sebelum penerimaan yang terlambat dicatat). Tanpa
+pembanding, angka yang salah tanpa suara tidak akan ketahuan.
+
+## 7. Tahapan
+
+| # | isi | kode berubah? | selesai jika |
+|---|---|---|---|
+| 0 | Baca dokumen ini. Konfirmasi ke pemilik: G1–G4, kriteria gerbang (§9), tabel prediksi (§3). | tidak | pemilik menyetujui |
+| 1 | Tutup G1–G4, test lebih dulu, satu commit per celah. `make test` hijau. | ya, kecil | test baru lulus, semua test lama lulus |
+| 2 | Siapkan lingkungan (§6) dan klien. | skrip | core terdaftar di `uniti_exp`, klien bisa `draft`/`step` |
+| 3 | Cerita bisnis + angka kebenaran. | tidak | cerita + tabel angka |
+| 4 | Gelombang 1: `stok-a` ∥ `stok-b` → seal. Gelombang 2: `pembelian`, `mitra`, `buku-besar` → seal. | tidak | lima modul ter-seal, atau penolakannya tercatat |
+| 5 | Implementer menyusun `@ptmaju` → seal. | tidak | aplikasi ter-seal |
+| 6 | Staf memasukkan data minggu demi minggu, kronologis. **Setiap akhir minggu:** angka dibandingkan dengan kebenaran, selisih ditelusuri ke aksinya. | tidak | empat titik periksa |
+| 7 | Tukar `stok-a` → `stok-b` (aplikasi versi baru), laporan kecocokan dan kesehatan, revisi arti (T10), koreksi (G2). Beri label setiap jebakan. | tidak | tabel hasil §8 terisi |
+| 8 | Untuk setiap ✗ dan ☠: perbaikan minimal, tempatnya, dan ongkos core-nya. | tidak | daftar perbaikan |
+| ⛩ | Pemilik memutuskan di gerbang (§9). | – | keputusan tercatat |
+
+Langkah 3–8 **tidak mengubah mekanisme.** Sistem diukur apa adanya dulu;
+perbaikan dikerjakan setelah gerbang. Pemilik diajak melihat di akhir langkah
+0, 1, dan di gerbang.
+
+## 8. Label hasil dan bentuk laporan
+
+✓ benar · ⛔ ditolak dengan jelas · 👁 terlihat di laporan · 🔍 terdeteksi dari
+data · ✗ tidak bisa diungkapkan · ☠ **salah tanpa suara**
+
+Satu baris per jebakan:
+
+| jebakan | jenis | prediksi | hasil | bukti (transkrip / intent / sel) | perbaikan minimal | tempatnya (modul · deklarasi core · eksekutor · penyelarasan · aplikasi · di luar mekanisme) | ongkos core |
+|---|---|---|---|---|---|---|---|
+
+Ditambah: jumlah deklarasi core yang dibutuhkan, dan daftar temuan yang tidak
+diprediksi.
+
+## 9. Kriteria gerbang
+
+- **Lanjut:** tidak ada ☠ tersisa setelah perbaikan yang semuanya deklaratif;
+  core bertambah ≤ ±5 deklarasi dan semuanya lolos uji masuk (§2); tidak ada
+  aplikasi yang harus menyebut nama privat modul lain kecuali disengaja.
+- **Sesuaikan:** sebagian ☠ hanya selesai dengan eksekutor baru. Masih
+  diterima bila eksekutornya generik (misalnya *matching* janji ↔ pemenuhan)
+  dan lolos uji masuk.
+- **Pikir ulang:** ada ☠ yang hanya bisa dicegah dengan logika per kasus, atau
+  dengan model kanonik pusat yang memilih pemenang.
+
+Posisi mundur bila "pikir ulang": **komposisi eksplisit.** Peran dipakai untuk
+menemukan dan menyambungkan, dan setiap aplikasi wajib menyatakan modul mana
+yang resmi untuk setiap hitungan; penjumlahan lintas modul tidak pernah
+otomatis. Log, provenance, dan dua jam tidak terpengaruh.
+
+## 10. Aturan kerja
+
+Semua aturan `REFACTOR_P2.md` §4 berlaku: kode bebas istilah domain, test lebih
+dulu untuk mekanisme, satu commit per langkah utuh, data karangan menandai
+dirinya. Ditambah:
+
+- Tidak ada YAML modul yang ditulis tangan. Tidak ada `load_facts.py`. Tidak ada
+  `INSERT` langsung. Semua lewat klien.
+- Penolakan yang diterima subagent adalah data eksperimen: dicatat utuh, tidak
+  dihindari.
+- Jangan memperbaiki mekanisme di tengah langkah 3–8. Kalau sesuatu memblokir
+  total, berhenti, catat, dan tanyakan ke pemilik.
+
+---
+
+## Hasil
+
+*Diisi oleh sesi pelaksana. Ringkasannya disalin ke `REFACTOR_P2.md` irisan 2.8.*
+
+### Keputusan langkah 0
+
+Disetujui pemilik, 24 September 2026. Semua rujukan kode di dokumen ini
+diperiksa dan cocok (nomor baris bergeser sedikit); 191 test lulus di `f1da813`.
+
+- **G1–G4 dikerjakan** seperti di §5, dengan tiga penegasan:
+  - **G3:** pilihan formulir dibaca dari log pada jam yang diminta, bukan
+    compile ulang oleh harness. Proyeksi sendiri tidak basi (dihitung langsung
+    dari log lewat `preview`); yang basi hanya pilihan.
+  - **G4 bukan hakim kedua:** pemeriksaan tipe di pintu memakai peta tipe
+    compiler yang sama, sehingga yang diterima pintu tidak bisa ditolak cast.
+    Rujukan harus entity yang ada di kelas range-nya (atau turunannya).
+  - **G2:** hanya meneruskan `revokes`; id yang ditarik diambil dari `stated`
+    jawaban submit atau dari `/api/app/cell`.
+- **Kriteria gerbang (§9) dan tabel prediksi (§3) tidak berubah,** dengan satu
+  catatan pada T4: deskripsi `amount` di `@uniti/core@v2` sudah berbunyi
+  *"In is positive, out is negative"* — core sudah memilih gaya bertanda, tapi
+  hanya sebagai prosa tanpa eksekutor. Deskripsinya dibiarkan (ter-seal). Brief
+  `stok-a` menegaskan bentuk Odoo (qty selalu positif, arah dari lokasi
+  asal/tujuan). Kalau penulisnya tetap menyesuaikan diri ke prosa core, hasil
+  T4 dicatat **"✓ hanya karena konvensi prosa"**, bukan ✓.
+
+### Langkah 1: celah ditutup
+
+Empat commit, test lebih dulu di masing-masing; 199 test lulus (191 + 8),
+replay identik.
+
+| celah | commit | isi |
+|---|---|---|
+| G1 | `da8c7ee` | `aggregate` menerima `where` (slot=Kelas) dan `convert_using`/`convert_on`/`convert_factor`, ditulis persis seperti yang dibaca compiler; langkahnya tidak menilai, `convert` separuh jadi lubang `convert_keys` |
+| G2 | `845a73f` | `/api/app/state` meneruskan `revokes`; setiap jawaban membawa `stated` (medan → id); penarikan murni tidak menyatakan ulang kelas |
+| G3 | `0b174c5` | pilihan formulir dibaca dari log pada jam formulir; generator tidak lagi membuka database operasional sama sekali |
+| G4 | `391202c` | tiga penolakan baru: `value_not_of_type` (cast yang sama dengan compiler; `SQL_TYPE` pindah ke generator), `not_among_the_choices` (pembaca yang sama dengan pilihan formulir), `revokes_another_statement` |
+
+Dua hal yang ikut ditemukan:
+
+- **G3 mengakhiri satu prinsip P1:** "formulir membaca database operasional,
+  tidak pernah log" (dari `CLAUDE.md` P1 yang sudah tidak ada). Di P2 proyeksi
+  sudah dibaca langsung dari log, jadi prinsip itu memang sudah tidak berlaku;
+  sekarang pilihan formulir mengikutinya.
+- **`revokes_another_statement` melampaui G2 sebagaimana ditulis.** Kernel
+  hanya menuntut baris yang ditarik ada; id dari baris yang salah akan menarik
+  pernyataan subjek lain tanpa suara. Dimasukkan ke G4 karena alasannya sama.
+
+Dicatat, tidak diperbaiki:
+
+- **Label pilihan adalah identifier** (`ING-COCOA`), bukan nama — sesuai map,
+  karena belum ada pengikat `label` (`REFACTOR_P2.md` §8).
+- **Subjek yang sudah menjadi kelas lain** (dibaca dari kode, belum diuji):
+  formulir kelas B dengan subjek milik kelas A menyatakan ulang `entity_class`,
+  dan pernyataan terbaru menang — subjeknya berpindah kelas tanpa suara. Staf
+  yang salah memilih subjek akan menabraknya; kalau terjadi, dicatat sebagai
+  temuan eksperimen.
+
+### Tabel hasil
+
+*(bentuk §8)*
+
+### Temuan yang tidak diprediksi
+
+### Keputusan di gerbang
