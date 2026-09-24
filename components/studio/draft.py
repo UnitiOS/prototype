@@ -194,7 +194,12 @@ OPERATIONS = {
                 "a class or of a role",
         "takes": {"class": "own_class", "column": "column", "over": "class",
                   "sum": "slot", "by": "mapping"},
-        "may": {},
+        # `where` narrows the rows to those whose slot is one class (slot=Class);
+        # the three `convert_` answers are one conversion — the class holding
+        # the factor, how its slots match the source's, and which slot the
+        # factor is — written as the compiler's `convert: {using, on, factor}`.
+        "may": {"where": "mapping", "convert_using": "class",
+                "convert_on": "mapping", "convert_factor": "slot"},
     },
     "parameter": {
         "does": "derive a column by reading one fact off what a key names",
@@ -964,7 +969,8 @@ def _rule(document, slot_name, kind, spec):
 
 
 def _mapping(value, what):
-    """`by`, as a mapping of this table's column to the source's slot."""
+    """Pairs written `key=value, ...`: `by` (column=slot), `where` (slot=Class)
+    and `convert_on` (slot of the conversion=slot of the source)."""
     if isinstance(value, dict):
         return {str(k): str(v) for k, v in value.items()}
     out = {}
@@ -977,10 +983,10 @@ def _mapping(value, what):
     raise StudioError(
         "operation_arguments",
         where=what,
-        expected="`by` as column=slot, one per grouping",
+        expected="pairs written key=value, separated by commas",
         got=f"{value!r}",
-        repairs=[Repair("an aggregate groups by at least one column of its "
-                        "own table, and names what to read on the other side")],
+        repairs=[Repair("write at least one pair, the name on this side "
+                        "first and what it matches on the other side after `=`")],
     )
 
 
@@ -992,9 +998,30 @@ def _aggregate(store, name, document, args):
     # what keeps one judge — and the check runs on the next read.
     spec = {"over": str(args["over"]), "sum": str(args["sum"]),
             "by": _mapping(args["by"], "aggregate")}
+    if "where" in args:
+        spec["where"] = {slot: {"is_a": held} for slot, held in
+                         _mapping(args["where"], "aggregate: where").items()}
+    # Whichever of the three were given, as given: half a conversion is the
+    # compiler's to refuse, and it names the keys that are missing.
+    convert = {}
+    if "convert_using" in args:
+        convert["using"] = str(args["convert_using"])
+    if "convert_on" in args:
+        convert["on"] = _mapping(args["convert_on"], "aggregate: convert_on")
+    if "convert_factor" in args:
+        convert["factor"] = str(args["convert_factor"])
+    if convert:
+        spec["convert"] = convert
+    said = {**args, "by": _pairs(spec["by"])}
+    for key in ("where", "convert_on"):
+        if key in args:
+            said[key] = _pairs(_mapping(args[key], "aggregate"))
     return _save(store, name, _rule(document, column, "aggregate", spec),
-                 "aggregate", {**args, "by": ", ".join(
-                     f"{k}={v}" for k, v in spec["by"].items())})
+                 "aggregate", said)
+
+
+def _pairs(mapping):
+    return ", ".join(f"{k}={v}" for k, v in mapping.items())
 
 
 def _parameter(store, name, document, args):

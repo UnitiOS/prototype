@@ -331,6 +331,85 @@ def test_an_application_is_built_the_same_way_a_module_is(world):
         "balance_level": "parameter", "balance_headroom": "expression"}
 
 
+def _a_converted_total(store, name):
+    """An application whose total is narrowed to one class and put in one unit.
+
+    The conversion class is the application's own: a rate somebody states per
+    resource. Nothing about narrowing or converting is new to the compiler —
+    what is new is that a step can say it, so nobody has to write YAML to.
+    """
+    step(store, name, "start", title="A converted total",
+         description="Totals flows of one kind of resource, in one unit.")
+    step(store, name, "pin", module=f"{dev_modules.CATALOG}@v3")
+    step(store, name, "pin", module=f"{dev_modules.INVENTORY}@v3")
+    step(store, name, "add_class", **{"class": "Rate",
+                                      "description": "How many base units one counted unit is."})
+    step(store, name, "fill_role", **{"class": "Rate", "role": "Thing"})
+    step(store, name, "add_class", **{"class": "Total",
+                                      "description": "One row per resource."})
+    for class_name, slot, kind, said in (
+        ("Rate", "rate_thing", "Ingredient", "The resource this rate is for."),
+        ("Rate", "rate_factor", "decimal", "Base units per counted unit."),
+        ("Total", "total_thing", "Ingredient", "The resource this row is about."),
+        ("Total", "total_base", "decimal", "Every flow of it, in base units."),
+    ):
+        step(store, name, "add_slot", slot=slot, range=kind, description=said)
+        step(store, name, "attach", **{"class": class_name, "slot": slot})
+    return name
+
+
+def test_an_aggregate_step_narrows_and_converts(world):
+    """`where` and `convert` are said through the step, and nothing else.
+
+    The compiler has read both since P1; the step wrote neither, so a total
+    that had to be narrowed to one class, or put into one unit, could only be
+    had by writing YAML. The step writes them exactly as the compiler reads
+    them, and the compiler stays the one judge of whether they resolve.
+    """
+    name = _a_converted_total(world, "@probe/converted")
+    step(world, name, "aggregate", **{
+        "class": "Total", "column": "total_base",
+        "over": "Flow", "sum": "amount", "by": "total_thing=affects",
+        "where": "affects=Ingredient",
+        "convert_using": "Rate", "convert_on": "rate_thing=affects",
+        "convert_factor": "rate_factor"})
+
+    written = studio.open_draft(world, name)["slots"]["total_base"]
+    assert written["annotations"]["aggregate"]["value"] == {
+        "over": "Flow", "sum": "amount", "by": {"total_thing": "affects"},
+        "where": {"affects": {"is_a": "Ingredient"}},
+        "convert": {"using": "Rate", "on": {"rate_thing": "affects"},
+                    "factor": "rate_factor"},
+    }
+    report = reading.state(world, name)
+    assert report["holes"] == [] and report["sealable"] is True
+    assert "where=affects=Ingredient" in studio.transcript(world, name)
+
+    offered = {s["op"]: s for s in reading.steps(world, name, studio.open_draft(world, name))}
+    may = {t["name"]: t for t in offered["aggregate"]["takes"] if not t["required"]}
+    assert set(may) == {"where", "convert_using", "convert_on", "convert_factor"}
+    assert "Rate" in may["convert_using"]["options"]
+
+
+def test_what_a_narrowing_gets_wrong_the_compiler_says(world):
+    """The step writes; it does not judge. A bad `where` or half a `convert`
+    comes back as a hole in the compiler's own words, on the next read."""
+    name = _a_converted_total(world, "@probe/misconverted")
+    step(world, name, "aggregate", **{
+        "class": "Total", "column": "total_base",
+        "over": "Flow", "sum": "amount", "by": "total_thing=affects",
+        "where": "affects=Nothing"})
+    codes = [h["kind"] for h in reading.state(world, name)["holes"] if h["blocking"]]
+    assert "not_a_class" in codes
+
+    step(world, name, "aggregate", **{
+        "class": "Total", "column": "total_base",
+        "over": "Flow", "sum": "amount", "by": "total_thing=affects",
+        "convert_using": "Rate"})
+    codes = [h["kind"] for h in reading.state(world, name)["holes"] if h["blocking"]]
+    assert "convert_keys" in codes
+
+
 # ---- the steps ------------------------------------------------------------
 
 def test_every_step_is_performed_and_offered(world):
