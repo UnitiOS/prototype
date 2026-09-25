@@ -621,6 +621,109 @@ tidak terulang, tapi hanya karena kebetulan.
   membalik tandanya. Deskripsinya jelas, jadi yang diuji di Tahap D adalah
   apakah implementer membacanya.
 
+### Tahap D: aplikasi `@ptmaju/app`
+
+Brief di `build/exp/briefs/implementer.md` + `implementer-tools.md` (primer
+dan `catalogue.md` yang sama, aturan 3–4 diganti). Implementer melihat
+katalog, lima pertanyaan dalam bahasa bisnis, gambaran tiga departemen, dan
+klien; tidak melihat cerita atau angka kebenaran. Satu kendala diberikan:
+**tim gudang sudah memilih `@alpha/stock@v1`**, supaya penukaran di Tahap F
+tetap stok-a → stok-b. Implementer juga diberi `app/check`, `app/roles`,
+`app/health`, dan `table` (tanpa `submit`), karena di UI laporan itu memang
+miliknya.
+
+**Hasil: `@ptmaju/app@v5`**, 610 panggilan, lima seal. v1–v4 dibuang oleh
+implementer sendiri setelah membaca laporan dan `table`.
+
+| | pilihan implementer | alasannya |
+|---|---|---|
+| `@alpha/stock@v1` | pin (diwajibkan) | Product, Uom, Location, Warehouse, StockMove; aturan turunannya tidak dipakai karena "tidak ada yang membacanya" (U3) |
+| `@gamma/partner@v1` | pin | satu Partner untuk pemasok dan pelanggan |
+| `@delta/purchase@v1` | **tidak** | membawa Item/Warehouse `@beta/stock` di samping `@alpha/stock` (T1), Supplier sendiri (T8), dan tabel saldonya tidak punya baris untuk baris PO yang belum menerima apa pun |
+| `@epsilon/accounting@v1` | **tidak** | setiap faktur/pembayaran harus jadi jurnal dua sisi yang ditulis tangan; `Payment` sendiri tidak mengubah saldo, "jebakan bagi staf" |
+| `@beta/stock@v1` | tidak | gudang memilih alpha |
+
+Yang dibuat sendiri di aplikasi: Ingredient (turunan Product, membawa
+`std_cost`), PurchaseOrder/Line, DeliveryCheck/Line, SupplierDocument +
+PayableKind (tanda dan faktor per jenis dokumen), CustomerInvoice/Payment.
+Tiga tabel jawaban: `StockOnHand` (Q1, Q2), `SupplierBalance` (Q3),
+`OrderLineStatus` (Q4, Q5).
+
+**Peran tidak dipakai sama sekali untuk menjawab.** Tidak ada kelas yang
+mengisi `Flow` di aplikasi ini; setiap aggregate menyebut kelasnya
+(`over: StockMove`, `over: SupplierDocument`, `over: DeliveryCheckLine`). Tanpa
+diminta, implementer jatuh ke posisi mundur §9, "komposisi eksplisit". Ini
+bukan pilihan gaya: `@alpha/stock` tidak mengisi Flow (T4), dan Flow yang ada
+(`JournalItem`) terkena U3.
+
+**Jebakan tahap ini:**
+
+- **T4 — ✓, tapi dengan menyebut kelas, bukan lewat peran.** Stok dihitung
+  `qty_in` (aggregate per `destination_location`) − `qty_out` (per
+  `source_location`) atas `StockMove`. Arah gaya Odoo bisa diungkapkan; peran
+  `Flow` tidak ikut.
+- **T6, T7, T8 — tidak terjadi di aplikasi ini, karena dihindari.** Flow tidak
+  dipakai (T6), hanya satu formulir penerimaan per departemen yang dihitung
+  (T7: gudang di StockMove, pembelian di DeliveryCheckLine; keduanya ada tapi
+  menjawab pertanyaan berbeda), dan hanya satu daftar mitra (T8). Harga
+  penghindarannya: dua modul dari katalog tidak terpakai.
+- **T9 — sebagian ✗.** Header + baris PO bisa diungkapkan dengan kelas
+  aplikasi sendiri. Tapi "total per gudang" di atas `StockOnHand` ditolak
+  (`no_type_slot`: aggregate hanya bisa di atas kelas tercatat, bukan tabel
+  hitungan), sehingga jawaban per gudang bergantung pada satu lokasi stok per
+  gudang. Q4 tidak bisa disaring di tabel (U7); pembaca yang menyaring
+  `ols_open_stock_qty > 0`.
+- **T1 — nama slot bertabrakan, diam di seal.** `@alpha/stock` dan
+  `@gamma/partner` sama-sama punya slot `category_name`. Di aplikasi yang
+  mem-pin keduanya, `UomCategory.category_name` tercatat di bawah predikat
+  **`prt:category_name`** milik modul kontak; `stk:category_name` hilang dari
+  aplikasi. Seal dan `app/check` diam. Terlihat hanya di tabel `terms`
+  `app/health` (satu URI di `PartnerCategory` dan `UomCategory`) dan di
+  deskripsi formulir yang salah. Dalam aplikasi ini angkanya tidak salah;
+  aplikasi lain yang membaca `UomCategory` alpha dengan predikatnya sendiri
+  tidak akan melihat nama-nama ini.
+
+**Temuan yang tidak diprediksi:**
+
+- **U3 — terbaca dari `app/health`, tapi tanpa diagnosis.** `empty_column`
+  melaporkan 0. Implementer menyimpulkannya sendiri dari `terms` (`read_by`
+  kosong untuk `move_uom_ratio`) dan dari formulir yang menawarkan kolom
+  hitungan sebagai isian. Label tetap ☠ untuk penulis modul; untuk pembaca
+  laporan yang teliti, 👁.
+- **U9 — `app/check` bilang "holds", compiler menolak.** Di v2 `check`
+  menyatakan `StockOnHand`, `WarehouseStock`, `OrderLineStatus`,
+  `SupplierBalance` semuanya `holds: true`; `table` menolak keempatnya
+  (`expression_not_arithmetic` ×3, `no_type_slot`). Laporan yang disebut
+  "pembaca yang sama dengan compiler" tidak membaca ekspresi dan tidak
+  memeriksa `over` ke tabel hitungan. Implementer: "satu-satunya uji formula
+  yang sungguhan adalah menjalankan `table`."
+- **U10 ☠ (prediksi, sebelum data) — rujukan dicocokkan dengan identifier.**
+  Dalam SQL yang dipancarkan, nilai medan rujukan adalah **URI** entity yang
+  dirujuk, sedangkan identifier adalah **teks** terpisah. Tiga aturan v5
+  mencocokkan keduanya:
+  - `convert.on: uom_name = move_uom` (dan `pol_uom`, `dcl_uom`): `move_uom`
+    merujuk Uom, `uom_name` adalah teks namanya.
+  - `convert.on: pk_code = sd_kind`: `sd_kind` merujuk PayableKind.
+  - `OrderLineStatus` dikelompokkan `pol_id` (teks) di sisi pesanan dan
+    `dcl_order_line` (rujukan) di sisi penerimaan.
+
+  Kalau tidak cocok, compiler memakai **`coalesce(factor, 1)`**: konversi
+  gagal tanpa suara. Akibat yang diramalkan bila staf memberi subjek bergaya
+  `prefix:nama` seperti petunjuk layar: satu sak dihitung 1 kg; pembayaran
+  dan nota kredit **ditambahkan** ke utang (tanda +1, bukan −1); baris PO
+  terbelah dua baris (dipesan di satu, diterima di yang lain), dan pada
+  baris sisi-terima `ols_received_qty` membagi dengan 0, sehingga tabel itu
+  gagal keras begitu penerimaan pertama dicatat. Hanya benar bila staf
+  kebetulan memberi subjek persis sama dengan identifier-nya. Cara yang benar
+  (mencocokkan dengan identitas entity itu sendiri) **tidak bisa diungkapkan**:
+  `convert.on` dan `by` hanya menerima slot. Diuji di Tahap E.
+- **`coalesce` ditolak di ekspresi** (bahasa ekspresi hanya `+ − * / ( )`),
+  tapi aggregate sendiri sudah `coalesce(…, 0)`, jadi sisi kosong pengurangan
+  tidak menjadi NULL. Kekhawatiran implementer soal ini tidak terjadi.
+- **Pelanggaran aturan kecil:** dua keluaran `read app/health` terlalu panjang
+  dan disimpan harness ke berkas; implementer membukanya dengan Read. Isinya
+  hanya keluaran klien. Satu perintah membawa `2>&1 | head -0`.
+
 ### Tabel hasil
 
 *(bentuk §8)*
