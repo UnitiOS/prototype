@@ -518,6 +518,109 @@ bersamaan, tanpa melihat satu sama lain, repo, atau cerita.
   ber-group ("A class the map gives an aggregate is a grouping"). Ini terlihat
   di draft ("Item (grouped)"). Penulisnya menyadarinya dan menariknya kembali.
 
+### Tahap C: mitra, pembelian, buku besar
+
+**Urutan diubah sedikit dari §7:** `mitra` di-seal lebih dulu, lalu
+`pembelian` ∥ `buku-besar`. Dengan begitu dua penulis terakhir melihat katalog
+yang sudah berisi modul kontak, dan T8 bisa diamati sebagai pilihan nyata
+(pakai ulang `Partner` orang lain, atau buat sendiri). Brief di
+`build/exp/briefs/` (`mitra.md`, `pembelian.md`, `buku-besar.md`, ditambah
+`catalogue.md` untuk cara membaca katalog dan `pin`). Primer tidak diubah
+supaya kondisinya sama dengan Tahap B; U4 sengaja tidak "diajarkan". Bentuk
+Odoo (kontak, akuntansi) dan ERPNext (pembelian) berasal dari pengetahuan
+pelaksana, belum dicocokkan dengan dokumentasi publik.
+
+**Gangguan lingkungan:** container Postgres berhenti di tengah tahap (exit
+255, kemungkinan Docker di-restart), sehingga tiga seal pertama `mitra` gagal
+dengan `ConnectionTimeout`. Container dinyalakan lagi tanpa mengubah isinya
+(log tetap 4 intent), API dinyalakan ulang dengan `.venv`, dan penulisnya
+diminta menjalankan seal sekali lagi. Bukan penolakan; tidak dihitung.
+
+| | `@gamma/partner@v1` (Odoo) | `@delta/purchase@v1` (ERPNext) | `@epsilon/accounting@v1` (Odoo) |
+|---|---|---|---|
+| kelas | Partner, PartnerCategory, PartnerTag, Country | Supplier, PurchaseOrder, PurchaseOrderItem, PurchaseReceipt, PurchaseReceiptItem, PurchaseOrderItemBalance (grouped) | Account, Journal, JournalEntry, JournalItem, Payment, Reconciliation |
+| pin | – | **`@beta/stock@v1`** (Item, UOM, Warehouse, `item`/`uom`/`conversion_factor`/`warehouse` dipakai langsung) | **`@gamma/partner@v1`** (Partner) |
+| peran | semua Thing saja | PurchaseReceipt → Event; **sengaja tidak Flow** ("penerimaan akan terhitung dua kali dengan buku besar stok") | Account → **Resource**; **JournalItem → Flow** (`balance`/`account`/`item_date`); JournalEntry, Payment → Event |
+| arah | – | tanda di baris penerimaan (retur negatif) | debit/kredit ≥ 0, `balance` = debit − kredit bertanda; `payment_amount` positif, arah dari `payment_type` |
+| satuan | – | qty dalam satuan beli + faktor + qty satuan stok (expression) | satu mata uang |
+| panggilan / ditolak | 75 / 0 (3 seal gagal karena database) | 146 / 2 (`name_taken`, `operation_arguments`) + 1 lubang `not_a_class` | 141 / 2 (`not_attached`, `operation_arguments`) + 1 lubang `not_a_class` |
+
+Laporan ketiga penulis cocok dengan transkrip. Prefix ketiganya berbeda
+(`prt`, `pur`, `acc`), jumlah URI yang di-mint sama dengan jumlah slot: U1
+tidak terulang, tapi hanya karena kebetulan.
+
+**Jebakan tahap ini:**
+
+- **Pakai ulang dari katalog: terjadi, tapi terbelah.** `buku-besar` memakai
+  `Partner` milik `mitra`; `pembelian` menolaknya ("`supplier_rank` harus naik
+  setiap pembelian dan modul ini tidak akan menaikkannya; memaksa modul kontak
+  ke setiap pemakai") dan membuat `Supplier` sendiri. `pembelian` memakai
+  `@beta/stock` langsung sampai ke slot-slotnya. Tidak ada yang memakai
+  `@alpha/stock`.
+- **T8 — terjadi persis seperti prediksi: tidak ada jalur.** Pemasok yang sama
+  sekarang punya dua identitas di dua modul: `Supplier` (`@delta/purchase`)
+  dan `Partner` (`@gamma/partner`, lewat `@epsilon/accounting`). Tidak ada
+  yang menghubungkan keduanya; "utang per pemasok" (dari jurnal) dan "PO
+  terbuka per pemasok" (dari pembelian) memakai dua daftar pemasok yang
+  berbeda. Di sisi lain, kasus Kakao Lestari (pemasok sekaligus pelanggan)
+  ditangani wajar oleh `Partner` (satu entity, dua peringkat).
+- **T1 — ditolak di dalam satu draft, masih diam antar modul.** `pembelian`
+  mencoba `add_slot item` dan ditolak `name_taken` karena `@beta/stock` yang
+  di-pin sudah memilikinya (⛔, jelas). Tapi karena `@delta/purchase` mem-pin
+  `@beta/stock`, aplikasi yang memakai `@alpha/stock` dan `@delta/purchase`
+  bersama akan membawa **dua kelas `Warehouse`**. Diuji di Tahap D.
+- **T6 — dua hal sekaligus.** Pengisi `Flow` sekarang `StockLedgerEntry` (kg,
+  bungkus) dan `JournalItem` (rupiah); pengisi `Resource` sekarang `Product`,
+  `Item`, dan **`Account`**. Aplikasi yang menjumlahkan `Flow` per `affects`
+  akan ikut menjumlahkan saldo rekening, dan satuan jumlahnya campur (T5 dan
+  T6 bertemu). Apakah laporan `covers` memperlihatkannya diuji di Tahap D.
+- **T7 — penulis pembelian melihatnya dan menghindar.** Ia sengaja tidak
+  mengisi `Flow` supaya penerimaan tidak terhitung dua kali, dan menulis di
+  deskripsi bahwa aplikasi harus memposting satu `StockLedgerEntry` per baris
+  penerimaan. Pencatatan ganda tetap ada di data (formulir penerimaan dan
+  formulir stok); tinggal dilihat di Tahap E apakah angkanya diam-diam dobel.
+
+**Temuan yang tidak diprediksi (belum diperbaiki, sesuai §10):**
+
+- **U3 ☠ — sekarang mengenai pengikat peran.** Diperiksa dengan `plan_for`
+  compiler (tanpa menulis data): di `@epsilon/accounting`, `balance`
+  (expression, pengikat **`amount`** Flow) dan `item_date` (parameter,
+  pengikat **`moment`** Flow) berstatus `stated`. Jadi setiap aplikasi yang
+  menjumlahkan `Flow` membaca `balance` kosong untuk semua baris jurnal,
+  kecuali ada staf yang mengetik saldo sendiri di formulir, karena kolom itu
+  muncul sebagai medan isian. Hal yang sama untuk `stock_qty`,
+  `ordered_stock_qty`, dan `line_amount` di `@delta/purchase`; akibatnya
+  `PurchaseOrderItemBalance.received_stock_qty` menjumlahkan kolom yang hanya
+  terisi kalau staf mengetiknya. Penulis `buku-besar` juga menaruh
+  `parent_state` dan `item_account_type` sebagai parameter, dan menyuruh
+  aplikasi memfilter pada keduanya.
+- **U4 — sekarang ⛔, tapi setelah seal.** `PurchaseOrderItemBalance` ditolak
+  compiler: `pending_stock_qty` ditulis `line_ordered_stock_qty -
+  received_stock_qty` tanpa `{…}` (`expected arithmetic over {columns}`). Modul
+  sudah ter-seal dan tercantum di katalog, tapi tabel ini tidak akan pernah
+  bisa dihitung. Seal tidak menjalankan pemeriksaan yang sama dengan compiler.
+- **U6 👁 — satu aturan per slot, ditimpa tanpa penolakan.** Aturan turunan
+  menempel di slot, bukan di pasangan kelas–slot. `pembelian` memakai
+  `stock_qty` di baris PO dan baris penerimaan: aturan penerimaan menimpa
+  aturan PO. Kemudian `parameter` menimpa `expression` pada
+  `ordered_stock_qty`. Kedua kejadian hanya terlihat dengan membaca `draft`
+  teliti; langkahnya diterima tanpa kata.
+- **U7 ✗ — `where` hanya bisa menyaring kelas, bukan nilai.** Dua penulis
+  terpisah butuh filter status ("posted" di jurnal, "Submitted" di
+  penerimaan) dan sama-sama ditolak `not_a_class`. Keduanya mundur ke
+  konvensi prosa: "jumlahkan hanya item yang posted" (buku besar) dan "catat
+  penerimaan hanya setelah barang masuk; koreksi dengan baris balik"
+  (pembelian). Ini kebutuhan nyata dari dua modul independen (§2 butir 3).
+- **U8 — tanda `required` tidak tampak di draft.** `mitra` mengira
+  `set_slot … required=true` tidak tersimpan karena `draft` tidak
+  menunjukkannya; di YAML hasil seal kelima-limanya ada. Kecil, soal
+  keterlihatan.
+- **Utang bertanda negatif (catatan, bukan temuan mekanisme).** Di
+  `@epsilon/accounting` utang ke pemasok adalah saldo negatif pada rekening
+  utang. Kebenaran menanyakan utang sebagai angka positif; aplikasi harus
+  membalik tandanya. Deskripsinya jelas, jadi yang diuji di Tahap D adalah
+  apakah implementer membacanya.
+
 ### Tabel hasil
 
 *(bentuk §8)*
