@@ -8,8 +8,9 @@ first thing, then the second thing after they fix the first.
 
 So this runs the same readers over the same sealed content and collects what
 they say. It decides nothing of its own: every refusal here came out of
-`plan_for`, which is the function the compiler calls before it emits a line of
-SQL. A map this calls clean is a map that compiles.
+`plan_for` and the emitter after it — the compiler's own reading, stopping short
+of the database. A map this calls clean is a map that compiles. It once stopped
+at the plan, and called maps clean whose expressions the emitter then refused.
 
 Nothing is written, nothing is sealed, and the operational store is not
 touched. It is a read, and it is the read Studio makes while somebody types.
@@ -22,9 +23,22 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT / "components" / "compiler"))
 sys.path.insert(0, str(ROOT / "components" / "generator"))
 
-from compile import plan_for, tables  # noqa: E402
+from compile import emit, emit_entities, plan_for, tables  # noqa: E402
 from components.refusal import Refusal  # noqa: E402
 from generate import read_map  # noqa: E402
+
+
+def compiled(map_):
+    """Each table the map can fill, as (class, plan, refusal): one of the two
+    is None. Everything the compiler does before it opens a connection."""
+    for class_name in tables(map_):
+        try:
+            plan_ = plan_for(map_, class_name)
+            (emit if plan_["shape"] == "grouped" else emit_entities)(map_, plan_)
+        except Refusal as exc:
+            yield class_name, None, exc
+            continue
+        yield class_name, plan_, None
 
 
 def check(store, name, version, *, map_=None):
@@ -45,10 +59,8 @@ def check(store, name, version, *, map_=None):
             # check. One refusal, and it is the only true one.
             return {**out, "clean": False, "refusals": [exc.as_dict()]}
 
-    for class_name in tables(map_):
-        try:
-            plan_ = plan_for(map_, class_name)
-        except Refusal as exc:
+    for class_name, plan_, exc in compiled(map_):
+        if exc is not None:
             out["clean"] = False
             out["refusals"].append({**exc.as_dict(), "class": class_name})
             out["tables"].append({"class": class_name, "holds": False,
@@ -68,4 +80,4 @@ def check(store, name, version, *, map_=None):
     return out
 
 
-__all__ = ["check"]
+__all__ = ["check", "compiled"]

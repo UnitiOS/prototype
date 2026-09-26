@@ -454,3 +454,63 @@ def _annotations(path):
 def _stamped(path, key):
     """One metadata scalar, read out of the sealed file itself."""
     return datetime.fromisoformat(_annotations(path)[key])
+
+
+def _ruled_draft(tmp_path, *, expression, on_the_grouping):
+    """A draft whose one rule is either broken or in the wrong place."""
+    boxes = ["kind", "box_label", "box_size"]
+    slots = {
+        "kind": {"slot_uri": "uniti:kind", "designates_type": True},
+        "box_label": {"slot_uri": "uniti:box_label", "identifier": True},
+        "box_size": {"slot_uri": "uniti:box_size", "range": "decimal"},
+        "doubled": {"slot_uri": "uniti:doubled", "range": "decimal",
+                    "equals_expression": expression},
+        "total_label": {"slot_uri": "uniti:total_label"},
+        "total_size": {"slot_uri": "uniti:total_size", "range": "decimal",
+                       "annotations": {"aggregate": {"value": {
+                           "over": "Box", "sum": "box_size",
+                           "by": {"total_label": "box_label"}}}}},
+    }
+    totals = ["total_label", "total_size"]
+    (totals if on_the_grouping else boxes).append("doubled")
+    document = {
+        "id": "https://uniti.example/business", "name": "business",
+        "title": "Ruled", "description": "One rule.",
+        "prefixes": {"linkml": "https://w3id.org/linkml/",
+                     "uniti": "https://uniti.example/business/"},
+        "default_prefix": "uniti", "imports": ["linkml:types"],
+        "default_range": "string",
+        "classes": {"Box": {"slots": boxes}, "BoxTotal": {"slots": totals}},
+        "slots": slots,
+        "annotations": {"transcript": "ruled.txt",
+                        "valid_from": "2026-05-01T00:00:00Z"},
+    }
+    path = tmp_path / "ruled.yaml"
+    path.write_text(yaml.safe_dump(document, sort_keys=False), encoding="utf-8")
+    (tmp_path / "ruled.txt").write_text("ruled", encoding="utf-8")
+    return path
+
+
+@pytest.mark.parametrize("expression, on_the_grouping, code", [
+    ("{total_size} * 2", True, None),
+    ("total_size * 2", True, "expression_not_arithmetic"),
+    ("{box_size} * 2", False, "rule_on_a_recorded_class"),
+])
+def test_a_draft_seals_only_if_every_table_it_can_fill_compiles(
+        conn, tmp_path, expression, on_the_grouping, code):
+    """The seal runs the same reading `check` does. A module whose rule the
+    compiler would refuse used to be sealed and listed in the catalogue, with a
+    table in it that could never be computed."""
+    from components.refusal import Refusal
+    draft = _ruled_draft(tmp_path, expression=expression,
+                         on_the_grouping=on_the_grouping)
+    into = tmp_path / "into"
+    if code is None:
+        assert seal(conn, draft, actor_id="test", into=into)["version"] == "v1"
+        return
+    before = _counts(conn)
+    with pytest.raises(Refusal) as caught:
+        seal(conn, draft, actor_id="test", into=into)
+    assert caught.value.code == code
+    assert not into.exists()
+    assert _counts(conn) == before

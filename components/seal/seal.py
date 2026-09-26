@@ -347,6 +347,22 @@ def role_refusals(view, draft, name):
                 )
 
 
+def _compiles(view, draft_path):
+    """Every table the draft can fill compiles, or the compiler's refusal.
+
+    The same reading `check` makes and Studio shows as a blocking hole, stopping
+    at the first as a gate does. Without it a module whose rule the compiler
+    refuses was sealed, listed in the catalogue, and could never be computed.
+    """
+    # Imported here: the compiler reads this module's URI_PREDICATE.
+    from components.modules.check import compiled
+    map_ = {"path": draft_path, "view": view, "version": None,
+            "label": draft_path.name}
+    for _, _, refusal in compiled(map_):
+        if refusal is not None:
+            raise refusal
+
+
 def _one_version_per_module(store, draft, name):
     """No module reachable from this draft appears at two versions.
 
@@ -650,6 +666,7 @@ def seal(conn, draft_path, *, actor_id, into=None, sealed_at=None, store=None):
     _roles(view, draft, draft_path.name)
     annotations = draft.get("annotations") or {}
     facts = _facts(annotations, ranges, draft_path.name)
+    _compiles(view, draft_path)
 
     valid_from = _valid_from(annotations, draft_path.name)
     _flat(annotations, draft_path.name)

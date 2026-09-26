@@ -382,3 +382,36 @@ def test_plan_and_emit_reconciliation(map_):
     assert "CREATE TABLE \"p_reconciliation\"" in ddl[1]
     assert "GROUP BY 1, 2" in select
 
+
+
+def test_check_reads_an_expression_the_way_the_compiler_does(tmp_path):
+    """`check` said "holds" for an expression the compiler then refused: it
+    planned the table and never emitted it. A map it calls clean compiles."""
+    from components.modules.check import check
+
+    def change(document):
+        document["slots"]["rec_expected"]["equals_expression"] = "{rec_in} - rec_out"
+
+    report = check(None, "fixture", "v1", map_=_variant(tmp_path, change))
+    assert not report["clean"]
+    assert [(r["class"], r["code"]) for r in report["refusals"]] == [
+        ("Reconciliation", "expression_not_arithmetic")]
+
+
+def test_check_refuses_a_total_over_a_table_the_map_computes(tmp_path):
+    """A computed table has no rows in the log to total. The compiler says so
+    when it emits the source; `check` has to say it too."""
+    from components.modules.check import check
+
+    def change(document):
+        document["classes"]["Summary"] = {"slots": ["sum_thing", "sum_in"]}
+        document["slots"]["sum_thing"] = {"slot_uri": "fx:sum_thing", "range": "Thing"}
+        document["slots"]["sum_in"] = {
+            "slot_uri": "fx:sum_in", "range": "decimal",
+            "annotations": {"aggregate": {"value": {
+                "over": "Reconciliation", "sum": "rec_in",
+                "by": {"sum_thing": "rec_thing"}}}}}
+
+    report = check(None, "fixture", "v1", map_=_variant(tmp_path, change))
+    assert ("Summary", "no_type_slot") in [
+        (r["class"], r["code"]) for r in report["refusals"]]
