@@ -109,6 +109,7 @@ CODES = {
     "role_has_no_rows": "a rule over a role nothing concrete descends from",
     "two_rules_on_a_column": "a column carrying more than one rule",
     "no_aggregate": "a class no rule derives a table for",
+    "rule_on_a_recorded_class": "a rule on a class whose rows are stated, where nothing computes it",
     "groupings_disagree": "aggregates on one class grouping by different sets",
     "grouped_by_unknown": "a grouping naming a column the class does not have",
     "grouped_by_derived": "a grouping naming a column the class derives",

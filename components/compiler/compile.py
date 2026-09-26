@@ -789,6 +789,28 @@ def plan_entities(map_, class_name):
             )],
         )
     cols = columns(map_, class_name)
+    # Every column here is read out of the log, as whatever somebody stated. A
+    # rule on one would never run: the column would be empty on every row and
+    # a field on every form, and a role binding it would read nothing at all.
+    slots = {str(slot.name): slot
+             for slot in map_["view"].class_induced_slots(class_name)}
+    ruled = [col["name"] for col in cols
+             if slots[col["name"]].equals_expression
+             or _annotation(slots[col["name"]], "parameter")]
+    if ruled:
+        raise CompileError(
+            "rule_on_a_recorded_class",
+            where=class_name,
+            expected=f"no rule on {class_name}: it has no aggregate, so its rows "
+                     f"are what people state, and nothing computes a column of it",
+            got=f"{', '.join(ruled)}, which carry a rule",
+            repairs=[
+                Repair("take the rule off, and the field is stated like the rest",
+                       options=ruled),
+                Repair("or compute it in a table of its own: a class with an "
+                       "aggregate, where the rule has rows to run over"),
+            ],
+        )
     if any(col["name"] == IDENTITY_COLUMN for col in cols):
         raise CompileError(
             "identity_column_taken",

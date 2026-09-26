@@ -183,6 +183,59 @@ def test_aggregate_cte_includes_convert():
     assert "sum(((t0_m.value)::numeric * coalesce(t0_cv.factor, 1))) AS \"rec_in\"" in cte
 
 
+def _variant(tmp_path, change):
+    """The fixture with one change, read back as a map."""
+    import yaml
+    document = yaml.safe_load(MAP.read_text(encoding="utf-8"))
+    change(document)
+    path = tmp_path / "v1.yaml"
+    path.write_text(yaml.safe_dump(document, sort_keys=False), encoding="utf-8")
+    return read_map(path)
+
+
+@pytest.mark.parametrize("rule", [
+    {"equals_expression": "{thing_price} * 2"},
+    {"annotations": {"parameter": {"value": {"of": "thing_base_measure",
+                                             "slot": "measure_name"}}}},
+])
+def test_a_rule_on_a_class_whose_rows_are_recorded_is_refused(tmp_path, rule):
+    """A class with no aggregate is a list of what people stated. Its columns
+    are read out of the log and nothing computes them, so a rule there would
+    be a column that is always empty — and a form field somebody types into.
+    Refused, rather than left silent."""
+    from compile import CompileError, plan_for
+
+    def change(document):
+        document["classes"]["Thing"]["slots"].append("thing_doubled")
+        document["slots"]["thing_doubled"] = {
+            "slot_uri": "fx:thing_doubled", "range": "decimal", **rule}
+
+    variant = _variant(tmp_path, change)
+    with pytest.raises(CompileError) as caught:
+        plan_for(variant, "Thing")
+    assert caught.value.code == "rule_on_a_recorded_class"
+    assert "thing_doubled" in caught.value.got
+    # The one class that computes is untouched by it.
+    assert plan_for(variant, "Reconciliation")["shape"] == "grouped"
+
+
+def test_check_says_a_rule_on_a_recorded_class_does_not_hold(tmp_path):
+    """`check` is what Studio shows as a blocking hole, so this is the refusal
+    a module author meets while typing, before anything is sealed."""
+    from components.modules.check import check
+
+    def change(document):
+        document["classes"]["Thing"]["slots"].append("thing_doubled")
+        document["slots"]["thing_doubled"] = {
+            "slot_uri": "fx:thing_doubled", "range": "decimal",
+            "equals_expression": "{thing_price} * 2"}
+
+    report = check(None, "fixture", "v1", map_=_variant(tmp_path, change))
+    assert not report["clean"]
+    assert [(r["class"], r["code"]) for r in report["refusals"]] == [
+        ("Thing", "rule_on_a_recorded_class")]
+
+
 def test_plan_and_emit_reconciliation(map_):
     from compile import plan, emit
     p = plan(map_, "Reconciliation")
