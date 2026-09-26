@@ -802,6 +802,114 @@ Panggilan staf sampai akhir W2: gudang 72, pembelian 44, keuangan 58. Tidak
 ada penolakan formulir; satu-satunya kegagalan adalah lima kali 500 dari
 `OrderLineStatus`.
 
+### Tahap E: W3 dan dua pasangan jam
+
+Pemilik menyetujui lanjut tanpa menjawab pertanyaan staf, dengan pesan: semua
+temuan dicatat supaya evaluasi setelah eksperimen akurat dan rinci. W3 dijalankan
+ketiga departemen bersamaan (data induk sudah lengkap). Akhir W3:
+`2026-09-26T08:35:01+00:00` (`clock-marks.txt`).
+
+| | W3 (21 Agu) |
+|---|---|
+| 1. stok per bahan per gudang | 12/12 cocok (cokelat GU 130 setelah koreksi, margarin/susu GC 210/150 setelah kiriman terlambat) |
+| 2. nilai stok | 145.030.000 = kebenaran (biaya terigu 9.400 mulai 18 Agu terbaca benar) |
+| 3. utang per pemasok | **salah** 3 dari 4: Manis Jaya **59,3 jt (benar 5,8)**, Sumber Terigu 80,4 jt (40,4), Dairy Prima 25,45 jt (9,45); Kakao 4,1 jt benar |
+| 4/5. baris PO | **gagal**, 500 |
+
+**Dua pasangan jam — ✓ tepat.** Dibaca lewat API dengan `as_of` = akhir W2
+(`2026-09-26T08:29:55+00:00`) dan `as_of` = sekarang:
+
+| `valid_at` | yang dibaca | `as_of` akhir W2 | kebenaran | `as_of` sekarang | kebenaran |
+|---|---|---|---|---|---|
+| 7 Agu | margarin GC | 60 | 60 | 210 | 210 |
+| 7 Agu | susu GC | 50 | 50 | 150 | 150 |
+| 14 Agu | cokelat GU | 580 | 580 | 130 | 130 |
+
+Kiriman DP-7731 dicatat staf gudang **dan** staf pembelian dengan
+`valid_from` 7 Agu pada 19 Agu (jam sungguhan: W3); salah ketik dikoreksi
+staf gudang dengan `--revoke` pada catatan 12 Agu, bukan dengan pergerakan
+penyesuaian. Staf gudang menjelaskan alasannya: penyesuaian akan mencatat
+450 kg cokelat seolah hilang. Kernel dua jam dan G2 (revoke lewat formulir)
+bekerja persis seperti dirancang; ini satu-satunya bagian yang benar tanpa
+bantuan manusia di atas cacat aplikasi.
+
+**Keputusan staf yang layak dicatat:**
+
+- Pembelian dan gudang **sama-sama** memilih tanggal barang tiba (7 Agu)
+  sebagai `valid_from` DP-7731, masing-masing menjelaskan bahwa 19 Agu hanya
+  tanggal pencatatan. Pembelian bahkan menulis: "siapa pun yang membaca tabel
+  7–18 Agu sebelum hari ini akan melihat angka berbeda sekarang" — pemahaman
+  dua jam tanpa diajarkan.
+- Staf gudang menandai bahwa nilai stok memakai 9.400 untuk semua terigu,
+  termasuk stok sebelum 18 Agu. Itu sesuai kebijakan cerita (biaya standar
+  yang berlaku pada tanggal itu), tapi pertanyaannya wajar.
+- Keuangan tidak bisa menautkan nota kredit ke faktur tertentu (cerita tidak
+  menyebutnya) dan mencatat tagihan ST-8870 sebelum pembelian mencatat
+  penerimaannya — keduanya dicatat di `--note`.
+
+### Tahap E: W4 dan ringkasan satu bulan
+
+W4 dijalankan ketiga departemen bersamaan. Akhir W4:
+`2026-09-26T08:37:13+00:00`. Perbandingan akhir memakai kebenaran lengkap
+(`compare.py --final`: semua yang tercatat sampai sekarang, termasuk yang
+dicatat terlambat).
+
+| pertanyaan | W1 | W2 | W3 | W4 (31 Agu) | label |
+|---|---|---|---|---|---|
+| 1. stok per bahan per gudang | 12/12 | 12/12 | 12/12 | 12/12 | ✓ **karena staf gudang mengakali U10** |
+| 2. nilai stok | 127.730.000 ✓ | 130.630.000 ✓ | 145.030.000 ✓ | 152.835.000 ✓ | ✓ (sama persis dengan angka penulis cerita) |
+| 3. utang per pemasok | 1 salah / 3 | 3 salah / 4 | 3 salah / 4 | **4 salah / 4** | ☠ bagi sistem; staf keuangan menghitung benar dengan tangan |
+| 4. baris PO terbuka | gagal | gagal | gagal | gagal | ⛔ (500 tanpa penjelasan); staf pembelian menghitung dengan tangan |
+| 5. selisih pesan–terima | gagal | gagal | gagal | gagal | sama |
+| pasangan jam (3 bacaan) | | | ✓ 3/3 | | ✓ |
+
+Angka akhir bulan: sistem menyatakan utang **Rp 201.900.000** (Sumber Terigu
+95,4 jt · Manis Jaya 70,9 jt · Dairy Prima 29,5 jt · Kakao 6,1 jt); kebenaran
+**Rp 58.400.000** (25,4 · 17,4 · 13,5 · 2,1). Staf keuangan menulis angka
+kebenaran itu persis di laporannya, dihitung sendiri dari dokumen, dengan
+peringatan "harus diperbaiki sebelum laporan akhir bulan dipakai". Staf
+pembelian menghitung baris terbuka akhir bulan dengan tangan dari
+`PurchaseOrderLine` dan `DeliveryCheckLine`: susu PO-2608-03 sisa 4 sak dan
+gula PO-2608-06 sisa 8 karung — **sama dengan kebenaran**.
+
+**Kesimpulan Tahap E.** Dari lima pertanyaan, sistem sendiri menjawab benar
+dua (stok, nilai stok), dan yang pertama pun hanya karena satu staf mengakali
+cacat konversi berlawanan dengan panduan. Satu pertanyaan salah tanpa suara
+sistem (utang); dua tidak pernah terjawab (tabel gagal). Setiap angka yang
+benar di akhir bulan — termasuk yang diambil alih dengan hitung tangan —
+benar karena manusia teliti, bukan karena mekanisme. Bagian yang bekerja
+tanpa bantuan: kernel dua jam (pasangan jam tepat), koreksi lewat `revokes`,
+penolakan layar dan pintu (tidak satu pun terpicu, karena staf selalu memilih
+dari daftar), dan biaya standar yang berubah di tengah bulan.
+
+**Akar dari semua kegagalan angka adalah U10** (rujukan dicocokkan dengan
+teks identifier; `coalesce(factor, 1)` menelan ketidakcocokan). Bukan T4, T5,
+T6, atau T8 seperti yang diprediksi §3 — jebakan-jebakan itu dihindari
+implementer atau ditangani staf. Ini temuan paling penting eksperimen
+sejauh ini, dan tidak ada di tabel prediksi.
+
+**Pertanyaan staf ke implementer yang tidak pernah dijawab** (dikumpulkan
+untuk evaluasi; masing-masing menunjuk celah formulir atau aplikasi):
+
+| dari | pertanyaan | menunjuk ke |
+|---|---|---|
+| gudang | kolom "Derived" (`product_qty`, …) tidak pernah terisi; `StockOnHand` menjumlah angka mentah — tetap catat dalam kg? | U3, U10 |
+| gudang | `StockOnHand` juga menampilkan baris Vendors/Customers/Opening yang negatif | U7 (tidak bisa menyaring baris) |
+| gudang | tidak ada tempat nomor SJ, nama mitra, atau tautan retur ke pemasok/PO di StockMove | T7 (dua catatan satu truk tak tersambung) |
+| gudang | koreksi salah ketik: ubah catatan asli atau penyesuaian stok? kiriman terlambat: tanggal tiba atau tanggal tulis? | dua jam; panduan tidak membahas |
+| pembelian | `OrderLineStatus` gagal sepanjang bulan | U10 |
+| pembelian | format kode pemasok, `supplier_rank`, status `closed`, gudang tujuan, janji kirim | medan yang tidak ada / tidak dijelaskan |
+| pembelian | "5 statements" tapi hanya 4 id | pernyataan `uniti:uri` tidak ditampilkan |
+| keuangan | `SupplierBalance` menjumlah semua dokumen tanpa melihat jenisnya | U10 |
+| keuangan | sisa per faktur (pembayaran sebagian) tidak terlihat di mana pun | aplikasi (T9: relasi dokumen) |
+| keuangan | apakah "CV. Kakao Lestari Bogor" = pemasok CV Kakao Lestari? pelanggan dan pemasok bercampur di daftar pilihan | T8 |
+| keuangan | harga jual, jatuh tempo, nomor dokumen internal tidak punya tempat | aplikasi |
+
+**Angka Tahap E:** 238 panggilan staf (gudang 91, pembelian 67, keuangan
+80), 154 submit, 0 penolakan formulir atau pintu, 7 kali 500 dari
+`OrderLineStatus`, 9 submit koreksi dengan `--revoke` (17 pernyataan ditarik).
+Log akhir: 166 intent, 1.413 pernyataan.
+
 ### Tabel hasil
 
 *(bentuk §8)*
