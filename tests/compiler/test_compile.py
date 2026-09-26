@@ -180,7 +180,10 @@ def test_aggregate_cte_includes_convert():
     )
     assert "t0_cv ON t0_cv.match_0 = t0_cv_s0.value" in cte
     assert "t0_cv.match_1 = t0_cv_s1.value" in cte
-    assert "sum(((t0_m.value)::numeric * coalesce(t0_cv.factor, 1))) AS \"rec_in\"" in cte
+    # No factor is assumed: a row that found none is flagged, not counted x1.
+    assert "sum(((t0_m.value)::numeric * t0_cv.factor)) AS \"rec_in\"" in cte
+    assert ("bool_or(t0_m.value IS NOT NULL AND t0_cv.factor IS NULL) "
+            "AS \"unconverted rec_in\"") in cte
 
 
 def _variant(tmp_path, change):
@@ -234,6 +237,134 @@ def test_check_says_a_rule_on_a_recorded_class_does_not_hold(tmp_path):
     assert not report["clean"]
     assert [(r["class"], r["code"]) for r in report["refusals"]] == [
         ("Thing", "rule_on_a_recorded_class")]
+
+
+def _with_text_slot(document, class_name, slot_name):
+    document["classes"][class_name]["slots"].append(slot_name)
+    document["slots"][slot_name] = {"slot_uri": f"fx:{slot_name}", "range": "string"}
+
+
+def test_a_conversion_matching_a_reference_to_text_is_refused(tmp_path):
+    """`conversion_measure` names a Measure; `transfer_measure_code` is text.
+    In the log one is a URI and the other is what somebody typed, so they
+    never meet — and a conversion that never matches used to count as x1."""
+    from compile import CompileError
+
+    def change(document):
+        _with_text_slot(document, "Transfer", "transfer_measure_code")
+
+    variant = _variant(tmp_path, change)
+    spec = {
+        "over": "Transfer",
+        "sum": "transfer_quantity",
+        "by": {"rec_thing": "transfer_thing"},
+        "convert": {"using": "MeasureConversion",
+                    "on": {"conversion_measure": "transfer_measure_code"},
+                    "factor": "conversion_factor"},
+    }
+    with pytest.raises(CompileError) as caught:
+        _read_aggregate(variant, "test.slot", spec)
+    assert caught.value.code == "key_kinds_differ"
+    assert "transfer_measure_code" in caught.value.got
+
+
+def test_a_conversion_between_unrelated_classes_is_refused(map_):
+    """Two references can still never meet: a Thing is never a Measure."""
+    from compile import CompileError
+    spec = {
+        "over": "Transfer",
+        "sum": "transfer_quantity",
+        "by": {"rec_thing": "transfer_thing"},
+        "convert": {"using": "MeasureConversion",
+                    "on": {"conversion_measure": "transfer_thing"},
+                    "factor": "conversion_factor"},
+    }
+    with pytest.raises(CompileError) as caught:
+        _read_aggregate(map_, "test.slot", spec)
+    assert caught.value.code == "key_kinds_differ"
+
+
+def test_a_grouping_that_meets_a_reference_with_text_is_refused(tmp_path):
+    """A key column holds one kind of value. `rec_thing` names a Thing, and a
+    source grouped into it by a text code would make rows of its own that no
+    other aggregate ever lands in."""
+    from compile import CompileError, plan
+
+    def change(document):
+        _with_text_slot(document, "CountLine", "count_thing_code")
+        document["slots"]["rec_counted"]["annotations"]["aggregate"]["value"]["by"] = {
+            "rec_thing": "count_thing_code", "rec_place": "count_place"}
+
+    with pytest.raises(CompileError) as caught:
+        plan(_variant(tmp_path, change), "Reconciliation")
+    assert caught.value.code == "key_kinds_differ"
+    assert "count_thing_code" in caught.value.got
+
+
+class _OneMap:
+    """Enough of a store for the loader to state facts under the fixture."""
+
+    def path(self, name, version):
+        return MAP
+
+    def view(self, path):
+        return read_map(MAP)["view"]
+
+
+@pytest.fixture(scope="module")
+def kernel():
+    import os
+    sys.path.insert(0, str(ROOT / "components" / "kernel"))
+    from perform import connect
+    with connect(os.environ["UNITI_DSN"]) as conn:
+        yield conn
+
+
+def test_a_row_with_no_conversion_leaves_its_cell_empty(kernel, map_):
+    """Five boxes of flour have no conversion to anything. Counting them as
+    five kilograms is a number that looks right and is not; leaving them out
+    is a total that is short without saying so. The cell is empty instead,
+    and a group whose rows all convert is untouched."""
+    from datetime import datetime, timedelta, timezone
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import load_facts
+    from compile import preview
+
+    def entity(uri, cls, **facts):
+        return {"uri": uri, "class": cls, "facts": facts}
+
+    load_facts.load(kernel, {"map": "@fx/fixture@v1", "actions": [{
+        "action": "set_up", "valid_from": "2026-01-02T00:00:00+00:00",
+        "entities": [
+            entity("fx:kg", "Measure", measure_name="kg"),
+            entity("fx:sack", "Measure", measure_name="sack"),
+            entity("fx:box", "Measure", measure_name="box"),
+            entity("fx:flour", "Thing", thing_name="flour", thing_base_measure="fx:kg"),
+            entity("fx:sugar", "Thing", thing_name="sugar", thing_base_measure="fx:kg"),
+            entity("fx:store", "InnerPlace", place_name="store"),
+            entity("fx:vendor", "OuterPlace", place_name="vendor"),
+            entity("fx:flour_sack", "MeasureConversion", conversion_thing="fx:flour",
+                   conversion_measure="fx:sack", conversion_factor="25"),
+            entity("fx:sugar_kg", "MeasureConversion", conversion_thing="fx:sugar",
+                   conversion_measure="fx:kg", conversion_factor="1"),
+            entity("fx:t1", "Transfer", transfer_thing="fx:flour", transfer_from="fx:vendor",
+                   transfer_to="fx:store", transfer_quantity="2", transfer_measure="fx:sack"),
+            entity("fx:t2", "Transfer", transfer_thing="fx:flour", transfer_from="fx:vendor",
+                   transfer_to="fx:store", transfer_quantity="5", transfer_measure="fx:box"),
+            entity("fx:t3", "Transfer", transfer_thing="fx:sugar", transfer_from="fx:vendor",
+                   transfer_to="fx:store", transfer_quantity="3", transfer_measure="fx:kg"),
+        ]}]}, _OneMap(), actor_id="test")
+    kernel.commit()
+
+    later = (datetime.now(timezone.utc) + timedelta(days=1)).isoformat()
+    built = preview(kernel, map_, "Reconciliation", valid_at=later, as_of=later)
+    names = [c["name"] for c in built["plan"]["columns"]]
+    rows = {row[0]: dict(zip(names, row)) for row in built["rows"]}
+    assert rows["fx:flour"]["rec_in"] is None
+    assert rows["fx:flour"]["rec_expected"] is None
+    assert float(rows["fx:sugar"]["rec_in"]) == 3
+    # Nothing converted out of the store, which is a nought and not a gap.
+    assert float(rows["fx:flour"]["rec_out"]) == 0
 
 
 def test_plan_and_emit_reconciliation(map_):

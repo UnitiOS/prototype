@@ -106,6 +106,7 @@ CODES = {
     "not_summable": "a rule totalling something whose range cannot be totalled",
     "no_grouping": "an aggregate with no `by`, which groups nothing",
     "types_disagree": "slots filling one binding whose ranges do not agree",
+    "key_kinds_differ": "values matched to each other that can never be equal: a reference and text, or references to unrelated classes",
     "role_has_no_rows": "a rule over a role nothing concrete descends from",
     "two_rules_on_a_column": "a column carrying more than one rule",
     "no_aggregate": "a class no rule derives a table for",

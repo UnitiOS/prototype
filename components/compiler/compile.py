@@ -102,6 +102,10 @@ EMPTY = {"sum": "0"}
 
 SUMMABLE = {"numeric", "bigint", "double precision"}
 
+# The flag an aggregate with a `convert` carries beside its total: some row of
+# the group found no factor. Not a name a map can write, so never a column.
+_UNCONVERTED = "unconverted "
+
 # A reference to another column of the same class, inside an equals_expression.
 _REF = re.compile(r"\{([^{}]+)\}")
 
@@ -282,6 +286,57 @@ def _one_type(map_, where, slots, role):
             )],
         )
     return types.pop()
+
+
+def _range(view, slot):
+    return str(slot.range or view.schema.default_range or "string")
+
+
+def _meets(view, one, other):
+    """Whether values of two ranges can ever be equal in the log.
+
+    A reference is stated as the URI of the entity it names, and anything else
+    as the text somebody typed, so a reference and a text never compare equal
+    however the entities were named. Two references meet only when one class is
+    the other or below it: a Thing is never a Measure.
+    """
+    classes = {str(name) for name in view.all_classes()}
+    if (one in classes) != (other in classes):
+        return False
+    if one not in classes:
+        return True
+    return one in view.class_ancestors(other) or other in view.class_ancestors(one)
+
+
+def _kinds_differ(view, where, what, target, sources, candidates):
+    """A refusal when a source slot can never equal the value it is matched to.
+
+    `sources` and `candidates` are (slot name, range) pairs: the slots being
+    matched, and the ones a repair may offer instead.
+    """
+    missed = [(name, range_) for name, range_ in sources
+              if not _meets(view, target, range_)]
+    if not missed:
+        return
+    is_ref = target in {str(n) for n in view.all_classes()}
+    raise CompileError(
+        "key_kinds_differ",
+        where=where,
+        expected=f"{what} holding the same kind of value as {target}: "
+                 + ("a reference to it, or to a class above or below it" if is_ref
+                    else "text, not a reference"),
+        got=", ".join(f"{name}, which is {range_}" for name, range_ in missed),
+        repairs=[Repair(
+            "match a reference with a reference and text with text; the two "
+            "never compare equal, however the entities are named",
+            options=sorted({name for name, range_ in candidates
+                            if _meets(view, target, range_)}),
+        )],
+    )
+
+
+def _pairs(view, slots):
+    return [(str(slot.name), _range(view, slot)) for slot in slots if not slot.abstract]
 
 
 def _read_aggregate(map_, where, spec):
@@ -503,9 +558,14 @@ def _read_aggregate(map_, where, spec):
                     repairs=[Repair(f"declare a slot_uri on {conv_slot_name} and "
                                     f"seal again")],
                 )
+            sources = _bound(map_, where, over, src_slot_name, "convert.on")
+            _kinds_differ(view, f"{where}: convert.on.{conv_slot_name}",
+                          f"`{src_slot_name}`", _range(view, c_slot),
+                          _pairs(view, sources),
+                          _pairs(view, view.class_induced_slots(over)))
             parsed_on.append({
                 "conv_slot_uri": c_slot.slot_uri,
-                "source_slot_uris": uris(src_slot_name, "convert.on"),
+                "source_slot_uris": [str(slot.slot_uri) for slot in sources],
             })
 
         parsed_convert = {
@@ -532,6 +592,11 @@ def _read_aggregate(map_, where, spec):
         "measure_type": measure_type,
         "by": {str(key): uris(value, "by") for key, value in by.items()},
         "by_names": {str(key): str(value) for key, value in by.items()},
+        # The source slots themselves, so the table the grouping lands in can
+        # check that each holds the kind of value its key column does.
+        "by_slots": {str(key): _pairs(view, _bound(map_, where, over, value, "by"))
+                     for key, value in by.items()},
+        "source_slots": _pairs(view, view.class_induced_slots(over)),
         "where": parsed_where,
         "convert": parsed_convert,
     }
@@ -727,6 +792,16 @@ def plan(map_, class_name):
     # The grouping in the class's own column order, so the table reads the way
     # the map wrote it rather than the way an annotation happened to be keyed.
     keys = [col["name"] for col in cols if col["name"] in grouped_by]
+
+    # A row is one combination of key values, and every aggregate lands its
+    # totals by comparing values. A source grouped by a text code into a key
+    # that names an entity makes rows of its own that nothing else joins.
+    ranges = {col["name"]: str(col["range"]) for col in cols}
+    for column, spec in aggregates.items():
+        for key in keys:
+            _kinds_differ(view, f"{class_name}.{column}: by.{key}",
+                          f"`{spec['by_names'][key]}`", ranges[key],
+                          spec["by_slots"][key], spec["source_slots"])
 
     parameters = {
         name: _read_parameter(map_, f"{class_name}.{name}", spec, keys, cols)
@@ -1008,7 +1083,7 @@ def _aggregate_cte(spec, column, alias, source_alias, keys, prefix):
             f"    ) {prefix}cv ON " + "\n                AND ".join(on_clauses)
         )
         joins.append(sub_query)
-        measure_expr = f"(({prefix}m.value)::{spec['measure_type']} * coalesce({prefix}cv.factor, 1))"
+        measure_expr = f"(({prefix}m.value)::{spec['measure_type']} * {prefix}cv.factor)"
     else:
         measure_expr = f"(({prefix}m.value)::{spec['measure_type']})"
 
@@ -1017,6 +1092,14 @@ def _aggregate_cte(spec, column, alias, source_alias, keys, prefix):
         f"           {spec['operator']}({measure_expr}) "
         f"AS {_ident(column)}"
     )
+    if spec.get("convert"):
+        # A row whose quantity found no factor. There is no factor to assume:
+        # x1 is a number that looks right and is not, and leaving the row out
+        # is a total short without saying so. The group's cell is left empty.
+        selects.append(
+            f"           bool_or({m}.value IS NOT NULL AND {prefix}cv.factor IS NULL) "
+            f"AS {_ident(_UNCONVERTED + column)}"
+        )
     joins.append(
         f"    LEFT JOIN stated {m} ON {m}.subject_id = r.subject_id\n"
         f"                        AND {m}.slot {_any_of(spec['measure_uris'])}"
@@ -1052,7 +1135,11 @@ def _column_sql(plan_, name, aliases, stack=()):
         return f"g.{_ident(name)}"
     if col["kind"] == "aggregate":
         empty = EMPTY[plan_["aggregates"][name]["operator"]]
-        return f"coalesce({aliases[name]}.{_ident(name)}, {empty})"
+        total = f"coalesce({aliases[name]}.{_ident(name)}, {empty})"
+        if plan_["aggregates"][name].get("convert"):
+            return (f"CASE WHEN {aliases[name]}.{_ident(_UNCONVERTED + name)} "
+                    f"THEN NULL ELSE {total} END")
+        return total
     if col["kind"] == "parameter":
         return f"({aliases[name]}.value)::{col['type']}"
     if col["kind"] == "unfilled":
