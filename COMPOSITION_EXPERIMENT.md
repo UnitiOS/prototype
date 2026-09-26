@@ -724,6 +724,84 @@ bukan pilihan gaya: `@alpha/stock` tidak mengisi Flow (T4), dan Flow yang ada
   dan disimpan harness ke berkas; implementer membukanya dengan Read. Isinya
   hanya keluaran klien. Satu perintah membawa `2>&1 | head -0`.
 
+### Tahap E: staf memasukkan data (W1–W2)
+
+**Cara kerja.** Tiga staf (gudang, pembelian, keuangan), masing-masing satu
+subagent sepanjang bulan yang dilanjutkan tiap minggu, seperti karyawan yang
+sama. Masing-masing hanya menerima catatan departemennya (bahasa Indonesia,
+dari `build/exp/story/W<n>-<dept>.md`), `staff-primer.md` (cara memakai layar
+lewat klien; petunjuk subjek `prefix:name` seperti di layar web), dan panduan
+implementer `staff-guide.md` apa adanya. Tidak menerima profil perusahaan,
+jadi nama Kakao Lestari yang berbeda di tiap departemen tetap jebakan. Keuangan
+diberi satu kalimat tambahan: satuan beli per bahan (pengetahuan yang wajar
+dimiliki keuangan dan dibutuhkan formulir Ingredient). Pertanyaan staf ke
+implementer dicatat, tidak dijawab.
+
+**Urutan.** W1: gudang menyiapkan satuan/gudang/lokasi → pembelian memasukkan
+pemasok → keuangan seluruh W1 (bahan, biaya standar, jenis dokumen, pelanggan,
+saldo awal, dokumen) → gudang ∥ pembelian W1. W2: pembelian (membuat Kakao
+Lestari) → gudang ∥ keuangan. Jam dinding ditandai di
+`build/exp/clock-marks.txt` (akhir W2: `2026-09-26T08:29:55+00:00`), karena
+`recorded_at` adalah jam sungguhan.
+
+**Pembanding.** `scratch/exp/compare.py` membaca tiga tabel jawaban lewat API
+yang sama (tercatat sebagai `executor`) dan membandingkannya dengan `truth.py`
+*seperti tercatat* pada akhir minggu (entri kronologis, jadi "sekarang" di log
+= akhir minggu itu).
+
+| | W1 (7 Agu) | W2 (14 Agu) |
+|---|---|---|
+| 1. stok per bahan per gudang | 12/12 cocok | 12/12 cocok (termasuk cokelat GU 580 dari salah ketik) |
+| 2. nilai stok | 118.030.000 = kebenaran | 159.180.000 = kebenaran |
+| 3. utang per pemasok | **salah**: Manis Jaya 30,3 jt (benar 20,3) | **salah** 3 dari 4: Sumber Terigu 62 jt (22), Manis Jaya 37,55 jt (27,55), Dairy Prima 25,45 jt (9,45); Kakao 4,1 jt benar |
+| 4/5. baris PO | **gagal**: 500, `DivisionByZero` | **gagal**, sama |
+
+**U10 terbukti, di ketiga tabel, dengan tiga nasib berbeda:**
+
+- **Stok: angka benar karena staf mengakali.** Staf gudang memberi subjek
+  satuan `maju:kg`, `maju:sack-25kg`, …, sedangkan `uom_name`-nya "kg",
+  "sack 25 kg". Konversi tidak pernah cocok dan faktornya jadi 1. Staf gudang
+  **menyadarinya sendiri** dari `StockOnHand` ("terigu MAIN 2.080 kg, bukan
+  4.000"), lalu mengoreksi sembilan baris ke kg/bungkus dengan `--revoke` dan
+  sejak itu selalu mencatat dalam satuan stok, berlawanan dengan panduan
+  ("sacks are fine"). Sistem tidak bersuara; manusia yang menyelamatkan.
+- **Utang: angka salah, disadari staf, tetap salah.** Semua kolom
+  `SupplierBalance` bernilai sama (jumlah semua dokumen, pembayaran ikut
+  ditambahkan). Staf keuangan melaporkannya dua minggu berturut-turut sebagai
+  pertanyaan ke implementer, lengkap dengan angka yang benar. Tidak ada cara
+  mengakali dari formulir. Label: ☠ bagi sistem, 👁 hanya karena staf
+  keuangan kebetulan menghitung sendiri.
+- **Baris PO: gagal keras.** Kunci pesanan (`pol_id`, teks) dan kunci
+  penerimaan (`dcl_order_line`, URI) tidak pernah bertemu, baris sisi-terima
+  membagi dengan 0, dan API mengembalikan **500 tanpa penolakan terstruktur**
+  (`psycopg.errors.DivisionByZero` di log API). Staf pembelian tidak bisa
+  memeriksa baris terbuka sama sekali. Label: ⛔ tapi tanpa penjelasan.
+
+**Jebakan lain yang muncul:**
+
+- **T7 — pencatatan ganda yang berbeda isi, diam.** Truk KL-221 dicatat gudang
+  500 kg (salah ketik yang ditanam) dan pembelian 50 kg. Tidak ada apa pun di
+  sistem yang membandingkan dua catatan satu truk. Keuangan juga menangkap
+  kiriman DP-7731 (faktur datang, penerimaan belum ada) — oleh manusia,
+  dari catatan, bukan dari sistem.
+- **T8 — ditangani staf dengan benar.** Faktur penjualan ke "CV. Kakao Lestari
+  Bogor" dicatat keuangan pada Partner pemasok `maju:sup-kakao-lestari` yang
+  dibuat pembelian, karena panduan berkata satu catatan per perusahaan. Staf
+  keuangan tetap bertanya apakah keduanya perusahaan yang sama. Formulir
+  pemasok/pelanggan mencampur keduanya di daftar pilihan (dicatat staf).
+- **Kiriman terlambat DP-7731 belum dicatat** (sesuai cerita, dicatat 19 Agu).
+  Stok W1–W2 sama dengan kebenaran seperti tercatat; pasangan jam dibaca
+  setelah W3.
+
+**Temuan kecil dari staf:** setiap submit melaporkan N pernyataan tapi hanya
+N−1 id (pernyataan `uniti:uri` untuk subjek baru tidak ditampilkan); formulir
+tidak punya tempat untuk hal yang ada di kertas (nomor SJ pada StockMove,
+tujuan gudang pada PO, harga jual, jatuh tempo), sehingga masuk ke `--note`.
+
+Panggilan staf sampai akhir W2: gudang 72, pembelian 44, keuangan 58. Tidak
+ada penolakan formulir; satu-satunya kegagalan adalah lima kali 500 dari
+`OrderLineStatus`.
+
 ### Tabel hasil
 
 *(bentuk §8)*
