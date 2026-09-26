@@ -1414,3 +1414,53 @@ menyebut kelas modul lain membuat putaran tidak sah, bukan "lanjut".
 ### Hasil putaran 2
 
 *Diisi oleh sesi pelaksana.*
+
+#### Langkah 0 putaran 2 (26 September 2026)
+
+- **Bukti putaran 1 diarsipkan** utuh ke `build/exp-putaran1/` (transkrip,
+  log API, modul yang di-seal, brief lama). API putaran 1 dihentikan lebih
+  dulu supaya berkasnya tidak terkunci.
+- **Database dikosongkan:** `uniti_exp` dan `uniti_exp_ops` dihapus dan dibuat
+  ulang, lalu `scratch/exp/setup.sh`. Diperiksa: log berisi **2 intent** (dua
+  pendaftaran core), `build/exp/packages` tidak ada, transkrip belum ada.
+- **`build/exp/` dibuat ulang** hanya dengan `story/` dari arsip (tanpa
+  `__pycache__`).
+- **Brief ditulis ulang dari nol** di `build/exp/briefs/`: `primer.md`,
+  `stok-a.md`, `stok-b.md`, `mitra.md`, `pembelian.md`, `buku-besar.md`,
+  `implementer.md`. Brief lama tidak dibuka saat menulis. Kalimat yang
+  menggantikan dua kalimat penyebab kegagalan putaran 1:
+  - primer: *"every class whose entities people will record … fills the core
+    role whose meaning is closest. Which role is your decision"*, dan kompromi
+    atau ketidakmungkinan adalah hasil, bukan kegagalan penulis (R1);
+  - brief gaya ERP: *"Take the shape from Odoo/ERPNext"*, tanpa kalimat yang
+    memenangkan bentuk ERP atas peran; aturan primer berlaku penuh.
+  - implementer: `over` selalu peran, dilarang menyebut kelas modul lain,
+    keempat modul wajib di-pin, penukaran modul stok nanti hanya mengubah pin,
+    dan label "✗ role" bila tidak bisa (R2–R4).
+  - Brief staf ditulis di Tahap E, setelah aplikasi ada.
+- **Yang tetap:** klien `scratch/exp/u.sh`, G1–G4. Uji asap klien memakai
+  transkrip sementara yang langsung dihapus.
+
+#### F1–F4 (26 September 2026)
+
+Dikonfirmasi pemilik: **F1 = ditolak** (bukan dihitung), F2–F4 seperti
+tertulis. Test lebih dulu di masing-masing, satu commit per perbaikan; **217
+test lulus** (199 + 18), replay identik.
+
+| # | commit | isi |
+|---|---|---|
+| F1 | `44a31dc` | rumus (`parameter`, `expression`) di kelas tanpa aggregate ditolak compiler (`rule_on_a_recorded_class`); karena Studio membaca `check`, ia muncul sebagai pertanyaan BLOCKING di draft |
+| F2 | `8c2f7cf` | `convert.on` dan kunci `by` antar sumber harus sejenis: rujukan dengan rujukan ke kelas yang bersaudara turun-temurun, teks dengan teks (`key_kinds_differ`); baris yang tidak menemukan faktor konversi membuat sel kelompoknya **kosong**, bukan dihitung ×1 |
+| F3 | `e15b4e1` | `check` ikut memancarkan SQL (tanpa database), jadi ekspresi rusak dan aggregate di atas tabel hitungan ditolak di sana; **seal** menjalankan pembacaan yang sama dan berhenti di penolakan pertama |
+| F4 | `2ce7404` | ekspresi dibaca sebagai tata bahasa, bukan diteruskan: yang tidak terurai ditolak, setiap pembagi dijaga (`nullif`) sehingga pembagian nol = sel kosong; galat hitung dari database menjadi penolakan `computation_failed` yang menyebut tabelnya, bukan 500 |
+
+Catatan perbaikan:
+
+- **F2 tidak menambah diagnosis kesehatan** (`unmatched_convert` di P3), karena
+  F2 hanya menyebut "kosong, bukan ×1". Sel kosong terlihat di tabel; berapa
+  baris yang tidak menemukan faktor tidak dilaporkan di mana pun.
+- **F1 hanya berlaku untuk kelas yang punya tabel** (yang membawa
+  `designates_type`). Semua modul putaran 2 mem-pin core v2, jadi semua kelas
+  yang dicatat membawanya.
+- **Satu uji lama diubah:** `test_aggregate_cte_includes_convert` memeriksa
+  SQL persis `coalesce(t0_cv.factor, 1)`, yaitu cacat yang diperbaiki F2.
