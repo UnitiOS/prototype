@@ -1115,22 +1115,22 @@ U12, `OrderLineStatus` v5 ×1 dihitung di sini juga), penolakan terstruktur:
 
 ### Tabel hasil
 
-Label §8. Kolom perbaikan, tempat, dan ongkos core diisi di Tahap G.
+Label §8. Kode perbaikan P1–P19 dijelaskan di **Tahap G** di bawah.
 
 | jebakan | jenis | prediksi | hasil | bukti | perbaikan minimal | tempat | ongkos core |
 |---|---|---|---|---|---|---|---|
-| dua modul menamai sama | T1 | diam | **☠** antar modul (slot `category_name` alpha ↔ gamma jadi satu predikat `prt:`, seal dan check diam; 👁 hanya di `terms` `app/health`) · ⛔ di dalam satu draft (`name_taken`) · bentrok kelas `Warehouse` tidak teruji (implementer menolak mem-pin `@delta/purchase`) | Tahap C, D; v5 `app/health` terms | | | |
-| versi core berbeda | T2 | ditolak | **tidak muncul**: semua penulis memakai core v2 | katalog | | | |
-| pengikat ganda | T3 | ditolak | **tidak muncul** | transkrip Tahap B–C | | | |
-| tanda / arah | T4 | diam | **tidak diam, tapi peran kalah**: penulis Odoo menolak mengisi `Flow` karena `amount` bertanda; aplikasi menghitung arah gaya Odoo dengan **menyebut kelas** (✓). Prosa core bertanda memilih pemenang (§2 butir 4) | Tahap B, D | | | |
-| satuan | T5 | diam | **☠**: `convert` gagal cocok → `coalesce(factor, 1)`; stok benar hanya karena staf gudang mengakali (v5), kolom satuan stok `OrderLineStatus` salah diam (v6); di beta, konversi rujukan↔rujukan bekerja | Tahap E W1, Tahap F | | | |
-| keluasan | T6 | terlihat (`covers`) | **tidak teruji**: pengisi `Flow` campur (kg + rupiah) dan `Resource` ikut `Account`, tapi aplikasi tidak memakai peran sama sekali, jadi `covers` tidak pernah diuji terhadap data | Tahap C, D | | | |
-| pencatatan ganda | T7 | diam | **☠ untuk isi yang berbeda**: truk KL-221 500 kg (gudang) vs 50 kg (pembelian), tidak ada yang membandingkan; **angka tidak dobel** karena implementer memilih satu sumber per pertanyaan | Tahap E W2 | | | |
-| identitas | T8 | tidak ada jalur | **✗ terbukti**: `Supplier` (`@delta`) ≠ `Partner` (`@gamma`) tanpa jalan menyatukan; dihindari dengan tidak mem-pin `@delta`; Kakao Lestari ditangani staf ✓. Penukaran stok menunjukkan kasus yang sama untuk predikat: tidak ada cara menyatakan "`stk:quantity` alpha = `stk:qty` beta", data Agustus harus dimasukkan ulang | Tahap C, E, F | | | |
-| struktur | T9 | mungkin tak terungkapkan | **✗ sebagian**: header+baris ✓ dengan kelas aplikasi; aggregate di atas tabel hitungan ⛔ `no_type_slot`; saring nilai ✗ (U7); sisa per faktur ✗; kunci baris PO terbelah (U10) | Tahap D, E | | | |
-| pergeseran arti | T10 | diam | **☠**: penulis menghindari untuk arti baru (predikat baru), tapi `stk:qty` berganti peran dengan `slot_uri` sama; `fit` `clean: true`, `check` dan `health` diam; hanya prosa formulir | Tahap F | | | |
-| terlambat dicatat | dua jam | – | **✓**: tiga bacaan pasangan jam tepat | Tahap E W3 | | | |
-| salah ketik lalu koreksi | G2 | – | **✓**: `--revoke` lewat formulir, sel `as_of` akhir W2 = 500, sekarang = 50; jejak sel tidak menyebut penggantian | Tahap E W3, Tahap F | | | |
+| dua modul menamai sama | T1 | diam | **☠** antar modul (slot `category_name` alpha ↔ gamma jadi satu predikat `prt:`, seal dan check diam; 👁 hanya di `terms` `app/health`) · ⛔ di dalam satu draft (`name_taken`) · bentrok kelas `Warehouse` tidak teruji (implementer menolak mem-pin `@delta/purchase`) | Tahap C, D; v5 `app/health` terms | P8 · P6 | seal | 0 |
+| versi core berbeda | T2 | ditolak | **tidak muncul**: semua penulis memakai core v2 | katalog | – | – | – |
+| pengikat ganda | T3 | ditolak | **tidak muncul** | transkrip Tahap B–C | – | – | – |
+| tanda / arah | T4 | diam | **tidak diam, tapi peran kalah**: penulis Odoo menolak mengisi `Flow` karena `amount` bertanda; aplikasi menghitung arah gaya Odoo dengan **menyebut kelas** (✓). Prosa core bertanda memilih pemenang (§2 butir 4) | Tahap B, D | P19 (opsional) | deklarasi core | +2 |
+| satuan | T5 | diam | **☠**: `convert` gagal cocok → `coalesce(factor, 1)`; stok benar hanya karena staf gudang mengakali (v5), kolom satuan stok `OrderLineStatus` salah diam (v6); di beta, konversi rujukan↔rujukan bekerja | Tahap E W1, Tahap F | P1 · P2 · P3 | eksekutor (compiler) + laporan | 0 |
+| keluasan | T6 | terlihat (`covers`) | **tidak teruji**: pengisi `Flow` campur (kg + rupiah) dan `Resource` ikut `Account`, tapi aplikasi tidak memakai peran sama sekali, jadi `covers` tidak pernah diuji terhadap data | Tahap C, D | diuji ulang setelah P4, P18, P19 | – | – |
+| pencatatan ganda | T7 | diam | **☠ untuk isi yang berbeda**: truk KL-221 500 kg (gudang) vs 50 kg (pembelian), tidak ada yang membandingkan; **angka tidak dobel** karena implementer memilih satu sumber per pertanyaan | Tahap E W2 | P17 | aplikasi (bisa sebagian hari ini) · eksekutor generik | 0 |
+| identitas | T8 | tidak ada jalur | **✗ terbukti**: `Supplier` (`@delta`) ≠ `Partner` (`@gamma`) tanpa jalan menyatukan; dihindari dengan tidak mem-pin `@delta`; Kakao Lestari ditangani staf ✓. Penukaran stok menunjukkan kasus yang sama untuk predikat: tidak ada cara menyatakan "`stk:quantity` alpha = `stk:qty` beta", data Agustus harus dimasukkan ulang | Tahap C, E, F | P16 | penyelarasan | 0 |
+| struktur | T9 | mungkin tak terungkapkan | **✗ sebagian**: header+baris ✓ dengan kelas aplikasi; aggregate di atas tabel hitungan ⛔ `no_type_slot`; saring nilai ✗ (U7); sisa per faktur ✗; kunci baris PO terbelah (U10) | Tahap D, E | P13 · P14 · P15 | eksekutor (compiler) | 0 |
+| pergeseran arti | T10 | diam | **☠**: penulis menghindari untuk arti baru (predikat baru), tapi `stk:qty` berganti peran dengan `slot_uri` sama; `fit` `clean: true`, `check` dan `health` diam; hanya prosa formulir | Tahap F | P9 | laporan (`fit`) | 0 |
+| terlambat dicatat | dua jam | – | **✓**: tiga bacaan pasangan jam tepat | Tahap E W3 | – | – | – |
+| salah ketik lalu koreksi | G2 | – | **✓**: `--revoke` lewat formulir, sel `as_of` akhir W2 = 500, sekarang = 50; jejak sel tidak menyebut penggantian | Tahap E W3, Tahap F | P9-kecil (jejak sel menyebut penggantian) | laporan | 0 |
 
 ### Temuan yang tidak diprediksi
 
@@ -1152,6 +1152,7 @@ Label §8. Kolom perbaikan, tempat, dan ongkos core diisi di Tahap G.
 | U14 | `reads` di `app/fit` tidak memuat medan konversi | 👁 berkurang | F | implementer, pelaksana |
 | U15 | pembagian dengan 0 di SQL hasil compiler → 500 mentah, bukan penolakan | ⛔ tanpa penjelasan | E | staf pembelian, pelaksana |
 | U16 | `app/health` dengan data sebulan tidak mendiagnosis satu pun cacat angka (kolom konstan, konversi tak cocok, dua catatan satu truk berbeda); jejak `app/cell` tidak memuat bacaan konversi dan tidak menyebut pernyataan yang digantikan | keterlihatan | F | pelaksana |
+| U17 | tidak ada yang "memposting": di bentuk ERPNext pengisi `Flow` (`StockLedgerEntry`) hanya terisi kalau staf mengetik setiap pergerakan dua kali, jadi peran itu kosong di pemakaian nyata; `Bin` beta tidak pernah berisi | ✗ | F | implementer |
 
 **Pola dari semua baris di atas.** Jebakan yang diprediksi (T1–T10) sebagian
 besar **dihindari manusia** — penulis modul menolak mengisi peran (T4, T7),
@@ -1161,5 +1162,108 @@ angka yang sungguh terjadi datang dari temuan yang tidak diprediksi (U3, U10)
 di lapisan eksekutor, bukan di core. Laporan (`check`, `fit`, `health`) tidak
 menangkap satu pun ☠ sebelum manusia menangkapnya; dua di antaranya gagal
 keras tepat saat dibutuhkan (U11, U15).
+
+### Tahap G: perbaikan minimal per ✗ dan ☠
+
+Belum ada yang dikerjakan (§10: mekanisme tidak diubah sebelum gerbang).
+Setiap baris diperiksa ke kodenya. Kolom "uji" menunjukkan apakah aturan
+itu tetap bisa dianalisis tanpa dijalankan (§2, batas standar lawan bahasa
+pemrograman).
+
+**Lapis 1 — mengubah yang diam menjadi ditolak atau terlihat** (tanpa kemampuan
+baru; semuanya di eksekutor, laporan, dan gerbang):
+
+| # | perbaikan | menutup | tempat | kode | ongkos core | uji |
+|---|---|---|---|---|---|---|
+| P1 | **Tipe kedua sisi pencocokan diperiksa.** `convert.on` dan kunci `by` yang dikumpulkan dari dua sisi harus sama jenisnya: rujukan dengan rujukan (dan range-nya bersesuaian), teks dengan teks. Rujukan ↔ teks ditolak saat compile dan di `check` (`key_kinds_differ`) | U10 di ketiga tempat v5, T5 | compiler | `compile.py` parsing `convert` (±`:407–516`) dan `by` | 0 | ✓ statis |
+| P2 | **Identitas entity sebagai sasaran cocok.** `convert.on` boleh menunjuk entity yang dirujuk itu sendiri (bentuk Odoo: rasio ada **pada** `Uom`), bukan hanya slot di baris konversi | U10 (akar di stok v5), T5 | compiler | `_aggregate_cte`, subquery `cv` (`:958–989`) | 0 | ✓ |
+| P3 | **Tidak ada faktor bawaan.** Konversi yang tidak cocok → sel kosong (`NULL`), bukan ×1; `app/health` mendapat diagnosis `unmatched_convert` (berapa baris tidak menemukan faktor) | U10, T5 | compiler + `health` | `compile.py:989` `coalesce(cv.factor, 1)` | 0 | 🔍 dari data |
+| P4 | **Aturan di kelas entity dihitung, atau ditolak.** `parameter`/`expression` di kelas tanpa aggregate dihitung di tabel entitasnya; kolom turunan tidak pernah jadi medan isian. Kalau belum, Studio dan seal menolaknya, bukan diam | U3 (termasuk pengikat `amount`/`moment`) | compiler (+ Studio/seal) | `plan_entities` (`compile.py:760`) menandai semua kolom `stated` | 0 | ✓ |
+| P5 | **`check` = compiler.** `check` menjalankan pemancar SQL (tanpa database), jadi ekspresi rusak dan `over` ke tabel hitungan ditolak di sana; seal modul yang punya aturan menjalankan `check` yang sama | U9, U4 | `check` + seal | `check.py:49` hanya `plan_for` | 0 | ✓ |
+| P6 | **Predikat = URI penuh.** CURIE diperluas dengan prefix modulnya sebelum masuk registry; dua modul dengan prefix sama tidak lagi berbagi predikat. Butuh migrasi registry (fakta lama tetap di entity CURIE lama) | U1, salah hitung `app/health` | seal + kernel registry | `seal.py:_slot_ranges` memakai `slot.slot_uri` mentah | 0 | ✓ |
+| P7 | **Kelas = URI, bukan nama.** Nilai `entity_class` menjadi URI kelas (ber-modul). Ini perubahan arti slot core yang sudah ada, jadi mengikuti pelajaran T10: **predikat baru**, bukan mengganti arti `entity_class` | U2 | seal, generator, compiler | nilai `entity_class` | 0 baru (1 diganti) | ✓ |
+| P8 | **Bentrok nama di dalam closure ditolak.** Dua modul yang di-pin satu aplikasi (atau aplikasi dan modulnya) mendeklarasikan kelas atau slot dengan nama sama → seal dan `check` menolak, dengan perbaikan "ganti nama atau alias" | T1 (`category_name`, `Warehouse`), G8 | seal | saudara `_one_version_per_module` (`seal.py:350`) | 0 | ✓ |
+| P9 | **`fit` membandingkan arti, bukan hanya nama.** (a) Untuk setiap predikat yang dibaca aturan aplikasi, bandingkan definisi slot di versi lama dan baru modulnya (range, `required`, judul, deskripsi, aturan turunan) dan tampilkan bagian "berubah"; (b) `reads` memuat medan `convert`; (c) `ValueError` LinkML ditangkap sebagai penolakan ("`Ingredient` mewarisi `Product`, yang tidak ada di closure baru"); (d) bacakan juga aturan versi baru, bukan hanya aturan lama di atas pin baru. Jejak `app/cell` menyebut pernyataan yang digantikan | T10 (☠ → 👁), U11, U14, U16 sebagian | `roles.fit`, `cell` | `roles.py:_rules`, `_map_with_the_pins_of` | 0 | ✓ |
+| P10 | **`unpin` menolak modul yang masih dipakai** (`still_used`: kelas yang mewarisi, slot yang ber-range kelasnya, aturan yang membacanya), sebagai gantinya merusak draft | U12 | Studio | `draft.py:_unpin` tidak memeriksa ketergantungan | 0 | ✓ |
+| P11 | **`required` ditegakkan di pintu**, per pasangan kelas–slot (`slot_usage`), bukan per slot | U13, U8 | generator `submit` + Studio | `generate.py:253` hanya menampilkan | 0 | ✓ |
+| P12 | **Galat hitung jadi penolakan.** Pembagi dijaga (`nullif(…, 0)` → sel kosong), dan galat database dari `projection` dikembalikan sebagai penolakan terstruktur, bukan 500 | U15 | compiler + API | ekspresi di `compile.py`; `application.projection` | 0 | ✓ |
+
+**Lapis 2 — kemampuan yang terbukti dibutuhkan** (eksekutor tumbuh, core
+tidak):
+
+| # | perbaikan | menutup | tempat | ongkos core | uji |
+|---|---|---|---|---|---|
+| P13 | `where` menyaring **nilai** dengan operator tertutup (`equals` literal/enum) di samping `is_a` | U7 (dibutuhkan tiga penulis dan implementer secara terpisah), T9 sebagian | compiler | 0 | ✓ |
+| P14 | aggregate di atas **tabel hitungan** (total per gudang di atas `StockOnHand`) | T9 (`no_type_slot`) | compiler | 0 | ✓ |
+| P15 | kunci `by` lewat **satu lompatan rujukan** (pembayaran → faktur → pemasok; penerimaan → baris PO) | T9 (sisa per faktur), U10 sisi `OrderLineStatus` | compiler | 0 | ✓ |
+| P16 | **Penyelarasan yang dinyatakan orang**: modul penyelarasan menyatakan kelas yang bersesuaian (`Supplier` ↔ `Partner`) dan predikat yang bersesuaian untuk penukaran (`stk:quantity` alpha → baris stok beta); identitas entity tetap hanya lewat aksi orang (`DESIGN_NOTES.md` §10.6) | T8, data Agustus yang tak terbaca setelah penukaran | penyelarasan (`@uniti/*`) + eksekutor baru | 0 | ✓ bila korespondensinya satu-satu; penukaran alpha→beta **tidak** satu-satu (lokasi → gudang lewat `location_warehouse`), jadi sebagian tetap migrasi oleh orang |
+| P17 | **Dua catatan satu kejadian.** Hari ini sebagian bisa di aplikasi: medan rujukan dari pergerakan stok ke baris cek pengiriman + tabel pembanding per kunci. Umumnya: satu eksekutor generik "catatan ↔ catatan / janji ↔ pemenuhan" yang mendiagnosis perbedaan di `app/health` | T7 | aplikasi + eksekutor generik | 0 | ✓ |
+| P18 | **Posting deklaratif**: kelas dokumen menyatakan bahwa setiap barisnya menghasilkan rekaman `Flow` (pemetaan pengikat), supaya bentuk ERPNext mengisi `Flow` tanpa ketik dua kali | U17 | generator/kernel, eksekutor baru | 0 | ✓ |
+
+**Lapis 3 — core** (satu-satunya yang menyentuh core):
+
+| # | perbaikan | menutup | ongkos core | uji masuk §2 |
+|---|---|---|---|---|
+| P19 | `Flow` menerima dua bentuk: `amount` bertanda (sekarang), **atau** `amount` tak bertanda + pengikat `from`/`to` (arah dari dua rujukan). Compiler menjumlah +`amount` di `to`, −`amount` di `from` | T4 (prosa core memilih pemenang), prasyarat agar peran bisa dipakai lagi | **+2** | 1 ✓ (compiler membacanya) · 2 ✓ (penunjuk ke slot) · 3 ✓ (dua modul terpisah butuh bentuk tak bertanda: `@alpha/stock` lokasi asal/tujuan, `@epsilon/accounting` debit/kredit + `payment_type`) · 4 ✓ (justru menghapus pemenang) |
+
+Tidak diusulkan ke core: deklarasi `unit` (T5 di eksperimen ini selesai di
+compiler lewat P1–P3; campuran satuan dalam satu penjumlahan `Flow` belum
+pernah terjadi karena `Flow` tidak dipakai, jadi uji masuk butir 3 belum
+terpenuhi), dan sumber resmi untuk T7 (P17 cukup).
+
+**Hitungan.** Core sekarang 8 deklarasi (`@uniti/core` v2: 4 peran, 4
+pengikat). Usulan: **+2** (P19), jadi 10, jauh di bawah ±30 dan di dalam
+anggaran gerbang ±5. P7 mengganti satu slot core dengan predikat baru, tanpa
+menambah jumlah. Semua yang lain (P1–P18) ada di eksekutor, laporan, gerbang,
+penyelarasan, atau aplikasi.
+
+**Urutan yang disarankan bila gerbang dibuka.** P1, P3, P5, P12 dulu: keempat
+ini saja sudah mengubah setiap angka salah di Tahap E menjadi penolakan atau
+sel kosong yang terlihat. Lalu P4, P8, P9–P11. Lalu P6–P7 (butuh migrasi
+registry dan kelas, paling mahal). Lalu lapis 2, dan P19 bersama P18 dan P4
+sebagai satu paket "peran bisa dipakai lagi", diikuti uji ulang yang lebih
+kecil untuk T6.
+
+### Penilaian terhadap kriteria gerbang (§9)
+
+| kriteria **Lanjut** | keadaan | |
+|---|---|---|
+| tidak ada ☠ tersisa setelah perbaikan yang semuanya deklaratif | T1, T5, U1, U3, U9, U10, U13 tertutup oleh P1–P11 (statis atau dari data); T10 menjadi 👁 lewat P9 — cukup untuk target "tidak ada konflik yang diam", tidak mencegah. **T7 hanya tertutup penuh dengan eksekutor generik baru (P17)** | sebagian |
+| core bertambah ≤ ±5 dan lolos uji masuk | +2, lolos keempat butir | ✓ |
+| tidak ada aplikasi yang harus menyebut nama privat modul lain kecuali disengaja | **tidak terpenuhi.** `@ptmaju/app` menyebut `StockMove`, `StockEntryDetail`, `UOMConversion`, dan setiap aggregate menyebut kelasnya. Bukan pilihan gaya: `@alpha/stock` tidak bisa mengisi `Flow` (T4), `Flow` di `@epsilon` kosong (U3), dan `Flow` di `@beta` tidak terisi tanpa posting (U17) | ✗ |
+
+**Apa yang dikatakan bukti, tanpa memutuskan:**
+
+- **Bukan "pikir ulang".** Tidak ada ☠ yang butuh logika per kasus atau model
+  kanonik pusat. Setiap perbaikan lapis 1 adalah pemeriksaan statis atau
+  diagnosis dari data, di tempat yang memang boleh tumbuh.
+- **"Lanjut" belum terpenuhi** karena kriteria ketiga: klaim peran —
+  penjumlahan otomatis lintas modul — **tidak pernah diuji**, sebab tidak ada
+  satu pun jawaban yang bisa ditulis terhadap peran. Aplikasi jatuh sendiri ke
+  posisi mundur §9 ("komposisi eksplisit") di Tahap D, dan posisi itu bekerja:
+  pertanyaan yang gagal gagal karena U3/U10, bukan karena kelas disebut
+  langsung.
+- **Yang terbukti kuat dan tidak terpengaruh:** log append-only, dua jam,
+  koreksi dengan `revokes`, provenance sel, dan "fakta di bawah skema" (data
+  Agustus tidak hilang saat penukaran; laporan menyebutnya satu per satu).
+- **"Sesuaikan" cocok dengan bukti bila** komposisi eksplisit dijadikan cara
+  kerja sekarang, lapis 1 dikerjakan, dan klaim peran diuji ulang secara
+  terpisah setelah P4 + P18 + P19 — dengan pertanyaan yang sama: apakah satu
+  aturan terhadap `Flow` bisa menjawab stok untuk bentuk Odoo dan ERPNext
+  sekaligus.
+
+**Keterbatasan eksperimen yang harus ikut dibaca:**
+
+- Subagent secara teknis bisa membaca repo; kemandirian dijaga instruksi dan
+  satu pintu klien. Semua laporan subagent cocok dengan transkrip; pelanggaran
+  yang tercatat hanya memotong keluaran klien (`head`/`tail`/`sed`) dan membuka
+  keluaran klien yang disimpan harness.
+- Bentuk Odoo/ERPNext berasal dari pengetahuan pelaksana dan sebagian
+  dokumentasi publik; bentuk ERPNext belum dicocokkan penuh.
+- `recorded_at` adalah jam sungguhan: satu bulan tercatat dalam ±27 menit
+  (G6). Pasangan jam tetap sah karena `as_of` dibaca pada titik yang ditandai.
+- Satu implementer dan satu set staf; implementer lain mungkin memilih modul
+  lain. Pertanyaan staf ke implementer sengaja tidak dijawab, sehingga tidak
+  ada kesempatan memperbaiki aplikasi di tengah bulan.
 
 ### Keputusan di gerbang
