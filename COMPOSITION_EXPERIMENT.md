@@ -910,10 +910,256 @@ untuk evaluasi; masing-masing menunjuk celah formulir atau aplikasi):
 `OrderLineStatus`, 9 submit koreksi dengan `--revoke` (17 pernyataan ditarik).
 Log akhir: 166 intent, 1.413 pernyataan.
 
+### Tahap F: tukar `@alpha/stock` → `@beta/stock`
+
+**Permintaan ke implementer** (subagent yang sama, dilanjutkan): tim gudang
+pindah ke `@beta/stock@v1` mulai September; aplikasi tidak boleh mem-pin
+keduanya; lima pertanyaan tetap harus terjawab untuk September **dan** untuk
+tanggal mana pun di Agustus; cakupannya hanya penukaran stok, cacat lain
+dilaporkan, tidak diperbaiki. Implementer diminta membaca `app/fit` (v5
+lawan versi baru), `app/check`, `app/health`, dan `table` dengan `valid_at`
+Agustus. Tetap tanpa `submit`.
+
+**Hasil: `@ptmaju/app@v6`**, 103 panggilan, satu seal. Yang diubah (semua
+dipaksa oleh penukaran): `Ingredient is_a Item` (bukan `Product`); lima medan
+rujukan diarahkan ke `Item`/`UOM` beta; `StockOnHand` dibangun ulang per item
+per gudang atas `StockEntryDetail` (bukan `StockLedgerEntry`: "tidak ada yang
+menulis ledger otomatis, staf harus mengetik setiap pergerakan dua kali",
+jadi `Bin` milik beta tetap kosong); `OrderLineStatus` menghitung terima dalam
+satuan baris PO. Pembelian dan keuangan tidak disentuh.
+
+**Yang terjadi di jalan (diperiksa ke transkrip dan log API):**
+
+- **U11 ☠→⛔-tanpa-penjelasan — `app/fit` crash tepat di pasangan yang
+  menjadi alasannya ada.** `fit v5 against v6` dan `v6 against v5`: 500,
+  tiga kali. Log API: `ValueError: No such class: "Product"` (dan `"Item"`
+  untuk arah sebaliknya) di `roles.fit → _rules → compile.tables →
+  class_induced_slots`. Laporan membangun aturan versi lama di atas pin versi
+  baru (`_map_with_the_pins_of`); kelas aplikasi yang **mewarisi** kelas modul
+  yang ditukar (`Ingredient is_a Product`) membuat LinkML melempar
+  `ValueError`, bukan `Refusal`. Pasangan lain (v4→v5, v2→v3, v6→v6) jalan.
+  Jadi laporan kecocokan hanya bekerja untuk penukaran yang tidak perlu
+  laporan.
+- **U12 — `unpin` merusak draft alih-alih ditolak.** Langkah pertama
+  (`revise`) ditolak `draft_open` dengan jelas (draft v5 masih terbuka, 522
+  langkah). Lalu `unpin @alpha/stock@v1` pada draft itu menghasilkan 500
+  (`No such class: "Product"` di `studio/read.state → role_refusals`), dan
+  setiap `step`/`draft` sesudahnya 500 sampai implementer `discard`.
+  Penolakan yang seharusnya — "`Ingredient` masih mewarisi `Product` dari
+  modul yang mau dilepas" — tidak ada. Implementer menemukan urutan yang aman
+  sendiri: pin modul baru dulu, pindahkan semua ketergantungan, baru `unpin`.
+- **U10 dalam satu pengamatan penting: di stok, v6 tidak lagi kena.**
+  `UOMConversion` beta dikunci dengan dua **rujukan** (`item`, `uom`), jadi
+  `convert.on: {item: item, uom: uom}` mencocokkan URI dengan URI dan
+  berhasil. Di v5, rasio ada **pada entity `Uom` itu sendiri** (bentuk Odoo),
+  dan cara yang benar — mencocokkan dengan identitas entity — tidak bisa
+  ditulis, sehingga implementer jatuh ke `uom_name` (teks). Jadi U10 di stok
+  bukan salah implementer; bentuk Odoo tidak bisa dikonversi dengan benar
+  lewat `convert`. `coalesce(factor, 1)` tetap ada: implementer menulis di
+  panduan gudang "**baris konversi yang hilang membuat 1 sak dihitung 1 kg
+  tanpa peringatan**" — sebuah peringatan yang harus ditulis manusia di
+  panduan karena sistem tidak mengatakannya.
+
+**Agustus lewat v6 (dibaca pelaksana, `valid_at` 31 Agu):**
+
+| pertanyaan | v5 | v6 | label |
+|---|---|---|---|
+| 1. stok | 12/12 benar | **0 baris** | 👁 — `app/health` v6 `orphaned_fact`: "stk:quantity holds 50 statements no module here declares; @alpha/stock does…", 20 predikat |
+| 2. nilai stok | 152.835.000 | 0 baris | 👁 sama |
+| 3. utang | salah (U10) | salah, identik | ☠ tetap |
+| 4. baris PO terbuka | 500 | **terjawab benar dalam satuan beli**: susu PO-2608-03-2 sisa 4 sak, gula PO-2608-06-1 sisa 8 karung | ✓ (kebetulan dari penukaran) |
+| 5. selisih pesan–terima | 500 | benar dalam satuan beli; **satuan stok salah tanpa suara** (`ols_ordered_stock_qty` = 100 untuk 100 sak, `ols_received_stock_qty` = 0) | ☠ |
+
+- **Fakta tidak hilang, dan itu terlihat.** Ini klaim "fakta di bawah skema"
+  yang diuji: 41 pergerakan Agustus tetap di log, tidak dihapus dan tidak
+  dimigrasi; `app/health` menyebutkan semuanya satu per satu dengan modul
+  pemiliknya. Tapi **tidak ada jalan membacanya lewat v6**: implementer
+  menulis dua pilihan untuk manusia — masukkan ulang 41 baris Agustus sebagai
+  Stock Entry bertanggal asli, atau satu saldo pembuka 1 September (Agustus
+  hanya terbaca lewat v5). "Jangan dua-duanya, atau stok terhitung dua kali."
+  Tidak ada modul penyelarasan atau pernyataan "predikat alpha X = predikat
+  beta Y" yang bisa dipakai; itu jalur T8/§10.6 yang belum ada.
+- **Baris PO masih terbelah dua** (9 baris per entity + 9 baris per teks
+  `PO-…`): kunci `pol_id` tetap teks di sisi pesanan. Kolom satuan stok
+  sisi-teks berisi jumlah sak mentah: tidak ada `UOMConversion` untuk satuan
+  Agustus (`maju:sack-25kg` adalah entity `Uom` alpha), jadi faktor = 1.
+- **Rujukan ke entity kelas lama tetap tampil tanpa keluhan.** `pol_uom` di v6
+  ber-range `UOM` beta, tetapi nilainya masih `maju:sack-25kg` (entity kelas
+  `Uom` alpha); tabel `UOM` v6 kosong. Tidak ada diagnosis "rujukan ke entity
+  di luar range".
+
+**U1 dan U2 terbukti di data, dua nasib:**
+
+- **Terbawa kebetulan (U2 + U1):** dua gudang yang dicatat lewat alpha muncul
+  sebagai `Warehouse` beta di v6, lengkap dengan nama "Gudang Utama" /
+  "Gudang Cabang": kelasnya disimpan sebagai nama telanjang `Warehouse`, dan
+  `stk:warehouse_name` adalah satu predikat untuk dua modul. Hasilnya tampak
+  "berhasil", padahal tidak ada yang menyatakannya.
+- **Laporan kesehatan salah menghitung:** `app/health` v6 menyatakan
+  `stk:uom` milik `@beta/stock`, `held: 6`, dibaca `StockOnHand.qty_in/out`.
+  Enam pernyataan itu adalah satuan stok **Product alpha** pada entity bahan,
+  bukan baris stok beta; tidak masuk `orphaned_fact`. Hal sama untuk
+  `stk:warehouse_name` (`held: 2`). Laporan yang dirancang untuk menjawab
+  "apa yang terjadi pada fakta" menghitung fakta modul lain sebagai milik
+  modul baru. Hari ini tidak ada angka yang salah karenanya (bahan bukan
+  baris stok), tapi aturan yang membaca `stk:uom` per entity akan salah diam.
+
+**Laporan lain di tahap ini (dibaca pelaksana):**
+
+- **`app/health` v5 dengan data sebulan** tidak mendeteksi satu pun cacat
+  angka: 36 `dead_term` (termasuk semua tanggal dokumen, karena tidak ada
+  aturan yang membaca `moment`), 3 `empty_class`, `unfilled_role: Flow`,
+  `empty_column` 0. Tidak ada diagnosis untuk U10 (konversi yang tak pernah
+  cocok), T7 (truk KL-221: 500 kg gudang, 50 kg pembelian), atau kolom
+  konstan (`SupplierBalance` berisi angka sama di lima kolom). Semua itu
+  terdeteksi manusia, bukan data.
+- **G2 — koreksi ✓, jejak sel sebagian.** `app/cell` `StockOnHand.qty_in`
+  cokelat / lokasi stok utama, `valid_at` 14 Agu: dengan `as_of` akhir W2
+  sel berdiri di atas pernyataan `stk:quantity = 500`
+  (`71fcb7a8…`, dicatat 08:27:41); dengan `as_of` sekarang, di atas
+  `= 50` (`b1e6bc44…`, 08:33:14), dari submit staf gudang dengan
+  `--revoke quantity=71fcb7a8…` dan catatan alasannya. Dua kekurangan
+  keterlihatan: sel "sekarang" tidak menyebut bahwa pernyataannya
+  **menggantikan** yang ditarik (harus dicari di intent), dan `reads` kosong —
+  pernyataan satuan dan faktor konversi yang ikut menentukan angka tidak
+  ditampilkan, jadi U10 tidak terlihat dari jejak sel.
+
+**Pelanggaran aturan kecil implementer:** tiga kali memotong keluaran klien
+(`| head -5`, `| tail -c` ×2) dan membuka keluaran `app/health` yang disimpan
+harness dengan Read. Isinya hanya keluaran klien.
+
+### Tahap F: revisi arti (T10)
+
+**Permintaan ke penulis `stok-b`** (subagent yang sama, dilanjutkan), dikutip
+dari pesan pelaksana sebagai permintaan staf gudang pemakai modulnya: "Kami
+ingin kuantitas di baris stock entry selalu dalam satuan stok item (100 kg,
+40 pack) … Satuan di kertas boleh tetap ada di baris sebagai referensi, tapi
+kuantitasnya harus kuantitas satuan stok." Tidak disebut bagaimana
+memodelkannya, dan tidak disebut `slot_uri`.
+
+**Hasil: `@beta/stock@v2`** (19 panggilan, satu penolakan `draft_open`).
+Penulisnya **sengaja menghindari T10 untuk arti baru**: ia membuat medan baru
+`stock_qty` (`stk:stock_qty`, wajib) dan menulis alasannya persis seperti
+prinsip Uniti: "kalau `qty` sekarang berarti kg, fakta lama '4 sak' akan
+terbaca 4 kg — angka salah yang tampak benar". Tapi **arti medan lama tetap
+bergeser dengan `slot_uri` yang sama**: `qty` (`stk:qty`) berubah dari "the
+quantity" (wajib) menjadi "Qty on paper — reference only … never used to move
+stock" (opsional); `uom` dan `conversion_factor` di baris juga jadi
+"reference only". Judul "Qty in stock UOM" pindah dari `transfer_qty` ke
+`stock_qty`.
+
+**Implementer diminta menaikkan pin dalam dua langkah** (seperti orang
+biasanya: pindahkan pin dulu, baca laporan, baru baca deskripsi modul).
+
+| | apa yang dikatakan sistem tentang v6 → v7 (hanya pin pindah) |
+|---|---|
+| `app/health` v6 | `lagging_pin`: "@beta/stock is pinned at v1; the store has sealed up to v2" — mengajak naik, tanpa isi perubahannya |
+| `app/fit` v6 → v7 (diperiksa pelaksana) | pin v1 → v2; semua peran `unchanged`; `StockOnHand.qty_in` `reads_before` = `reads_after` = `[stk:item, stk:qty, stk:target_warehouse]`, `"status": "unchanged"`; `dark: []`, `orphaned: []`, **`"clean": true`** |
+| `app/check` v7 | semua `holds: true`, `clean: true` |
+| `app/health` v7 | tidak menyebut apa pun soal penukaran |
+| formulir `StockEntryDetail` v7 | **satu-satunya tempat**: deskripsi `qty` "Never used to move stock", `stock_qty` "decimal required" |
+
+**T10 ☠.** Di v7 `StockOnHand` tetap menjumlahkan `qty` × faktor, sedangkan
+formulir yang sama menyuruh staf mengisi `stock_qty` dan menyebut `qty`
+opsional dan tidak dipakai. Akibat yang dijabarkan implementer, konkret:
+penerimaan 100 sak terigu diisi `stock_qty = 2500` saja → stok gudang utama
+kurang 2.500 kg (Rp 23.500.000 pada 9.400/kg); stok opname (tidak punya
+kuantitas kertas) tidak pernah terhitung; memasukkan ulang saldo pembuka
+Agustus dengan `stock_qty` saja membuat Agustus kosong lagi. Tidak ada
+laporan yang bersuara; `fit` bahkan menyatakan bersih. Yang ada hanya prosa
+deskripsi medan.
+
+**Implementer lalu memperbaikinya di v8** (`qty_in`/`qty_out` menjumlahkan
+`stock_qty` tanpa konversi; sekaligus menghilangkan risiko "faktor 1" di
+stok). Yang tidak bisa diungkapkan: "hitung baris lama dengan `qty` × faktor
+bila `stock_qty` kosong" — `where` hanya menyaring kelas (U7), ekspresi tidak
+punya `coalesce`. Tidak dibutuhkan hari ini karena belum ada baris beta di
+log. Saran penulis modul ("pakai `stock_qty`, jatuh ke `transfer_qty` untuk
+baris lama") **tidak mungkin di platform ini**: `transfer_qty` adalah
+`expression` di kelas entity, jadi tidak pernah dihitung (U3).
+
+**Dua keterbatasan `app/fit` yang terlihat di sini:**
+
+- **Ia membaca aturan versi lama di atas pin versi baru** ("aturan saya,
+  modul mereka", `roles.py:_map_with_the_pins_of`). Jadi `fit v6 → v8` masih
+  menampilkan `reads_after: stk:qty` walaupun v8 membaca `stk:stock_qty`
+  (dicek implementer lewat `catalogue q=stock_qty`: "read by … @ptmaju/app v8
+  StockOnHand.qty_in"). Laporan menjawab "apakah aturan lama masih
+  ter-resolve", bukan "apakah artinya masih sama", dan tidak menunjukkan
+  perbaikannya.
+- **U14 — `reads` tidak memuat medan konversi.** `qty_in` membaca `stk:uom` dan
+  `stk:conversion_factor` lewat `convert`, tapi `reads` hanya berisi `item`,
+  `qty`, gudang. Penukaran yang hanya merusak konversi akan tampil
+  `unchanged` (dicatat implementer pada v4 → v5, dicek pelaksana pada
+  v6 → v7).
+
+**Dua anggapan penulis modul yang tidak berlaku di platform:**
+
+- **U13 — `required` tidak ditegakkan.** Penulis berharap "pemeriksaan
+  formulir akan menandai atau menolak baris v1 sampai `stock_qty` diisi".
+  `required` hanya ditampilkan (`generate.py:253`, klien, layar); `submit`
+  tidak menolaknya, dan tidak ada pemeriksaan atas baris yang sudah ada. Dan
+  `required` menempel di slot, bukan di pasangan kelas–slot (seperti U6):
+  melepas `required` pada `uom`/`conversion_factor` untuk baris stock entry
+  juga melepasnya di `UOMConversion`, tempat keduanya justru wajib. Penulis
+  menyadarinya dan menulisnya di deskripsi.
+- `transfer_qty` "tetap menurunkan kuantitas satuan stok baris v1" — tidak,
+  karena U3.
+
+**Angka Tahap F:** implementer 128 panggilan (v6: 103, v7–v8: 25), penulis
+`stok-b` 19, pelaksana 14. Tiga versi aplikasi (v6, v7, v8) dan satu versi
+modul (`@beta/stock@v2`). 8 kali 500 (`fit` ×4, `studio step/draft` ×4 akibat
+U12, `OrderLineStatus` v5 ×1 dihitung di sini juga), penolakan terstruktur:
+`draft_open` ×3, `no_such_version` ×1, `not_a_pin` ×1. Log tidak bertambah
+(Tahap F tidak menulis data).
+
 ### Tabel hasil
 
-*(bentuk §8)*
+Label §8. Kolom perbaikan, tempat, dan ongkos core diisi di Tahap G.
+
+| jebakan | jenis | prediksi | hasil | bukti | perbaikan minimal | tempat | ongkos core |
+|---|---|---|---|---|---|---|---|
+| dua modul menamai sama | T1 | diam | **☠** antar modul (slot `category_name` alpha ↔ gamma jadi satu predikat `prt:`, seal dan check diam; 👁 hanya di `terms` `app/health`) · ⛔ di dalam satu draft (`name_taken`) · bentrok kelas `Warehouse` tidak teruji (implementer menolak mem-pin `@delta/purchase`) | Tahap C, D; v5 `app/health` terms | | | |
+| versi core berbeda | T2 | ditolak | **tidak muncul**: semua penulis memakai core v2 | katalog | | | |
+| pengikat ganda | T3 | ditolak | **tidak muncul** | transkrip Tahap B–C | | | |
+| tanda / arah | T4 | diam | **tidak diam, tapi peran kalah**: penulis Odoo menolak mengisi `Flow` karena `amount` bertanda; aplikasi menghitung arah gaya Odoo dengan **menyebut kelas** (✓). Prosa core bertanda memilih pemenang (§2 butir 4) | Tahap B, D | | | |
+| satuan | T5 | diam | **☠**: `convert` gagal cocok → `coalesce(factor, 1)`; stok benar hanya karena staf gudang mengakali (v5), kolom satuan stok `OrderLineStatus` salah diam (v6); di beta, konversi rujukan↔rujukan bekerja | Tahap E W1, Tahap F | | | |
+| keluasan | T6 | terlihat (`covers`) | **tidak teruji**: pengisi `Flow` campur (kg + rupiah) dan `Resource` ikut `Account`, tapi aplikasi tidak memakai peran sama sekali, jadi `covers` tidak pernah diuji terhadap data | Tahap C, D | | | |
+| pencatatan ganda | T7 | diam | **☠ untuk isi yang berbeda**: truk KL-221 500 kg (gudang) vs 50 kg (pembelian), tidak ada yang membandingkan; **angka tidak dobel** karena implementer memilih satu sumber per pertanyaan | Tahap E W2 | | | |
+| identitas | T8 | tidak ada jalur | **✗ terbukti**: `Supplier` (`@delta`) ≠ `Partner` (`@gamma`) tanpa jalan menyatukan; dihindari dengan tidak mem-pin `@delta`; Kakao Lestari ditangani staf ✓. Penukaran stok menunjukkan kasus yang sama untuk predikat: tidak ada cara menyatakan "`stk:quantity` alpha = `stk:qty` beta", data Agustus harus dimasukkan ulang | Tahap C, E, F | | | |
+| struktur | T9 | mungkin tak terungkapkan | **✗ sebagian**: header+baris ✓ dengan kelas aplikasi; aggregate di atas tabel hitungan ⛔ `no_type_slot`; saring nilai ✗ (U7); sisa per faktur ✗; kunci baris PO terbelah (U10) | Tahap D, E | | | |
+| pergeseran arti | T10 | diam | **☠**: penulis menghindari untuk arti baru (predikat baru), tapi `stk:qty` berganti peran dengan `slot_uri` sama; `fit` `clean: true`, `check` dan `health` diam; hanya prosa formulir | Tahap F | | | |
+| terlambat dicatat | dua jam | – | **✓**: tiga bacaan pasangan jam tepat | Tahap E W3 | | | |
+| salah ketik lalu koreksi | G2 | – | **✓**: `--revoke` lewat formulir, sel `as_of` akhir W2 = 500, sekarang = 50; jejak sel tidak menyebut penggantian | Tahap E W3, Tahap F | | | |
 
 ### Temuan yang tidak diprediksi
+
+| # | temuan | label | pertama | ditangkap oleh |
+|---|---|---|---|---|
+| U1 | dua modul berbagi predikat lewat CURIE mentah (`stk:` → dua namespace, satu entity predikat); `app/health` menghitung fakta alpha sebagai milik beta | ☠ | B | pelaksana |
+| U2 | kelas disimpan sebagai nama telanjang; gudang alpha "terbawa" jadi `Warehouse` beta | ☠ (kebetulan benar) | B, F | pelaksana, implementer |
+| U3 | `parameter`/`expression` di kelas entity tidak pernah dihitung, muncul sebagai medan isian; termasuk pengikat peran | ☠ | B, C | pelaksana, implementer, staf gudang |
+| U4 | sintaks ekspresi tak diajarkan, tak diperiksa saat seal | ⛔ setelah seal | B, C | compiler |
+| U5 | aggregate mengubah kelas jadi tabel ber-group | 👁 | B | penulis |
+| U6 | satu aturan per slot, ditimpa tanpa penolakan | 👁 | C | pelaksana |
+| U7 | `where` hanya menyaring kelas, bukan nilai | ✗ | C, D, F | tiga penulis + implementer |
+| U8 | `required` tidak tampak di draft | 👁 kecil | C | penulis |
+| U9 | `app/check` "holds" sementara compiler menolak | ☠ di laporan | D | implementer |
+| U10 | rujukan dicocokkan dengan teks identifier; `coalesce(factor, 1)` menelan | **☠ akar semua angka salah** | D (prediksi), E | implementer (prediksi), staf, pelaksana |
+| U11 | `app/fit` crash (`ValueError`) bila kelas aplikasi mewarisi kelas modul yang ditukar | ⛔ tanpa penjelasan (500) | F | implementer |
+| U12 | `unpin` modul yang masih diwarisi merusak draft, tidak ditolak | ⛔ tanpa penjelasan (500) | F | implementer |
+| U13 | `required` tidak ditegakkan di pintu mana pun, dan menempel per slot | ☠ potensial | F | pelaksana |
+| U14 | `reads` di `app/fit` tidak memuat medan konversi | 👁 berkurang | F | implementer, pelaksana |
+| U15 | pembagian dengan 0 di SQL hasil compiler → 500 mentah, bukan penolakan | ⛔ tanpa penjelasan | E | staf pembelian, pelaksana |
+| U16 | `app/health` dengan data sebulan tidak mendiagnosis satu pun cacat angka (kolom konstan, konversi tak cocok, dua catatan satu truk berbeda); jejak `app/cell` tidak memuat bacaan konversi dan tidak menyebut pernyataan yang digantikan | keterlihatan | F | pelaksana |
+
+**Pola dari semua baris di atas.** Jebakan yang diprediksi (T1–T10) sebagian
+besar **dihindari manusia** — penulis modul menolak mengisi peran (T4, T7),
+implementer menolak mem-pin modul (T1, T8), penulis v2 memilih predikat baru
+(T10) — dan yang tetap lolos, lolos tanpa suara (T1, T5, T7, T10). Kerusakan
+angka yang sungguh terjadi datang dari temuan yang tidak diprediksi (U3, U10)
+di lapisan eksekutor, bukan di core. Laporan (`check`, `fit`, `health`) tidak
+menangkap satu pun ☠ sebelum manusia menangkapnya; dua di antaranya gagal
+keras tepat saat dibutuhkan (U11, U15).
 
 ### Keputusan di gerbang
