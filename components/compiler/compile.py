@@ -1158,17 +1158,7 @@ def _column_sql(plan_, name, aliases, stack=()):
         )
     text = plan_["expressions"][name]
     if not _ARITHMETIC.match(_REF.sub(" ", text)):
-        raise CompileError(
-            "expression_not_arithmetic",
-            where=f"{plan_['class']}.{name}",
-            expected="arithmetic over {columns}, and nothing else",
-            got=f"{text!r}",
-            repairs=[Repair(
-                "keep to + - * / ( ) and the columns beside it. The language "
-                "stays smaller than SQL on purpose: a swap report can only be "
-                "exact while every rule can be read whole"
-            )],
-        )
+        _not_arithmetic(plan_, name, text)
     known = {c["name"] for c in plan_["columns"]}
     for referenced in _REF.findall(text):
         if referenced.strip() not in known:
@@ -1179,9 +1169,94 @@ def _column_sql(plan_, name, aliases, stack=()):
                 got="{" + referenced + "}",
                 repairs=[Repair("name a column beside it", options=sorted(known))],
             )
-    return "(" + _REF.sub(
-        lambda m: _column_sql(plan_, m.group(1).strip(), aliases, stack + (name,)), text
-    ) + ")"
+    try:
+        return _arithmetic(text, lambda referenced: _column_sql(
+            plan_, referenced, aliases, stack + (name,)))
+    except ValueError:
+        _not_arithmetic(plan_, name, text)
+
+
+def _not_arithmetic(plan_, name, text):
+    raise CompileError(
+        "expression_not_arithmetic",
+        where=f"{plan_['class']}.{name}",
+        expected="arithmetic over {columns}, and nothing else",
+        got=f"{text!r}",
+        repairs=[Repair(
+            "keep to + - * / ( ) and the columns beside it. The language "
+            "stays smaller than SQL on purpose: a swap report can only be "
+            "exact while every rule can be read whole"
+        )],
+    )
+
+
+_TOKEN = re.compile(r"\s*(\{[^{}]+\}|\d+(?:\.\d*)?|\.\d+|[-+*/()])")
+
+
+def _arithmetic(text, column):
+    """An expression as SQL, read whole rather than passed through.
+
+    The characters an expression may hold say nothing about whether they make
+    one, and what does not parse used to reach the database and fail there.
+    Reading it also puts each divisor where it can be guarded: a division by
+    nought is a cell with no answer, not a table that fails whole.
+    ValueError if it does not parse; `column` turns a {reference} into SQL.
+    """
+    tokens, at = [], 0
+    while at < len(text.rstrip()):
+        match = _TOKEN.match(text, at)
+        if not match:
+            raise ValueError(text[at:])
+        tokens.append(match.group(1))
+        at = match.end()
+    tokens.append(None)
+    position = 0
+
+    def peek():
+        return tokens[position]
+
+    def take():
+        nonlocal position
+        position += 1
+        return tokens[position - 1]
+
+    def sum_():
+        out = product()
+        while peek() in ("+", "-"):
+            out = f"({out} {take()} {product()})"
+        return out
+
+    def product():
+        out = sign()
+        while peek() in ("*", "/"):
+            if take() == "*":
+                out = f"({out} * {sign()})"
+            else:
+                out = f"({out} / nullif({sign()}, 0))"
+        return out
+
+    def sign():
+        if peek() in ("+", "-"):
+            return f"({take()}{sign()})"
+        return atom()
+
+    def atom():
+        token = take()
+        if token is None or token in "+-*/)":
+            raise ValueError(token)
+        if token == "(":
+            inner = sum_()
+            if take() != ")":
+                raise ValueError("(")
+            return inner
+        if token.startswith("{"):
+            return column(token[1:-1].strip())
+        return token
+
+    out = sum_()
+    if peek() is not None:
+        raise ValueError(peek())
+    return out
 
 
 def emit_entities(map_, plan_):
@@ -1311,12 +1386,28 @@ def preview(kernel, map_, class_name, *, valid_at, as_of):
     ddl, select = (emit(map_, plan_) if plan_["shape"] == "grouped"
                    else emit_entities(map_, plan_))
 
-    with kernel.cursor() as cur:
-        # Prevent catastrophic nested loop plans on unindexed CTEs and bypass LLVM JIT overhead
-        cur.execute("SET enable_nestloop = off; SET jit = off")
-        cur.execute(select, {"valid_at": valid_at, "as_of": as_of,
-                             "uri_predicate": URI_PREDICATE})
-        rows = cur.fetchall()
+    try:
+        # A savepoint when the caller is inside a transaction, so a computation
+        # that fails leaves the connection usable for the next read.
+        with kernel.transaction(), kernel.cursor() as cur:
+            # Prevent catastrophic nested loop plans on unindexed CTEs and bypass LLVM JIT overhead
+            cur.execute("SET enable_nestloop = off; SET jit = off")
+            cur.execute(select, {"valid_at": valid_at, "as_of": as_of,
+                                 "uri_predicate": URI_PREDICATE})
+            rows = cur.fetchall()
+    except psycopg.errors.DataError as exc:
+        # The map compiled; a value in the log did not compute. Said as a
+        # refusal naming the table, never as an error the API makes a 500 of.
+        raise CompileError(
+            "computation_failed",
+            where=class_name,
+            expected="values in the log this table's rules can compute with",
+            got=str(exc).splitlines()[0],
+            repairs=[Repair(
+                "find the statement holding that value, in the cells of the "
+                "table it feeds, and correct or withdraw it"
+            )],
+        ) from None
     return {"plan": plan_, "ddl": ddl, "select": select, "rows": rows,
             "valid_at": valid_at, "as_of": as_of}
 

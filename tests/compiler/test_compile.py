@@ -320,51 +320,111 @@ def kernel():
         yield conn
 
 
-def test_a_row_with_no_conversion_leaves_its_cell_empty(kernel, map_):
+# The log these tests read: stated once, at 2 January. One more fact is stated
+# a year later, and only the test about it reads that far.
+NOW = "2026-12-31T00:00:00+00:00"
+A_YEAR_ON = "2027-06-30T00:00:00+00:00"
+
+
+def _entity(uri, cls, **facts):
+    return {"uri": uri, "class": cls, "facts": facts}
+
+
+@pytest.fixture(scope="module")
+def logged(kernel):
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import load_facts
+    load_facts.load(kernel, {"map": "@fx/fixture@v1", "actions": [{
+        "action": "set_up", "valid_from": "2026-01-02T00:00:00+00:00",
+        "entities": [
+            _entity("fx:kg", "Measure", measure_name="kg"),
+            _entity("fx:sack", "Measure", measure_name="sack"),
+            _entity("fx:box", "Measure", measure_name="box"),
+            _entity("fx:flour", "Thing", thing_name="flour", thing_base_measure="fx:kg"),
+            _entity("fx:sugar", "Thing", thing_name="sugar", thing_base_measure="fx:kg"),
+            _entity("fx:store", "InnerPlace", place_name="store"),
+            _entity("fx:vendor", "OuterPlace", place_name="vendor"),
+            _entity("fx:flour_sack", "MeasureConversion", conversion_thing="fx:flour",
+                    conversion_measure="fx:sack", conversion_factor="25"),
+            _entity("fx:sugar_kg", "MeasureConversion", conversion_thing="fx:sugar",
+                    conversion_measure="fx:kg", conversion_factor="1"),
+            _entity("fx:t1", "Transfer", transfer_thing="fx:flour", transfer_from="fx:vendor",
+                    transfer_to="fx:store", transfer_quantity="2", transfer_measure="fx:sack"),
+            _entity("fx:t2", "Transfer", transfer_thing="fx:flour", transfer_from="fx:vendor",
+                    transfer_to="fx:store", transfer_quantity="5", transfer_measure="fx:box"),
+            _entity("fx:t3", "Transfer", transfer_thing="fx:sugar", transfer_from="fx:vendor",
+                    transfer_to="fx:store", transfer_quantity="3", transfer_measure="fx:kg"),
+        ]}, {
+        # A value no door would take any more; the loader is not a door.
+        "action": "mistyped", "valid_from": "2027-01-01T00:00:00+00:00",
+        "entities": [
+            _entity("fx:t4", "Transfer", transfer_thing="fx:sugar", transfer_from="fx:vendor",
+                    transfer_to="fx:store", transfer_quantity="lots", transfer_measure="fx:kg"),
+        ]}]}, _OneMap(), actor_id="test")
+    kernel.commit()
+    return kernel
+
+
+def _reconciled(kernel, map_, at=NOW):
+    from compile import preview
+    built = preview(kernel, map_, "Reconciliation", valid_at=at, as_of=A_YEAR_ON)
+    names = [c["name"] for c in built["plan"]["columns"]]
+    return {row[0]: dict(zip(names, row)) for row in built["rows"]}
+
+
+def test_a_row_with_no_conversion_leaves_its_cell_empty(logged, map_):
     """Five boxes of flour have no conversion to anything. Counting them as
     five kilograms is a number that looks right and is not; leaving them out
     is a total that is short without saying so. The cell is empty instead,
     and a group whose rows all convert is untouched."""
-    from datetime import datetime, timedelta, timezone
-    sys.path.insert(0, str(ROOT / "scripts"))
-    import load_facts
-    from compile import preview
-
-    def entity(uri, cls, **facts):
-        return {"uri": uri, "class": cls, "facts": facts}
-
-    load_facts.load(kernel, {"map": "@fx/fixture@v1", "actions": [{
-        "action": "set_up", "valid_from": "2026-01-02T00:00:00+00:00",
-        "entities": [
-            entity("fx:kg", "Measure", measure_name="kg"),
-            entity("fx:sack", "Measure", measure_name="sack"),
-            entity("fx:box", "Measure", measure_name="box"),
-            entity("fx:flour", "Thing", thing_name="flour", thing_base_measure="fx:kg"),
-            entity("fx:sugar", "Thing", thing_name="sugar", thing_base_measure="fx:kg"),
-            entity("fx:store", "InnerPlace", place_name="store"),
-            entity("fx:vendor", "OuterPlace", place_name="vendor"),
-            entity("fx:flour_sack", "MeasureConversion", conversion_thing="fx:flour",
-                   conversion_measure="fx:sack", conversion_factor="25"),
-            entity("fx:sugar_kg", "MeasureConversion", conversion_thing="fx:sugar",
-                   conversion_measure="fx:kg", conversion_factor="1"),
-            entity("fx:t1", "Transfer", transfer_thing="fx:flour", transfer_from="fx:vendor",
-                   transfer_to="fx:store", transfer_quantity="2", transfer_measure="fx:sack"),
-            entity("fx:t2", "Transfer", transfer_thing="fx:flour", transfer_from="fx:vendor",
-                   transfer_to="fx:store", transfer_quantity="5", transfer_measure="fx:box"),
-            entity("fx:t3", "Transfer", transfer_thing="fx:sugar", transfer_from="fx:vendor",
-                   transfer_to="fx:store", transfer_quantity="3", transfer_measure="fx:kg"),
-        ]}]}, _OneMap(), actor_id="test")
-    kernel.commit()
-
-    later = (datetime.now(timezone.utc) + timedelta(days=1)).isoformat()
-    built = preview(kernel, map_, "Reconciliation", valid_at=later, as_of=later)
-    names = [c["name"] for c in built["plan"]["columns"]]
-    rows = {row[0]: dict(zip(names, row)) for row in built["rows"]}
+    rows = _reconciled(logged, map_)
     assert rows["fx:flour"]["rec_in"] is None
     assert rows["fx:flour"]["rec_expected"] is None
     assert float(rows["fx:sugar"]["rec_in"]) == 3
     # Nothing converted out of the store, which is a nought and not a gap.
     assert float(rows["fx:flour"]["rec_out"]) == 0
+
+
+def test_a_division_by_nought_leaves_its_cell_empty(logged, tmp_path):
+    """Nothing went out of the store, so in/out has no answer. That is one
+    empty cell, not a table that fails whole for everybody reading it."""
+    def change(document):
+        document["classes"]["Reconciliation"]["slots"].append("rec_turns")
+        document["slots"]["rec_turns"] = {
+            "slot_uri": "fx:rec_turns", "range": "decimal",
+            "equals_expression": "({rec_in} + 1) / ({rec_out} * 2)"}
+
+    rows = _reconciled(logged, _variant(tmp_path, change))
+    assert float(rows["fx:sugar"]["rec_in"]) == 3
+    assert rows["fx:sugar"]["rec_turns"] is None
+
+
+def test_a_value_the_computation_cannot_read_is_a_refusal(logged, map_):
+    """A computation the database refuses comes back as a refusal naming the
+    table, not as an error the API turns into a 500. The connection is still
+    usable afterwards."""
+    from compile import CompileError
+    with pytest.raises(CompileError) as caught:
+        _reconciled(logged, map_, at=A_YEAR_ON)
+    assert caught.value.code == "computation_failed"
+    assert caught.value.where == "Reconciliation"
+    assert "lots" in caught.value.got
+    assert float(_reconciled(logged, map_)["fx:sugar"]["rec_in"]) == 3
+
+
+@pytest.mark.parametrize("text", ["{rec_in} {rec_out}", "({rec_in} - {rec_out}",
+                                  "{rec_in} -", "* {rec_in}"])
+def test_an_expression_that_does_not_parse_is_refused(tmp_path, text):
+    """The characters were checked and the grammar was not, so these reached
+    the database and failed there."""
+    from components.modules.check import check
+
+    def change(document):
+        document["slots"]["rec_expected"]["equals_expression"] = text
+
+    report = check(None, "fixture", "v1", map_=_variant(tmp_path, change))
+    assert [(r["class"], r["code"]) for r in report["refusals"]] == [
+        ("Reconciliation", "expression_not_arithmetic")]
 
 
 def test_plan_and_emit_reconciliation(map_):

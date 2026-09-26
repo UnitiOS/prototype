@@ -120,6 +120,7 @@ CODES = {
     "expression_cycle": "an expression written in terms of itself",
     "expression_not_arithmetic": "an expression that is more than arithmetic",
     "expression_names_unknown": "an expression naming a column that does not exist",
+    "computation_failed": "a table whose rules compiled but a value in the log could not be computed with",
 
     # ---- the studio: a draft being built ----------------------------------
     "not_an_operation": "a step the studio does not perform",
