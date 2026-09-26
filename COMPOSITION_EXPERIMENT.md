@@ -1464,3 +1464,81 @@ Catatan perbaikan:
   yang dicatat membawanya.
 - **Satu uji lama diubah:** `test_aggregate_cte_includes_convert` memeriksa
   SQL persis `coalesce(t0_cv.factor, 1)`, yaitu cacat yang diperbaiki F2.
+
+#### Tahap B putaran 2: dua modul stok (26 September 2026)
+
+**Pertanyaan utama masih teruji.** Kedua modul mengisi `Flow`, jadi aturan
+aplikasi atas `Flow` akan menjangkau pergerakan dari keduanya.
+
+Dua penulis baru, bersamaan, masing-masing hanya menerima primer dan brief
+barunya di prompt (tanpa membaca berkas). Laporan keduanya cocok dengan
+transkrip: `stok-a` 212 panggilan, `stok-b` 102; penolakan langkah hanya satu
+masing-masing (`not_attached`, `no_such_module`), sisanya pertanyaan BLOCKING
+di draft.
+
+| | `@alpha/stock@v1` (Odoo) | `@beta/stock@v1` (ERPNext) |
+|---|---|---|
+| pengisi `Flow` | **StockMove**: `amount` = `quantity` (**tak bertanda**), `affects` = product, `moment` = date | **StockLedgerEntry**: `amount` = `actual_qty` (bertanda, satuan stok), `affects` = item, `moment` = posting_date |
+| `Resource` | Product | Item |
+| `Event` | – | StockEntry, StockEntryDetail (baris) |
+| `Thing` | UomCategory, Uom, Warehouse, Location | UOM, UOMConversionDetail, Warehouse |
+| tabel hitungan | StockQuant (per produk, lokasi, **satuan**): masuk, keluar, saldo, saldo × rasio | Bin: jumlah `actual_qty` per item per gudang |
+
+**Kompromi peran yang dilaporkan (R1):**
+
+- **Arah (T4) muncul lagi, sekarang sebagai kompromi yang disadari.** Penulis
+  Odoo mengisi `Flow` dengan jumlah tak bertanda karena satu move mengubah dua
+  lokasi sekaligus; jumlah bertanda hasil hitungan ditolak (F1), dan kolom
+  bertanda kedua yang diketik "tidak ada di Odoo". Akibat yang ia tulis
+  sendiri: aplikasi yang menjumlah `Flow` akan melihat berapa yang bergerak,
+  bukan berapa yang ada.
+- **Penulis ERPNext mengisi `Flow` hanya di buku besar, bukan di baris
+  dokumen**, dengan dua alasan: baris transfer tidak punya satu tanda, dan
+  kalau keduanya mengisi `Flow` setiap pergerakan terhitung dua kali. Baris
+  mengisi `Event`, sehingga tanggal harus diketik ulang per baris (tidak bisa
+  diturunkan dari dokumen induk).
+- **`Flow` tidak punya pengikat tempat.** Kedua penulis mencatatnya secara
+  terpisah: lewat peran saja, stok per gudang/lokasi tidak terlihat. Ini akan
+  menentukan pertanyaan 1 di Tahap D.
+- **Satuan:** di Odoo jumlah move dalam satuan move (sak), bukan satuan produk,
+  jadi total `Flow` mencampur satuan (T5). ERPNext menjaga satuan stok hanya
+  lewat deskripsi.
+- **Tidak ada peran untuk tempat dan satuan**; keduanya mengisi `Thing`. Penulis
+  ERPNext sengaja tidak memakai `Resource` untuk gudang karena itu akan
+  membuat gudang bisa "dipindahkan" oleh `Flow`.
+- **Pengikat berlaku per slot, bukan per kelas** (seperti U6): `item_code`
+  menjadi `affects` di semua kelas yang memakainya.
+
+**Yang terjadi di gerbang (setelah F1–F4):**
+
+- **F1 bekerja dan menentukan bentuk.** Kedua penulis menaruh rumus di catatan
+  biasa (`transfer_qty = qty × faktor`, jumlah bertanda di StockMove, rasio di
+  Uom) dan ditolak dengan jelas; keduanya menggantinya dengan medan yang
+  diketik atau kelas hitungan. Tidak ada lagi kolom hitungan yang diam-diam
+  kosong.
+- **F2 bekerja, dan memperlihatkan P2.** Penulis Odoo mencoba konversi dengan
+  mencocokkan nama satuan (teks) ke rujukan satuan: ditolak `key_kinds_differ`.
+  Mencocokkan dengan satuan itu sendiri tidak bisa ditulis (P2 belum ada),
+  jadi konversi gaya Odoo tetap tidak bisa diungkapkan; StockQuant memberi
+  satu baris per satuan dan penjumlahan ke satuan produk diserahkan ke pembaca.
+- **F3 bekerja:** ekspresi tanpa kurung kurawal ditolak di draft, bukan setelah
+  seal. Tapi pesan penolakannya menampilkan `{columns}` harfiah, dan penulis
+  menemukan sintaks `{kolom}` dengan menebak (U4 tetap: sintaks tidak
+  diajarkan di mana pun).
+- Tetap ✗: aggregate di atas tabel hitungan (`no_type_slot`), parameter hanya
+  lewat kolom kunci (tidak bisa produk → satuan → rasio), tidak ada daftar
+  nilai tertutup (`usage`, `purpose` jadi teks bebas), `required` tidak tampak
+  di draft (U8).
+- **U17 muncul lagi dan disadari:** tidak ada yang membuat baris buku besar dari
+  stock entry; staf harus mencatat buku besar sendiri, dan tidak ada yang
+  memeriksa kecocokannya dengan baris dokumen.
+
+**Temuan ulang yang tidak diprediksi:**
+
+- **U1 ☠ terulang.** Kedua penulis memilih prefix `stock`, yang di-expand ke
+  namespace berbeda, tetapi registry menyimpan CURIE mentah: `stock:uom` dan
+  `stock:warehouse` sekarang **satu predikat untuk dua modul**, dengan arti
+  berbeda (`uom` alpha = satuan stok produk; beta = satuan tertulis pada baris
+  atau konversi). Seal alpha berkata "26 URIs minted" untuk 28 slot, tanpa
+  keterangan. Ini akan berpengaruh pada penukaran di Tahap F.
+- **U2 terulang:** kedua modul punya kelas `Warehouse`.
