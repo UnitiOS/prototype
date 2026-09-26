@@ -308,7 +308,18 @@ kesimpulannya.
   disetujui di awal. Posisi mundurnya adalah komposisi eksplisit.
 - **Dijalankan di sesi terpisah.**
 
-**Hasil:** *belum ada.*
+**Hasil putaran 1 (26 September 2026):** pertanyaan utama **tidak teruji**.
+Aplikasi tidak menghitung lewat peran sama sekali, karena rancangan tesnya
+membuat peran opsional dan mewajibkan modul stok yang diarahkan untuk tidak
+mengisi peran. Temuan sampingan dicatat di `COMPOSITION_EXPERIMENT.md`: modul
+bisa bentrok nama tanpa suara, definisi `Flow` hanya menampung jumlah
+bertanda, dan penulis modul menghindari peran karena takut hitungan ganda.
+
+**Putaran 2:** lingkup penuh yang sama, peran wajib dipakai penulis modul dan
+implementer, semua modul terpasang bersamaan, penukaran modul tanpa mengubah
+aturan aplikasi. Rencananya di `COMPOSITION_EXPERIMENT.md` bagian "Putaran 2".
+
+**Hasil putaran 2:** *belum ada.*
 
 ### Irisan 3: Studio manual (tanpa LLM)
 
@@ -586,7 +597,7 @@ menghitung lintas modul.
 | 2.7 | selesai, menunggu Anda melihatnya: katalog terhitung yang bisa dikueri (`components/modules/catalogue.py`) dan enam diagnosa kesehatan per aplikasi (`components/modules/health.py`), lewat CLI, API, dan area Catalogue di aplikasi web; `inv:movement_happened_on` ditemukan sebagai istilah mati di `@demo/stock@v2` — 24 pernyataan, mengisi `moment`, nol pembaca — dan sebagai fakta yang tak terlihat di `@demo/stock@v3`; 173 test lulus |
 | 3.1 | selesai, menunggu Anda melihatnya: draft sebagai berkas yang hanya berubah lewat 24 operasi tertutup (`components/studio/`), lubang yang dihitung dari pembaca gerbang itu sendiri — `uri_refusals` dan `role_refusals` jadi generator supaya bisa dikumpulkan — dan lima pertanyaan terbuka yang tidak ditolak siapa pun; `draft.txt` menjadi transkrip seal; CLI, API, dan area Studio di aplikasi web; satu aplikasi lengkap dengan aggregate, parameter dan expression dibangun dari nol tanpa satu baris YAML dan diterima `seal`; 191 test lulus |
 | 3.1 UI | dibangun ulang setelah Anda melihat yang pertama dan tidak mengerti sama sekali: tiga kolom istilah kompiler diganti **peta** (`web/src/graph.tsx`) — node jenis hal, garis relasi, yang dipijak samar di atas, klik untuk panel, tarik untuk membuat relasi; pertanyaan dirangkai dari deskripsi pengikatnya sendiri sehingga tetap domain-agnostic; `state()` menambah `borrowed` (keterjangkauan, bukan seluruh yang dipin); semua kosakata mesin pindah ke satu tutup *Behind the scenes*; 191 test lulus |
-| 2.8 | direncanakan 24 September 2026, dijalankan di sesi terpisah: uji komposisi dengan subagent sebagai penulis modul, implementer, dan staf, lewat gerbang yang sudah ada; rencana di `COMPOSITION_EXPERIMENT.md`; **mendahului 3.2** |
+| 2.8 | putaran 1 selesai 26 September 2026 tanpa menguji peran (rancangan tes); putaran 2 direncanakan: peran wajib, lingkup penuh; rencana di `COMPOSITION_EXPERIMENT.md`; **mendahului 3.2** |
 | 3.2 | belum dimulai; menunggu gerbang irisan 2.8 |
 | 4 | belum dimulai |
 | 5 | belum dimulai |

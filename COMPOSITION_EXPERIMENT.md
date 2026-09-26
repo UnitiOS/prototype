@@ -1267,3 +1267,150 @@ kecil untuk T6.
   ada kesempatan memperbaiki aplikasi di tengah bulan.
 
 ### Keputusan di gerbang
+
+26 September 2026, setelah pemilik membaca hasilnya bersama sesi perencana:
+
+- **Putaran 1 tidak menjawab pertanyaan utama.** Pertanyaannya adalah apakah
+  aplikasi yang menghitung **lewat peran** tetap benar ketika banyak modul
+  dari penulis berbeda mengisi peran itu. Aplikasi putaran 1 tidak memakai
+  peran sama sekali, jadi pertanyaan itu tidak pernah diuji. Penyebabnya
+  **rancangan tes**, bukan hasil sistem, dan bukan pilihan pemilik:
+  1. Primer untuk semua subagent: *"Roles are optional; use them where your
+     design genuinely fits them."* Begitu peran merepotkan, semua pihak
+     melewatinya.
+  2. Brief `stok-a`: *"Where a role's description conflicts with the Odoo
+     form above, keep the Odoo form."* Modul itu diarahkan untuk tidak
+     mengisi `Flow`, lalu implementer **diwajibkan** memakainya. Stok lewat
+     peran mustahil sejak Tahap B.
+  3. Aturan berhenti (§10) tidak terpicu: di Tahap D laporan menulis "peran
+     tidak dipakai sama sekali" tanpa menyatakan bahwa pertanyaan utama sudah
+     tidak bisa diuji.
+- **Keputusan: diulang sebagai putaran 2** (bagian berikut), dengan lingkup
+  penuh yang sama. Lingkup tidak dikecilkan: kerumitan pemakaian nyata adalah
+  yang diuji.
+- **Temuan putaran 1 tetap berlaku sebagai temuan**, tetapi tidak menjadi dasar
+  keputusan gerbang: bentrok nama antar modul (T1, U1, U2), `amount` bertanda
+  yang tidak menampung bentuk asal/tujuan (T4), penulis pembelian menolak
+  `Flow` karena takut hitungan ganda (T7), dan cacat compiler dan laporan
+  (U3–U17).
+
+---
+
+## Putaran 2: peran wajib dipakai
+
+Ditulis 26 September 2026 oleh sesi perencana. Dijalankan di sesi pelaksana.
+Semua bagian §1–§10 tetap berlaku, **kecuali yang diganti di sini.**
+
+### Langkah 0 putaran 2: bersihkan putaran 1, mulai dari nol
+
+Putaran 2 **tidak melanjutkan** apa pun dari putaran 1 selain cerita dan
+angka kebenaran. Urutannya:
+
+1. **Arsipkan bukti putaran 1**, supaya temuannya tetap bisa diperiksa:
+   pindahkan `build/exp/` seluruhnya ke `build/exp-putaran1/` (transkrip,
+   log API, modul yang di-seal, brief lama). Tidak ada yang dibaca lagi dari
+   sana kecuali untuk audit.
+2. **Kosongkan database:** hapus lalu buat ulang `uniti_exp` dan
+   `uniti_exp_ops` (`dropdb` + `createdb`), lalu jalankan
+   `scratch/exp/setup.sh` (skema kernel, `@uniti/core` v1 dan v2). Hasilnya:
+   log berisi dua aksi pendaftaran core, tidak ada modul `@alpha`, `@beta`,
+   `@gamma`, `@delta`, `@epsilon`, atau `@ptmaju`.
+3. **Buat ulang `build/exp/`** yang kosong. Salin **hanya** `story/` dari
+   arsip (cerita, bagian per departemen, `truth.py`, `truth.txt`). Cerita
+   ditulis tanpa tahu sistem apa pun, jadi tetap sah.
+4. **Semua brief ditulis ulang dari nol** sesuai R1–R5 di bawah. Brief lama
+   **dilarang dipakai atau disalin**, karena dua kalimatnya yang membuat
+   putaran 1 gagal: *"Roles are optional"* (primer) dan *"keep the Odoo
+   form"* (`stok-a`). Brief baru diperlihatkan ke pemilik sebelum subagent
+   pertama dijalankan.
+5. **Semua subagent baru.** Tidak ada subagent putaran 1 yang dilanjutkan
+   (tidak ada `SendMessage` ke mereka), karena mereka membawa ingatan
+   putaran 1.
+6. **Yang tetap dari putaran 1:** klien `scratch/exp/u.sh` (hanya pintu,
+   tanpa isi), empat perbaikan pintu G1–G4 yang sudah di-commit, dan
+   perbaikan F1–F4 di bawah setelah dikerjakan.
+7. Periksa sebelum lanjut: log hanya berisi dua aksi pendaftaran core,
+   `build/exp/packages` tidak ada atau kosong, transkrip baru kosong.
+
+### Yang sama dengan putaran 1
+
+- Cerita PT Maju satu bulan, lima pertanyaan, tiga departemen, dan angka
+  kebenaran dipakai ulang apa adanya.
+- Semua modul ditulis ulang oleh penulis baru yang independen: dua modul
+  stok, mitra, pembelian, buku besar. Implementer dan tiga staf juga baru.
+- Semua lewat pintu yang sama (klien, langkah Studio, seal, formulir). Satu
+  aksi demi satu aksi.
+
+### Aturan yang membuat peran tidak bisa dilewati
+
+- **R1. Penulis modul.** Setiap kelas yang dicatat (barang, gudang, mitra,
+  pergerakan, dokumen, baris jurnal) **wajib** mengisi peran core yang
+  artinya paling dekat. Gaya ERP bebas; pelaksana **tidak** mengarahkan ke
+  atau menjauh dari peran mana pun. Kalau definisi peran tidak menampung
+  bentuk yang wajar bagi penulis, penulis tetap mengisinya sedekat mungkin dan
+  melaporkan **setiap kompromi** ("saya mengubah X supaya muat"), atau, kalau
+  sama sekali tidak bisa, melaporkan **kenapa**. Kompromi dan penolakan adalah
+  hasil tentang peran, bukan kegagalan penulis.
+- **R2. Implementer.** Setiap jawaban dari lima pertanyaan dihitung **atas
+  peran** (`over: <Peran>`, `where is_a` bila perlu). Menyebut kelas milik
+  modul lain di aturan **dilarang**. Kelas milik aplikasi sendiri boleh, dan
+  kalau isinya pergerakan atau jumlah, ia juga wajib mengisi peran. Kalau satu
+  pertanyaan tidak bisa dijawab lewat peran, implementer menulis kenapa dan
+  pertanyaan itu berlabel **✗ peran**, bukan diakali.
+- **R3. Semua modul terpasang bersamaan.** Aplikasi mem-pin satu modul stok
+  ditambah mitra, pembelian, dan buku besar; **tidak ada yang boleh dibuang**
+  untuk menghindari masalah (putaran 1 membuang dua). Dengan
+  begitu pengisi peran yang sama datang dari beberapa modul sekaligus (barang
+  dan uang, penerimaan dari stok dan dari pembelian), sesuai pemakaian nyata.
+- **R4. Penukaran tanpa mengubah aturan.** Di Tahap F modul stok ditukar ke
+  modul stok kedua. **Aturan aplikasi tidak boleh diubah**; yang berubah
+  hanya pin. Angka setelah penukaran dibandingkan dengan kebenaran. Setiap
+  perubahan aturan yang ternyata dibutuhkan dicatat sebagai kegagalan klaim
+  modular.
+- **R5. Berhenti.** Pelaksana berhenti dan melapor ke pemilik dengan kalimat
+  "pertanyaan utama tidak bisa diuji karena …" begitu salah satu terjadi: tidak
+  ada modul yang mengisi peran yang dibutuhkan satu pertanyaan, implementer
+  tidak bisa menulis satu pun jawaban atas peran, atau penukaran menuntut
+  aturan ditulis ulang. Laporan tahap selalu dibuka dengan satu kalimat:
+  **apakah pertanyaan utama masih teruji.**
+
+### Diperbaiki dulu (sebelum penulis modul mulai)
+
+Hanya cacat putaran 1 yang akan membuat hasil peran salah **karena alasan
+yang bukan peran**. Dikerjakan seperti langkah 1 putaran 1: test lebih dulu,
+satu commit per perbaikan, dikonfirmasi pemilik.
+
+| # | cacat putaran 1 | kenapa menghalangi uji peran | perbaikan |
+|---|---|---|---|
+| F1 | U3: aturan di kelas entity tidak pernah dihitung | penulis mengikat `amount`/`moment` ke kolom hitungan; peran terlihat kosong karena bug | dihitung, atau ditolak di Studio dan seal (P4) |
+| F2 | U10: rujukan dicocokkan dengan teks, faktor bawaan 1 | angka salah diam dari rumus, bukan dari peran | tolak pasangan kunci yang jenisnya beda (P1); konversi tak cocok → kosong, bukan ×1 (P3) |
+| F3 | U9: `check` bilang aman, compiler menolak | implementer tidak bisa tahu aturannya rusak | `check` menjalankan pemeriksaan compiler (P5) |
+| F4 | U15: pembagian nol → 500 | pertanyaan hilang sebagai error, bukan hasil | penolakan terstruktur (P12) |
+| F5 | U17: tidak ada yang "memposting" ke `Flow` | pengisi `Flow` bergaya buku besar kosong kecuali staf mengetik dua kali | **tidak diperbaiki**; kalau terjadi lagi, dicatat sebagai hasil tentang peran |
+
+Tidak diperbaiki, karena termasuk yang diuji: bentrok nama antar modul,
+pergeseran arti antar versi, pencatatan ganda, identitas, keluasan peran,
+tanda/arah, satuan.
+
+### Yang harus ada di laporan putaran 2
+
+1. **Per peran per modul:** diisi ✓ · diisi dengan kompromi (apa) · tidak
+   bisa (kenapa).
+2. **Per pertanyaan:** dijawab lewat peran dan benar ✓ · salah tanpa suara ☠ ·
+   ditolak ⛔ · terlihat 👁 · tidak bisa lewat peran ✗.
+3. **Hitungan ganda:** kalau penerimaan tercatat di stok dan pembelian dan
+   keduanya mengisi peran, apakah angkanya dobel, dan apakah sesuatu bersuara.
+4. **Keluasan:** kalau barang (kg) dan uang (rupiah) mengisi peran yang sama,
+   apakah jumlahannya bercampur, dan apakah `covers` memperlihatkannya.
+5. **Penukaran:** angka sesudah penukaran dengan aturan yang tidak diubah.
+6. Semua ☠, dengan perbaikan minimal dan tempatnya (seperti Tahap G).
+
+### Gerbang putaran 2
+
+Kriteria §9 tetap, ditambah satu syarat sah: **putaran 2 hanya sah kalau
+kelima pertanyaan diusahakan lewat peran.** Pertanyaan yang dijawab dengan
+menyebut kelas modul lain membuat putaran tidak sah, bukan "lanjut".
+
+### Hasil putaran 2
+
+*Diisi oleh sesi pelaksana.*
