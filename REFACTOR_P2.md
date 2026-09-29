@@ -74,7 +74,7 @@ Prinsip mekanisme yang ikut terbawa. Semuanya sudah terbukti di P1:
 `components/studio/*`, `web/studio_handler.py`, `linter/*`,
 `scripts/bootstrap_p2_kernel.py`, dan `tests/p2/*`.
 
-**Disimpan sebagai referensi, tidak dijalankan dan tidak dites:** `components/agent/*`
+**Disimpan sebagai referensi, tidak dijalankan dan tidak dites** (dihapus dan diganti di irisan 4.2): `components/agent/*`
 (MCP baca P1 dan server Studio P2), sebagai inspirasi untuk irisan 4.
 `studio_server.py` di dalamnya mengimpor modul yang sudah dihapus.
 
@@ -674,6 +674,46 @@ replay identik dua kali.
   seperti v2, dan dua draft uji yang punya aturan hitung diberi contoh. Log
   pengembangan dibangun ulang.
 
+**Hasil 4.2 (30 September 2026).** Alat, panduan, dan agent tiruan selesai,
+252 test lulus, replay identik dua kali. `components/agent` lama (MCP P1 dan
+server Studio percobaan pertama) dihapus dan diganti; salinannya tetap di tag.
+
+- **Lima alat, tanpa seal dan tanpa setuju:** `look` (draft, sekitarnya,
+  contoh lengkap, atau riwayat langkah), `options` (langkah dan jawaban yang
+  cocok sekarang), `do` (sekelompok langkah; berhenti di penolakan pertama,
+  lalu membalas dengan keadaan draft), `catalogue`, `guide`. Pelakunya selalu
+  agent, jadi semua penjaga 4.1 berlaku lewat alat ini juga. Alatnya fungsi
+  Python biasa, tidak terikat framework maupun penyedia; nanti bisa juga dibuka
+  lewat MCP.
+- **Tiga cara mengakhiri giliran:** `Reply` (bicara ke orang), `Question`
+  (bertanya, dengan pilihan jawaban), `Proposal` (contoh yang minta disetujui,
+  dan apakah siap seal). Usulan diperiksa sistem sebelum sampai ke orang: contoh
+  yang disebut harus ada, masih usulan, dan lulus; "siap seal" hanya boleh bila
+  yang kurang tinggal persetujuan orang. Usulan yang berlebihan dikembalikan ke
+  agent dengan keadaan draft yang sebenarnya. Yang dilihat orang (`put_before`)
+  dibaca sistem dari draft, bukan ringkasan agent.
+- **Panduan dihasilkan dari sistem:** tujuh topik (alur kerja, langkah, aturan,
+  contoh, lubang, penolakan, peran). Langkah, penolakan per gerbang, lubang,
+  dan peran dibaca dari kode dan store setiap kali diminta; yang ditulis tangan
+  hanya alur kerja dan arti aturan, tanpa istilah domain. Test memastikan
+  panduan menyebut setiap langkah, setiap penolakan, setiap lubang terbuka, dan
+  sintaks rumus. Instruksi awal agent hanya alur kerja ditambah daftar topik
+  (sekitar 3.400 token bersama skema alat).
+- **Teks hemat:** membaca draft aplikasi kecil di bawah 2.500 karakter; daftar
+  pilihan dipotong di 40 dengan saran mempersempit lewat katalog.
+- **Skema datar untuk model apa pun:** argumen langkah berupa daftar pasangan
+  nama/nilai, tanpa union dan tanpa map berkunci bebas; nama langkah berupa
+  daftar tertutup. Test memeriksa setiap alat dan setiap cara mengakhiri
+  giliran. Diuji sekali ke Gemini 3.8 Flash lewat Vertex: semua skema
+  diterima, dua alat dipanggil sekaligus, jawaban benar.
+- **Agent tiruan** (`python -m components.agent rehearse SCRIPT`): naskah
+  langkah diputar lewat agent yang sama dengan yang akan dipakai model, di
+  salinan store. Naskah demo (`tests/agent/fixtures/rehearsal.yaml`) membangun
+  aplikasi stok: salah menulis rumus tanpa kurung kurawal, dan bacaan
+  berikutnya menyodorkan rumus yang benar; mengusulkan contoh yang lulus;
+  mengusulkan seal terlalu dini dan dikembalikan; lalu mengusulkan dengan
+  benar. Di test, orang menyetujui contohnya dan seal berhasil.
+
 ### Irisan 5: Compiler dan generator tumbuh sesuai kebutuhan
 
 Dari kebutuhan yang terbukti di 2.8, satu per satu, masing-masing dengan
@@ -916,5 +956,5 @@ konversi satuan dengan mencocokkan entity satuan itu sendiri.
 | 2.8 | ditutup 29 September 2026: putaran 1 tidak menguji peran (rancangan tes); putaran 2 dihentikan setelah kelima modul ditulis dengan peran wajib, dan sudah menjawab: peran bukan penjumlah otomatis lintas modul, komposisi eksplisit menjadi cara resmi; perbaikan F1–F4 tetap di kode, 217 test lulus; rincian di `COMPOSITION_EXPERIMENT.md` |
 | 3.2 | selesai 29 September 2026: bentrok nama ditolak; predikat dan kelas dicatat dengan URI penuh; enum, `required` per kelas, dan `multivalued` dibuka di Studio dan ditegakkan; range tak dikenal ditolak; sintaks rumus diajarkan; 226 test lulus; rincian di bagian "Irisan 3.2" |
 | 3.3 | selesai 29 September 2026: contoh bisnis dijalankan di log sementara lewat pintu form dan compiler yang sama; Studio menjalankannya setiap kali draft dibaca dan seal menolak bila ada yang gagal; tujuh langkah Studio baru; aplikasi demo membawa dua contoh; 239 test lulus; rincian di bagian "Irisan 3.3" |
-| 4 | berjalan, dipecah lima tahap: 4.1 (penjaga kontrak) selesai 30 September 2026, 242 test lulus; berikutnya 4.2 (alat agent dan panduan) |
+| 4 | berjalan, dipecah lima tahap: 4.1 (penjaga kontrak) dan 4.2 (alat agent dan panduan) selesai 30 September 2026, 252 test lulus; berikutnya 4.3 (agent sungguhan, akuntan, eval di Gemini) |
 | 5 | belum dimulai: compiler dan generator tumbuh sesuai kebutuhan |
