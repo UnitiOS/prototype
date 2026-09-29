@@ -630,6 +630,50 @@ Dikerjakan bersama, karena interface dirancang di sekitar agent sejak awal.
   `gemini-3.8-flash` (berpikir tinggi) dan `gemini-3.1-pro-preview`. Eval
   pertama menentukan pembagiannya.
 
+**Dipecah lima tahap (30 September 2026)**, masing-masing dengan titik periksa
+pemilik. Urutannya dari yang dijamin sistem ke yang dikerjakan model, supaya
+setiap model yang dicoba sudah berdiri di atas penjaga yang lengkap:
+
+| tahap | isi | yang dilihat pemilik |
+|---|---|---|
+| 4.1 | Penjaga kontrak, tanpa LLM: transkrip mencatat pelaku setiap langkah; contoh yang diusulkan agent belum disetujui sampai orang menyetujuinya, dan yang sudah disetujui tidak bisa diubah agent; modul beraturan hitung wajib punya contoh dan setiap kolom hitungan diperiksa contoh | penolakan-penolakan itu di Studio dan saat seal |
+| 4.2 | Alat agent dan panduan yang dihasilkan sistem, tanpa LLM: sekitar delapan alat, tampilan keadaan yang hemat token, panduan per topik yang dites mencakup setiap langkah dan penolakan | agent tiruan (tanpa model) membangun modul demo lewat alat-alat itu |
+| 4.3 | Agent sungguhan, akuntan, dan eval: model per peran lewat konfigurasi, batas biaya, percakapan disimpan, eval tugas kecil dijalankan tiga kali di Gemini | angka baseline Gemini: berapa tugas lulus, langkah, biaya, waktu |
+| 4.4 | Interface Studio baru di sekitar agent: percakapan yang streaming, peta, contoh dan angkanya, kartu usulan dengan tombol setuju dan seal | Studio baru dipakai langsung |
+| 4.5 | Bukti akhir: PT Maju dibangun ulang lewat agent dari permintaan bisnis | angka sama dengan angka kebenaran |
+
+**Hasil 4.1 (30 September 2026).** Keempat penjaga selesai, 242 test lulus,
+replay identik dua kali.
+
+- **Pelaku setiap langkah.** Setiap langkah Studio dilakukan oleh orang atau
+  agent, dan transkrip mencatatnya baris per baris (`... person add_class`,
+  `... agent expect`). API dan layar selalu orang; alat agent di 4.2 akan
+  selalu agent. Di terminal: `do ... --by agent`.
+- **Contoh dari agent adalah usulan.** Contoh yang ditulis agent membawa
+  `agreed: false`. Ia tetap dijalankan dan angkanya terlihat, karena orang
+  menyetujui angka yang bisa ia lihat, tetapi menjadi lubang yang memblokir
+  ("apakah contoh ini yang dilakukan bisnis, dan angkanya benar?") dan seal
+  menolaknya. Hanya orang yang bisa menyetujui (langkah baru
+  `agree_example`); agent yang mencoba ditolak.
+- **Contoh yang disetujui milik orang.** Agent ditolak bila mengubah,
+  menambah catatan, mengganti angka, atau menghapus contoh yang sudah
+  disetujui. Penolakannya menyuruh agent menjelaskan ke orang apa yang harus
+  berubah dan kenapa, atau mengusulkan contoh baru. Ganti nama kelas atau
+  kolom tetap ikut ke contoh, karena itu bukan perubahan kata bisnis.
+- **Setiap kolom hitungan wajib diperiksa contoh.** Kolom yang dihitung aturan
+  (aggregate, parameter, expression) di kelas milik draft sendiri harus punya
+  minimal satu angka di salah satu contoh. Kalau belum, satu lubang
+  memblokir per kolom ("berapa angka yang harus keluar di kolom ini?") dan seal
+  menolak sebelum menulis apa pun. Yang menentukan kolom mana yang dihitung
+  adalah compiler, bukan aturan kedua. Modul tanpa aturan hitung tetap tidak
+  wajib punya contoh. Keputusan kecil di 3.3 dengan ini dibalik.
+- **Satu hakim.** Seal dan Studio membaca penjaga yang sama
+  (`contract_refusals`); seal berhenti di yang pertama, Studio menampilkan
+  semuanya.
+- **Yang ikut berubah:** modul demo stok v1 dan v3 sekarang membawa contoh
+  seperti v2, dan dua draft uji yang punya aturan hitung diberi contoh. Log
+  pengembangan dibangun ulang.
+
 ### Irisan 5: Compiler dan generator tumbuh sesuai kebutuhan
 
 Dari kebutuhan yang terbukti di 2.8, satu per satu, masing-masing dengan
@@ -872,5 +916,5 @@ konversi satuan dengan mencocokkan entity satuan itu sendiri.
 | 2.8 | ditutup 29 September 2026: putaran 1 tidak menguji peran (rancangan tes); putaran 2 dihentikan setelah kelima modul ditulis dengan peran wajib, dan sudah menjawab: peran bukan penjumlah otomatis lintas modul, komposisi eksplisit menjadi cara resmi; perbaikan F1–F4 tetap di kode, 217 test lulus; rincian di `COMPOSITION_EXPERIMENT.md` |
 | 3.2 | selesai 29 September 2026: bentrok nama ditolak; predikat dan kelas dicatat dengan URI penuh; enum, `required` per kelas, dan `multivalued` dibuka di Studio dan ditegakkan; range tak dikenal ditolak; sintaks rumus diajarkan; 226 test lulus; rincian di bagian "Irisan 3.2" |
 | 3.3 | selesai 29 September 2026: contoh bisnis dijalankan di log sementara lewat pintu form dan compiler yang sama; Studio menjalankannya setiap kali draft dibaca dan seal menolak bila ada yang gagal; tujuh langkah Studio baru; aplikasi demo membawa dua contoh; 239 test lulus; rincian di bagian "Irisan 3.3" |
-| 4 | belum dimulai: agent dan interface Studio baru; stack dan implementasi agent dibahas terpisah |
+| 4 | berjalan, dipecah lima tahap: 4.1 (penjaga kontrak) selesai 30 September 2026, 242 test lulus; berikutnya 4.2 (alat agent dan panduan) |
 | 5 | belum dimulai: compiler dan generator tumbuh sesuai kebutuhan |
