@@ -131,6 +131,8 @@ CODES = {
     "examples_not_understood": "an examples file whose shape is not the one examples have",
     "record_without_class": "a record stated for the first time without saying what it is",
     "example_failed": "a business example whose numbers the map does not produce",
+    "example_not_agreed": "a business example an agent proposed and no person has agreed to",
+    "column_unchecked": "a column the draft computes that no business example gives a number for",
 
     # ---- the studio: a draft being built ----------------------------------
     "not_an_operation": "a step the studio does not perform",
@@ -148,6 +150,8 @@ CODES = {
     "not_a_pin": "an import this draft does not hold",
     "no_such_example": "an example this draft does not hold",
     "not_in_example": "a record or an expected number the example does not hold",
+    "example_agreed": "an agent changing an example a person agreed to",
+    "person_only": "a step only a person may take, taken by an agent",
 
     # ---- the command line -------------------------------------------------
     "not_field_value": "a `--set` argument that is not FIELD=VALUE",

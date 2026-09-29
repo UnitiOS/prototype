@@ -113,6 +113,15 @@ def world(conn, tmp_path_factory):
     path = drafts / "draft.yaml"
     path.write_text(yaml.safe_dump(draft, sort_keys=False), encoding="utf-8")
     (drafts / "probe.txt").write_text("probe", encoding="utf-8")
+    # The tally is computed, and a computed column owes a number to an example.
+    (drafts / "draft.examples.yaml").write_text(yaml.safe_dump({"examples": {
+        "one_widget": {
+            "says": "One widget weighing 2.",
+            "records": [{"record": "w1", "class": "Widget",
+                         "facts": {"widget_ref": "W1", "widget_weight": 2}}],
+            "expect": [{"table": "Tally", "row": "W1",
+                        "values": {"tally_weight": 2}}],
+        }}}, sort_keys=False), encoding="utf-8")
     seal(conn, path, actor_id="test", into=directory, store=store)
 
     yield store

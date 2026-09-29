@@ -38,6 +38,7 @@ Two things this deliberately does not do.
 import re
 import shutil
 import sys
+from contextvars import ContextVar
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -87,6 +88,13 @@ USAGE_FIELDS = ("required",)
 # What may be said about a business example as a whole. Its records and its
 # numbers are steps of their own.
 EXAMPLE_FIELDS = ("says",)
+
+# Who performs a step. A person, or an agent working on a person's behalf; the
+# transcript says which, line by line, and the two are held to different
+# rules about the examples. An agent proposes an example and a person agrees
+# to it; once agreed, it is the business's word, and only a person changes it.
+ACTORS = ("person", "agent")
+_ACTOR = ContextVar("actor", default="person")
 
 # The operations, what each one does, and what it takes. The kinds are what
 # `steps()` turns into option lists, so they are the vocabulary a form renders
@@ -303,6 +311,13 @@ OPERATIONS = {
         "takes": {"example": "own_example", "table": "class", "row": "text"},
         "may": {"at": "moment"},
     },
+    "agree_example": {
+        "does": "agree that an example is what the business does and what its "
+                "numbers must be. Only a person agrees: an example an agent "
+                "wrote is a proposal until then, and cannot be sealed",
+        "takes": {"example": "own_example"},
+        "may": {},
+    },
 }
 
 # A LinkML name: what a class or a slot may be called. Not a style rule — these
@@ -423,7 +438,7 @@ def _record(where, name, op, args):
     short = {k: v for k, v in args.items()
              if isinstance(v, str) and len(v) <= 60 and "\n" not in v}
     long = {k: v for k, v in args.items() if k not in short}
-    line = f"\n{moment}  {op}"
+    line = f"\n{moment}  {_ACTOR.get()}  {op}"
     if short:
         line += "  " + " ".join(f"{k}={v}" for k, v in short.items())
     for key, value in long.items():
@@ -486,8 +501,22 @@ def text_of(document):
 
 # ---- performing one step --------------------------------------------------
 
-def apply(store, name, op, args=None):
-    """Perform one operation on one draft, and return the document it wrote."""
+def apply(store, name, op, args=None, *, actor="person"):
+    """Perform one operation on one draft, and return the document it wrote.
+
+    `actor` is who performs it: a person, or an agent. The transcript records
+    it, and an agent may not change an example a person agreed to.
+    """
+    if actor not in ACTORS:
+        raise ValueError(f"actor must be one of {ACTORS}, not {actor!r}")
+    held = _ACTOR.set(actor)
+    try:
+        return _perform(store, name, op, args)
+    finally:
+        _ACTOR.reset(held)
+
+
+def _perform(store, name, op, args):
     args = dict(args or {})
     if op not in OPERATIONS:
         raise StudioError(
@@ -1307,6 +1336,30 @@ def _example(held, wanted, what):
     )
 
 
+def _changeable(held, wanted, what):
+    """An example this actor may change: any, for a person; for an agent, only
+    one that is still its own proposal.
+
+    An agreed example is the business's word on what the numbers must be. An
+    agent that could rewrite it could make any failing map pass by changing
+    the answer instead of the rule — so it cannot, and it says so to the
+    person instead. Not a matter of the agent's judgement: of who it is.
+    """
+    example = _example(held, wanted, what)
+    if _ACTOR.get() == "agent" and business.agreed(held[example]):
+        raise StudioError(
+            "example_agreed",
+            where=f"{what}: {example}",
+            expected="an example still proposed, or a person making the change",
+            got=f"{example!r}, which a person agreed to",
+            repairs=[Repair("tell the person what should change and why; they "
+                            "change it, or agree to a new example you propose "
+                            "in its place",
+                            options=["add_example"])],
+        )
+    return example
+
+
 def _add_example(store, name, document, args):
     held = examples_of(store, name)
     example = _word(args["example"], "add_example")
@@ -1319,14 +1372,18 @@ def _add_example(store, name, document, args):
             repairs=[Repair("choose another name, or add to that example",
                             options=["record", "expect"])],
         )
-    held[example] = {"says": str(args["says"]), "records": [], "expect": []}
+    held[example] = {"says": str(args["says"])}
+    if _ACTOR.get() == "agent":
+        # Written by an agent, it is a proposal: the business has not said so.
+        held[example]["agreed"] = False
+    held[example].update({"records": [], "expect": []})
     _save_examples(store, name, held, "add_example", args)
     return document
 
 
 def _set_example(store, name, document, args):
     held = examples_of(store, name)
-    example = _example(held, str(args["example"]), "set_example")
+    example = _changeable(held, str(args["example"]), "set_example")
     field = _field("set_example", EXAMPLE_FIELDS, args["field"])
     held[example][field] = str(args["value"])
     _save_examples(store, name, held, "set_example", args)
@@ -1335,14 +1392,32 @@ def _set_example(store, name, document, args):
 
 def _remove_example(store, name, document, args):
     held = examples_of(store, name)
-    del held[_example(held, str(args["example"]), "remove_example")]
+    del held[_changeable(held, str(args["example"]), "remove_example")]
     _save_examples(store, name, held, "remove_example", args)
+    return document
+
+
+def _agree_example(store, name, document, args):
+    held = examples_of(store, name)
+    example = _example(held, str(args["example"]), "agree_example")
+    if _ACTOR.get() != "person":
+        raise StudioError(
+            "person_only",
+            where=f"agree_example: {example}",
+            expected="a person, agreeing that this is what the business does",
+            got="an agent",
+            repairs=[Repair("show the person what the example says, what it "
+                            "records and the numbers it expects, and ask them "
+                            "to agree to it")],
+        )
+    held[example].pop("agreed", None)
+    _save_examples(store, name, held, "agree_example", args)
     return document
 
 
 def _record_step(store, name, document, args):
     held = examples_of(store, name)
-    example = _example(held, str(args["example"]), "record")
+    example = _changeable(held, str(args["example"]), "record")
     record = {"record": _word(args["record"], "record")}
     if "class" in args:
         record["class"] = _visible(store, document, "class", str(args["class"]),
@@ -1371,7 +1446,7 @@ def _record_step(store, name, document, args):
 
 def _unrecord(store, name, document, args):
     held = examples_of(store, name)
-    example = _example(held, str(args["example"]), "unrecord")
+    example = _changeable(held, str(args["example"]), "unrecord")
     records = held[example].get("records") or []
     kept = [r for r in records if str(r.get("record")) != str(args["record"])]
     if len(kept) == len(records):
@@ -1404,7 +1479,7 @@ def _same_row(expectation, table, row, at):
 
 def _expect(store, name, document, args):
     held = examples_of(store, name)
-    example = _example(held, str(args["example"]), "expect")
+    example = _changeable(held, str(args["example"]), "expect")
     table = str(args["table"])
     row = _row_of(args["row"])
     at = None
@@ -1435,7 +1510,7 @@ def _expect(store, name, document, args):
 
 def _unexpect(store, name, document, args):
     held = examples_of(store, name)
-    example = _example(held, str(args["example"]), "unexpect")
+    example = _changeable(held, str(args["example"]), "unexpect")
     table, row = str(args["table"]), _row_of(args["row"])
     at = str(args["at"]) if "at" in args else None
     expected = held[example].get("expect") or []
@@ -1505,8 +1580,9 @@ _PERFORM = {
     "remove_example": _remove_example,
     "record": _record_step, "unrecord": _unrecord,
     "expect": _expect, "unexpect": _unexpect,
+    "agree_example": _agree_example,
 }
 
-__all__ = ["EXAMPLES", "OPERATIONS", "StudioError", "apply", "drafts",
+__all__ = ["ACTORS", "EXAMPLES", "OPERATIONS", "StudioError", "apply", "drafts",
            "enums_seen", "examples_of", "open_draft", "path", "ranges", "seen",
            "text_of", "transcript"]

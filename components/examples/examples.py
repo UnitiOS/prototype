@@ -53,6 +53,20 @@ at the end. (`when` rather than `on`: YAML 1.1 reads a bare `on:` key as
 pairs. An expected value that is empty (`~`) says the cell must be empty, which
 is not the same as nought — an absent rule is not a rule that says zero.
 
+**Whose word it is.** An example is the business's word, so a person agrees
+to it. One an agent wrote carries `agreed: false` and is a proposal: it runs,
+its numbers show, and nothing is sealed until a person agrees to it. Without
+the key, a person wrote it or agreed to it. The studio holds an agent to this
+— it cannot change an agreed example — because an agent that could would make
+a failing map pass by changing the answer rather than the rule.
+
+**What an example owes the map.** A map that computes a column says, by
+computing it, that some number is right; an example is where somebody said
+which. So every column the draft's own classes compute — by an aggregate, a
+parameter or an expression — must be checked by at least one number in some
+example, or the draft is refused (`contract_refusals`). A module with no rule
+computes nothing and owes nothing: a vocabulary has no numbers to agree on.
+
 **How one example runs.** In a log of its own, which exists for exactly as long
 as the example does. Three temporary tables shadow the kernel's for this one
 connection, inside a transaction that is always rolled back: the records go in
@@ -81,7 +95,7 @@ sys.path.insert(0, str(ROOT / "components" / "compiler"))
 sys.path.insert(0, str(ROOT / "components" / "generator"))
 sys.path.insert(0, str(ROOT / "components" / "kernel"))
 
-from compile import preview, tables  # noqa: E402
+from compile import plan_for, preview, tables  # noqa: E402
 from components.refusal import Refusal, Repair  # noqa: E402
 from generate import _type_slot, submit  # noqa: E402
 from perform import perform  # noqa: E402
@@ -102,7 +116,12 @@ REASON = "example"
 
 # The closed shapes. An unknown key is a typo, and a typo in a contract is
 # the one kind that must not pass silently.
-EXAMPLE_KEYS = ("says", "records", "expect")
+EXAMPLE_KEYS = ("says", "agreed", "records", "expect")
+
+# The column kinds a rule computes, as the compiler's planner names them. A key
+# groups and a stated column is what somebody said; neither is a number the map
+# claims to have worked out.
+COMPUTED = ("aggregate", "parameter", "expression")
 RECORD_KEYS = ("record", "class", "when", "facts")
 EXPECT_KEYS = ("table", "row", "at", "values")
 
@@ -196,6 +215,10 @@ def _example(file, name, body):
     if not str(body.get("says") or "").strip():
         raise _shape(f"{where}.says", "the example in the business's own words",
                      "nothing")
+    if "agreed" in body and body["agreed"] is not False:
+        raise _shape(f"{where}.agreed", "`false`, on a proposal nobody has agreed "
+                     "to yet; an agreed example carries no `agreed`",
+                     repr(body["agreed"]))
     for i, record in enumerate(body.get("records") or []):
         at = f"{where}.records[{i}]"
         if not isinstance(record, dict):
@@ -231,6 +254,71 @@ def _example(file, name, body):
         _scalars(f"{at}.values", expectation["values"])
         if expectation.get("at") is not None:
             instant(expectation["at"], f"{at}.at", end_of_day=True)
+
+
+def agreed(body):
+    """Whether a person has agreed to this example, or wrote it themselves."""
+    return body.get("agreed") is not False
+
+
+# ---- what the examples owe the map ----------------------------------------
+
+def computed_columns(map_, document):
+    """Every column the draft's own classes compute, as `(class, column)`.
+
+    Read off the compiler's planner, which is what decides whether a column is
+    computed at all. A class the planner refuses is left out: the compiler's
+    refusal already stops the seal, and says why in its own words.
+    """
+    for class_name, body in sorted((document.get("classes") or {}).items()):
+        if (body or {}).get("abstract"):
+            continue
+        try:
+            planned = plan_for(map_, class_name)
+        except Refusal:
+            continue
+        for column in planned["columns"]:
+            if column["kind"] in COMPUTED:
+                yield class_name, column["name"]
+
+
+def contract_refusals(map_, document, examples):
+    """Everything the examples owe the draft before any of them runs.
+
+    A generator, like the seal's other readers that can refuse more than once:
+    the seal stops at the first, the studio lists them all. Two things:
+
+        example_not_agreed   a proposal nobody has agreed to
+        column_unchecked     a computed column no example gives a number for
+    """
+    for name, body in examples.items():
+        if not agreed(body):
+            yield ExampleError(
+                "example_not_agreed", where=f"example {name}",
+                expected="an example a person agreed to: it is their word on "
+                         "what the numbers must be",
+                got="a proposal nobody has agreed to yet",
+                repairs=[Repair("show the person what it says, what it records "
+                                "and the numbers it expects; they agree to it, "
+                                "change it, or take it out",
+                                options=["agree_example", "expect",
+                                         "remove_example"])])
+    checked = {(str(e.get("table")), str(column))
+               for body in examples.values()
+               for e in body.get("expect") or []
+               for column in (e.get("values") or {})}
+    for class_name, column in computed_columns(map_, document):
+        if (class_name, column) not in checked:
+            yield ExampleError(
+                "column_unchecked", where=f"{class_name}.{column}",
+                expected="a number some business example says this column "
+                         "must come to",
+                got="none, so nothing says the rule computing it is right",
+                repairs=[Repair("give it a number in an example that records "
+                                "what it is computed from",
+                                options=list(examples)),
+                         Repair("or write an example for it",
+                                options=["add_example"])])
 
 
 def _scalars(where, held):
@@ -280,6 +368,7 @@ def run_one(conn, map_, name, body):
     `example_failed` per number that came out different.
     """
     out = {"name": name, "says": str(body.get("says") or ""),
+           "agreed": agreed(body),
            "records": len(body.get("records") or []),
            "expected": len(body.get("expect") or []),
            "checks": [], "tables": [], "refusals": [], "passed": False}
@@ -318,7 +407,8 @@ def render(reported, *, tables=False):
     lines = []
     for result in reported:
         mark = {True: "holds", False: "FAILS", None: "not run"}[result["passed"]]
-        lines.append(f"[{mark}] {result['name']}: {result['says']}")
+        proposed = "" if result.get("agreed", True) else " (proposed, not agreed yet)"
+        lines.append(f"[{mark}] {result['name']}{proposed}: {result['says']}")
         for check in result["checks"]:
             at = f" on {check['at']}" if check["at"] else ""
             what = check["column"] or "the row"
@@ -602,5 +692,6 @@ def _pairs(row):
     return str(row)
 
 
-__all__ = ["BEGINNING", "END", "ExampleError", "SUFFIX", "dump", "instant",
-           "load", "path_for", "refusals", "render", "report", "run", "run_one"]
+__all__ = ["BEGINNING", "COMPUTED", "END", "ExampleError", "SUFFIX", "agreed",
+           "computed_columns", "contract_refusals", "dump", "instant", "load",
+           "path_for", "refusals", "render", "report", "run", "run_one"]

@@ -3,13 +3,15 @@
     python -m components.studio drafts
     python -m components.studio show @scope/name
     python -m components.studio steps @scope/name
-    python -m components.studio do @scope/name <step> [key=value ...]
+    python -m components.studio do @scope/name <step> [key=value ...] [--by agent]
 
 `show` is the studio's three columns as text: what is being built, the holes to
 stand in, and what the gates and the business examples say about it. The
 examples run against `UNITI_DSN`, each in a scratch log that is rolled back. `steps` is the same list a form
 draws and an agent chooses from — every operation with the answers that fit
-right now. `do` performs one of them.
+right now. `do` performs one of them, as a person unless `--by agent` says
+otherwise: the transcript records which, and an agent may not agree to an
+example or change one a person agreed to.
 
 Nothing here writes to the kernel. A draft is a file until somebody seals it,
 and `python -m components.modules seal` is what does that.
@@ -30,7 +32,7 @@ from components.examples.examples import render  # noqa: E402
 from components.modules.store import Store  # noqa: E402
 from components.refusal import Refusal  # noqa: E402
 from components.studio.draft import (  # noqa: E402
-    OPERATIONS, apply, drafts, open_draft,
+    ACTORS, OPERATIONS, apply, drafts, open_draft,
 )
 from components.studio.read import state, steps  # noqa: E402
 from perform import connect  # noqa: E402
@@ -152,6 +154,7 @@ def main(argv=None):
     do.add_argument("name")
     do.add_argument("step", choices=sorted(OPERATIONS))
     do.add_argument("args", nargs="*")
+    do.add_argument("--by", choices=ACTORS, default="person")
     args = parser.parse_args(argv)
 
     store = Store.from_env()
@@ -164,7 +167,7 @@ def main(argv=None):
             _print_steps(steps(store, args.name,
                                open_draft(store, args.name)))
         else:
-            apply(store, args.name, args.step, _pairs(args.args))
+            apply(store, args.name, args.step, _pairs(args.args), actor=args.by)
             if args.step == "discard":
                 print(f"discarded the draft of {args.name}")
             else:

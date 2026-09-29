@@ -405,9 +405,13 @@ def test_an_aggregate_step_narrows_and_converts(world):
         "convert": {"using": "Rate", "on": {"rate_thing": "affects"},
                     "factor": "rate_factor"},
     }
+    # The total is computed, so the draft owes a number for it before a seal:
+    # the one hole left, and it blocks.
     report = reading.state(world, name)
-    assert [h["kind"] for h in report["holes"]] == ["no_examples"]
-    assert report["sealable"] is True
+    assert [(h["kind"], h["where"]) for h in report["holes"]] == [
+        ("column_unchecked", "Total.total_base")]
+    assert report["holes"][0]["step"]["op"] == "add_example"
+    assert report["sealable"] is False
     assert "where=affects=Ingredient" in studio.transcript(world, name)
 
     offered = {s["op"]: s for s in reading.steps(world, name, studio.open_draft(world, name))}

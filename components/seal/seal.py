@@ -59,7 +59,10 @@ conversation that produced it are found together.
 A draft may carry business examples beside it, `<draft>.examples.yaml`: a few
 records and the numbers they must add up to (components/examples). Every one
 is run before anything is written, and a number that comes out different
-refuses the seal. They land beside the version as `vN.examples.yaml`.
+refuses the seal. They land beside the version as `vN.examples.yaml`. A draft
+that computes a column must carry them: every computed column of its own
+classes needs a number in some example, and every example needs a person to
+have agreed to it.
 
 One sealed version can be put into a second log without being sealed again.
 `register()` reads a version that already exists, writes its `slot_uri` rows
@@ -501,8 +504,9 @@ def _compiles(view, draft_path):
             raise refusal
 
 
-def _examples_hold(conn, view, draft_path):
-    """Every business example beside the draft comes out as it says.
+def _examples_hold(conn, view, draft, draft_path):
+    """Every business example beside the draft is agreed, every column the
+    draft computes is checked by one, and each comes out as it says.
 
     The contract the person agreed to, run the way the studio runs it on every
     change: each example in a scratch log of its own, rolled back, so nothing
@@ -510,13 +514,17 @@ def _examples_hold(conn, view, draft_path):
     gate here does. Returns the examples file, or None when there is none.
     """
     # Imported here: the examples read the compiler, which reads this module.
-    from components.examples.examples import load, path_for, refusals, run
+    from components.examples.examples import (
+        contract_refusals, load, path_for, refusals, run,
+    )
     held = path_for(draft_path)
     examples = load(held)
-    if not examples:
-        return None
     map_ = {"path": draft_path, "view": view, "version": None,
             "label": draft_path.name}
+    for refusal in contract_refusals(map_, draft, examples):
+        raise refusal
+    if not examples:
+        return None
     for refusal in refusals(run(conn, map_, examples)):
         raise refusal
     return held
@@ -904,7 +912,7 @@ def seal(conn, draft_path, *, actor_id, into=None, sealed_at=None, store=None):
     annotations = draft.get("annotations") or {}
     facts = _facts(annotations, ranges, draft_path.name, view)
     _compiles(view, draft_path)
-    examples = _examples_hold(conn, view, draft_path)
+    examples = _examples_hold(conn, view, draft, draft_path)
 
     valid_from = _valid_from(annotations, draft_path.name)
     _flat(annotations, draft_path.name)

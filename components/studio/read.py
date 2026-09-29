@@ -78,7 +78,8 @@ OPEN = {
 # `where` is read for the names, because that is where the gate put them. The
 # two shapes are the gates' own and a test holds them to it.
 ANSWERS = ("binding_unfilled", "binding_ambiguous", "slot_without_uri",
-           "no_valid_from", "name_clash", "range_unknown")
+           "no_valid_from", "name_clash", "range_unknown", "column_unchecked",
+           "example_not_agreed")
 
 
 def _map(store, name, document):
@@ -152,6 +153,10 @@ def inspect(store, name, document, conn=None):
     report = check(store, name, "draft", map_=map_)
     out["refusals"] += report["refusals"]
     out["tables"] = report["tables"]
+    # What the examples owe the draft needs no log: whether each is agreed,
+    # and whether every column the draft computes has a number in one.
+    out["refusals"] += [r.as_dict() for r in
+                        business.contract_refusals(map_, document, held)]
 
     if conn is not None and held:
         results = business.run(conn, map_, held)
@@ -168,6 +173,7 @@ def inspect(store, name, document, conn=None):
 def _unrun(example, body):
     """An example as the file holds it, before anything has run it."""
     return {"name": example, "says": str(body.get("says") or ""),
+            "agreed": business.agreed(body),
             "records": len(body.get("records") or []),
             "expected": len(body.get("expect") or []),
             "checks": [], "tables": [], "refusals": [], "passed": None}
@@ -185,6 +191,11 @@ def _about(refusal):
     if refusal["code"] in ("binding_unfilled", "binding_ambiguous"):
         class_name, _, binding = where.partition(".")
         return {"class": class_name, "binding": binding}
+    if refusal["code"] == "column_unchecked":
+        class_name, _, column = where.partition(".")
+        return {"class": class_name, "column": column}
+    if refusal["code"] == "example_not_agreed":
+        return {"example": where.removeprefix("example ")}
     if refusal["code"] in ("slot_without_uri", "range_unknown"):
         _, _, slot = where.partition(": ")
         return {"slot": slot}
@@ -218,6 +229,18 @@ def _step_for(refusal):
         kind = about["kind"]
         return {"op": f"rename_{kind}", "args": {kind: about[kind]},
                 "choose": "to", "options": []}
+    if code == "column_unchecked":
+        # The first repair's options are the examples there are to add the
+        # number to; with none, the step is to write one.
+        held = refusal["repairs"][0]["options"]
+        if not held:
+            return {"op": "add_example", "args": {}, "choose": "example",
+                    "options": []}
+        return {"op": "expect", "args": {"table": about["class"]},
+                "choose": "example", "options": held}
+    if code == "example_not_agreed":
+        return {"op": "agree_example", "args": {"example": about["example"]},
+                "choose": "example", "options": [about["example"]]}
     return None
 
 
@@ -239,6 +262,13 @@ def _question(kind, where, detail):
         what = detail.get("kind")
         return (f"two modules in sight both declare the {what} "
                 f"{detail.get(what)} — which one is meant?")
+    if kind == "column_unchecked":
+        return (f"what number should {detail.get('class')}'s "
+                f"{detail.get('column')} come to, in an example the business "
+                f"agrees with?")
+    if kind == "example_not_agreed":
+        return (f"is the example {detail.get('example')} what the business "
+                f"does, and are its numbers right?")
     if kind == "nothing_declared":
         return "what kinds of thing does this module know about?"
     if kind == "class_is_empty":
@@ -326,7 +356,11 @@ def holes(store, name, document, found):
                                "options": []}))
 
     with_rows = with_rows_of(found["map"])
-    if own_classes and not found["examples"]:
+    # A draft that computes something is already asked for its numbers, one
+    # column at a time and blocking; the opening is for one that computes
+    # nothing and may still be worth an example.
+    computes = any(r["code"] == "column_unchecked" for r in found["refusals"])
+    if own_classes and not found["examples"] and not computes:
         out.append(_hole("no_examples", name, blocking=False,
                          because=OPEN["no_examples"],
                          step={"op": "add_example", "args": {},

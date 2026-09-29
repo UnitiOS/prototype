@@ -13,6 +13,11 @@ What this slice has to hold, and what is asserted here:
                    failing one is a blocking hole, a revision starts from the
                    examples of the version it revises, and a rename reaches
                    them as it reaches every rule.
+    owed           every column a draft computes needs a number in some
+                   example before it can be sealed.
+    whose word     an example an agent writes is a proposal until a person
+                   agrees to it, and an agent cannot change one a person
+                   agreed to. The transcript says who took each step.
 """
 
 import os
@@ -72,8 +77,8 @@ def _demo(world):
     return map_, business.load(business.path_for(map_["path"]))
 
 
-def step(store, name, op, **args):
-    return studio.apply(store, name, op, args)
+def step(store, name, op, actor="person", **args):
+    return studio.apply(store, name, op, args, actor=actor)
 
 
 # ---- the contract ---------------------------------------------------------
@@ -206,6 +211,14 @@ def test_an_examples_file_is_held_to_its_shape(tmp_path):
         business.load(written)
     assert raised.value.code == "examples_not_understood"
 
+    # `agreed` is only ever `false`, on a proposal: an agreed example is one
+    # without it, so a hand-written `true` is not a way of agreeing.
+    written.write_text("examples:\n  one:\n    says: x\n    agreed: true\n",
+                       encoding="utf-8")
+    with pytest.raises(ExampleError) as raised:
+        business.load(written)
+    assert raised.value.where.endswith("one.agreed")
+
     written.write_text("examples:\n  one:\n    records: []\n", encoding="utf-8")
     with pytest.raises(ExampleError) as raised:
         business.load(written)
@@ -223,8 +236,8 @@ def test_the_examples_of_a_sealed_version_run_from_a_terminal(world, monkeypatch
 
 # ---- the studio -----------------------------------------------------------
 
-def _an_application(store, name):
-    """A total, a level and a headroom, and one example of what they come to."""
+def _ruled(store, name):
+    """A total, a level and a headroom, and not a word about what they come to."""
     step(store, name, "start", title="Balances",
          description="What is on hand, and how far above the level.")
     step(store, name, "pin", module=f"{dev_modules.CATALOG}@v3")
@@ -244,23 +257,33 @@ def _an_application(store, name):
     step(store, name, "expression", **{
         "class": "Balance", "column": "balance_headroom",
         "expression": "{balance_on_hand} - {balance_level}"})
+    return name
 
-    step(store, name, "add_example", example="flour",
+
+def _flour(store, name, *, actor="person", headroom=True):
+    """One example of what the rules come to, written by `actor`."""
+    step(store, name, "add_example", actor, example="flour",
          says="25 kg came in and 5 were used: 20 on hand, 10 above a level of 10.")
-    step(store, name, "record", example="flour", record="flour",
+    step(store, name, "record", actor, example="flour", record="flour",
          **{"class": "Ingredient"},
          facts="ingredient_code=FLR, ingredient_name=Flour, ingredient_unit=kg, "
                "ingredient_reorder_level=10")
     for record, code, quantity in (("in_1", "M1", "25"), ("used", "M2", "-5")):
-        step(store, name, "record", example="flour", record=record,
+        step(store, name, "record", actor, example="flour", record=record,
              **{"class": "StockMovement"},
              facts=f"movement_code={code}, movement_ingredient=flour, "
                    f"movement_quantity={quantity}, movement_happened_on=2026-06-02")
-    step(store, name, "expect", example="flour", table="Balance", row="flour",
+    step(store, name, "expect", actor, example="flour", table="Balance", row="flour",
          values="balance_on_hand=20, balance_level=10")
-    step(store, name, "expect", example="flour", table="Balance", row="flour",
-         values="balance_headroom=10")
+    if headroom:
+        step(store, name, "expect", actor, example="flour", table="Balance",
+             row="flour", values="balance_headroom=10")
     return name
+
+
+def _an_application(store, name):
+    """The rules, and one example of what they come to, a person's own."""
+    return _flour(store, _ruled(store, name))
 
 
 def test_the_studio_holds_every_change_to_the_examples(world, conn):
@@ -378,4 +401,131 @@ def test_the_api_answers_a_step_with_the_examples_run(world, monkeypatch):
     [refusal] = example["refusals"]
     assert (refusal["code"], refusal["got"]) == ("example_failed", "20")
     assert after["sealable"] is False
+    # Over HTTP it is a person's step: the page is what a person uses.
+    assert "  person  expect  example=flour" in studio.transcript(world, name)
+    step(world, name, "discard")
+
+
+# ---- whose word it is, and what the examples owe the map ------------------
+
+def _owed(report):
+    return [h for h in report["holes"] if h["kind"] == "column_unchecked"]
+
+
+def test_every_computed_column_owes_a_number_to_an_example(world, conn, tmp_path):
+    """A map that computes a column claims some number is right. Until an
+    example says which, nothing holds the rule to anything, and the draft
+    cannot be sealed. A vocabulary computes nothing and owes nothing."""
+    name = _ruled(world, "@probe/owing")
+    report = reading.state(world, name, conn)
+    owed = _owed(report)
+    assert [h["where"] for h in owed] == [
+        "Balance.balance_headroom", "Balance.balance_level", "Balance.balance_on_hand"]
+    assert all(h["blocking"] for h in owed)
+    assert owed[0]["question"] == ("what number should Balance's balance_headroom "
+                                   "come to, in an example the business agrees with?")
+    # With no example yet, the answer is to write one; the opening that asks
+    # for examples in general would only say the same thing again.
+    assert owed[0]["step"]["op"] == "add_example"
+    assert "no_examples" not in {h["kind"] for h in report["holes"]}
+    assert report["sealable"] is False
+
+    into = tmp_path / "into"
+    before = _log_size(conn)
+    with pytest.raises(ExampleError) as raised:
+        seal(conn, studio.path(world, name), actor_id="probe", into=into, store=world)
+    assert raised.value.code == "column_unchecked"
+    assert raised.value.where.startswith("Balance.")
+    assert not into.exists()
+    assert _log_size(conn) == before
+
+    # An example checking two of the three leaves the third owed, and the step
+    # that answers it now names the example it can go in.
+    _flour(world, name, headroom=False)
+    owed = _owed(reading.state(world, name, conn))
+    assert [h["where"] for h in owed] == ["Balance.balance_headroom"]
+    assert owed[0]["step"] == {"op": "expect", "args": {"table": "Balance"},
+                               "choose": "example", "options": ["flour"]}
+    step(world, name, "expect", example="flour", table="Balance", row="flour",
+         values="balance_headroom=10")
+    report = reading.state(world, name, conn)
+    assert _owed(report) == [] and report["sealable"] is True
+    step(world, name, "discard")
+
+
+def test_an_example_an_agent_writes_is_a_proposal_until_a_person_agrees(world, conn):
+    name = _flour(world, _ruled(world, "@probe/proposed"), actor="agent", headroom=False)
+    assert studio.examples_of(world, name)["flour"]["agreed"] is False
+    # The transcript says who took every step.
+    said = studio.transcript(world, name)
+    assert "  person  add_class  class=Balance" in said
+    assert "  agent  add_example  example=flour" in said
+
+    # A proposal runs and its numbers show: a person agrees to numbers they can
+    # see. It cannot be sealed until they do.
+    report = reading.state(world, name, conn)
+    [example] = report["examples"]
+    assert (example["passed"], example["agreed"]) == (True, False)
+    blocking = {h["kind"]: h for h in report["holes"] if h["blocking"]}
+    assert set(blocking) == {"example_not_agreed", "column_unchecked"}
+    assert blocking["example_not_agreed"]["step"] == {
+        "op": "agree_example", "args": {"example": "flour"},
+        "choose": "example", "options": ["flour"]}
+    assert blocking["example_not_agreed"]["question"] == (
+        "is the example flour what the business does, and are its numbers right?")
+
+    # Its own proposal the agent may go on changing.
+    step(world, name, "expect", "agent", example="flour", table="Balance",
+         row="flour", values="balance_headroom=10")
+    with pytest.raises(ExampleError) as raised:
+        seal(conn, studio.path(world, name), actor_id="probe",
+             into=studio.directory(world, name), store=world)
+    assert raised.value.code == "example_not_agreed"
+
+    # Only a person agrees.
+    with pytest.raises(StudioError) as raised:
+        step(world, name, "agree_example", "agent", example="flour")
+    assert raised.value.code == "person_only"
+    step(world, name, "agree_example", example="flour")
+    assert "agreed" not in studio.examples_of(world, name)["flour"]
+    assert "  person  agree_example  example=flour" in studio.transcript(world, name)
+
+    assert reading.state(world, name, conn)["sealable"] is True
+    out = seal(conn, studio.path(world, name), actor_id="probe",
+               into=studio.directory(world, name), store=world)
+    assert "agreed" not in business.load(out["examples"])["flour"]
+    step(world, name, "discard")
+
+
+def test_an_agent_cannot_change_an_example_a_person_agreed_to(world):
+    """Otherwise a failing map could be made to pass by changing the answer
+    rather than the rule. Not the agent's judgement: who it is."""
+    name = _an_application(world, "@probe/agreed")
+    before = studio.examples_of(world, name)
+    said = studio.transcript(world, name)
+    for op, args in (
+            ("set_example", {"example": "flour", "field": "says", "value": "x"}),
+            ("remove_example", {"example": "flour"}),
+            ("record", {"example": "flour", "record": "extra", "class": "Ingredient"}),
+            ("unrecord", {"example": "flour", "record": "used"}),
+            ("expect", {"example": "flour", "table": "Balance", "row": "flour",
+                        "values": "balance_on_hand=21"}),
+            ("unexpect", {"example": "flour", "table": "Balance", "row": "flour"})):
+        with pytest.raises(StudioError) as raised:
+            studio.apply(world, name, op, args, actor="agent")
+        assert (raised.value.code, raised.value.where) == ("example_agreed", f"{op}: flour")
+        assert raised.value.repairs[0].options == ("add_example",)
+    assert studio.examples_of(world, name) == before
+    assert studio.transcript(world, name) == said
+
+    # A rename is not a change to what the business said, and reaches every
+    # example whoever makes it.
+    step(world, name, "rename_slot", "agent", slot="balance_on_hand", to="balance_stock")
+    assert "balance_stock" in studio.examples_of(world, name)["flour"]["expect"][0]["values"]
+    # A person changes their own word.
+    step(world, name, "expect", example="flour", table="Balance", row="flour",
+         values="balance_stock=20")
+
+    with pytest.raises(ValueError):
+        studio.apply(world, name, "discard", {}, actor="somebody")
     step(world, name, "discard")

@@ -495,6 +495,18 @@ def _ruled_draft(tmp_path, *, expression, on_the_grouping):
     path = tmp_path / "ruled.yaml"
     path.write_text(yaml.safe_dump(document, sort_keys=False), encoding="utf-8")
     (tmp_path / "ruled.txt").write_text("ruled", encoding="utf-8")
+    # Every column the draft computes owes a number to an example; without one
+    # the seal would refuse before reaching the compiler question at issue.
+    (tmp_path / "ruled.examples.yaml").write_text(yaml.safe_dump({"examples": {
+        "two_boxes": {
+            "says": "Box A holds 3 and box B holds 4.",
+            "records": [
+                {"record": "a", "class": "Box", "facts": {"box_label": "A", "box_size": 3}},
+                {"record": "b", "class": "Box", "facts": {"box_label": "B", "box_size": 4}},
+            ],
+            "expect": [{"table": "BoxTotal", "row": "A",
+                        "values": {"total_size": 3, "doubled": 6}}],
+        }}}, sort_keys=False), encoding="utf-8")
     return path
 
 
