@@ -1542,3 +1542,82 @@ di draft.
   atau konversi). Seal alpha berkata "26 URIs minted" untuk 28 slot, tanpa
   keterangan. Ini akan berpengaruh pada penukaran di Tahap F.
 - **U2 terulang:** kedua modul punya kelas `Warehouse`.
+
+#### Tahap C putaran 2: mitra, pembelian, buku besar (29 September 2026)
+
+**Pertanyaan utama masih teruji**, dan sekarang dengan muatan penuh: `Flow`
+diisi empat kelas dari empat modul (dua stok, pembelian, buku besar).
+
+Urutan sama dengan putaran 1: `mitra` lebih dulu, lalu `pembelian` ∥
+`buku-besar`, semua subagent baru dengan primer dan brief di prompt. Sebelum
+tahap ini Docker, Postgres, dan API berhenti (mesin di-restart); ketiganya
+dinyalakan lagi tanpa mengubah isi log, dan web app dibangun ulang dan
+disajikan di port 8300. Laporan ketiga penulis cocok dengan transkrip: `mitra`
+61 panggilan (0 penolakan), `pembelian` 127 (3 × `name_taken`), `buku-besar`
+144 (1 × `name_taken`, 1 seal ditolak compiler).
+
+| | `@gamma/partner@v1` (Odoo) | `@delta/purchase@v1` (ERPNext) | `@epsilon/accounting@v1` (Odoo) |
+|---|---|---|---|
+| pin | – | **`@beta/stock@v1`** (item, satuan, gudang, `posting_date` dipakai langsung) | **`@gamma/partner@v1`** |
+| pengisi `Flow` | – | **PurchaseReceiptItem**: `amount` = `stock_qty` (retur negatif), `affects` = `item_code`, `moment` = `posting_date` | **JournalItem**: `amount` = `balance` (debit − kredit, diketik), `affects` = Account |
+| `Event` | – | PurchaseOrder, PurchaseOrderItem, PurchaseReceipt | JournalEntry, Payment |
+| `Resource` | – | – | **Account** |
+| `Thing` | Partner, Country, PartnerCategory, PartnerTagging | Supplier, SupplierGroup | Journal |
+| tabel hitungan | – | PurchaseOrderItemReceipt (dipesan, diterima per baris PO) | PartnerBalance (debit, kredit, saldo per akun per mitra) |
+
+**Kompromi peran yang dilaporkan (R1):**
+
+- **Tidak ada peran untuk pihak (pemasok, pelanggan).** Ketiga penulis
+  menyebutnya secara terpisah; `mitra` menyebutnya temuan terpenting. Akibatnya
+  modul lain yang butuh "lawan transaksi" harus menyebut kelas `Partner` milik
+  `@gamma/partner` langsung.
+- **Pencatatan ganda (T7) sekarang terjadi di peran, dan penulisnya tahu.**
+  Penerimaan pembelian mengisi `Flow` (tidak seperti putaran 1). Penulis
+  menulis sendiri: kalau bisnis mencatat baris penerimaan di sini **dan**
+  entri buku besar di `@beta/stock`, aplikasi yang menjumlah semua `Flow` per
+  item menghitung barang dua kali, dan peran tidak punya cara menyatakan
+  "pergerakan ini juga tercatat di tempat lain". Buku besar menghindari hal
+  yang sama untuk pembayaran (Payment = Event, bukan Flow, karena uangnya sudah
+  dihitung baris jurnal).
+- **Keluasan (T6) sekarang nyata:** `Flow` berisi kg/bungkus (stok,
+  penerimaan) dan rupiah (jurnal); `Resource` berisi Product, Item, dan
+  **Account**. Penulis buku besar mencatat risikonya sendiri.
+- **Tanda:** baris jurnal memakai debit − kredit, jadi utang (akun kewajiban)
+  terbaca negatif; penulis mencatat bahwa utang ke pemasok = total dibalik.
+- **Pesanan tidak punya peran.** Baris PO sengaja `Event`, bukan `Flow`
+  (supaya jumlah dipesan tidak ikut saldo stok), sehingga "PO terbuka" tidak
+  bisa ditemukan lewat peran mana pun.
+- **Tanggal diketik ulang per baris** (baris PO, baris penerimaan, baris
+  jurnal) karena `Event` menuntut `moment` di baris dan F1 menolak
+  menurunkannya dari dokumen induk; tidak ada yang memeriksa kesamaannya.
+
+**Jebakan lain yang muncul sendiri:**
+
+- **T8 terulang:** pembelian membuat `Supplier` sendiri (gaya ERPNext), buku
+  besar memakai `Partner` milik `mitra`. Pemasok yang sama akan punya dua
+  identitas.
+- **T1/U2:** pembelian mem-pin `@beta/stock`; aplikasi yang diwajibkan mem-pin
+  `@alpha/stock` akan membawa dua modul stok dan dua kelas `Warehouse`.
+- **U1 terlihat dari luar:** penulis pembelian membaca di katalog bahwa aturan
+  `Bin` milik `@beta/stock` "membaca medan `warehouse` milik `@alpha/stock`"
+  dan menduga fakta keduanya bertabrakan. Benar: itu predikat CURIE bersama
+  dari Tahap B.
+- **Bentrok nama slot antar modul ditolak di dalam draft** (`name_taken`: `qty`,
+  `is_group`, `amount`, `code`), sehingga nama ERPNext/Odoo tidak bisa dipakai
+  begitu modul lain yang memakainya di-pin.
+
+**Sintaks ekspresi (U4) menghalangi desain, di tiga dari empat penulis yang
+menulis rumus.** Semua penolakan `expression_not_arithmetic` benar (nama kolom
+tanpa `{…}`), tetapi pesannya berbunyi *"expected arithmetic over {columns}"*
+dan tidak menyebut kurung kurawal; penulis membacanya sebagai placeholder yang
+lupa diisi. Hanya `stok-a` menemukan sintaksnya dengan menebak. `pembelian`
+membuang `pending_qty` (dipesan − diterima) dan `buku-besar` membuang
+`partner_balance` (debit − kredit), keduanya menyebut ini "cacat platform".
+Satu seal `buku-besar` ditolak compiler karena hal ini (F3 bekerja: tidak ada
+lagi tabel rusak yang ter-seal).
+
+**Lain-lain:** tidak ada medan bernilai banyak (tag mitra jadi kelas
+penghubung), tidak ada daftar nilai tertutup (status, jenis akun, jenis
+dokumen jadi teks bebas), `where` hanya menyaring kelas (U7: jurnal tidak bisa
+dibatasi ke `posted`), `required` tidak tampak (U8), dan pembayaran Odoo tidak
+membuat entri jurnalnya sendiri (U17 di sisi uang).
