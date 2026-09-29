@@ -1,0 +1,70 @@
+# Demonstration data. A scripted builder, standing in for a model: it builds a
+# stock-level application over the demonstration modules, makes one mistake
+# the system catches, proposes too early once, and then proposes properly.
+module: "@rehearsal/levels"
+says: >-
+  I want to see, for every ingredient, how much is on hand, the level we
+  reorder at, and how far above that level we are.
+moves:
+  - tool: guide
+    args: {topic: rules}
+  - tool: catalogue
+    args: {kind: role}
+  - tool: catalogue
+    args: {text: reorder}
+  - tool: do
+    args:
+      module: "@rehearsal/levels"
+      steps:
+        - op: start
+          args: {title: Stock levels, description: "On hand, reorder level and headroom per ingredient."}
+        - {op: pin, args: {module: "@demo/catalog@v3"}}
+        - {op: pin, args: {module: "@demo/inventory@v3"}}
+        - op: add_class
+          args: {class: Level, description: One row per ingredient anything has moved for.}
+        - {op: add_slot, args: {slot: level_ingredient, range: Ingredient, description: The ingredient this row is about.}}
+        - {op: attach, args: {class: Level, slot: level_ingredient}}
+        - {op: add_slot, args: {slot: level_on_hand, range: decimal, description: Every flow of this ingredient added up.}}
+        - {op: attach, args: {class: Level, slot: level_on_hand}}
+        - {op: aggregate, args: {class: Level, column: level_on_hand, over: Flow, sum: amount, by: level_ingredient=affects}}
+        - {op: add_slot, args: {slot: level_reorder, range: decimal, description: The level somebody set for the ingredient.}}
+        - {op: attach, args: {class: Level, slot: level_reorder}}
+        - {op: parameter, args: {class: Level, column: level_reorder, of: level_ingredient, slot: ingredient_reorder_level}}
+        - {op: add_slot, args: {slot: level_headroom, range: decimal, description: How far above the reorder level.}}
+        - {op: attach, args: {class: Level, slot: level_headroom}}
+        # The mistake the composition experiment's authors made: names written
+        # bare. The step takes it; the next read says how to write it.
+        - {op: expression, args: {class: Level, column: level_headroom, expression: level_on_hand - level_reorder}}
+  - tool: do
+    args:
+      module: "@rehearsal/levels"
+      steps:
+        - {op: expression, args: {class: Level, column: level_headroom, expression: "{level_on_hand} - {level_reorder}"}}
+  - tool: do
+    args:
+      module: "@rehearsal/levels"
+      steps:
+        - op: add_example
+          args: {example: flour, says: "25 kg of flour came in and 5 kg were used, so 20 kg are on hand: 10 above a reorder level of 10."}
+        - op: record
+          args: {example: flour, record: flour, class: Ingredient, facts: "ingredient_code=FLR, ingredient_name=Flour, ingredient_unit=kg, ingredient_reorder_level=10"}
+        - op: record
+          args: {example: flour, record: flour_in, class: StockMovement, when: "2026-06-02", facts: "movement_code=M1, movement_ingredient=flour, movement_quantity=25, movement_happened_on=2026-06-02"}
+        - op: record
+          args: {example: flour, record: flour_used, class: StockMovement, when: "2026-06-03", facts: "movement_code=M2, movement_ingredient=flour, movement_quantity=-5, movement_happened_on=2026-06-03"}
+        - op: expect
+          args: {example: flour, table: Level, row: flour, values: "level_on_hand=20, level_reorder=10, level_headroom=10"}
+  # Too early: it says ready without asking for the one thing missing.
+  - end: Proposal
+    args: {module: "@rehearsal/levels", message: It is ready., agree: [], seal: true}
+  - tool: look
+    args: {module: "@rehearsal/levels"}
+  - end: Proposal
+    args:
+      module: "@rehearsal/levels"
+      message: >-
+        The table is built. Please check the flour example: if 25 kg in and 5 kg
+        used is 20 kg on hand, 10 above a level of 10, agree to it and it can be
+        sealed.
+      agree: [flour]
+      seal: true

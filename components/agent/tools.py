@@ -1,731 +1,427 @@
-"""components.agent.tools — Domain-agnostic generic primitives for Uniti.
+"""tools — what an agent can do, and nothing else.
 
-Provides high-level, declarative functions over:
-1. Graph & Ontology (SchemaView, draft modification, validation, sealing)
-2. Operational Store & Digital Twin (compilation, projections query, explain)
-3. Kernel & Provenance (activity ledger, assertion history, bitemporal tracing)
-4. Write Gate & Task Execution (append-only intent/assertion submissions, corrections)
+Five tools, each a plain function over a `Bench`, each answering in text a
+model reads cheaply. They are the studio's own readers and its one door, with
+the actor fixed to `agent`:
+
+    look       a draft as it stands: what it declares, the holes it is in, the
+               examples and their numbers, whether it could be sealed
+    options    the steps, or one step with the answers that fit right now
+    do         a batch of steps, stopping at the first refusal, answered with
+               what the draft is standing in afterwards
+    catalogue  what the store holds: modules, roles, classes, slots
+    guide      one topic of the guide
+
+There is no tool that seals and none that agrees to an example. Those are the
+person's, and the absence is the guarantee: an agent cannot do what it has no
+tool for, however it is instructed.
+
+Nothing here is tied to a model or a provider. `builder` hands these to an
+agent framework; the same functions could be served over MCP.
+
+The text is written for a reader who pays per word. It says what the draft is
+and what to do next, and leaves out whatever the reader could ask for again.
 """
 
-import json
 import os
-import re
 import sys
-from datetime import date, datetime, timezone
-from decimal import Decimal
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
-from uuid import UUID
 
 import psycopg
-import yaml
-from linkml_runtime import SchemaView
 
 ROOT = Path(__file__).resolve().parent.parent.parent
+sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "components" / "kernel"))
-sys.path.insert(0, str(ROOT / "components" / "compiler"))
-sys.path.insert(0, str(ROOT / "components" / "generator"))
-sys.path.insert(0, str(ROOT / "components" / "ontology"))
-sys.path.insert(0, str(ROOT / "components" / "provenance"))
-sys.path.insert(0, str(ROOT / "components" / "seal"))
 
-from compile import (  # noqa: E402
-    OPS_DSN,
-    _aggregate_classes,
-    _annotation,
-    _entity_classes,
-    compile_class,
-    plan_for,
-    read_map,
-    sql_text,
-)
-from generate import MapError, _registry, columns, submit  # noqa: E402
-from ontology.resolve import load_versions, resolve_version  # noqa: E402
-from perform import DSN as KERNEL_DSN  # noqa: E402
-from perform import connect as connect_kernel  # noqa: E402
-import provenance  # noqa: E402
-from seal import DraftError, seal, _validate  # noqa: E402
+from components.agent import guide as guide_read  # noqa: E402
+from components.examples.examples import render as render_examples  # noqa: E402
+from components.modules import catalogue as catalogue_read  # noqa: E402
+from components.refusal import Refusal  # noqa: E402
+from components.studio import draft as studio  # noqa: E402
+from components.studio import read as reading  # noqa: E402
+from perform import connect  # noqa: E402
+
+# Every step an agent takes is an agent's. Nothing the agent says can change it.
+ACTOR = "agent"
+
+# How many answers a list shows before it says how many more there are. Large
+# enough that the right answer is almost always there; a longer list is a
+# reason to narrow with `catalogue`, and the text says so.
+SHOWN = 40
+
+PARTS = ("draft", "around", "examples", "history")
 
 
-# -----------------------------------------------------------------------------
-# Serialization Helpers
-# -----------------------------------------------------------------------------
+@dataclass
+class Bench:
+    """Where an agent works: a module store, and a log to run examples in.
 
-def _serialize(obj: Any) -> Any:
-    """Recursively convert types into JSON-serializable primitives."""
-    if isinstance(obj, (datetime, date)):
-        return obj.isoformat()
-    if isinstance(obj, Decimal):
-        # Return as float if it has decimal places, else int
-        return float(obj) if obj % 1 else int(obj)
-    if isinstance(obj, UUID):
-        return str(obj)
-    if isinstance(obj, dict):
-        return {str(k): _serialize(v) for k, v in obj.items()}
-    if isinstance(obj, (list, tuple, set)):
-        return [_serialize(item) for item in obj]
-    return obj
+    `dsn` is the log the business examples run in, each in a scratch log of
+    its own that is rolled back. Without one the examples are listed and not
+    run, and nothing can be called sealable.
+    """
 
+    store: object
+    dsn: str | None = None
 
-def _clean_clock(clock: Optional[str]) -> Optional[str]:
-    """Normalize date/time input to ISO 8601 UTC string."""
-    if not clock:
-        return None
-    written = str(clock).strip()
-    if len(written) == 10:  # e.g. YYYY-MM-DD
+    @classmethod
+    def from_env(cls, store):
+        return cls(store=store, dsn=os.environ.get("UNITI_DSN"))
+
+    def state(self, name):
+        """The studio's one read of a draft, examples run when there is a log."""
+        if self.dsn is None:
+            return reading.state(self.store, name)
         try:
-            day = datetime.fromisoformat(written)
-            return day.replace(
-                hour=23, minute=59, second=59, microsecond=999999, tzinfo=timezone.utc
-            ).isoformat()
-        except ValueError:
-            return written
-    return written
+            conn = connect(self.dsn, connect_timeout=3)
+        except psycopg.OperationalError:
+            return reading.state(self.store, name)
+        with conn:
+            try:
+                return reading.state(self.store, name, conn)
+            finally:
+                conn.rollback()
 
 
-# -----------------------------------------------------------------------------
-# UnitiTools Class
-# -----------------------------------------------------------------------------
+# ---- the tools ------------------------------------------------------------
 
-class UnitiTools:
-    """Generic tool dispatcher for Uniti operating system capabilities."""
+def look(bench, module, part="draft"):
+    """Read one module's draft.
 
-    def __init__(
-        self,
-        default_business: Optional[str] = None,
-        kernel_dsn: Optional[str] = None,
-        ops_dsn: Optional[str] = None,
-    ):
-        # No default names a business: which domain this server operates is
-        # the caller's to state, and a default here would be one domain's name
-        # compiled into a domain-blind server.
-        self.default_business = default_business or os.environ.get("UNITI_BUSINESS")
-        self.kernel_dsn = kernel_dsn or os.environ.get(
-            "UNITI_DSN", "postgresql://uniti:uniti@localhost:5433/uniti"
-        )
-        # The fallback names the neutral store, never a populated one: a
-        # compile drops and rebuilds its table, so an unsafe default here is a
-        # test run silently overwriting somebody's operational store.
-        self.ops_dsn = ops_dsn or os.environ.get(
-            "UNITI_OPS_DSN", "postgresql://uniti:uniti@localhost:5433/uniti_ops"
-        )
+    part: `draft` (default) — what it declares, every hole, the examples in
+    brief, and whether it could be sealed; `around` — the classes of pinned
+    modules it points at, the roles in sight and the enums; `examples` — every
+    example with every number and the tables they produce; `history` — the
+    steps taken so far, who took them.
+    """
+    if part not in PARTS:
+        return f"There is no part {part!r}. Parts: {', '.join(PARTS)}."
+    try:
+        report = bench.state(module)
+    except Refusal as exc:
+        return _refusal(exc.as_dict())
+    if part == "around":
+        return _around(report)
+    if part == "examples":
+        return _examples(report, tables=True)
+    if part == "history":
+        return report["taken"].strip() or "No step taken yet."
+    return _draft(report)
 
-    def _get_business_dir(self, business: Optional[str]) -> Path:
-        biz = business or self.default_business
-        if not biz:
-            raise ValueError(
-                "no business named: pass `business`, or set UNITI_BUSINESS. "
-                "This server holds no default domain."
-            )
-        bdir = ROOT / "business" / biz
-        if not bdir.is_dir():
-            raise FileNotFoundError(f"Business directory '{biz}' not found at {bdir}")
-        return bdir
 
-    def _resolve_map(
-        self,
-        business: Optional[str] = None,
-        valid_at: Optional[str] = None,
-        as_of: Optional[str] = None,
-    ) -> Dict[str, Any]:
-        """Resolves the active sealed map or latest version for the business."""
-        bdir = self._get_business_dir(business)
-        versions = load_versions(bdir)
-        if not versions:
-            raise FileNotFoundError(f"No sealed versions found in {bdir}")
+def options(bench, module, op=""):
+    """The steps there are, or — naming one — what it takes and the answers
+    that fit this draft right now."""
+    if not op:
+        return "\n".join(f"{name}: {_first(spec['does'])}"
+                         for name, spec in studio.OPERATIONS.items())
+    if op not in studio.OPERATIONS:
+        return (f"There is no step {op!r}. Steps: "
+                + ", ".join(studio.OPERATIONS) + ".")
+    spec = studio.OPERATIONS[op]
+    try:
+        offered = {s["op"]: s for s in reading.steps(
+            bench.store, module, studio.open_draft(bench.store, module))}[op]
+    except Refusal:
+        # No draft yet: the step is still described, without answers to offer.
+        offered = {"takes": [{"name": k, "kind": v, "required": True, "options": []}
+                             for k, v in spec["takes"].items()]
+                   + [{"name": k, "kind": v, "required": False, "options": []}
+                      for k, v in spec["may"].items()]}
+    lines = [f"{op}: {spec['does']}"]
+    for takes in offered["takes"]:
+        mark = "" if takes["required"] else ", optional"
+        line = f"    {takes['name']} ({guide_read.KINDS.get(takes['kind'], takes['kind'])}{mark})"
+        if takes.get("depends"):
+            line += f", depends on {takes['depends']}"
+        lines.append(line)
+        if takes["options"]:
+            lines.append(f"        one of: {_listed(takes['options'])}")
+    return "\n".join(lines)
 
-        if valid_at or as_of:
-            v_at = _clean_clock(valid_at) or datetime.now(timezone.utc).isoformat()
-            a_of = _clean_clock(as_of) or datetime.now(timezone.utc).isoformat()
-            winning = resolve_version(bdir, valid_at=v_at, as_of=a_of)
-            chosen_path = winning["path"] if winning else versions[-1]["path"]
-        else:
-            chosen_path = versions[-1]["path"]
 
-        map_ = read_map(chosen_path)
-        map_["business"] = bdir.name
-        return map_
+def do(bench, module, steps):
+    """Take steps on one module's draft, in order, as the agent.
 
-    def _connect_kernel(self):
-        return psycopg.connect(self.kernel_dsn)
-
-    def _connect_ops(self):
-        return psycopg.connect(self.ops_dsn)
-
-    # =========================================================================
-    # Pilar 1: Knowledge Graph & Ontology (Read & Write)
-    # =========================================================================
-
-    def graph_get_schema(
-        self,
-        business: Optional[str] = None,
-        class_name: Optional[str] = None,
-        slot_name: Optional[str] = None,
-        valid_at: Optional[str] = None,
-        as_of: Optional[str] = None,
-    ) -> Dict[str, Any]:
-        """Inspect LinkML ontology schema: classes, slots, derivation formulas, and relationships.
-
-        Args:
-            business: Business namespace. Required unless UNITI_BUSINESS is set.
-            class_name: Optional specific class to inspect, as named by the map.
-            slot_name: Optional specific slot to inspect.
-            valid_at: Bitemporal business clock.
-            as_of: Bitemporal system audit clock.
-        """
-        map_ = self._resolve_map(business, valid_at, as_of)
-        view: SchemaView = map_["view"]
-
-        if slot_name and class_name:
-            slot_def = view.induced_slot(slot_name, class_name)
-            return _serialize({
-                "slot_name": slot_name,
-                "class_name": class_name,
-                "range": slot_def.range,
-                "required": bool(slot_def.required),
-                "multivalued": bool(slot_def.multivalued),
-                "description": slot_def.description or "",
-                "slot_uri": slot_def.slot_uri,
-                "equals_expression": slot_def.equals_expression,
-                "aggregate": _annotation(slot_def, "aggregate"),
-                "parameter": _annotation(slot_def, "parameter"),
-            })
-
-        if class_name:
-            cdef = view.get_class(class_name)
-            if not cdef:
-                raise ValueError(f"Class '{class_name}' does not exist in schema {map_['version']}")
-
-            slots_info = {}
-            for sname in view.class_slots(class_name):
-                sdef = view.induced_slot(sname, class_name)
-                slots_info[sname] = {
-                    "range": sdef.range,
-                    "required": bool(sdef.required),
-                    "multivalued": bool(sdef.multivalued),
-                    "description": sdef.description or "",
-                    "slot_uri": sdef.slot_uri,
-                    "equals_expression": sdef.equals_expression,
-                    "aggregate": _annotation(sdef, "aggregate"),
-                    "parameter": _annotation(sdef, "parameter"),
-                }
-
-            return _serialize({
-                "business": map_["business"],
-                "version": map_["version"],
-                "class_name": class_name,
-                "is_a": cdef.is_a,
-                "description": cdef.description or "",
-                "slots": slots_info,
-            })
-
-        # List all classes overview
-        classes_overview = {}
-        agg_classes = set(_aggregate_classes(map_))
-        for cname in sorted(view.all_classes()):
-            cdef = view.get_class(cname)
-            slots = list(view.class_slots(cname))
-            is_projection = cname in agg_classes
-            classes_overview[cname] = {
-                "description": cdef.description or "",
-                "is_a": cdef.is_a,
-                "slots_count": len(slots),
-                "slots": slots,
-                "is_projection": is_projection,
-            }
-
-        return _serialize({
-            "business": map_["business"],
-            "version": map_["version"],
-            "classes_count": len(classes_overview),
-            "classes": classes_overview,
-        })
-
-    def graph_update_draft(
-        self,
-        business: Optional[str] = None,
-        yaml_content: Optional[str] = None,
-        transcript_notes: Optional[str] = None,
-    ) -> Dict[str, Any]:
-        """Write or patch draft ontology (draft.yaml) and draft interview transcript (draft.txt).
-
-        Args:
-            business: Target business namespace. Required unless UNITI_BUSINESS is set.
-            yaml_content: Complete LinkML schema YAML content to save as draft.yaml.
-            transcript_notes: Supporting domain interview notes to append or write to draft.txt.
-        """
-        bdir = self._get_business_dir(business)
-        draft_yaml_path = bdir / "draft.yaml"
-        draft_txt_path = bdir / "draft.txt"
-
-        written = {}
-        if yaml_content is not None:
-            draft_yaml_path.write_text(yaml_content, encoding="utf-8", newline="\n")
-            written["draft_yaml"] = {
-                "path": str(draft_yaml_path),
-                "bytes": len(yaml_content.encode("utf-8")),
-            }
-
-        if transcript_notes is not None:
-            # If draft.txt already exists and has content, append notes
-            if draft_txt_path.exists() and transcript_notes.startswith("+++"):
-                existing = draft_txt_path.read_text(encoding="utf-8")
-                new_text = existing + "\n\n" + transcript_notes[3:].strip()
-            else:
-                new_text = transcript_notes
-            draft_txt_path.write_text(new_text, encoding="utf-8", newline="\n")
-            written["draft_txt"] = {
-                "path": str(draft_txt_path),
-                "bytes": len(new_text.encode("utf-8")),
-            }
-
-        return _serialize({
-            "status": "ok",
-            "business": bdir.name,
-            "written": written,
-        })
-
-    def graph_validate_draft(self, business: Optional[str] = None) -> Dict[str, Any]:
-        """Validate draft.yaml against LinkML schema rules and requirements before sealing."""
-        bdir = self._get_business_dir(business)
-        draft_yaml_path = bdir / "draft.yaml"
-        if not draft_yaml_path.is_file():
-            return {"valid": False, "error": f"No draft.yaml found at {draft_yaml_path}"}
-
+    Each step is `{"op": ..., "args": [{"name": ..., "value": ...}, ...]}`.
+    The first refusal stops the batch: the steps before it are taken, the rest
+    are not, and the refusal says how to fix it. Afterwards the draft is read
+    again and what it is standing in comes back — the holes, the examples, and
+    whether it could be sealed.
+    """
+    lines = []
+    for i, step in enumerate(steps, start=1):
+        op = str(step.get("op") or "")
+        args = {str(a.get("name")): str(a.get("value") if a.get("value") is not None else "")
+                for a in (step.get("args") or [])}
+        said = " ".join(f"{k}={v}" for k, v in args.items())
         try:
-            text = draft_yaml_path.read_text(encoding="utf-8")
-            view = _validate(text, "draft.yaml")
-            draft = yaml.safe_load(text) or {}
-            annotations = draft.get("annotations") or {}
-            if "valid_from" not in annotations:
-                return {
-                    "valid": False,
-                    "error": "draft.yaml is missing required 'annotations.valid_from' timestamp",
-                }
+            studio.apply(bench.store, module, op, args, actor=ACTOR)
+        except Refusal as exc:
+            lines.append(f"{i}. refused: {op} {said}".rstrip())
+            lines.append(_indent(_refusal(exc.as_dict()), 3))
+            if i + 1 == len(steps):
+                lines.append(f"Step {i + 1} was not taken.")
+            elif i < len(steps):
+                lines.append(f"Steps {i + 1} to {len(steps)} were not taken.")
+            break
+        lines.append(f"{i}. done: {op} {said}".rstrip())
+    if not steps:
+        lines.append("No step given.")
+    if not studio.path(bench.store, module).is_file():
+        # Discarded, or never started: there is nothing to read back.
+        return "\n".join(lines)
+    try:
+        report = bench.state(module)
+    except Refusal as exc:
+        return "\n".join(lines + ["", _refusal(exc.as_dict())])
+    return "\n".join(lines + ["", standing(report)])
 
-            return _serialize({
-                "valid": True,
-                "classes_count": len(view.all_classes()),
-                "slots_count": len(view.all_slots()),
-                "classes": list(view.all_classes().keys()),
-            })
-        except Exception as exc:
-            return {"valid": False, "error": f"{type(exc).__name__}: {str(exc)}"}
 
-    def graph_seal_version(
-        self,
-        business: Optional[str] = None,
-        actor: str = "agent",
-        valid_from: Optional[str] = None,
-    ) -> Dict[str, Any]:
-        """Seal draft.yaml into the next immutable version v(N+1).yaml and register entity URIs.
+def catalogue(bench, text="", kind="", fills="", module=""):
+    """Search what the store holds: modules, roles, classes and slots, at
+    their latest sealed versions. Every filter is optional. `text` matches a
+    name, title, description or predicate; `kind` is module, role, class or
+    slot; `fills` is a role or binding; `module` is the module declaring it."""
+    if kind and kind not in catalogue_read.KINDS:
+        return f"kind is one of {', '.join(catalogue_read.KINDS)}."
+    found = catalogue_read.find(catalogue_read.catalogue(bench.store),
+                                text=text or None, kind=kind or None,
+                                fills=fills or None, module=module or None)
+    entries = found["entries"]
+    if not entries:
+        return ("Nothing matches. The store holds modules "
+                + ", ".join(found["modules"]) + "; roles "
+                + ", ".join(found["roles"]) + ".")
+    lines = [f"{len(entries)} found."]
+    for entry in entries[:SHOWN]:
+        lines.append(_entry(entry))
+    if len(entries) > SHOWN:
+        lines.append(f"And {len(entries) - SHOWN} more: narrow the search.")
+    return "\n".join(lines)
 
-        Args:
-            business: Target business namespace.
-            actor: Actor identity performing the seal.
-            valid_from: Optional timestamp when this version becomes valid.
-        """
-        bdir = self._get_business_dir(business)
-        draft_path = bdir / "draft.yaml"
-        if not draft_path.is_file():
-            raise FileNotFoundError(f"No draft.yaml found to seal at {draft_path}")
 
-        with self._connect_kernel() as conn:
-            result = seal(draft_path, into=bdir, actor_id=actor, conn=conn)
+def guide(bench, topic="workflow"):
+    """Read one topic of the guide: workflow, steps, rules, examples, holes,
+    refusals or roles."""
+    return guide_read.section(topic, bench.store)
 
-        return _serialize({
-            "status": "sealed",
-            "version": result["version"],
-            "path": result["path"],
-            "assertions_count": len(result.get("assertions", [])),
-            "entities_minted": len(result.get("minted", {})),
-        })
 
-    # =========================================================================
-    # Pilar 2: Digital Twin & Analytical Projections (Read)
-    # =========================================================================
+# ---- how things read ------------------------------------------------------
 
-    def ops_list_projections(
-        self,
-        business: Optional[str] = None,
-        valid_at: Optional[str] = None,
-        as_of: Optional[str] = None,
-    ) -> Dict[str, Any]:
-        """List all analytical projections and tables compiled from the ontology.
+def _first(text):
+    return text.split(". ")[0].split(": ")[0]
 
-        Args:
-            business: Target business namespace.
-            valid_at: Bitemporal business clock.
-            as_of: Bitemporal system audit clock.
-        """
-        map_ = self._resolve_map(business, valid_at, as_of)
-        agg_classes = _aggregate_classes(map_)
-        ent_classes = _entity_classes(map_)
 
-        projections = {}
-        for cname in agg_classes:
-            plan = plan_for(map_, cname)
-            cols = [
-                {
-                    "name": col["name"],
-                    "kind": col["kind"],
-                    "formula": col.get("formula") or col.get("expression") or "",
-                }
-                for col in plan["columns"]
-            ]
-            projections[cname] = {
-                "type": "aggregate_projection",
-                "table_name": plan["table"],
-                "columns_count": len(cols),
-                "columns": cols,
-            }
+def _listed(items):
+    items = [str(i) for i in items]
+    shown = ", ".join(items[:SHOWN])
+    if len(items) > SHOWN:
+        shown += f", and {len(items) - SHOWN} more (narrow with catalogue)"
+    return shown
 
-        return _serialize({
-            "business": map_["business"],
-            "version": map_["version"],
-            "aggregate_projections": projections,
-            "entity_tables_count": len(ent_classes),
-            "entity_classes": ent_classes,
-        })
 
-    def ops_query_projection(
-        self,
-        class_name: str,
-        business: Optional[str] = None,
-        valid_at: Optional[str] = None,
-        as_of: Optional[str] = None,
-        filters: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
-        """Execute dynamic SQL compiler for an analytical projection and return structured rows.
+def _indent(text, by):
+    return "\n".join(" " * by + line for line in text.splitlines())
 
-        Args:
-            class_name: Target projection class, as named by the map.
-            business: Business namespace.
-            valid_at: Business moment (ISO timestamp or YYYY-MM-DD).
-            as_of: System audit moment (ISO timestamp or YYYY-MM-DD).
-            filters: Optional dict of key-value column filters to apply to results.
-        """
-        map_ = self._resolve_map(business, valid_at, as_of)
-        v_at = _clean_clock(valid_at) or datetime.now(timezone.utc).isoformat()
-        a_of = _clean_clock(as_of) or datetime.now(timezone.utc).isoformat()
 
-        with self._connect_kernel() as kernel, self._connect_ops() as ops:
-            built = compile_class(kernel, ops, map_, class_name, valid_at=v_at, as_of=a_of)
+def _refusal(refusal):
+    lines = [f"[{refusal['code']}] {refusal['sentence']}"]
+    for repair in refusal["repairs"]:
+        lines.append(f"  fix: {repair['do']}")
+        if repair.get("where"):
+            lines.append(f"       in {repair['where']}")
+        if repair["options"]:
+            lines.append(f"       one of: {_listed(repair['options'])}")
+    return "\n".join(lines)
 
-        columns_meta = built["plan"]["columns"]
-        col_names = [c["name"] for c in columns_meta]
 
-        raw_rows = built["rows"]
-        formatted_rows = []
-        for r in raw_rows:
-            row_dict = dict(zip(col_names, r))
-            # Apply filters if provided
-            if filters:
-                match = True
-                for f_col, f_val in filters.items():
-                    val = str(row_dict.get(f_col, ""))
-                    if str(f_val).lower() not in val.lower():
-                        match = False
-                        break
-                if not match:
-                    continue
-            formatted_rows.append(row_dict)
+def _rule(rule):
+    spec = rule["spec"]
+    if rule["kind"] == "expression":
+        return f"expression {spec}"
+    if rule["kind"] == "parameter":
+        return f"parameter of {spec.get('of')}, slot {spec.get('slot')}"
+    by = ", ".join(f"{k}={v}" for k, v in (spec.get("by") or {}).items())
+    out = f"aggregate over {spec.get('over')}, sum {spec.get('sum')}, by {by}"
+    if spec.get("where"):
+        out += ", where " + ", ".join(f"{k}={(v or {}).get('is_a')}"
+                                      for k, v in spec["where"].items())
+    if spec.get("convert"):
+        convert = spec["convert"]
+        on = ", ".join(f"{k}={v}" for k, v in (convert.get("on") or {}).items())
+        out += (f", convert using {convert.get('using')} on {on} "
+                f"factor {convert.get('factor')}")
+    return out
 
-        return _serialize({
-            "class": class_name,
-            "table": built["plan"]["table"],
-            "valid_at": v_at,
-            "as_of": a_of,
-            "columns": col_names,
-            "row_count": len(formatted_rows),
-            "rows": formatted_rows,
-        })
 
-    def ops_explain_projection(
-        self,
-        class_name: str,
-        business: Optional[str] = None,
-        valid_at: Optional[str] = None,
-        as_of: Optional[str] = None,
-    ) -> Dict[str, Any]:
-        """Retrieve compiled SQL statements, CTE structures, and execution plans for a projection.
+def _slot_line(slot):
+    marks = [slot["range"] or "string"]
+    if slot["identifier"]:
+        marks.append("identifier")
+    if slot["designates_type"]:
+        marks.append("says which class")
+    if slot["required"]:
+        marks.append("required")
+    if slot["multivalued"]:
+        marks.append("many values")
+    if slot["binds"]:
+        marks.append(f"fills binding {slot['binds']}")
+    line = f"{slot['name']}: {', '.join(marks)}"
+    if slot["rule"]:
+        line += f" = {_rule(slot['rule'])}"
+    return line
 
-        Args:
-            class_name: Target projection class.
-            business: Business namespace.
-            valid_at: Business moment.
-            as_of: System audit moment.
-        """
-        map_ = self._resolve_map(business, valid_at, as_of)
-        v_at = _clean_clock(valid_at) or datetime.now(timezone.utc).isoformat()
-        a_of = _clean_clock(as_of) or datetime.now(timezone.utc).isoformat()
 
-        with self._connect_kernel() as kernel, self._connect_ops() as ops:
-            built = compile_class(kernel, ops, map_, class_name, valid_at=v_at, as_of=a_of)
+def _header(report):
+    pins = ", ".join(f"{p['name']}@{p['version']}" for p in report["pins"]) or "nothing"
+    made = f"revising {report['revises']}" if report["revises"] else "a new module"
+    return (f"{report['name']} — {report['title'] or 'untitled'}: draft of "
+            f"{report['becomes']}, {made}; pins {pins}")
 
-        sql = sql_text(built)
-        return _serialize({
-            "class": class_name,
-            "table": built["plan"]["table"],
-            "columns": [c["name"] for c in built["plan"]["columns"]],
-            "emitted_sql": sql,
-            "ddl": built["ddl"],
-        })
 
-    # =========================================================================
-    # Pilar 3: Kernel Provenance & Forensic Audit (Read)
-    # =========================================================================
+def _draft(report):
+    lines = [_header(report)]
+    if report["description"]:
+        lines.append(f"  {' '.join(str(report['description']).split())}")
+    shapes = {t["class"]: t for t in report["tables"]}
+    slots = {s["name"]: s for s in report["slots"]}
+    lines.append("")
+    lines.append("Its classes:" if report["classes"] else "It declares no class yet.")
+    for c in report["classes"]:
+        table = shapes.get(c["name"])
+        kind = (f"{table['shape']} table" if table
+                else "no table: nothing can be stated to be one")
+        fills = f", fills {', '.join(c['fills'])}" if c["fills"] else ""
+        above = f", a kind of {c['is_a']}" if c["is_a"] else ""
+        lines.append(f"  {c['name']} ({kind}{fills}{above})")
+        for slot_name in c["slots"]:
+            slot = slots.get(slot_name)
+            lines.append(f"    {_slot_line(slot)}" if slot
+                         else f"    {slot_name}: a slot of a pinned module")
+        for slot_name, usage in c["usage"].items():
+            lines.append(f"    on this class only: {slot_name} "
+                         + ", ".join(f"{k}={v}" for k, v in usage.items()))
+    loose = [s for s in report["slots"] if not s["on"]]
+    for slot in loose:
+        lines.append(f"  on no class: {_slot_line(slot)}")
+    own_enums = [e for e in report["enums"] if e["module"] is None]
+    for enum in own_enums:
+        lines.append(f"  enum {enum['name']}: {', '.join(enum['values'])}")
+    lines.append("")
+    lines.append(standing(report))
+    return "\n".join(lines)
 
-    def kernel_get_activity(
-        self,
-        business: Optional[str] = None,
-        limit: int = 20,
-        offset: int = 0,
-        filter_type: str = "all",
-        actor: Optional[str] = None,
-        search: Optional[str] = None,
-        action_names: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
-        """Fetch immutable assertion activity ledger with actor, intent, and bitemporal details.
 
-        Args:
-            business: Business namespace.
-            limit: Maximum rows to return (default: 20).
-            offset: Pagination offset.
-            filter_type: Filter category ('all' or 'revocations').
-            action_names: Restrict to these intent action names, e.g. those a
-                map's classes produce as 'submit_<Class>'.
-            actor: Filter by specific actor identity.
-            search: Free-text search on subject, predicate, or values.
-        """
-        with self._connect_kernel() as kernel:
-            summary = provenance.window(kernel)
-            rows = provenance.recent_assertions(
-                kernel,
-                limit=limit,
-                filter_type=filter_type,
-                actor=actor,
-                search=search,
-                action_names=action_names,
-            )
+def standing(report):
+    """What a draft is standing in: the holes, the examples, and the verdict."""
+    blocking = [h for h in report["holes"] if h["blocking"]]
+    open_ = [h for h in report["holes"] if not h["blocking"]]
+    lines = [f"Holes: {len(blocking)} blocking, {len(open_)} open."]
+    for hole in blocking:
+        lines.append(f"  ! {hole['question']}")
+        lines += _answer(hole)
+    for hole in open_:
+        lines.append(f"  ? {hole['question']}")
+        lines += _answer(hole)
+    lines.append("")
+    lines.append(_examples(report, tables=False))
+    lines.append("")
+    if report["sealable"]:
+        lines.append("It could be sealed now. Propose it to the person; you cannot seal.")
+    elif not blocking and report["examples"] and not report["examples_run"]:
+        lines.append("Not sealable: the examples could not be run, there is no log.")
+    else:
+        agreeing = all(h["kind"] == "example_not_agreed" for h in blocking)
+        lines.append("Not sealable yet: only the person's agreement to the examples "
+                     "is missing. Propose them." if blocking and agreeing
+                     else "Not sealable yet.")
+    return "\n".join(lines)
 
-        return _serialize({
-            "kernel_summary": summary,
-            "count_returned": len(rows),
-            "filter_applied": {
-                "filter_type": filter_type,
-                "actor": actor,
-                "search": search,
-                "limit": limit,
-            },
-            "activity_rows": rows,
-        })
 
-    def kernel_trace_provenance(
-        self,
-        subject: str,
-        predicate: Optional[str] = None,
-        business: Optional[str] = None,
-    ) -> Dict[str, Any]:
-        """Perform deep forensic bitemporal audit: trace every assertion ever made about an entity.
+def _answer(hole):
+    """The step that answers a hole, or the refusal's own fixes when there is none."""
+    step = hole["step"]
+    if step:
+        given = " ".join(f"{k}={v}" for k, v in step["args"].items())
+        line = f"      step: {step['op']} {given}".rstrip()
+        if step["choose"]:
+            line += f", choosing {step['choose']}"
+        out = [line]
+        if step["options"]:
+            out.append(f"        one of: {_listed(step['options'])}")
+        return out
+    if hole["refusal"]:
+        return [_indent("\n".join(_refusal(hole["refusal"]).splitlines()[1:]), 4)]
+    return []
 
-        Args:
-            subject: URI or identifier of the entity, as registered in the log.
-            predicate: Optional predicate URI or slot name to focus on.
-            business: Business namespace.
-        """
-        if not subject:
-            raise ValueError("Parameter 'subject' is required for provenance tracing.")
 
-        with self._connect_kernel() as kernel:
-            by_uri, by_id = provenance._registry(kernel)
-            if subject not in by_uri:
-                return _serialize({
-                    "subject": subject,
-                    "error": f"the log has never registered {subject!r}",
-                    "assertions_count": 0,
-                    "history_chain": [],
-                })
+def _examples(report, *, tables):
+    if not report["examples"]:
+        return "Examples: none yet."
+    lines = ["Examples:"]
+    if not report["examples_run"]:
+        lines.append("  (not run: there is no log to run them in)")
+    lines += [f"  {line}" for line in render_examples(report["examples"], tables=tables)]
+    return "\n".join(lines)
 
-            if predicate:
-                target_pred = predicate
-                if target_pred not in by_uri:
-                    map_ = self._resolve_map(business)
-                    view = map_["view"]
-                    for slot in view.all_slots().values():
-                        if slot.name == predicate and slot.slot_uri in by_uri:
-                            target_pred = slot.slot_uri
-                            break
-                if target_pred in by_uri:
-                    hist = provenance.history(kernel, subject, target_pred)
-                    history_chain = hist["rows"]
-                else:
-                    return _serialize({
-                        "subject": subject,
-                        "predicate": predicate,
-                        "error": f"Predicate '{predicate}' is not registered in the log.",
-                        "assertions_count": 0,
-                        "history_chain": [],
-                    })
-            else:
-                from psycopg.rows import dict_row
-                sub_id = by_uri[subject]
-                with kernel.cursor(row_factory=dict_row) as cur:
-                    cur.execute("""
-                        SELECT a.*, i.occurred_at, i.actor_id, i.agent_id, i.action_name, i.note, i.reason_code
-                        FROM assertion a
-                        JOIN intent i ON a.intent_id = i.id
-                        WHERE a.subject_id = %s
-                        ORDER BY a.valid_from DESC, a.recorded_at DESC, a.seq DESC
-                    """, (sub_id,))
-                    raw = cur.fetchall()
-                revoked_by = {row["revokes"]: row["id"] for row in raw if row["revokes"]}
-                history_chain = []
-                for row in raw:
-                    history_chain.append({
-                        **row,
-                        "subject": subject,
-                        "predicate": by_id.get(row["predicate_id"], str(row["predicate_id"])),
-                        "value": (by_id.get(row["value_ref"], str(row["value_ref"]))
-                                  if row["value_ref"] else row["value_literal"]),
-                        "ref": row["value_ref"] is not None,
-                        "revoked_by": revoked_by.get(row["id"]),
-                    })
 
-        return _serialize({
-            "subject": subject,
-            "predicate": predicate or "all",
-            "assertions_count": len(history_chain),
-            "history_chain": history_chain,
-        })
+def _around(report):
+    lines = [_header(report), "", "Classes of pinned modules this draft points at:"]
+    for c in report["borrowed"]:
+        pin = f"{c['module']['name']}@{c['module']['version']}" if c["module"] else ""
+        fills = f", fills {', '.join(c['fills'])}" if c["fills"] else ""
+        lines.append(f"  {c['name']} ({pin}{fills})")
+        for slot in c["slots"]:
+            mark = ", identifier" if slot["identifier"] else ""
+            lines.append(f"    {slot['name']}: {slot['range'] or 'string'}{mark}")
+    if not report["borrowed"]:
+        lines.append("  none yet")
+    lines += ["", "Roles in sight:"]
+    for role in report["roles"]:
+        bindings = ", ".join(b["name"] for b in role["bindings"]) or "no binding"
+        filled = ", ".join(f["class"] for f in role["filled_by"])
+        lines.append(f"  {role['name']}: binds {bindings}"
+                     + (f"; filled here by {filled}" if filled else ""))
+    enums = [e for e in report["enums"]]
+    if enums:
+        lines += ["", "Enums in sight:"]
+        lines += [f"  {e['name']}: {', '.join(e['values'])}" for e in enums]
+    lines.append("")
+    lines.append(f"It sees {report['sees']['classes']} classes and "
+                 f"{report['sees']['slots']} slots in all; `options` lists them "
+                 f"per step, `catalogue` describes them.")
+    return "\n".join(lines)
 
-    # =========================================================================
-    # Pilar 4: Write Gate & Task Execution (Write)
-    # =========================================================================
 
-    def kernel_submit_transaction(
-        self,
-        class_name: str,
-        fields: Dict[str, Any],
-        actor: str = "agent",
-        action_name: Optional[str] = None,
-        subject: Optional[str] = None,
-        valid_from: Optional[str] = None,
-        reason: Optional[str] = None,
-        business: Optional[str] = None,
-    ) -> Dict[str, Any]:
-        """Submit a new operational transaction or fact into the kernel via the official write gate.
+def _entry(entry):
+    pin = f"{entry['module']['name']}@{entry['module']['version']}"
+    about = " ".join(str(entry.get("description") or "").split())
+    if len(about) > 160:
+        about = about[:157] + "..."
+    if entry["kind"] == "module":
+        pins = ", ".join(f"{p['name']}@{p['version']}" for p in entry["pins"]) or "nothing"
+        head = (f"module {pin} — {entry['title']}; pins {pins}; declares "
+                f"{', '.join(entry['declares']['classes']) or 'no class'}")
+    elif entry["kind"] == "role":
+        bindings = ", ".join(b["name"] for b in entry["bindings"]) or "nothing"
+        filled = ", ".join(f"{f['class']} ({f['module']['name']})"
+                           for f in entry["filled_by"]) or "nothing"
+        head = f"role {entry['name']} ({pin}): binds {bindings}; filled by {filled}"
+    elif entry["kind"] == "class":
+        fills = f", fills {', '.join(entry['fills'])}" if entry["fills"] else ""
+        statable = "" if entry["statable"] else ", cannot be stated"
+        head = (f"class {entry['name']} ({pin}{fills}{statable}): slots "
+                f"{', '.join(entry['slots']) or 'none'}")
+    else:
+        fills = f", fills {', '.join(entry['fills'])}" if entry["fills"] else ""
+        head = (f"slot {entry['name']} ({pin}): {entry['range'] or 'string'}"
+                f"{fills}; on {', '.join(entry['on']) or 'no class'}")
+    return f"  {head}" + (f"\n      {about}" if about else "")
 
-        Creates exactly 1 intent and N assertions atomically in the append-only ledger.
 
-        Args:
-            class_name: Class of transaction/document, as named by the map.
-            fields: Dict of slot key-values.
-            actor: Actor identity.
-            action_name: Action identifier on intent.
-            subject: Optional entity URI. If omitted, will be generated.
-            valid_from: Business effective timestamp (ISO format).
-            reason: Audit note / explanation for why this action was performed.
-            business: Business namespace.
-        """
-        map_ = self._resolve_map(business)
-        v_from = _clean_clock(valid_from) or datetime.now(timezone.utc).isoformat()
-        act_name = action_name or f"agent_submit_{class_name}"
+TOOLS = (look, options, do, catalogue, guide)
 
-        # If subject not given, generate a readable URI
-        subj_uri = subject
-        if not subj_uri:
-            ts_slug = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-            subj_uri = f"{map_['business']}:{class_name.lower()}_{ts_slug}"
-
-        with self._connect_kernel() as kernel:
-            result = submit(
-                kernel,
-                map_,
-                class_name,
-                subject=subj_uri,
-                values=fields,
-                actor_id=actor,
-                valid_from=v_from,
-                reason_code="AGENT_ACTION",
-                note=reason or f"Autonomous transaction by {actor}",
-            )
-
-        return _serialize({
-            "status": "committed",
-            "class_name": class_name,
-            "subject": subj_uri,
-            "intent_id": result["intent_id"],
-            "assertions_count": len(result["assertions"]),
-            "stated_assertions": result["stated"],
-        })
-
-    def kernel_correct_assertion(
-        self,
-        revokes_assertion_id: Union[str, int, UUID],
-        subject: str,
-        predicate: str,
-        new_value: Optional[str] = None,
-        actor: str = "agent",
-        valid_from: Optional[str] = None,
-        reason: Optional[str] = None,
-        business: Optional[str] = None,
-    ) -> Dict[str, Any]:
-        """Perform an append-only bitemporal correction or retraction on a previous assertion.
-
-        Never deletes or updates rows. Writes a new assertion that revokes the old one via `revokes`.
-
-        Args:
-            revokes_assertion_id: The ID (UUID or string) of the previous assertion being withdrawn/replaced.
-            subject: Entity URI of the assertion.
-            predicate: Predicate URI or slot name.
-            new_value: New value if correcting. If None, performs a pure retraction.
-            actor: Actor identity performing correction.
-            valid_from: Business effective date of the correction.
-            reason: Audit rationale for correction.
-            business: Business namespace.
-        """
-        map_ = self._resolve_map(business)
-        v_from = _clean_clock(valid_from) or datetime.now(timezone.utc).isoformat()
-
-        # Find corresponding slot_name and class_name
-        view: SchemaView = map_["view"]
-        target_class, target_slot = None, None
-        for cname in view.all_classes():
-            for sname in view.class_slots(cname):
-                sdef = view.induced_slot(sname, cname)
-                if sdef.slot_uri == predicate or sname == predicate or str(sdef.name) == predicate:
-                    target_class = str(cname)
-                    target_slot = str(sname)
-                    break
-            if target_class:
-                break
-
-        if not target_class or not target_slot:
-            # Fallback to generic Entity class
-            target_class = "Entity"
-            target_slot = predicate
-
-        values = {target_slot: new_value} if new_value is not None else {}
-        revokes = {target_slot: str(revokes_assertion_id)}
-
-        with self._connect_kernel() as kernel:
-            result = submit(
-                kernel,
-                map_,
-                target_class,
-                subject=subject,
-                values=values,
-                actor_id=actor,
-                revokes=revokes,
-                valid_from=v_from,
-                reason_code="CORRECTION",
-                note=reason or f"Correction revoking assertion #{revokes_assertion_id}",
-            )
-
-        return _serialize({
-            "status": "corrected",
-            "revoked_assertion_id": revokes_assertion_id,
-            "intent_id": result["intent_id"],
-            "new_assertions": result["assertions"],
-        })
+__all__ = ["ACTOR", "Bench", "PARTS", "TOOLS", "catalogue", "do", "guide", "look",
+           "options", "standing"]

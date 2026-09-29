@@ -1,9 +1,7 @@
-"""components.agent — Universal Model Context Protocol (MCP) surface for Uniti.
+"""The agent that builds graphs: its tools, its guide, and the agent itself.
 
-Exposes domain-agnostic generic tools over the Graph (LinkML ontology),
-Operational Database (projections & digital twin), and Kernel (immutable append-only log).
+    tools       what it can do: look, options, do, catalogue, guide
+    guide       what it needs to know, generated from the system
+    builder     the agent, on whichever model it is given
+    rehearsal   the agent played from a script, with no model behind it
 """
-
-from .tools import UnitiTools
-
-__all__ = ["UnitiTools"]
