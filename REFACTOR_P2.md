@@ -506,19 +506,129 @@ identik dua kali.
 - Draft menjalankannya setiap berubah; seal menolak bila ada yang gagal.
 - Mengambil alih tujuan 3.2 lama: angka hidup dari draft yang belum di-seal.
 
+**Hasil (29 September 2026).** Ketiga butir selesai, 239 test lulus, replay
+identik dua kali.
+
+- **Bentuk contoh.** Satu contoh berisi kalimat bisnisnya (`says`), beberapa
+  catatan (bahan, pergerakan, dan sebagainya, masing-masing dengan kelasnya,
+  faktanya, dan tanggal berlakunya), dan angka yang diharapkan (tabel, baris,
+  kolom, angka, dan boleh juga pada tanggal berapa dibaca). Catatan yang
+  disebut lagi dengan tanggal lebih baru berarti catatan itu berubah; itu cara
+  contoh mengatakan "batas pesan ulang dinaikkan 1 Juli". Sel yang diharapkan
+  kosong berbeda dari nol. Berkasnya ada di samping draft
+  (`draft.examples.yaml`) dan ikut di-seal di samping versinya
+  (`vN.examples.yaml`), tidak pernah diubah lagi.
+- **Log sendiri untuk setiap contoh.** Setiap contoh dijalankan di log sementara
+  yang hanya ada selama contoh itu berjalan, lalu dibuang. Catatannya masuk lewat
+  pintu form yang sama, jadi nilai yang ditolak form juga ditolak di contoh
+  dengan kata-kata form. Angkanya dihitung compiler yang sama. Terbukti: log
+  pengembangan berisi seluruh data demo, dan contoh tetap hanya melihat satu
+  karung terigu miliknya sendiri; tidak ada satu baris pun yang tertinggal di
+  log.
+- **Seal menuntut semuanya lulus.** Angka yang berbeda menolak seal
+  (`example_failed`) sebelum apa pun ditulis. Penolakannya menyebut contoh,
+  tabel, baris, kolom, dan tanggalnya, mengutip kalimat bisnisnya, dan
+  menawarkan dua jalan: memperbaiki aturan, atau membicarakan ulang contohnya
+  dengan orang yang memberinya. Mengubah angka contoh supaya cocok dengan graph
+  tidak membuktikan apa-apa.
+- **Studio menjalankannya setiap kali draft dibaca.** Tujuh langkah baru:
+  `add_example`, `set_example`, `remove_example`, `record`, `unrecord`,
+  `expect`, `unexpect`. Contoh yang gagal menjadi lubang yang memblokir. Draft
+  tanpa contoh, atau contoh tanpa angka, menjadi pertanyaan terbuka yang tidak
+  memblokir. Revisi mulai dari contoh versi sebelumnya, jadi kontraknya ikut ke
+  versi berikut. Mengganti nama kelas atau slot ikut mengganti namanya di
+  contoh.
+- **Angka hidup.** Setiap contoh mengembalikan tabel yang dihasilkannya,
+  termasuk ketika semua angkanya benar. Hasil ini tersedia lewat API Studio,
+  `python -m components.studio show`, dan
+  `python -m components.modules examples @scope/name vN --tables` untuk versi
+  yang sudah di-seal. Tampilannya di layar Studio menunggu interface baru di
+  irisan 4.
+- **Aplikasi demo membawa contoh.** `@demo/stock@v2` membawa dua contoh:
+  terigu (36 kg, batas 20 lalu 30, sisa di atas batas 16 lalu 6) dan garam
+  (tanpa batas, jadi sisanya kosong, bukan nol). Keduanya lulus saat seal.
+- **Keputusan kecil yang saya ambil, silakan dibalik.** Seal tidak mewajibkan
+  adanya contoh; ketiadaannya hanya pertanyaan terbuka. Alasannya: modul
+  kosakata murni seperti `@uniti/core` tidak punya angka untuk dicontohkan.
+  Kalau Anda ingin modul yang punya aturan hitung wajib punya contoh, itu satu
+  penjaga tambahan.
+
 ### Irisan 4: Agent dan interface Studio baru
 
 Dikerjakan bersama, karena interface dirancang di sekitar agent sejak awal.
 
 - Agent: panduan yang dihasilkan dari sistem, katalog, operasi Studio sebagai
   tool (ditambah operasi yang lebih besar dari langkah satuan), usulan yang
-  wajib disetujui user. Penyedia LLM dan stack dibahas nanti.
+  wajib disetujui user.
 - Interface: dibangun ulang dari tugas user (lapis keempat di atas); seal
   dari layar dengan konfirmasi.
 - **Selesai jika:** cerita PT Maju dari 2.8 dipakai ulang. Pemilik memberi
   permintaan dalam bahasa bisnis, agent membangun modul dan aplikasinya lewat
   Studio, dan angkanya sama dengan angka kebenaran yang sudah ada
   (`build/exp/story/truth.txt`).
+
+**Rancangan yang disetujui (30 September 2026).**
+
+- **Akurasi ditanggung sistem, bukan kepintaran model.** Kesalahan bentuk
+  ditangkap penjaga; kesalahan arti (tanda, satuan, hitungan ganda, waktu)
+  hanya bisa ditangkap contoh bisnis. Jadi mutu contoh dan asal angkanya yang
+  menentukan:
+  - Kontrak dulu, graph kemudian: agent tidak membangun aturan hitung sebelum
+    ada contoh yang angkanya disepakati.
+  - Angka yang diharapkan dihitung oleh **akuntan**: konteks model terpisah
+    yang hanya membaca cerita bisnis dan jawaban user, tidak pernah melihat
+    graph, dan menuliskan cara hitungnya dalam bahasa bisnis. User
+    mengonfirmasi.
+  - Angka yang sudah dikonfirmasi user dikunci sistem. Agent boleh mengubah
+    aturan; mengubah angka itu hanya lewat usulan yang disetujui user.
+  - Penjaga baru: modul yang punya aturan hitung wajib punya contoh, dan setiap
+    kolom hitungan harus diperiksa minimal satu angka contoh. Ini membalik
+    keputusan kecil di 3.3; modul kosakata murni tetap tidak wajib.
+  - "Selesai" dihitung sistem, dan ringkasan yang disetujui user dirender
+    sistem dari keadaan draft, bukan dikarang agent.
+- **Satu agent pembangun ditambah akuntan**, bukan tim agent. Alurnya enam
+  tahap: pahami → sepakati contoh → cari di katalog → bangun → periksa →
+  usulkan. Tiga titik persetujuan user: ringkasan kebutuhan, angka contoh, dan
+  seal.
+- **Sekitar delapan alat, bukan 31:** lihat keadaan, lihat pilihan langkah,
+  jalankan sekelompok langkah (berhenti di penolakan pertama dan mengembalikan
+  keadaan baru), cari katalog, baca panduan per topik, tanya user, usulkan
+  contoh, usulkan seal. **Agent tidak punya alat seal**; seal hanya terjadi
+  lewat tombol user.
+- **Ingatan agent adalah sistem:** draft, transkrip, dan contoh. Transkrip
+  mencatat siapa yang melakukan setiap langkah (agent atau orang); percakapan
+  disimpan di samping draft dan boleh diringkas tanpa kehilangan keadaan.
+- **Batas biaya per permintaan:** bila tercapai, agent berhenti dan melapor.
+- **Uji agent (eval):** PT Maju sebagai kasus utama ditambah 10–20 tugas
+  kecil dari kegagalan 2.8, dinilai kode terhadap angka kebenaran, setiap
+  tugas dijalankan tiga kali dan harus benar ketiganya. Diulang setiap panduan,
+  instruksi, atau model berubah; langkah, penolakan, token, dan waktu dicatat.
+
+**Stack dan model (30 September 2026).**
+
+- **Pydantic AI** (sudah terpasang) di atas Starlette yang ada, streaming ke
+  frontend React yang ada. Tidak ada server, database, atau layanan baru.
+  Tidak memakai Claude Agent SDK (membawa alat baca-tulis berkas dan
+  terminal), LangGraph (tempat keadaan kedua), atau database vektor (katalog
+  dan panduan kecil dan terstruktur; pencarian tepat lebih akurat).
+- **Terbuka untuk banyak penyedia dan model self-hosted**, walaupun belum
+  dikerjakan sekarang. Aturannya:
+  - Model dipilih lewat konfigurasi per peran (pembangun, akuntan). Tidak ada
+    kode yang menyebut nama penyedia.
+  - Kebenaran tidak bergantung pada fitur khusus satu penyedia. Fitur seperti
+    cache atau tingkat berpikir hanya pengaturan opsional di satu tempat.
+  - Skema alat sederhana dan datar supaya model kecil dan server yang
+    kompatibel OpenAI (Ollama, vLLM, llama.cpp, LM Studio) sanggup memakainya;
+    pemeriksaan isian terjadi di sistem, dengan pesan penolakan yang mengajari.
+  - Sebuah model dinyatakan didukung untuk satu peran bila lulus eval peran
+    itu. Eval adalah tiket masuk, bukan klaim penyedia.
+- **Model sekarang: Gemini lewat Vertex AI**, satu-satunya akses pemilik.
+  Diuji 30 September 2026 lewat Pydantic AI dengan pemanggilan alat:
+  `gemini-3.8-flash`, `gemini-3.5-flash`, dan `gemini-3.1-pro-preview`
+  berjalan; varian Pro yang lain belum tersedia di proyek. Titik awal:
+  pembangun `gemini-3.8-flash`, akuntan dibandingkan antara
+  `gemini-3.8-flash` (berpikir tinggi) dan `gemini-3.1-pro-preview`. Eval
+  pertama menentukan pembagiannya.
 
 ### Irisan 5: Compiler dan generator tumbuh sesuai kebutuhan
 
@@ -555,6 +665,7 @@ konversi satuan dengan mencocokkan entity satuan itu sendiri.
 | Penanda data uji | Manifest modul boleh menyatakan `purpose:`. `seal` dan `register` membawanya ke `reason_code` intent; `load_facts` membawanya ke tiap intent yang ditulisnya. | Log dibaca orang yang tidak memegang store. Kalau isinya karangan, barisnya sendiri yang harus mengatakannya — bukan konvensi nama scope yang harus dihafal. |
 | Peran setelah 2.8 | Kosakata bersama untuk menemukan dan menyambungkan modul, bukan penjumlah otomatis lintas modul. Aplikasi menyebut jelas apa yang dihitung dari modul mana. Disepakati 29 September 2026. | Putaran 2 irisan 2.8: setiap pengisi `Flow` berkompromi, penerimaan tercatat di dua modul terhitung dua kali, dan peran yang cukup kaya untuk mencegahnya akan menjadi model kanonik. |
 | Studio | Agent mengusulkan, sistem menjamin, user menyetujui; contoh bisnis adalah kontrak yang wajib lulus sebelum seal; LinkML untuk bentuk data plus kosakata aturan Uniti, tanpa stack baru untuk sekarang. Disepakati 29 September 2026. | "Arah sesudah 2.8" di §6. |
+| Agent | Satu agent pembangun ditambah akuntan independen yang menghitung angka contoh tanpa melihat graph; angka yang dikonfirmasi user dikunci; agent tidak punya alat seal; modul beraturan hitung wajib punya contoh. Pydantic AI dengan model per peran lewat konfigurasi, terbuka untuk penyedia lain dan model self-hosted; sekarang Gemini lewat Vertex AI. Disetujui 30 September 2026. | Irisan 4 di §6. |
 | Kernel pengembangan | Dimulai kosong. Tidak ada lagi seed sintetis 200 assertion di sana; seed itu hanya dipakai `make check` di database test. | Semua yang tampil di penjelajah kernel harus berasal dari mekanisme yang bisa ditelusuri: seal, registrasi, atau isian form. |
 
 ### Masih terbuka
@@ -564,7 +675,7 @@ konversi satuan dengan mencocokkan entity satuan itu sendiri.
 | 1 | Teknologi UI | awal irisan 0b | API JSON Python (Starlette/uvicorn, sudah terpasang) yang dipakai bersama oleh UI dan agent, ditambah frontend React + TypeScript + Vite (Node 22 sudah ada). Graph, diff, dan chat streaming butuh UI interaktif yang sungguhan. |
 | ~~2~~ | ~~Isi `ontology_version` pada assertion di dunia modular~~ | **dijawab di irisan 2** | **Versi aplikasi.** Lihat keputusan di bawah. |
 | 3 | Isi `@uniti/core` | irisan 2.5 | **Peran, bukan kamus istilah.** Ukurannya terikat pada jumlah eksekutor, bukan jumlah domain: ~30 deklarasi saat dewasa. Rumus, tiga lapis (`core` / `@uniti/*` / ekosistem), dan aturan pertumbuhannya di `DESIGN_NOTES.md` §4. |
-| 4 | Penyedia LLM, stack, dan implementasi agent | sebelum irisan 4 | dibahas terpisah; prinsipnya sudah disepakati ("Arah sesudah 2.8") |
+| ~~4~~ | ~~Penyedia LLM, stack, dan implementasi agent~~ | **dijawab 30 September 2026** | **Pydantic AI, terbuka untuk banyak penyedia dan model self-hosted; sekarang Gemini lewat Vertex AI.** Rancangannya di Irisan 4. |
 | ~~5~~ | ~~Koherensi: dua modul mengisi peran yang sama~~ | **dijawab di irisan 2.5** | **Slot: tepat satu per kelas, kalau tidak ditolak** — ambiguitas di dalam satu kelas tidak bisa dipecahkan siapa pun selain penulisnya. **Kelas: berapa pun, semuanya ikut, dan rencananya menyebut yang mana** — gabungan itu bermakna (dua gudang, dua modul), dan sebuah subjek hanya anggota satu kelas sehingga tidak ada baris yang terhitung dua kali. Yang tersisa adalah bahaya *data*: satu peristiwa dinyatakan dua kali di bawah dua kosakata. Itu soal penyelarasan, bukan skema. |
 | 6 | Satuan, dan waktu yang punya dua sumber tanpa penjaga | sesudah 2.5 | `DESIGN_NOTES.md` §10.4–10.5 |
 
@@ -724,6 +835,24 @@ konversi satuan dengan mencocokkan entity satuan itu sendiri.
   merambat, jadi React tidak pernah melihatnya — yang satu ini keterbatasan
   probe, tapi ia menunjuk ke masalah yang nyata.
 
+- **Jebakan YAML `on:` muncul lagi.** Kunci tanggal catatan di contoh semula
+  bernama `on`, dan YAML membacanya sebagai `true`. Namanya diganti `when`, dan
+  test memastikan berkas yang masih memakai `on:` ditolak, tidak diam-diam
+  kehilangan tanggalnya.
+- **Pintu form mengandaikan log yang sudah dimulai.** `submit` tidak pernah
+  mendaftarkan predikat penamaan `uniti:uri`, karena di log sungguhan seal
+  selalu sudah melakukannya. Log sementara untuk contoh dimulai dengan langkah
+  yang sama seperti log mana pun: predikat itu mendaftarkan dirinya sendiri.
+- **Log sementara aman karena diperiksa, bukan karena diandaikan.** Tiga tabel
+  sementara menutupi tabel kernel hanya untuk satu koneksi, di dalam transaksi
+  yang selalu dibatalkan. Sebelum dan sesudah setiap contoh diperiksa bahwa
+  nama tabelnya menunjuk ke tempat yang benar. Kalau tabel sementara tertinggal,
+  tulisan berikutnya di koneksi itu (misalnya seal) akan hilang tanpa jejak,
+  jadi yang itu dibuat berhenti keras, bukan menjadi penolakan.
+- **Membaca draft sekarang butuh database untuk contohnya.** Tanpa koneksi,
+  contoh hanya didaftar, tidak dijalankan, dan draft tidak disebut siap seal:
+  contoh yang tidak dijalankan adalah contoh yang jawabannya belum diketahui.
+
 ---
 
 ## 9. Status
@@ -742,6 +871,6 @@ konversi satuan dengan mencocokkan entity satuan itu sendiri.
 | 3.1 UI | dibangun ulang setelah Anda melihat yang pertama dan tidak mengerti sama sekali: tiga kolom istilah kompiler diganti **peta** (`web/src/graph.tsx`) — node jenis hal, garis relasi, yang dipijak samar di atas, klik untuk panel, tarik untuk membuat relasi; pertanyaan dirangkai dari deskripsi pengikatnya sendiri sehingga tetap domain-agnostic; `state()` menambah `borrowed` (keterjangkauan, bukan seluruh yang dipin); semua kosakata mesin pindah ke satu tutup *Behind the scenes*; 191 test lulus |
 | 2.8 | ditutup 29 September 2026: putaran 1 tidak menguji peran (rancangan tes); putaran 2 dihentikan setelah kelima modul ditulis dengan peran wajib, dan sudah menjawab: peran bukan penjumlah otomatis lintas modul, komposisi eksplisit menjadi cara resmi; perbaikan F1–F4 tetap di kode, 217 test lulus; rincian di `COMPOSITION_EXPERIMENT.md` |
 | 3.2 | selesai 29 September 2026: bentrok nama ditolak; predikat dan kelas dicatat dengan URI penuh; enum, `required` per kelas, dan `multivalued` dibuka di Studio dan ditegakkan; range tak dikenal ditolak; sintaks rumus diajarkan; 226 test lulus; rincian di bagian "Irisan 3.2" |
-| 3.3 | belum dimulai: contoh bisnis sebagai kontrak |
+| 3.3 | selesai 29 September 2026: contoh bisnis dijalankan di log sementara lewat pintu form dan compiler yang sama; Studio menjalankannya setiap kali draft dibaca dan seal menolak bila ada yang gagal; tujuh langkah Studio baru; aplikasi demo membawa dua contoh; 239 test lulus; rincian di bagian "Irisan 3.3" |
 | 4 | belum dimulai: agent dan interface Studio baru; stack dan implementasi agent dibahas terpisah |
 | 5 | belum dimulai: compiler dan generator tumbuh sesuai kebutuhan |
