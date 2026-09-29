@@ -1621,3 +1621,30 @@ penghubung), tidak ada daftar nilai tertutup (status, jenis akun, jenis
 dokumen jadi teks bebas), `where` hanya menyaring kelas (U7: jurnal tidak bisa
 dibatasi ke `posted`), `required` tidak tampak (U8), dan pembayaran Odoo tidak
 membuat entri jurnalnya sendiri (U17 di sisi uang).
+
+#### Penutupan eksperimen (29 September 2026)
+
+**Putaran 2 dihentikan oleh pemilik setelah Tahap C**, sebelum aplikasi
+(Tahap D) dan pengisian data (Tahap E). Yang sudah berjalan cukup menjawab
+pertanyaan utama:
+
+- Keempat pengisi `Flow` (dua modul stok, pembelian, buku besar) mengisinya
+  dengan cara berbeda: tak bertanda lawan bertanda, satuan beli lawan satuan
+  stok, barang lawan uang. Setiap penulis melaporkan kompromi.
+- Penerimaan barang tercatat di stok **dan** di pembelian, keduanya pengisi
+  `Flow`: penjumlahan atas peran menghitungnya dua kali, dan peran tidak bisa
+  menyatakan "kejadian ini juga tercatat di tempat lain".
+- Peran tidak membawa tempat, arah, satuan, pihak, atau identitas kejadian.
+  Menambahkan semuanya ke core menjadikannya model kanonik (§2).
+
+**Keputusan:** peran menjadi kosakata bersama untuk menemukan dan
+menyambungkan modul, bukan penjumlah otomatis. Aplikasi menyebut jelas apa
+yang dihitung dari modul mana (komposisi eksplisit, §9). Pekerjaan berikutnya
+adalah Studio dengan agent sebagai penulis utama. Ringkasan dan rencananya
+ada di `REFACTOR_P2.md` irisan 2.8 dan "Arah sesudah 2.8".
+
+**Yang tetap:** perbaikan F1–F4 di kode (217 test). Bukti kedua putaran
+disimpan di `build/exp-putaran1/` dan `build/exp/`, dan cerita PT Maju dengan
+angka kebenarannya dipakai ulang sebagai ukuran selesai irisan 4.
+
+Dokumen ini dihapus bersama `REFACTOR_P2.md` di akhir refactor.

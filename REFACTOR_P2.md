@@ -319,7 +319,29 @@ bertanda, dan penulis modul menghindari peran karena takut hitungan ganda.
 implementer, semua modul terpasang bersamaan, penukaran modul tanpa mengubah
 aturan aplikasi. Rencananya di `COMPOSITION_EXPERIMENT.md` bagian "Putaran 2".
 
-**Hasil putaran 2:** *belum ada.*
+**Hasil putaran 2 (dihentikan 29 September 2026 atas keputusan pemilik):**
+berjalan sampai kelima modul selesai ditulis dengan peran wajib, sebelum
+aplikasi dan pengisian data. Itu sudah cukup menjawab pertanyaan utamanya:
+
+- Keempat modul yang mengisi `Flow` mengisinya dengan cara berbeda: jumlah
+  tak bertanda lawan bertanda, sak lawan kg, barang lawan uang. Setiap penulis
+  melaporkan kompromi.
+- Penerimaan barang tercatat di modul stok **dan** modul pembelian, keduanya
+  mengisi `Flow`. Menjumlah `Flow` menghitung barang dua kali, dan peran tidak
+  punya cara menyatakan "kejadian ini juga tercatat di tempat lain".
+  Penulisnya sendiri yang menyadarinya.
+- Peran tidak bisa menyatakan tempat, arah, satuan, pihak, atau kejadian yang
+  sama. Kalau semua itu dimasukkan ke core, core menjadi model data kanonik,
+  yaitu hal yang sejak awal ditolak.
+- Bentrok nama antar modul terulang: dua penulis memilih prefix yang sama dan
+  dua predikat berbeda arti menjadi satu, tanpa suara.
+
+**Kesimpulan irisan 2.8:** peran **tidak** dipakai sebagai penjumlah otomatis
+lintas modul. Peran adalah kosakata bersama untuk menemukan dan menyambungkan
+modul; aplikasi selalu menyebut jelas apa yang dihitung dari modul mana
+(komposisi eksplisit). Kerumitan di belakang dipikul agent dan penjaga sistem,
+bukan user. Perbaikan F1–F4 dari putaran 2 tetap di kode (217 test). Arah
+sesudahnya: bagian **"Arah sesudah 2.8"** di bawah.
 
 ### Irisan 3: Studio manual (tanpa LLM)
 
@@ -362,38 +384,116 @@ yang kedua memperlihatkan akibatnya dan menutupnya.
   irisan UI sekarang ditambah satu: **seorang yang tahu bisnisnya, bukan
   kompilernya, bisa membacanya tanpa kamus.**
 
-**3.2 Angka langsung dan seal**
+### Arah sesudah 2.8: Studio dengan agent sebagai penulis utama
 
-- **Mekanisme:** `preview()` atas draft yang belum di-seal, terhadap log
-  sungguhan; seal dari halaman dengan konfirmasi.
-- **Yang dilihat:** kolom kanan menampilkan angka sungguhan yang berubah sambil
-  aturannya diubah; tombol seal dengan diff dan konfirmasi.
-- **Selesai jika:** Anda bisa membuat modul lengkap tanpa menulis YAML **dan
-  men-seal-nya dari layar**, dan setiap penolakan menjelaskan dirinya.
+Disepakati pemilik 29 September 2026. Rencana irisan 3.2, 4, dan 5 yang lama
+(angka langsung dan seal; agent tipis di samping editor; uji integrasi lewat
+chat) **diganti** oleh bagian ini. Detail stack dan implementasi agent
+dibahas terpisah, belum diputuskan.
 
-### Irisan 4: Agent di Studio
+**Gambaran pemilik.** Studio adalah tempat graph ditulis, dan di sanalah
+kualitas sistem ditentukan: graph yang cacat tidak bisa diselamatkan compiler
+dan generator sebagus apa pun. Tokoh utamanya **agent AI** yang memegang
+seluruh sumber dan panduan tentang cara graph, modul, dan aturannya bekerja,
+dan yang menerjemahkan kebutuhan user menjadi graph yang bisa dijalankan:
+membuat modul, mengkurasi graph, membuat aplikasi, mengganti modul. Pendampingnya
+**interface** yang membuat user memahami graph dan bisa melakukan semua yang
+dilakukan agent secara manual. Studio yang sekarang adalah tampilan mekanisme,
+bukan dibangun dari kebutuhan user, dan akan diganti. Compiler dan generator
+masih dasar dan **tidak boleh membatasi desain graph**: selama masuk akal dan
+bisa dijalankan secara deterministik, keduanya diubah mengikuti graph.
 
-- **Mekanisme:**
-  - Agent tipis. Tool-nya adalah operasi draft yang sama dengan irisan 3, plus
-    inspect dan *usulan* seal yang wajib dikonfirmasi manusia.
-  - Sesi dan riwayat lengkap (termasuk tool call) disimpan di server.
-  - Streaming event.
-  - Percakapan menjadi transcript seal.
-- **Yang dilihat:** chat di samping editor yang sama. Setiap tool call tampil
-  sebagai perubahan draft saat itu juga.
-- **Selesai jika:** modul yang dibuat lewat chat identik secara mekanisme dengan
-  modul yang dibuat manual.
+**Bukti dari 2.8.** Para penulis modul, implementer, dan staf di eksperimen
+adalah agent yang bekerja lewat langkah Studio. Mereka bisa menulis modul utuh,
+membaca penolakan dan memperbaiki diri, dan memahami arti (hitungan ganda,
+arah). Mereka gagal di hal yang tidak diajarkan (sintaks rumus), di hal yang
+tidak terlihat dari posisinya (dua penulis memilih prefix yang sama), dan
+graph yang salah baru ketahuan saat angkanya dibandingkan dengan angka
+kebenaran. Satu modul butuh 100–200 langkah, satu aplikasi hampir 700.
 
-### Irisan 5: Uji integrasi oleh Anda
+**Tiga prinsip yang disepakati:**
 
-Modul pertama dibuat lewat chat, lalu modul kedua dibuat lewat chat dan mengimpor
-yang pertama. Hasilnya harus menjadi satu graph, satu aplikasi, dan proyeksi yang
-menghitung lintas modul.
+1. **Agent mengusulkan, sistem menjamin, user menyetujui.** Kebenaran graph
+   tidak bergantung pada kepintaran agent. Semua yang bisa diperiksa mesin
+   diperiksa penjaga sebelum seal; agent boleh mencoba bebas karena
+   kesalahannya pasti ditangkap, dan ia menjelaskan penolakan ke user.
+2. **Contoh bisnis adalah kontrak.** User dan agent menyepakati contoh dalam
+   bahasa bisnis ("terima 10 sak terigu, jual 3, stok 7 sak = 175 kg"); agent
+   menulisnya sebagai uji; sistem menjalankannya setiap graph berubah, dan
+   seal menuntut semuanya lulus. User mempercayai graph lewat contohnya, bukan
+   dengan membaca graph.
+3. **Tetap LinkML untuk bentuk data, ditambah kosakata aturan Uniti sendiri,
+   tanpa stack baru untuk sekarang.** Sebagian besar keterbatasan yang
+   dirasakan di 2.8 adalah fitur LinkML yang belum dibuka Studio (daftar nilai
+   tertutup/`enum`, `required` per kelas lewat `slot_usage`, `multivalued`).
+   Dua keterbatasan LinkML yang nyata: nama kelas dan slot berlaku global
+   dalam satu closure (Uniti harus menolak bentrok), dan LinkML bukan bahasa
+   hitung (karena itu kosakata aturan Uniti ada di atasnya). Kosakata aturan
+   itu dirapikan menjadi bahasa kecil yang tertutup dan terdokumentasi, yang
+   dipelajari agent. Stack lain (SHACL, Datalog, SQL langsung) hanya
+   dipertimbangkan bila sebuah kebutuhan terbukti tidak bisa ditulis
+   deterministik di kosakata sendiri.
+
+**Empat lapis Studio:**
+
+| lapis | isinya |
+|---|---|
+| penjaga | semua yang bisa diperiksa mesin ditolak sebelum seal |
+| pengetahuan agent | satu panduan yang **dihasilkan dari sistem itu sendiri** (operasi, aturan, penolakan, peran, contoh) sehingga tidak basi, ditambah katalog |
+| contoh bisnis | kontrak user–graph, dijalankan setiap graph berubah |
+| interface | dibangun dari tugas user: percakapan dengan agent, peta graph yang ramah, contoh dan angka yang hidup, usulan perubahan dalam bahasa bisnis sebelum disetujui; semua yang bisa dilakukan agent bisa dilakukan manual, dan sebaliknya |
+
+**Syarat pertumbuhan compiler dan generator:** setiap kemampuan baru bersifat
+umum (bukan untuk satu kasus) dan tetap bisa dianalisis tanpa dijalankan,
+supaya penjaga dan agent bisa meramal akibatnya.
+
+### Irisan 3.2: Penjaga dasar
+
+- Bentrok nama kelas atau slot di dalam satu closure ditolak saat seal dan di
+  draft.
+- Predikat disimpan dengan URI penuh, bukan CURIE mentah, sehingga dua modul
+  dengan prefix sama tidak lagi berbagi predikat; nama kelas di log
+  ber-modul. Keduanya butuh migrasi registry.
+- Studio membuka fitur LinkML yang belum ada: daftar nilai tertutup,
+  `required` per kelas, slot bernilai banyak.
+- Sintaks rumus diajarkan di deskripsi langkah dan di pesan penolakannya.
+
+### Irisan 3.3: Contoh bisnis sebagai kontrak
+
+- Sebuah modul atau aplikasi membawa contoh: data kecil dan angka yang
+  diharapkan, ditulis dalam bahasa bisnis.
+- Draft menjalankannya setiap berubah; seal menolak bila ada yang gagal.
+- Mengambil alih tujuan 3.2 lama: angka hidup dari draft yang belum di-seal.
+
+### Irisan 4: Agent dan interface Studio baru
+
+Dikerjakan bersama, karena interface dirancang di sekitar agent sejak awal.
+
+- Agent: panduan yang dihasilkan dari sistem, katalog, operasi Studio sebagai
+  tool (ditambah operasi yang lebih besar dari langkah satuan), usulan yang
+  wajib disetujui user. Penyedia LLM dan stack dibahas nanti.
+- Interface: dibangun ulang dari tugas user (lapis keempat di atas); seal
+  dari layar dengan konfirmasi.
+- **Selesai jika:** cerita PT Maju dari 2.8 dipakai ulang. Pemilik memberi
+  permintaan dalam bahasa bisnis, agent membangun modul dan aplikasinya lewat
+  Studio, dan angkanya sama dengan angka kebenaran yang sudah ada
+  (`build/exp/story/truth.txt`).
+
+### Irisan 5: Compiler dan generator tumbuh sesuai kebutuhan
+
+Dari kebutuhan yang terbukti di 2.8, satu per satu, masing-masing dengan
+syarat pertumbuhan di atas: saring berdasarkan nilai; daftar nilai tertutup;
+slot bernilai banyak; kunci lewat satu lompatan rujukan (pembayaran → faktur
+→ pemasok); aggregate di atas tabel hitungan; nilai dari dokumen induk
+(tanggal baris); satu catatan yang menghasilkan catatan lain (posting);
+konversi satuan dengan mencocokkan entity satuan itu sendiri.
 
 ### Sesudahnya (belum diurutkan)
 
-- perluasan generator dan compiler: tipe data, relasi, koleksi, skema
-- perubahan definisi lintas versi, dengan riwayat yang diputar ulang
+- perubahan definisi lintas versi, dengan riwayat yang diputar ulang; laporan
+  kecocokan yang membandingkan arti, bukan hanya nama
+- penyelarasan yang dinyatakan orang (kelas atau predikat yang bersesuaian
+  antar modul)
 - penemuan standar universal dan isi `@uniti/core` sebagai bibit
 - MCP baca untuk agent eksternal, mengambil ide dari 11 primitif P1
 
@@ -412,6 +512,8 @@ menghitung lintas modul.
 | Cara menggantinya | `core@v1` di-reset di branch ini, bukan di-seal sebagai v2. | Melanggar "versi sealed tidak pernah diedit", tetapi sah selama masih refactor dan belum ada yang bergantung padanya. Disetujui 18 September 2026. |
 | `ontology_version` untuk fakta instance | **Versi aplikasi** (`@demo/stock@v1`), bukan modul pemilik tiap slot. | Sebuah fakta dinyatakan di bawah map yang sedang dilihat orangnya; satu aksi punya satu map. Modul pemilik tiap predikat tetap bisa ditemukan lewat store dari `slot_uri`, jadi tidak ada informasi yang hilang. Kebalikannya tidak benar: dari daftar modul, map yang dipakai saat menulis tidak bisa direkonstruksi. |
 | Penanda data uji | Manifest modul boleh menyatakan `purpose:`. `seal` dan `register` membawanya ke `reason_code` intent; `load_facts` membawanya ke tiap intent yang ditulisnya. | Log dibaca orang yang tidak memegang store. Kalau isinya karangan, barisnya sendiri yang harus mengatakannya — bukan konvensi nama scope yang harus dihafal. |
+| Peran setelah 2.8 | Kosakata bersama untuk menemukan dan menyambungkan modul, bukan penjumlah otomatis lintas modul. Aplikasi menyebut jelas apa yang dihitung dari modul mana. Disepakati 29 September 2026. | Putaran 2 irisan 2.8: setiap pengisi `Flow` berkompromi, penerimaan tercatat di dua modul terhitung dua kali, dan peran yang cukup kaya untuk mencegahnya akan menjadi model kanonik. |
+| Studio | Agent mengusulkan, sistem menjamin, user menyetujui; contoh bisnis adalah kontrak yang wajib lulus sebelum seal; LinkML untuk bentuk data plus kosakata aturan Uniti, tanpa stack baru untuk sekarang. Disepakati 29 September 2026. | "Arah sesudah 2.8" di §6. |
 | Kernel pengembangan | Dimulai kosong. Tidak ada lagi seed sintetis 200 assertion di sana; seed itu hanya dipakai `make check` di database test. | Semua yang tampil di penjelajah kernel harus berasal dari mekanisme yang bisa ditelusuri: seal, registrasi, atau isian form. |
 
 ### Masih terbuka
@@ -421,7 +523,7 @@ menghitung lintas modul.
 | 1 | Teknologi UI | awal irisan 0b | API JSON Python (Starlette/uvicorn, sudah terpasang) yang dipakai bersama oleh UI dan agent, ditambah frontend React + TypeScript + Vite (Node 22 sudah ada). Graph, diff, dan chat streaming butuh UI interaktif yang sungguhan. |
 | ~~2~~ | ~~Isi `ontology_version` pada assertion di dunia modular~~ | **dijawab di irisan 2** | **Versi aplikasi.** Lihat keputusan di bawah. |
 | 3 | Isi `@uniti/core` | irisan 2.5 | **Peran, bukan kamus istilah.** Ukurannya terikat pada jumlah eksekutor, bukan jumlah domain: ~30 deklarasi saat dewasa. Rumus, tiga lapis (`core` / `@uniti/*` / ekosistem), dan aturan pertumbuhannya di `DESIGN_NOTES.md` §4. |
-| 4 | Penyedia LLM untuk agent | irisan 4 | — |
+| 4 | Penyedia LLM, stack, dan implementasi agent | sebelum irisan 4 | dibahas terpisah; prinsipnya sudah disepakati ("Arah sesudah 2.8") |
 | ~~5~~ | ~~Koherensi: dua modul mengisi peran yang sama~~ | **dijawab di irisan 2.5** | **Slot: tepat satu per kelas, kalau tidak ditolak** — ambiguitas di dalam satu kelas tidak bisa dipecahkan siapa pun selain penulisnya. **Kelas: berapa pun, semuanya ikut, dan rencananya menyebut yang mana** — gabungan itu bermakna (dua gudang, dua modul), dan sebuah subjek hanya anggota satu kelas sehingga tidak ada baris yang terhitung dua kali. Yang tersisa adalah bahaya *data*: satu peristiwa dinyatakan dua kali di bawah dua kosakata. Itu soal penyelarasan, bukan skema. |
 | 6 | Satuan, dan waktu yang punya dua sumber tanpa penjaga | sesudah 2.5 | `DESIGN_NOTES.md` §10.4–10.5 |
 
@@ -597,7 +699,8 @@ menghitung lintas modul.
 | 2.7 | selesai, menunggu Anda melihatnya: katalog terhitung yang bisa dikueri (`components/modules/catalogue.py`) dan enam diagnosa kesehatan per aplikasi (`components/modules/health.py`), lewat CLI, API, dan area Catalogue di aplikasi web; `inv:movement_happened_on` ditemukan sebagai istilah mati di `@demo/stock@v2` — 24 pernyataan, mengisi `moment`, nol pembaca — dan sebagai fakta yang tak terlihat di `@demo/stock@v3`; 173 test lulus |
 | 3.1 | selesai, menunggu Anda melihatnya: draft sebagai berkas yang hanya berubah lewat 24 operasi tertutup (`components/studio/`), lubang yang dihitung dari pembaca gerbang itu sendiri — `uri_refusals` dan `role_refusals` jadi generator supaya bisa dikumpulkan — dan lima pertanyaan terbuka yang tidak ditolak siapa pun; `draft.txt` menjadi transkrip seal; CLI, API, dan area Studio di aplikasi web; satu aplikasi lengkap dengan aggregate, parameter dan expression dibangun dari nol tanpa satu baris YAML dan diterima `seal`; 191 test lulus |
 | 3.1 UI | dibangun ulang setelah Anda melihat yang pertama dan tidak mengerti sama sekali: tiga kolom istilah kompiler diganti **peta** (`web/src/graph.tsx`) — node jenis hal, garis relasi, yang dipijak samar di atas, klik untuk panel, tarik untuk membuat relasi; pertanyaan dirangkai dari deskripsi pengikatnya sendiri sehingga tetap domain-agnostic; `state()` menambah `borrowed` (keterjangkauan, bukan seluruh yang dipin); semua kosakata mesin pindah ke satu tutup *Behind the scenes*; 191 test lulus |
-| 2.8 | putaran 1 selesai 26 September 2026 tanpa menguji peran (rancangan tes); putaran 2 direncanakan: peran wajib, lingkup penuh; rencana di `COMPOSITION_EXPERIMENT.md`; **mendahului 3.2** |
-| 3.2 | belum dimulai; menunggu gerbang irisan 2.8 |
-| 4 | belum dimulai |
-| 5 | belum dimulai |
+| 2.8 | ditutup 29 September 2026: putaran 1 tidak menguji peran (rancangan tes); putaran 2 dihentikan setelah kelima modul ditulis dengan peran wajib, dan sudah menjawab: peran bukan penjumlah otomatis lintas modul, komposisi eksplisit menjadi cara resmi; perbaikan F1–F4 tetap di kode, 217 test lulus; rincian di `COMPOSITION_EXPERIMENT.md` |
+| 3.2 | belum dimulai: penjaga dasar (rencana baru, lihat "Arah sesudah 2.8") |
+| 3.3 | belum dimulai: contoh bisnis sebagai kontrak |
+| 4 | belum dimulai: agent dan interface Studio baru; stack dan implementasi agent dibahas terpisah |
+| 5 | belum dimulai: compiler dan generator tumbuh sesuai kebutuhan |
