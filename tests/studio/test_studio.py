@@ -239,7 +239,10 @@ def test_what_the_studio_calls_clean_is_what_seal_seals(world, conn):
     fill_the_bindings(world, name)
 
     report = reading.state(world, name)
-    assert report["holes"] == [] and report["sealable"] is True
+    # Nothing blocks it. What is left open is the one question no gate can
+    # answer for the author: what the business expects the numbers to be.
+    assert [h["kind"] for h in report["holes"]] == ["no_examples"]
+    assert report["sealable"] is True
     assert report["becomes"] == "v1" and report["revises"] is None
     assert [t["class"] for t in report["tables"]] == ["Movement"]
 
@@ -283,14 +286,15 @@ def test_stepping_through_a_module_writes_nothing_to_the_log(world, conn):
         assert cur.fetchone()[0] == before
 
 
-def test_an_application_is_built_the_same_way_a_module_is(world):
+def test_an_application_is_built_the_same_way_a_module_is(world, conn):
     """The full case, and the one the slice is measured by.
 
     An application is a sealed version that pins others and declares the
     tables somebody wants to see. Nothing about building one is special: the
     same steps, and the three kinds of rule the compiler reads — a total over
     a role, a fact read off a key, and arithmetic on two columns of the same
-    table. Written here without a line of YAML.
+    table. Written here without a line of YAML — and so is the business
+    example that says what the three must come to.
     """
     name = "@probe/application"
     step(world, name, "start", title="An application",
@@ -321,8 +325,28 @@ def test_an_application_is_built_the_same_way_a_module_is(world):
         "class": "Balance", "column": "balance_headroom",
         "expression": "{balance_on_hand} - {balance_level}"})
 
-    report = reading.state(world, name)
+    step(world, name, "add_example", example="flour",
+         says="25 kg of flour came in and 5 went into bread, so 20 are on "
+              "hand, which is 10 above the level of 10.")
+    step(world, name, "record", example="flour", record="flour",
+         **{"class": "Ingredient"},
+         facts="ingredient_code=FLR, ingredient_name=Flour, ingredient_unit=kg, "
+               "ingredient_reorder_level=10")
+    for record, code, quantity in (("in_1", "M1", "25"), ("used", "M2", "-5")):
+        step(world, name, "record", example="flour", record=record,
+             **{"class": "StockMovement"}, when="2026-06-02",
+             facts=f"movement_code={code}, movement_ingredient=flour, "
+                   f"movement_quantity={quantity}, movement_happened_on=2026-06-02")
+    step(world, name, "expect", example="flour", table="Balance", row="flour",
+         values="balance_on_hand=20, balance_level=10, balance_headroom=10")
+
+    report = reading.state(world, name, conn)
     assert report["holes"] == [] and report["sealable"] is True
+    [example] = report["examples"]
+    assert example["passed"] is True
+    assert [(c["column"], c["got"]) for c in example["checks"]] == [
+        ("balance_on_hand", "20"), ("balance_level", "10"),
+        ("balance_headroom", "10")]
     balance = next(t for t in report["tables"] if t["class"] == "Balance")
     assert balance["shape"] == "grouped"
     assert balance["columns"] == 4 and balance["unfilled"] == []
@@ -382,7 +406,8 @@ def test_an_aggregate_step_narrows_and_converts(world):
                     "factor": "rate_factor"},
     }
     report = reading.state(world, name)
-    assert report["holes"] == [] and report["sealable"] is True
+    assert [h["kind"] for h in report["holes"]] == ["no_examples"]
+    assert report["sealable"] is True
     assert "where=affects=Ingredient" in studio.transcript(world, name)
 
     offered = {s["op"]: s for s in reading.steps(world, name, studio.open_draft(world, name))}

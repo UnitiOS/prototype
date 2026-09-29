@@ -56,6 +56,11 @@ That file is evidence and is required. It lands beside the version as `vN.txt`
 and the sealed annotation is rewritten to match, so a sealed version and the
 conversation that produced it are found together.
 
+A draft may carry business examples beside it, `<draft>.examples.yaml`: a few
+records and the numbers they must add up to (components/examples). Every one
+is run before anything is written, and a number that comes out different
+refuses the seal. They land beside the version as `vN.examples.yaml`.
+
 One sealed version can be put into a second log without being sealed again.
 `register()` reads a version that already exists, writes its `slot_uri` rows
 under `uniti:uri`, and writes no file — the door into an empty log for a map
@@ -496,6 +501,27 @@ def _compiles(view, draft_path):
             raise refusal
 
 
+def _examples_hold(conn, view, draft_path):
+    """Every business example beside the draft comes out as it says.
+
+    The contract the person agreed to, run the way the studio runs it on every
+    change: each example in a scratch log of its own, rolled back, so nothing
+    it states reaches this log. The first refusal stops the seal, as every
+    gate here does. Returns the examples file, or None when there is none.
+    """
+    # Imported here: the examples read the compiler, which reads this module.
+    from components.examples.examples import load, path_for, refusals, run
+    held = path_for(draft_path)
+    examples = load(held)
+    if not examples:
+        return None
+    map_ = {"path": draft_path, "view": view, "version": None,
+            "label": draft_path.name}
+    for refusal in refusals(run(conn, map_, examples)):
+        raise refusal
+    return held
+
+
 def _one_version_per_module(store, draft, name):
     """No module reachable from this draft appears at two versions.
 
@@ -878,6 +904,7 @@ def seal(conn, draft_path, *, actor_id, into=None, sealed_at=None, store=None):
     annotations = draft.get("annotations") or {}
     facts = _facts(annotations, ranges, draft_path.name, view)
     _compiles(view, draft_path)
+    examples = _examples_hold(conn, view, draft_path)
 
     valid_from = _valid_from(annotations, draft_path.name)
     _flat(annotations, draft_path.name)
@@ -893,7 +920,8 @@ def seal(conn, draft_path, *, actor_id, into=None, sealed_at=None, store=None):
 
     path = into / f"{version}.yaml"
     transcript_path = into / f"{version}.txt"
-    for existing in (path, transcript_path):
+    examples_path = into / f"{version}.examples.yaml"
+    for existing in (path, transcript_path, examples_path):
         if existing.exists():
             raise DraftError(
                 "version_exists",
@@ -914,6 +942,10 @@ def seal(conn, draft_path, *, actor_id, into=None, sealed_at=None, store=None):
     # draft it belongs to is left exactly as it was found.
     into.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(transcript, transcript_path)
+    # The examples travel with the version they held for, and are never
+    # rewritten either: a revision starts from them, and has to pass them.
+    if examples is not None:
+        shutil.copyfile(examples, examples_path)
     path.write_text(sealed_text, encoding="utf-8", newline="\n")
 
     with conn.cursor() as cur:
@@ -982,6 +1014,7 @@ def seal(conn, draft_path, *, actor_id, into=None, sealed_at=None, store=None):
         "version": version,
         "path": path,
         "transcript": transcript_path,
+        "examples": examples_path if examples is not None else None,
         "valid_from": valid_from,
         "sealed_at": sealed_at,
         "supersedes": supersedes,

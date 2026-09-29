@@ -89,6 +89,10 @@ def load_versions(directory):
     """
     versions = []
     for path in sorted(Path(directory).glob("v*.yaml")):
+        if path.name.endswith(".examples.yaml"):
+            # A version's business examples sit beside it as `vN.examples.yaml`
+            # (components/examples). They are about the version, not one.
+            continue
         top, annotations = _read_header(path)
         versions.append(
             {

@@ -357,9 +357,28 @@ async def studio_drafts(request: Request):
     return _modules(studio_draft.drafts)
 
 
+def _studio_state(store, name):
+    """One draft, with its business examples run.
+
+    They run on a connection to the log, each in a scratch log of its own that
+    is rolled back, so reading a draft writes nothing. Without a log to connect
+    to, the draft is still read and the examples are listed, not run — the
+    state says so, and does not call the draft sealable.
+    """
+    try:
+        conn = connect(os.environ.get("UNITI_DSN"), connect_timeout=3)
+    except psycopg.OperationalError:
+        return studio_read.state(store, name)
+    with conn:
+        try:
+            return studio_read.state(store, name, conn)
+        finally:
+            conn.rollback()
+
+
 async def studio_state(request: Request):
     """One draft: what is being built, the holes in it, and what it would do."""
-    return _modules(studio_read.state, _required(request, "name"))
+    return _modules(_studio_state, _required(request, "name"))
 
 
 async def studio_step(request: Request):
@@ -388,7 +407,7 @@ async def studio_step(request: Request):
         studio_draft.apply(store, name, step, args)
         if step == "discard":
             return JSON({"name": name, "discarded": True})
-        return JSON(studio_read.state(store, name))
+        return JSON(_studio_state(store, name))
     except Refusal as exc:
         return _refused(exc)
 

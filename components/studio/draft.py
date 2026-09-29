@@ -48,6 +48,7 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "components" / "compiler"))
 sys.path.insert(0, str(ROOT / "components" / "generator"))
 
+from components.examples import examples as business  # noqa: E402
 from components.modules.roles import _above  # noqa: E402
 from components.refusal import Refusal, Repair  # noqa: E402
 from compile import SQL_TYPE, SYNTAX  # noqa: E402
@@ -55,6 +56,8 @@ from compile import SQL_TYPE, SYNTAX  # noqa: E402
 DRAFT = "draft.yaml"
 TRANSCRIPT = "draft.txt"
 MANIFEST = "package.yaml"
+# The business examples the draft is held to, beside it under its own name.
+EXAMPLES = business.path_for(Path(DRAFT)).name
 
 # The keys a module document holds, in the order they are written. A file
 # whose keys move about on every save is a file whose diff is unreadable.
@@ -81,6 +84,9 @@ ENUM_FIELDS = ("description", "values")
 # `slot_usage`, of which only `required` is offered: the same slot may be
 # obligatory on an order line and optional on a note.
 USAGE_FIELDS = ("required",)
+# What may be said about a business example as a whole. Its records and its
+# numbers are steps of their own.
+EXAMPLE_FIELDS = ("says",)
 
 # The operations, what each one does, and what it takes. The kinds are what
 # `steps()` turns into option lists, so they are the vocabulary a form renders
@@ -89,6 +95,7 @@ USAGE_FIELDS = ("required",)
 #   text  word  uri  moment        typed in
 #   pin   held_pin                 a sealed version, from the store
 #   own_class  own_slot  own_enum  something this draft declares
+#   own_example  record            an example beside it, and one of its records
 #   class  slot  role  binding     something this draft can see
 #   range  field  column  mapping  computed from what is around it
 OPERATIONS = {
@@ -248,6 +255,54 @@ OPERATIONS = {
         "takes": {"slot": "own_slot"},
         "may": {},
     },
+    "add_example": {
+        "does": "write down a business example: a few records and the numbers "
+                "they must add up to. Every change to the draft is held to it, "
+                "and it cannot be sealed while one fails. `says` is the example "
+                "in the business's own words",
+        "takes": {"example": "word", "says": "text"},
+        "may": {},
+    },
+    "set_example": {
+        "does": "reword what an example says",
+        "takes": {"example": "own_example", "field": "field", "value": "text"},
+        "may": {},
+    },
+    "remove_example": {
+        "does": "take an example out, with everything it records and expects",
+        "takes": {"example": "own_example"},
+        "may": {},
+    },
+    "record": {
+        "does": "state one record in an example, as a form would: what it is "
+                "(`class`, the first time), its facts written `slot=value, ...`, "
+                "and the day it became true (`when`). A value naming another "
+                "record is that record's name. The same record stated again "
+                "with a later `when` is that record changing",
+        "takes": {"example": "own_example", "record": "word"},
+        "may": {"class": "class", "facts": "mapping", "when": "moment"},
+    },
+    "unrecord": {
+        "does": "take a record out of an example, every statement of it",
+        "takes": {"example": "own_example", "record": "record"},
+        "may": {},
+    },
+    "expect": {
+        "does": "say what the numbers must be: the table, the row (the value "
+                "of its first column, or `column=value, ...`), and the columns "
+                "with their numbers, `column=number, ...` — nothing after `=` "
+                "means the cell must be empty. `at` is the day the table is "
+                "read on, the whole of it; without it, after everything. The "
+                "same row on the same day again adds to or changes its numbers",
+        "takes": {"example": "own_example", "table": "class", "row": "text",
+                  "values": "mapping"},
+        "may": {"at": "moment"},
+    },
+    "unexpect": {
+        "does": "take back what an example expects of one row on one day",
+        "takes": {"example": "own_example", "table": "class", "row": "text"},
+        "may": {"at": "moment"},
+    },
 }
 
 # A LinkML name: what a class or a slot may be called. Not a style rule — these
@@ -318,6 +373,24 @@ def _steps_taken(store, name):
 def transcript(store, name):
     where = directory(store, name) / TRANSCRIPT
     return where.read_text(encoding="utf-8") if where.is_file() else ""
+
+
+def examples_of(store, name):
+    """The draft's business examples, by name. None written is none."""
+    return business.load(directory(store, name) / EXAMPLES)
+
+
+def _save_examples(store, name, held, op, args, *, record=True):
+    """Write the examples beside the draft; the step goes in the transcript,
+    because an example is as much a part of the version as a rule is."""
+    where = directory(store, name)
+    if held:
+        (where / EXAMPLES).write_text(business.dump(held), encoding="utf-8",
+                                      newline="\n")
+    else:
+        (where / EXAMPLES).unlink(missing_ok=True)
+    if record:
+        _record(where / TRANSCRIPT, name, op, args)
 
 
 def _ordered(document):
@@ -641,13 +714,18 @@ def _revise(store, name, _document, args):
     annotations["transcript"] = TRANSCRIPT
     document.pop("version", None)
     document["annotations"] = annotations
+    # The examples the latest version was held to hold this draft too, until
+    # somebody says otherwise: a revision is judged by the same contract.
+    examples = business.path_for(store.path(name, latest))
+    if examples.is_file():
+        shutil.copyfile(examples, directory(store, name) / EXAMPLES)
     return _save(store, name, document, "revise", {"module": name, "from": latest})
 
 
 def _discard(store, name, _document, _args):
     """Throw the draft away. Nothing was sealed, so nothing is lost but this."""
     where = directory(store, name)
-    for leaf in (DRAFT, TRANSCRIPT):
+    for leaf in (DRAFT, TRANSCRIPT, EXAMPLES):
         (where / leaf).unlink(missing_ok=True)
     # A module that never sealed anything and has no draft any more is not a
     # module; leaving the shell behind would put a name in the store that
@@ -739,6 +817,7 @@ def _rename_class(store, name, document, args):
         spec = _rule_spec(body, "aggregate")
         if spec and str(spec.get("over") or "") == old:
             spec["over"] = new
+    _examples_renamed(store, name, "class", old, new)
     return _save(store, name, document, "rename_class", args)
 
 
@@ -892,6 +971,7 @@ def _rename_slot(store, name, document, args):
         if old in (body.get("slot_usage") or {}):
             body["slot_usage"] = {(new if k == old else k): v
                                   for k, v in body["slot_usage"].items()}
+    _examples_renamed(store, name, "slot", old, new)
     return _save(store, name, document, "rename_slot", args)
 
 
@@ -1206,6 +1286,207 @@ def _unrule(store, name, document, args):
     return _save(store, name, document, "unrule", args)
 
 
+# ---- business examples ----------------------------------------------------
+#
+# The file beside the draft, never the draft itself: an example is about the
+# map and is not part of it, and LinkML has no place for one. Every step here
+# refuses only what it cannot perform — an example that is not there, a record
+# it does not hold. Whether an example holds is answered by running it, which
+# the next read does.
+
+def _example(held, wanted, what):
+    if wanted in held:
+        return wanted
+    raise StudioError(
+        "no_such_example",
+        where=what,
+        expected="an example this draft holds",
+        got=f"{wanted!r}",
+        repairs=[Repair("name one of its examples", options=list(held)),
+                 Repair("or write one first", options=["add_example"])],
+    )
+
+
+def _add_example(store, name, document, args):
+    held = examples_of(store, name)
+    example = _word(args["example"], "add_example")
+    if example in held:
+        raise StudioError(
+            "name_taken",
+            where="add_example",
+            expected="an example name this draft does not use",
+            got=f"{example!r}, which is already one",
+            repairs=[Repair("choose another name, or add to that example",
+                            options=["record", "expect"])],
+        )
+    held[example] = {"says": str(args["says"]), "records": [], "expect": []}
+    _save_examples(store, name, held, "add_example", args)
+    return document
+
+
+def _set_example(store, name, document, args):
+    held = examples_of(store, name)
+    example = _example(held, str(args["example"]), "set_example")
+    field = _field("set_example", EXAMPLE_FIELDS, args["field"])
+    held[example][field] = str(args["value"])
+    _save_examples(store, name, held, "set_example", args)
+    return document
+
+
+def _remove_example(store, name, document, args):
+    held = examples_of(store, name)
+    del held[_example(held, str(args["example"]), "remove_example")]
+    _save_examples(store, name, held, "remove_example", args)
+    return document
+
+
+def _record_step(store, name, document, args):
+    held = examples_of(store, name)
+    example = _example(held, str(args["example"]), "record")
+    record = {"record": _word(args["record"], "record")}
+    if "class" in args:
+        record["class"] = _visible(store, document, "class", str(args["class"]),
+                                   "record")
+    if "when" in args:
+        business.instant(args["when"], "record: when")
+        record["when"] = str(args["when"])
+    if "facts" in args:
+        record["facts"] = _mapping(args["facts"], "record: facts")
+    if "class" not in record and "facts" not in record:
+        raise StudioError(
+            "nothing_entered",
+            where="record",
+            expected="what the record is, or at least one fact about it",
+            got="neither",
+            repairs=[Repair("give it a class, facts, or both",
+                            options=["class", "facts"])],
+        )
+    held[example].setdefault("records", []).append(record)
+    said = dict(args)
+    if "facts" in args:
+        said["facts"] = _pairs(record["facts"])
+    _save_examples(store, name, held, "record", said)
+    return document
+
+
+def _unrecord(store, name, document, args):
+    held = examples_of(store, name)
+    example = _example(held, str(args["example"]), "unrecord")
+    records = held[example].get("records") or []
+    kept = [r for r in records if str(r.get("record")) != str(args["record"])]
+    if len(kept) == len(records):
+        raise StudioError(
+            "not_in_example",
+            where=f"unrecord: {example}",
+            expected="a record this example holds",
+            got=f"{args['record']!r}",
+            repairs=[Repair("name one of its records",
+                            options=sorted({str(r.get("record")) for r in records}))],
+        )
+    held[example]["records"] = kept
+    _save_examples(store, name, held, "unrecord", args)
+    return document
+
+
+def _row_of(value):
+    """A row as written: one value of its first column, or column=value pairs."""
+    if isinstance(value, dict) or "=" in str(value):
+        return _mapping(value, "expect: row")
+    return str(value)
+
+
+def _same_row(expectation, table, row, at):
+    return (str(expectation.get("table")) == table
+            and expectation.get("row") == row
+            and (None if expectation.get("at") is None
+                 else str(expectation["at"])) == at)
+
+
+def _expect(store, name, document, args):
+    held = examples_of(store, name)
+    example = _example(held, str(args["example"]), "expect")
+    table = str(args["table"])
+    row = _row_of(args["row"])
+    at = None
+    if "at" in args:
+        business.instant(args["at"], "expect: at", end_of_day=True)
+        at = str(args["at"])
+    values = _mapping(args["values"], "expect: values")
+    values = {column: (None if value == "" else value)
+              for column, value in values.items()}
+    expected = held[example].setdefault("expect", [])
+    for expectation in expected:
+        if _same_row(expectation, table, row, at):
+            expectation["values"] = {**(expectation.get("values") or {}), **values}
+            break
+    else:
+        expectation = {"table": table, "row": row}
+        if at is not None:
+            expectation["at"] = at
+        expectation["values"] = values
+        expected.append(expectation)
+    said = {**args, "values": _pairs({k: "" if v is None else v
+                                      for k, v in values.items()})}
+    if isinstance(row, dict):
+        said["row"] = _pairs(row)
+    _save_examples(store, name, held, "expect", said)
+    return document
+
+
+def _unexpect(store, name, document, args):
+    held = examples_of(store, name)
+    example = _example(held, str(args["example"]), "unexpect")
+    table, row = str(args["table"]), _row_of(args["row"])
+    at = str(args["at"]) if "at" in args else None
+    expected = held[example].get("expect") or []
+    kept = [e for e in expected if not _same_row(e, table, row, at)]
+    if len(kept) == len(expected):
+        raise StudioError(
+            "not_in_example",
+            where=f"unexpect: {example}",
+            expected="a row this example expects numbers of",
+            got=f"{table} {row if not isinstance(row, dict) else _pairs(row)}"
+                + (f" at {at}" if at else ""),
+            repairs=[Repair("name one it expects", options=[
+                f"{e.get('table')} {_pairs(e['row']) if isinstance(e.get('row'), dict) else e.get('row')}"
+                + (f" at {e['at']}" if e.get("at") is not None else "")
+                for e in expected])],
+        )
+    held[example]["expect"] = kept
+    said = dict(args)
+    if isinstance(row, dict):
+        said["row"] = _pairs(row)
+    _save_examples(store, name, held, "unexpect", said)
+    return document
+
+
+def _examples_renamed(store, name, kind, old, new):
+    """A rename reaches the examples too, as it reaches every rule that names
+    the thing: an example is written in the draft's own words, and a rename
+    that left it behind would make it fail for no reason about the business."""
+    held = examples_of(store, name)
+    if not held:
+        return
+
+    def keys(mapping):
+        return {(new if str(k) == old else k): v for k, v in mapping.items()}
+
+    for body in held.values():
+        for record in body.get("records") or []:
+            if kind == "class" and str(record.get("class") or "") == old:
+                record["class"] = new
+            if kind == "slot" and record.get("facts"):
+                record["facts"] = keys(record["facts"])
+        for expectation in body.get("expect") or []:
+            if kind == "class" and str(expectation.get("table")) == old:
+                expectation["table"] = new
+            if kind == "slot":
+                if isinstance(expectation.get("row"), dict):
+                    expectation["row"] = keys(expectation["row"])
+                expectation["values"] = keys(expectation.get("values") or {})
+    _save_examples(store, name, held, None, None, record=False)
+
+
 _PERFORM = {
     "start": _start, "revise": _revise, "discard": _discard,
     "set": _set, "pin": _pin, "unpin": _unpin,
@@ -1220,7 +1501,12 @@ _PERFORM = {
     "bind": _bind, "unbind": _unbind,
     "aggregate": _aggregate, "parameter": _parameter,
     "expression": _expression, "unrule": _unrule,
+    "add_example": _add_example, "set_example": _set_example,
+    "remove_example": _remove_example,
+    "record": _record_step, "unrecord": _unrecord,
+    "expect": _expect, "unexpect": _unexpect,
 }
 
-__all__ = ["OPERATIONS", "StudioError", "apply", "drafts", "enums_seen",
-           "open_draft", "path", "ranges", "seen", "text_of", "transcript"]
+__all__ = ["EXAMPLES", "OPERATIONS", "StudioError", "apply", "drafts",
+           "enums_seen", "examples_of", "open_draft", "path", "ranges", "seen",
+           "text_of", "transcript"]

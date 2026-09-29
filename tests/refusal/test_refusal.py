@@ -60,6 +60,7 @@ GATES = {
     "components/api/application.py": "MapError",
     "components/modules/store.py": "ModuleError",
     "components/studio/draft.py": "StudioError",
+    "components/examples/examples.py": "ExampleError",
 }
 
 
@@ -114,8 +115,10 @@ def test_every_code_the_gates_raise_is_written_down():
     """
     # `raise` or `yield`: a reader that can refuse more than once hands its
     # refusals back one at a time, so that a gate can stop at the first and a
-    # page can collect them all. Both are the gate saying no.
-    gate = r"(?:raise|yield) (?:DraftError|MapError|ModuleError|CompileError|StudioError)"
+    # page can collect them all. Both are the gate saying no — and so is
+    # `return`, from a helper that builds the refusal its caller raises.
+    gate = (r"(?:raise|yield|return) "
+            r"(?:DraftError|MapError|ModuleError|CompileError|StudioError|ExampleError)")
     literal = re.compile(gate + r'\(\s*"([a-z_]+)"')
     any_raise = re.compile(gate + r"\(")
 

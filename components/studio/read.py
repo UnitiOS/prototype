@@ -40,10 +40,11 @@ from components.modules import diff as diff_read  # noqa: E402
 from components.modules.check import check  # noqa: E402
 from components.modules.roles import _above, _bindings, _fills  # noqa: E402
 from components.refusal import Refusal  # noqa: E402
+from components.examples import examples as business  # noqa: E402
 from components.studio.draft import (  # noqa: E402
-    CLASS_FIELDS, DRAFT, ENUM_FIELDS, FIELDS, OPERATIONS, SLOT_FIELDS,
-    USAGE_FIELDS, enums_seen, open_draft, path, ranges, seen, text_of,
-    transcript,
+    CLASS_FIELDS, DRAFT, ENUM_FIELDS, EXAMPLE_FIELDS, FIELDS, OPERATIONS,
+    SLOT_FIELDS, USAGE_FIELDS, enums_seen, examples_of, open_draft, path,
+    ranges, seen, text_of, transcript,
 )
 from seal import (  # noqa: E402
     _facts, _one_version_per_module, _pins_already_sealed, _slot_ranges,
@@ -63,6 +64,10 @@ OPEN = {
     "slot_is_loose": "a slot no class carries, so nothing is ever stated under it",
     "nothing_said_about_it": "a class or slot with no description, which is what "
                             "somebody choosing between two modules reads",
+    "no_examples": "a draft no business example holds to anything, so nothing "
+                   "says what its numbers must be",
+    "example_expects_nothing": "an example that records things and expects no "
+                               "number of them, so it can never fail",
 }
 
 # Which step answers which refusal. Small and closed on purpose: a refusal the
@@ -88,15 +93,26 @@ def _map(store, name, document):
             "label": f"{name}@draft"}
 
 
-def inspect(store, name, document):
+def inspect(store, name, document, conn=None):
     """Every refusal this draft would meet, collected instead of thrown.
 
-    The seal's readers first, then the compiler's. A draft that cannot be
-    parsed or whose pins do not resolve stops here with one refusal: there is
-    nothing below it to read, and a page full of consequences of one missing
-    import helps nobody.
+    The seal's readers first, then the compiler's, then the business examples.
+    A draft that cannot be parsed or whose pins do not resolve stops here with
+    one refusal: there is nothing below it to read, and a page full of
+    consequences of one missing import helps nobody.
+
+    The examples need a database to run in — each in a scratch log of its own
+    on `conn`, rolled back, so nothing reaches the log. Without one they are
+    listed and not run, and `examples_run` says so.
     """
-    out = {"refusals": [], "tables": [], "map": None}
+    out = {"refusals": [], "tables": [], "map": None, "examples": [],
+           "examples_run": False}
+    try:
+        held = examples_of(store, name)
+    except Refusal as exc:
+        out["refusals"].append(exc.as_dict())
+        held = {}
+    out["examples"] = [_unrun(example, body) for example, body in held.items()]
     try:
         map_ = _map(store, name, document)
     except Refusal as exc:
@@ -136,7 +152,25 @@ def inspect(store, name, document):
     report = check(store, name, "draft", map_=map_)
     out["refusals"] += report["refusals"]
     out["tables"] = report["tables"]
+
+    if conn is not None and held:
+        results = business.run(conn, map_, held)
+        out["examples"] = business.report(results)
+        out["examples_run"] = True
+        # A table the compiler refuses stops every example that reads it, with
+        # the compiler's own refusal. That one is already listed above.
+        said = {(r["code"], r["where"]) for r in out["refusals"]}
+        out["refusals"] += [r.as_dict() for r in business.refusals(results)
+                            if (r.code, r.where) not in said]
     return out
+
+
+def _unrun(example, body):
+    """An example as the file holds it, before anything has run it."""
+    return {"name": example, "says": str(body.get("says") or ""),
+            "records": len(body.get("records") or []),
+            "expected": len(body.get("expect") or []),
+            "checks": [], "tables": [], "refusals": [], "passed": None}
 
 
 def _about(refusal):
@@ -215,6 +249,11 @@ def _question(kind, where, detail):
         return f"which class is {where} said about?"
     if kind == "nothing_said_about_it":
         return f"what is {where}?"
+    if kind == "no_examples":
+        return ("what would the business expect this to add up to? Give one "
+                "example, with its numbers")
+    if kind == "example_expects_nothing":
+        return f"what numbers should the example {where} come to?"
     return f"what about {where}?"
 
 
@@ -287,6 +326,20 @@ def holes(store, name, document, found):
                                "options": []}))
 
     with_rows = with_rows_of(found["map"])
+    if own_classes and not found["examples"]:
+        out.append(_hole("no_examples", name, blocking=False,
+                         because=OPEN["no_examples"],
+                         step={"op": "add_example", "args": {},
+                               "choose": "example", "options": []}))
+    for example in found["examples"]:
+        if not example["expected"]:
+            out.append(_hole("example_expects_nothing", example["name"],
+                             blocking=False,
+                             because=OPEN["example_expects_nothing"],
+                             step={"op": "expect",
+                                   "args": {"example": example["name"]},
+                                   "choose": "table",
+                                   "options": sorted(with_rows)}))
     carried = _carriers(store, document)
     attached = {s for body in own_classes.values()
                 for s in ((body or {}).get("slots") or [])}
@@ -331,7 +384,8 @@ def holes(store, name, document, found):
 
 
 _FIELDS_OF = {"set": FIELDS, "set_class": CLASS_FIELDS, "set_slot": SLOT_FIELDS,
-              "set_enum": ENUM_FIELDS, "set_usage": USAGE_FIELDS}
+              "set_enum": ENUM_FIELDS, "set_usage": USAGE_FIELDS,
+              "set_example": EXAMPLE_FIELDS}
 
 
 def steps(store, name, document):
@@ -347,7 +401,16 @@ def steps(store, name, document):
     own_slots = sorted(document.get("slots") or {})
     pinned = [str(i) for i in (document.get("imports") or [])
               if not str(i).startswith("linkml:")]
+    try:
+        held = examples_of(store, name)
+    except Refusal:
+        # A file the studio cannot read is a hole of its own; it offers no
+        # answers here.
+        held = {}
     options = {
+        "own_example": list(held),
+        "record": sorted({str(r.get("record")) for body in held.values()
+                          for r in (body.get("records") or [])}),
         "own_class": own_classes,
         "own_slot": own_slots,
         "own_enum": sorted(document.get("enums") or {}),
@@ -368,6 +431,8 @@ def steps(store, name, document):
             out["options"] = list(_FIELDS_OF[op])
         if kind == "column":
             out["depends"] = "class"
+        if kind == "record":
+            out["depends"] = "example"
         return out
 
     return [{
@@ -467,18 +532,20 @@ def _rule_of(body):
     return None
 
 
-def state(store, name):
+def state(store, name, conn=None):
     """One draft, everything about it, in one read.
 
     The three columns of the studio in one object: what is being built, the
-    holes to stand in, and what it would do — the checks, the diff against the
-    version this would supersede, and the steps taken so far.
+    holes to stand in, and what it would do — the checks, the business
+    examples and the numbers they come to, the diff against the version this
+    would supersede, and the steps taken so far. The examples run on `conn`,
+    and are only listed without one.
     """
     # The store first: a name it does not hold is its refusal to make, not a
     # missing draft, and the two are answered by different people.
     manifest = store.manifest(name)
     document = open_draft(store, name)
-    found = inspect(store, name, document)
+    found = inspect(store, name, document, conn)
     held = [v["version"] for v in store.versions(name)]
     revises = held[-1] if held else None
     own_classes = document.get("classes") or {}
@@ -537,6 +604,8 @@ def state(store, name):
         "roles": _roles_of(store, document),
         "borrowed": _borrowed(store, document),
         "tables": found["tables"],
+        "examples": found["examples"],
+        "examples_run": found["examples_run"],
         "refusals": found["refusals"],
         "holes": found_holes,
         "blocking": sum(1 for h in found_holes if h["blocking"]),
@@ -544,7 +613,9 @@ def state(store, name):
         "taken": transcript(store, name),
         "diff": diff_read.compare(store.document(name, revises) if revises else {},
                                   document),
-        "sealable": not found["refusals"],
+        # Examples nobody ran are examples nobody knows the answer to.
+        "sealable": not found["refusals"] and (found["examples_run"]
+                                               or not found["examples"]),
         "document": text_of(document),
     }
 

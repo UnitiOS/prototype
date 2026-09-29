@@ -3,12 +3,15 @@
     python -m components.modules list
     python -m components.modules find [TEXT] [--kind K] [--fills ROLE] [--module M] [--pins M]
     python -m components.modules health @scope/name v1
+    python -m components.modules examples @scope/name v1 [--tables]
     python -m components.modules seal @scope/name --actor <who> [--draft FILE] [--sealed-at ISO]
     python -m components.modules register @scope/name v1 --actor <who>
 
 `find` asks the catalogue: every module, role, class and slot the store offers
 now, narrowed by whatever is given. `health` reads one application's six
-diagnoses against the log at `UNITI_DSN`. `seal` seals the module's
+diagnoses against the log at `UNITI_DSN`. `examples` runs the business
+examples a sealed version carries, each in a scratch log on `UNITI_DSN` that is
+rolled back, and prints what every number came to. `seal` seals the module's
 `draft.yaml` (or `--draft`) into the module's own directory, with its imports
 resolved through the store. `register` writes an already sealed version's URIs
 into another log. Both write to `UNITI_DSN`.
@@ -22,11 +25,14 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT / "components" / "kernel"))
 sys.path.insert(0, str(ROOT / "components" / "seal"))
+sys.path.insert(0, str(ROOT / "components" / "generator"))
 
+from components.examples import examples as business  # noqa: E402
 from components.modules.catalogue import catalogue, find  # noqa: E402
 from components.modules.health import health  # noqa: E402
 from components.modules.store import Store  # noqa: E402
 from components.refusal import Refusal  # noqa: E402
+from generate import read_map  # noqa: E402
 from perform import connect  # noqa: E402
 from seal import register, seal  # noqa: E402
 
@@ -83,6 +89,11 @@ def main(argv=None):
     h = sub.add_parser("health")
     h.add_argument("name")
     h.add_argument("version")
+    e = sub.add_parser("examples")
+    e.add_argument("name")
+    e.add_argument("version")
+    e.add_argument("--tables", action="store_true",
+                   help="print every table the examples fill, not only the checks")
     s = sub.add_parser("seal")
     s.add_argument("name")
     s.add_argument("--actor", required=True)
@@ -110,6 +121,17 @@ def main(argv=None):
         with connect(os.environ.get("UNITI_DSN"), connect_timeout=3) as conn:
             if args.command == "health":
                 _print_health(health(store, args.name, args.version, conn=conn))
+            elif args.command == "examples":
+                map_ = read_map(store.path(args.name, args.version), store)
+                held = business.load(business.path_for(map_["path"]))
+                results = business.run(conn, map_, held)
+                conn.rollback()
+                for line in business.render(business.report(results),
+                                            tables=args.tables):
+                    print(line)
+                if not held:
+                    print(f"{args.name}@{args.version} carries no examples")
+                return 0 if all(r["passed"] for r in results) else 1
             elif args.command == "seal":
                 directory = store.directory(args.name)
                 draft = Path(args.draft) if args.draft else directory / "draft.yaml"

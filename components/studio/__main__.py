@@ -6,7 +6,8 @@
     python -m components.studio do @scope/name <step> [key=value ...]
 
 `show` is the studio's three columns as text: what is being built, the holes to
-stand in, and what the gates say about it. `steps` is the same list a form
+stand in, and what the gates and the business examples say about it. The
+examples run against `UNITI_DSN`, each in a scratch log that is rolled back. `steps` is the same list a form
 draws and an agent chooses from — every operation with the answers that fit
 right now. `do` performs one of them.
 
@@ -15,18 +16,24 @@ and `python -m components.modules seal` is what does that.
 """
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
+import psycopg
+
 ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "components" / "kernel"))
 
+from components.examples.examples import render  # noqa: E402
 from components.modules.store import Store  # noqa: E402
 from components.refusal import Refusal  # noqa: E402
 from components.studio.draft import (  # noqa: E402
     OPERATIONS, apply, drafts, open_draft,
 )
 from components.studio.read import state, steps  # noqa: E402
+from perform import connect  # noqa: E402
 
 MARK = {True: "!", False: " "}
 
@@ -87,7 +94,28 @@ def _print_state(report):
               f"{table['columns']} columns{unfilled})")
     for refusal in report["refusals"]:
         print(f"  refused by {refusal['gate']}: {refusal['sentence']}")
-    print(f"  {'sealable' if report['sealable'] else 'not sealable yet'}")
+
+    print("\nthe business examples")
+    for line in render(report["examples"]):
+        print(f"  {line}")
+    if not report["examples"]:
+        print("  none yet: nothing says what the numbers must be")
+    elif not report["examples_run"]:
+        print("  not run: no log to run them in")
+    print(f"\n{'sealable' if report['sealable'] else 'not sealable yet'}")
+
+
+def _state(store, name):
+    """The draft, with its examples run when there is a log to run them in."""
+    try:
+        conn = connect(os.environ.get("UNITI_DSN"), connect_timeout=3)
+    except psycopg.OperationalError:
+        return state(store, name)
+    with conn:
+        try:
+            return state(store, name, conn)
+        finally:
+            conn.rollback()
 
 
 def _print_steps(found):
@@ -131,7 +159,7 @@ def main(argv=None):
         if args.command == "drafts":
             _print_drafts(drafts(store))
         elif args.command == "show":
-            _print_state(state(store, args.name))
+            _print_state(_state(store, args.name))
         elif args.command == "steps":
             _print_steps(steps(store, args.name,
                                open_draft(store, args.name)))
@@ -140,7 +168,7 @@ def main(argv=None):
             if args.step == "discard":
                 print(f"discarded the draft of {args.name}")
             else:
-                _print_state(state(store, args.name))
+                _print_state(_state(store, args.name))
         return 0
     except Refusal as exc:
         print(f"refused by {exc.gate}: {exc.explain()}", file=sys.stderr)

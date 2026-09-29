@@ -25,11 +25,12 @@ The sentence is **derived**, never written beside the structure. A refusal
 carrying both would have two places to disagree, and the prose is the one
 nobody updates.
 
-Four gates raise these, and each says which it is, because the answer to
+Five gates raise these, and each says which it is, because the answer to
 "who can fix this" differs: `DraftError` is the seal refusing to make a
 version, `MapError` is the generator or the compiler refusing to read one,
-`ModuleError` is the store refusing to find one, and `StudioError` is the
-studio refusing to perform a step on a draft.
+`ModuleError` is the store refusing to find one, `StudioError` is the
+studio refusing to perform a step on a draft, and `ExampleError` is a
+business example the map does not bear out.
 
 `repairs` is not decoration and is not optional in spirit. A refusal with no
 repair is a dead end, and the only honest ones are the few where the answer is
@@ -126,6 +127,11 @@ CODES = {
     "expression_names_unknown": "an expression naming a column that does not exist",
     "computation_failed": "a table whose rules compiled but a value in the log could not be computed with",
 
+    # ---- the business examples: the contract a map is held to -------------
+    "examples_not_understood": "an examples file whose shape is not the one examples have",
+    "record_without_class": "a record stated for the first time without saying what it is",
+    "example_failed": "a business example whose numbers the map does not produce",
+
     # ---- the studio: a draft being built ----------------------------------
     "not_an_operation": "a step the studio does not perform",
     "operation_arguments": "a step given arguments it does not take",
@@ -140,6 +146,8 @@ CODES = {
     "not_a_binding": "a slot that is not a binding any role obliges",
     "not_attached": "a slot that is not on the class",
     "not_a_pin": "an import this draft does not hold",
+    "no_such_example": "an example this draft does not hold",
+    "not_in_example": "a record or an expected number the example does not hold",
 
     # ---- the command line -------------------------------------------------
     "not_field_value": "a `--set` argument that is not FIELD=VALUE",
