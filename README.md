@@ -15,7 +15,7 @@ business's own logic carried in a graph rather than in code.
 |---|---|
 | `components/kernel` | Three append-only tables (`intent`, `entity`, `assertion`), enforced by triggers and revoked privileges. `perform()` is the only write gate; `resolve_single()` reads one fact at `(valid_at, as_of)`. |
 | `components/ontology` | Which sealed map version applies at `(valid_at, as_of)`. |
-| `components/seal` | The gate a draft passes to become an immutable version. Requires `valid_from`, a `slot_uri` on every slot, and a transcript. Registers every URI in the kernel. |
+| `components/seal` | The gate a draft passes to become an immutable version. Requires `valid_from`, a `slot_uri` on every slot, a range it can see for every slot, and a transcript, and refuses two modules in one closure declaring the same class, slot or enum name. Registers every predicate in the kernel by its full URI, expanded by the prefixes of the module that wrote it, and a class fact names the class's full URI — so two modules sharing a prefix or a class name never share a predicate or a table. |
 | `components/generator` | Columns and forms from a sealed map; `submit` writes one form into the kernel. |
 | `components/compiler` | The map's `aggregate`, `parameter` and `equals_expression` rules, executed as SQL into an operational database that can be dropped and rebuilt. |
 | `components/refusal` | What every gate says when it says no: a `code` from a closed list, where, what was expected against what was there, and the repairs — each carrying the finite set of valid answers, computed from the graph. The sentence is derived from those parts, never written beside them. |

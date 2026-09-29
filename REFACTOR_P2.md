@@ -458,6 +458,47 @@ supaya penjaga dan agent bisa meramal akibatnya.
   `required` per kelas, slot bernilai banyak.
 - Sintaks rumus diajarkan di deskripsi langkah dan di pesan penolakannya.
 
+**Hasil (29 September 2026).** Keempat butir selesai, 226 test lulus, replay
+identik dua kali.
+
+- **Bentrok nama.** Dua modul dalam satu closure yang mendeklarasikan kelas,
+  slot, atau enum bernama sama ditolak saat seal (`name_clash`) dan muncul
+  sebagai lubang di draft. Bila salah satunya draft sendiri, langkah
+  jawabannya `rename_class`/`rename_slot`; bila keduanya modul yang di-pin,
+  pilihannya pin mana.
+- **Identitas lengkap.** Predikat didaftarkan di log dengan URI penuh, dibentuk
+  dari prefix modul yang menulisnya sendiri, bukan dari tabel prefix gabungan
+  LinkML (yang diam-diam menimpa prefix yang sama dari modul lain). Fakta kelas
+  mencatat URI kelas penuh, bukan nama kelas saja. Seal, generator, compiler,
+  health, katalog, laporan swap, API, dan pemuat data memakai satu aturan
+  (`seal.predicate`, `seal.class_uri`, `seal.written_uri`). Terbukti: dua modul
+  dengan prefix `stock:` menjadi dua predikat, dan dua kelas `Warehouse` dari
+  dua modul menjadi dua tabel.
+- **Migrasi.** Tidak ditulis kode migrasi: semua log yang ada adalah demo atau
+  eksperimen. `uniti_dev` dibangun ulang dengan `make dev-db`. Log eksperimen
+  `uniti_exp` memakai pendaftaran lama dan tidak lagi terbaca oleh kode baru;
+  hasilnya sudah dicatat di `COMPOSITION_EXPERIMENT.md`. Log sungguhan pertama
+  akan membutuhkan migrasi yang sebenarnya.
+- **Fitur LinkML di Studio.** Langkah baru `add_enum`, `set_enum`,
+  `remove_enum` (daftar nilai tertutup), `set_usage` (`required` untuk satu
+  kelas saja), dan medan `multivalued` di `set_slot`. Semuanya ditegakkan, tidak
+  hanya ditulis: form menawarkan nilai enum dari map dan menolak nilai di luar
+  daftar; entity baru ditolak bila medan yang diwajibkan kelasnya kosong
+  (`required_missing`), sedangkan koreksi atas entity yang sudah ada tidak
+  wajib mengulang semuanya; slot bernilai banyak ditolak compiler
+  (`multivalued_not_read`) sampai tabel bisa membaca himpunan (irisan 5).
+- **Penjaga tambahan.** Slot yang range-nya menunjuk sesuatu yang tidak
+  terlihat (misalnya kelas yang sudah dihapus) ditolak (`range_unknown`),
+  dengan langkah `set_slot range` dan pilihannya.
+- **Sintaks rumus.** Langkah `expression` menjelaskan kurung kurawal dengan
+  contoh. Penolakan `expression_not_arithmetic` menyodorkan rumus yang sudah
+  diperbaiki bila nama kolom ditulis tanpa kurung kurawal; penolakan
+  `expression_names_unknown` menjelaskan bahwa nilai dari tabel lain dibawa
+  masuk dulu lewat `aggregate` atau `parameter`.
+- **Perubahan perilaku yang perlu diketahui:** kolom kelas di tabel dan form
+  sekarang berisi URI kelas penuh, dan form menolak entity baru tanpa medan
+  wajib. Beberapa test lama menulis entity setengah jadi dan disesuaikan.
+
 ### Irisan 3.3: Contoh bisnis sebagai kontrak
 
 - Sebuah modul atau aplikasi membawa contoh: data kecil dan angka yang
@@ -700,7 +741,7 @@ konversi satuan dengan mencocokkan entity satuan itu sendiri.
 | 3.1 | selesai, menunggu Anda melihatnya: draft sebagai berkas yang hanya berubah lewat 24 operasi tertutup (`components/studio/`), lubang yang dihitung dari pembaca gerbang itu sendiri — `uri_refusals` dan `role_refusals` jadi generator supaya bisa dikumpulkan — dan lima pertanyaan terbuka yang tidak ditolak siapa pun; `draft.txt` menjadi transkrip seal; CLI, API, dan area Studio di aplikasi web; satu aplikasi lengkap dengan aggregate, parameter dan expression dibangun dari nol tanpa satu baris YAML dan diterima `seal`; 191 test lulus |
 | 3.1 UI | dibangun ulang setelah Anda melihat yang pertama dan tidak mengerti sama sekali: tiga kolom istilah kompiler diganti **peta** (`web/src/graph.tsx`) — node jenis hal, garis relasi, yang dipijak samar di atas, klik untuk panel, tarik untuk membuat relasi; pertanyaan dirangkai dari deskripsi pengikatnya sendiri sehingga tetap domain-agnostic; `state()` menambah `borrowed` (keterjangkauan, bukan seluruh yang dipin); semua kosakata mesin pindah ke satu tutup *Behind the scenes*; 191 test lulus |
 | 2.8 | ditutup 29 September 2026: putaran 1 tidak menguji peran (rancangan tes); putaran 2 dihentikan setelah kelima modul ditulis dengan peran wajib, dan sudah menjawab: peran bukan penjumlah otomatis lintas modul, komposisi eksplisit menjadi cara resmi; perbaikan F1–F4 tetap di kode, 217 test lulus; rincian di `COMPOSITION_EXPERIMENT.md` |
-| 3.2 | belum dimulai: penjaga dasar (rencana baru, lihat "Arah sesudah 2.8") |
+| 3.2 | selesai 29 September 2026: bentrok nama ditolak; predikat dan kelas dicatat dengan URI penuh; enum, `required` per kelas, dan `multivalued` dibuka di Studio dan ditegakkan; range tak dikenal ditolak; sintaks rumus diajarkan; 226 test lulus; rincian di bagian "Irisan 3.2" |
 | 3.3 | belum dimulai: contoh bisnis sebagai kontrak |
 | 4 | belum dimulai: agent dan interface Studio baru; stack dan implementasi agent dibahas terpisah |
 | 5 | belum dimulai: compiler dan generator tumbuh sesuai kebutuhan |
