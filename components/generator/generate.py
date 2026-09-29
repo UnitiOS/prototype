@@ -63,15 +63,17 @@ from components.modules.store import Store  # noqa: E402
 from components.refusal import Refusal, Repair  # noqa: E402
 from perform import connect, perform  # noqa: E402
 from resolve import resolve_single  # noqa: E402
-from seal import URI_PREDICATE  # noqa: E402
+from seal import URI_PREDICATE, class_uri, predicate  # noqa: E402
 
 # Someone typing into a form is stating something. The kernel's vocabulary.
 FORM_SOURCE = "human_stated"
 MINT_SOURCE = "system_derived"
 
 # Where a dropdown's choices were read. Named rather than implied, so a page
-# can say it.
+# can say it: the entities of a class are in the log, and the values of a
+# closed list are written in the map.
 LOG = "the log"
+MAP = "the map"
 
 # The column a projection of entities carries its subject's URI in. It is the
 # compiler's, not the map's, and it is here because both sides need the name.
@@ -234,6 +236,7 @@ def columns(map_, class_name):
                             options=sorted(str(n) for n in view.all_classes()))],
         )
     classes = set(view.all_classes())
+    enums = {str(n): e for n, e in view.all_enums().items()}
     out = []
     for slot in view.class_induced_slots(class_name):
         if slot.abstract:
@@ -244,15 +247,21 @@ def columns(map_, class_name):
             # and an empty field in every form, because nothing is ever stated
             # under a binding — it has no slot_uri at all.
             continue
-        slot_uri = slot.slot_uri or f"{view.schema.default_prefix or 'uniti'}:{slot.name}"
         out.append(
             {
                 "name": slot.name,
-                "uri": slot_uri,
+                # The full URI, never the CURIE as written: a prefix is one
+                # module's shorthand, and two modules may use the same one.
+                "uri": predicate(view, slot),
+                "designates_type": bool(slot.designates_type),
                 "range": slot.range,
                 "required": bool(slot.required),
                 "multivalued": bool(slot.multivalued),
                 "ref": slot.range in classes,
+                # A closed list: the only values this field may hold, in the
+                # order the map wrote them. None where the range is open.
+                "values": (list(enums[str(slot.range)].permissible_values or {})
+                           if str(slot.range) in enums else None),
                 "description": slot.description or "",
                 "title": str(slot.title) if slot.title else str(slot.name),
             }
@@ -305,6 +314,16 @@ def _carriers(map_):
     )
 
 
+def class_uris(map_, class_name):
+    """The class facts that count as this class: its own URI and those below it.
+
+    A class fact records the class's full URI, which `seal.class_uri` decides,
+    so two modules' `Item` are never one class in the log.
+    """
+    view = map_["view"]
+    return [class_uri(view, name) for name in view.class_descendants(class_name)]
+
+
 def _registry(conn):
     """uri -> entity id, and entity id -> uri."""
     with conn.cursor() as cur:
@@ -321,10 +340,10 @@ def _row_subjects(conn, map_, class_name, by_uri, *, valid_at, as_of):
     `class_induced_slots` walks the other way when it collects the columns.
     """
     slot = _type_slot(map_, class_name)
-    predicate_id = by_uri.get(slot.slot_uri) if slot else None
+    predicate_id = by_uri.get(predicate(map_["view"], slot)) if slot else None
     if predicate_id is None:
         return []
-    names = [str(name) for name in map_["view"].class_descendants(class_name)]
+    names = class_uris(map_, class_name)
     with conn.cursor() as cur:
         cur.execute(_TYPED_SUBJECTS_SQL, (predicate_id, names))
         candidates = [row[0] for row in cur.fetchall()]
@@ -437,10 +456,14 @@ def form(conn, map_, class_name, *, valid_at=None, as_of=None):
     fields = []
     for col in cols:
         field = dict(col)
-        field["options"], field["options_from"] = (
-            _options(conn, map_, col["range"], valid_at=valid_at, as_of=as_of)
-            if col["ref"] else ([], None)
-        )
+        if col["ref"]:
+            field["options"], field["options_from"] = _options(
+                conn, map_, col["range"], valid_at=valid_at, as_of=as_of)
+        elif col["values"] is not None:
+            field["options"], field["options_from"] = (
+                [(value, value) for value in col["values"]], MAP)
+        else:
+            field["options"], field["options_from"] = [], None
         fields.append(field)
     return {"class": class_name, "fields": fields, "version": map_["version"],
             "source": map_["path"].name}
@@ -464,7 +487,7 @@ def _options(conn, map_, class_name, *, valid_at, as_of):
     """
     by_uri, by_id = _registry(conn)
     identifier = _identifier(map_, class_name)
-    label_id = by_uri.get(identifier.slot_uri) if identifier else None
+    label_id = by_uri.get(predicate(map_["view"], identifier)) if identifier else None
 
     out = []
     for subject_id in _row_subjects(conn, map_, class_name, by_uri,
@@ -512,6 +535,17 @@ def _values_hold(conn, map_, class_name, fields, values, by_uri, by_id, *,
                 repairs=[Repair(f"choose one the form offers for {name}",
                                 options=sorted(by_id[i] for i in held))],
             )
+        if field["values"] is not None:
+            if str(value) in field["values"]:
+                continue
+            raise MapError(
+                "not_among_the_choices",
+                where=where,
+                expected=f"one of the values {field['range']} lists",
+                got=f"{value!r}",
+                repairs=[Repair(f"choose one the form offers for {name}",
+                                options=field["values"])],
+            )
         cast = sql_type(map_, field["range"])
         if cast == "text":
             continue
@@ -526,6 +560,54 @@ def _values_hold(conn, map_, class_name, fields, values, by_uri, by_id, *,
                 got=f"{value!r}",
                 repairs=[Repair(f"enter {name} as a {field['range']}")],
             ) from None
+
+
+def _required_hold(class_name, fields, subject, values, by_uri):
+    """An entity the log has never held arrives with every field its class requires.
+
+    Only when it is new. A later submission about the same entity says what
+    changed, and asking it to repeat the rest would make every correction a
+    restatement of the whole record. What a class requires is read from the
+    map as it applies to this class, so a slot one class requires and another
+    does not is asked for exactly where it is required.
+    """
+    if subject in by_uri:
+        return
+    missing = [name for name, f in fields.items()
+               if f["required"] and values.get(name) in (None, "")]
+    if missing:
+        raise MapError(
+            "required_missing",
+            where=f"{class_name} {subject}",
+            expected=f"every field a new {class_name} requires",
+            got=f"none for {', '.join(missing)}",
+            repairs=[Repair("fill these in; the map says a "
+                            f"{class_name} is not one without them",
+                            options=missing)],
+        )
+
+
+def _class_value(map_, class_name, name, value):
+    """What a class field records: the full URI of this class or one below it.
+
+    Entered by name, as a person or a caller knows it, or as the URI itself.
+    A class that is not this one or below it is refused: the entity would be
+    written through this form and be a row of some other table.
+    """
+    view = map_["view"]
+    below = [str(n) for n in view.class_descendants(class_name)]
+    by_name = {n: class_uri(view, n) for n in below}
+    if str(value) in by_name:
+        return by_name[str(value)]
+    if str(value) in by_name.values():
+        return str(value)
+    raise MapError(
+        "not_among_the_choices",
+        where=f"{class_name}.{name}",
+        expected=f"{class_name} or a class below it",
+        got=f"{value!r}",
+        repairs=[Repair(f"name the class this entity is", options=sorted(below))],
+    )
 
 
 def _revokes_hold(conn, class_name, fields, subject, revokes, by_uri):
@@ -620,9 +702,13 @@ def submit(conn, map_, class_name, *, subject, values, actor_id,
             repairs=[Repair("fill in a field", options=sorted(fields))],
         )
 
+    values = {name: (_class_value(map_, class_name, name, value)
+                     if fields[name]["designates_type"] else value)
+              for name, value in values.items()}
     by_uri, by_id = _registry(conn)
     _values_hold(conn, map_, class_name, fields, values, by_uri, by_id,
                  valid_at=valid_from or _NOW(), as_of=recorded_at or _NOW())
+    _required_hold(class_name, fields, subject, values, by_uri)
     _revokes_hold(conn, class_name, fields, subject, revokes, by_uri)
 
     withdrawn = [name for name in revokes if name not in values]

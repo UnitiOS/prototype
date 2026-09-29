@@ -44,6 +44,10 @@ from resolve import resolve_single  # noqa: E402
 from seal import seal  # noqa: E402
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
+# The namespace the fixture's `uniti:` prefix stands for. A class fact records
+# the class's full URI, so a class column reads as one.
+BUSINESS = "https://uniti.example/business/"
+PARCEL = f"{BUSINESS}Parcel"
 
 SEALED = datetime(2026, 5, 1, 9, 0, tzinfo=timezone.utc)
 # Both clocks sit after the seal and before anything a form writes.
@@ -89,9 +93,10 @@ def test_the_columns_are_the_classs_induced_slots(map_):
     assert [c["name"] for c in cols] == [
         "g_parcel_name", "g_parcel_weight", "g_parcel_variant", "g_class", "g_place"
     ]
+    # The full URI the log records, never the CURIE the map wrote.
     assert [c["uri"] for c in cols] == [
-        "uniti:g_parcel_name", "uniti:g_parcel_weight", "uniti:g_parcel_variant",
-        "uniti:g_class", "uniti:g_place",
+        f"{BUSINESS}g_parcel_name", f"{BUSINESS}g_parcel_weight",
+        f"{BUSINESS}g_parcel_variant", f"{BUSINESS}g_class", f"{BUSINESS}g_place",
     ]
     # Straight off the map: an identifier induces required, and a class range
     # is the same test seal makes when it picks value_ref over value_literal.
@@ -109,9 +114,9 @@ def test_the_columns_are_the_classs_induced_slots(map_):
 def test_the_table_is_what_the_log_says_at_those_clocks(conn, map_):
     t = built(conn, map_, "Parcel")
     assert cells(t) == {
-        "uniti:g_parcel_1": ["Parcel 1", "4.8", "uniti:g_plain", "Parcel",
+        "uniti:g_parcel_1": ["Parcel 1", "4.8", "uniti:g_plain", PARCEL,
                           "Front shelf"],
-        "uniti:g_parcel_2": ["Parcel 2", None, None, "Parcel", None],
+        "uniti:g_parcel_2": ["Parcel 2", None, None, PARCEL, None],
     }
     # Rows come out in one order whatever the log's insertion order was.
     assert [r["uri"] for r in t["rows"]] == ["uniti:g_parcel_1", "uniti:g_parcel_2"]
@@ -141,9 +146,9 @@ def test_a_row_is_what_the_log_says_the_entity_is(conn, map_):
     # for rows exactly as `columns()` walks it upward for columns. A parcel is a
     # row of two tables, which is what the relation means.
     assert cells(built(conn, map_, "Held")) == {
-        "uniti:g_bundle": ["Held", "Back shelf"],
-        "uniti:g_parcel_1": ["Parcel", "Front shelf"],
-        "uniti:g_parcel_2": ["Parcel", None],
+        "uniti:g_bundle": [f"{BUSINESS}Held", "Back shelf"],
+        "uniti:g_parcel_1": [PARCEL, "Front shelf"],
+        "uniti:g_parcel_2": [PARCEL, None],
     }
 
 
@@ -212,10 +217,10 @@ def test_a_value_entered_through_the_form_reaches_the_log(conn, map_):
     # And the generated table is a read, not a store: at the as_of the other
     # tests use, the log had not learned any of this yet.
     assert cells(built(conn, map_, "Parcel"))["uniti:g_parcel_2"] == [
-        "Parcel 2", None, None, "Parcel", None
+        "Parcel 2", None, None, PARCEL, None
     ]
     assert cells(built(conn, map_, "Parcel", LATER, LATER))["uniti:g_parcel_2"] == [
-        "Parcel 2", "5.1", "uniti:g_plain", "Parcel", None
+        "Parcel 2", "5.1", "uniti:g_plain", PARCEL, None
     ]
 
 
@@ -229,12 +234,13 @@ def test_a_form_naming_an_entity_the_log_has_never_held_mints_it(conn, map_):
     result = submit(
         conn, map_, "Parcel",
         subject="uniti:g_parcel_3",
-        values={"g_parcel_name": "Parcel 3", "g_class": "Parcel"},
+        values={"g_parcel_name": "Parcel 3", "g_parcel_weight": "1.5",
+                "g_class": "Parcel"},
         actor_id="test", valid_from=ENTERED_FROM, recorded_at=ENTERED_AT,
     )
     assert list(result["minted"]) == ["uniti:g_parcel_3"]
     assert cells(built(conn, map_, "Parcel", LATER, LATER))["uniti:g_parcel_3"] == [
-        "Parcel 3", None, None, "Parcel", None
+        "Parcel 3", "1.5", None, PARCEL, None
     ]
 
 
@@ -271,7 +277,7 @@ def test_a_submission_carries_who_said_it_and_why(conn, map_):
     result = submit(
         conn, map_, "Parcel",
         subject="uniti:g_parcel_4",
-        values={"g_parcel_name": "Parcel 4"},
+        values={"g_parcel_name": "Parcel 4", "g_parcel_weight": "2.5"},
         actor_id="test", valid_from=ENTERED_FROM, recorded_at=ENTERED_AT,
         authority="Marina", confidence="high",
         reason_code="correction", note="Set by Marina after the count",
@@ -289,7 +295,7 @@ def test_a_submission_carries_who_said_it_and_why(conn, map_):
     assert stated["confidence"] == "high"
 
     # The uniti:uri row minted alongside it is bookkeeping, and nobody set it.
-    minted = [a for a in result["assertions"] if a != stated["id"]]
+    minted = [a for a in result["assertions"] if a not in result["stated"].values()]
     assert len(minted) == 1
     assert _authority(conn, minted[0]) == (None, None)
 

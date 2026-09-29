@@ -33,11 +33,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT / "components" / "compiler"))
 sys.path.insert(0, str(ROOT / "components" / "generator"))
+sys.path.insert(0, str(ROOT / "components" / "seal"))
 
 from compile import plan_for, tables, type_slot  # noqa: E402
 from components.modules.roles import _above, _bindings, _closure_documents  # noqa: E402
 from components.refusal import Refusal  # noqa: E402
 from generate import _identifier, read_map  # noqa: E402
+from seal import predicate, written_uri  # noqa: E402
 
 KINDS = ("module", "role", "class", "slot")
 
@@ -87,7 +89,7 @@ def readers(map_):
                     reads += _uris([pair.get("conv_slot_uri")]) + _uris(pair.get("source_slot_uris"))
             source = type_slot(map_, spec["over"])
             if source is not None and source.slot_uri:
-                reads.append(str(source.slot_uri))
+                reads.append(predicate(view, source))
             out.append({"rule": f"{class_name}.{column}", "kind": "aggregate",
                         "reader": "the compiler", "over": spec["over"],
                         "covers": list(spec["covers"]), "reads": sorted(set(reads))})
@@ -104,12 +106,12 @@ def readers(map_):
             if carrier is not None and carrier.slot_uri:
                 out.append({"rule": f"{class_name}", "kind": "type",
                             "reader": "the compiler", "over": class_name,
-                            "covers": [class_name], "reads": [str(carrier.slot_uri)]})
+                            "covers": [class_name], "reads": [predicate(view, carrier)]})
             identifier = _identifier(map_, class_name)
             if identifier is not None and identifier.slot_uri:
                 out.append({"rule": f"{class_name}", "kind": "identifier",
                             "reader": "the generator", "over": class_name,
-                            "covers": [class_name], "reads": [str(identifier.slot_uri)]})
+                            "covers": [class_name], "reads": [predicate(view, identifier)]})
     return out, refused
 
 
@@ -207,7 +209,7 @@ def catalogue(store):
 
         for slot_name in sorted(own_slots):
             s = own_slots[slot_name] or {}
-            uri = str(s["slot_uri"]) if s.get("slot_uri") else None
+            uri = written_uri(document, s["slot_uri"]) if s.get("slot_uri") else None
             binding = _binding_of(slots, s)
             entries.append({
                 "kind": "slot", "name": slot_name, "module": _pin(name, version),

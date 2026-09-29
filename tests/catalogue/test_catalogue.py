@@ -134,18 +134,18 @@ def test_a_term_stated_and_never_read_is_found_without_anyone_naming_it(conn, wo
     dead = _diagnosis(report, "dead_term")
     uris = [f["uri"] for f in dead]
 
-    assert "inv:movement_happened_on" in uris
-    finding = dead[uris.index("inv:movement_happened_on")]
+    assert "https://uniti.example/inventory/movement_happened_on" in uris
+    finding = dead[uris.index("https://uniti.example/inventory/movement_happened_on")]
     assert finding["fills"] == "moment"
     assert finding["on"] == ["StockMovement"]
     assert finding["module"] == {"name": INVENTORY, "version": "v3"}
     # Stated for the movements, like the quantity beside it — which is read.
-    quantity = _term(report, "inv:movement_quantity")
+    quantity = _term(report, "https://uniti.example/inventory/movement_quantity")
     assert finding["held"] > 0 and quantity["held"] > 0
     assert [r["rule"] for r in quantity["read_by"]] == ["IngredientStock.quantity_on_hand"]
     # A term that fills a binding was put there to be computed on, so it comes
     # before the ones that were only ever meant to be read by a person.
-    assert all(f["fills"] for f in dead[:uris.index("inv:movement_happened_on") + 1])
+    assert all(f["fills"] for f in dead[:uris.index("https://uniti.example/inventory/movement_happened_on") + 1])
     assert "`moment`" in finding["sentence"]
 
 
@@ -154,12 +154,12 @@ def test_a_term_read_only_by_a_mechanism_is_not_dead(conn, world):
     report = health(world, APP_NAME, APP_VERSION, conn=conn)
     dead = {f["uri"] for f in _diagnosis(report, "dead_term")}
 
-    code = _term(report, "inv:movement_code")
+    code = _term(report, "https://uniti.example/inventory/movement_code")
     assert {(r["kind"], r["reader"]) for r in code["read_by"]} == {
         ("identifier", "the generator")}
-    kind = _term(report, "uniti:entity_class")
+    kind = _term(report, "https://w3id.org/uniti/core#entity_class")
     assert {r["kind"] for r in kind["read_by"]} >= {"type", "aggregate"}
-    assert not {"inv:movement_code", "uniti:entity_class"} & dead
+    assert not {"https://uniti.example/inventory/movement_code", "https://w3id.org/uniti/core#entity_class"} & dead
 
 
 def test_after_the_swap_the_same_term_is_a_fact_the_application_cannot_see(conn, world):
@@ -167,13 +167,13 @@ def test_after_the_swap_the_same_term_is_a_fact_the_application_cannot_see(conn,
     report = health(world, SWAP_NAME, SWAP_VERSION, conn=conn)
     orphaned = {f["uri"]: f for f in _diagnosis(report, "orphaned_fact")}
 
-    finding = orphaned["inv:movement_happened_on"]
+    finding = orphaned["https://uniti.example/inventory/movement_happened_on"]
     assert finding["declared_by"] == [{"name": INVENTORY, "versions": ["v1", "v2", "v3"]}]
     assert finding["held"] > 0
     assert "does not pin it" in finding["sentence"]
     # The rival's own moment is dead there for the same reason: nothing reads it.
     dead = {f["uri"]: f for f in _diagnosis(report, "dead_term")}
-    assert dead["rv:happened"]["fills"] == "moment"
+    assert dead["https://rival.example/stock-moves/happened"]["fills"] == "moment"
 
 
 def test_an_old_application_is_told_what_the_store_has_moved_past(conn, world):
@@ -254,7 +254,7 @@ def test_the_catalogue_is_asked_not_loaded(world):
     nothing = find(entries, text="no entry is called this")
     assert nothing["entries"] == [] and sum(nothing["counts"].values()) == 0
     assert nothing["held"]["module"] == len(world.names())
-    slot = find(entries, text="inv:movement_quantity")["entries"]
+    slot = find(entries, text="https://uniti.example/inventory/movement_quantity")["entries"]
     assert [e["name"] for e in slot] == ["movement_quantity"]
 
 
@@ -274,7 +274,7 @@ def test_the_api_serves_both(conn, world, monkeypatch):
     assert report.status_code == 200
     body = report.json()
     assert [d["code"] for d in body["diagnoses"]] == list(DIAGNOSES)
-    assert "inv:movement_happened_on" in {f["uri"] for f in body["diagnoses"][0]["findings"]}
+    assert "https://uniti.example/inventory/movement_happened_on" in {f["uri"] for f in body["diagnoses"][0]["findings"]}
 
     missing = client.get("/api/app/health", params={"name": "@nobody/nothing", "version": "v1"})
     assert missing.status_code == 404

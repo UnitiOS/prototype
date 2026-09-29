@@ -34,10 +34,13 @@ sys.path.insert(0, str(ROOT / "components" / "seal"))
 sys.path.insert(0, str(ROOT / "components"))
 
 from ontology.resolve import load_versions, resolve_version  # noqa: E402
-from seal import URI_PREDICATE, DraftError, main, register, seal  # noqa: E402
+from seal import URI_PREDICATE, DraftError, main, register, seal, written_uri  # noqa: E402
 from seal import connect  # noqa: E402
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
+# What the fixtures' `uniti:` prefix stands for. The log registers a predicate
+# by its full URI, never by the CURIE a draft wrote it as.
+BUSINESS = "https://uniti.example/business/"
 
 # The two seals differ on both axes: v1 is valid from 1 Jan and sealed 1 Mar,
 # v2 valid from 1 Feb and sealed 1 Apr. So each axis can hide v2 on its own.
@@ -151,14 +154,14 @@ def test_a_slot_uri_in_both_versions_yields_one_predicate_entity(conn, sealed):
     _, first, second = sealed
     # Shared outright, and shared under a new name: draft_two calls
     # uniti:box_location `box_place`.
-    for uri in ("uniti:box_label", "uniti:box_location"):
+    for uri in (f"{BUSINESS}box_label", f"{BUSINESS}box_location"):
         assert first["entities"][uri] == second["entities"][uri]
         assert len(_entities_named(conn, uri)) == 1
         # The second seal reused them rather than minting twins. The registry
         # is global, so what a seal mints depends on what the log already
         # holds; what it must never do is mint a URI a second time.
         assert uri not in second["minted"]
-    assert len(_entities_named(conn, "uniti:run_volume")) == 1
+    assert len(_entities_named(conn, f"{BUSINESS}run_volume")) == 1
     # The registry predicate registers itself: one row, subject == predicate.
     assert len(_entities_named(conn, URI_PREDICATE)) == 1
 
@@ -179,7 +182,7 @@ def test_the_stated_facts_reach_the_log_and_leave_the_map(conn, sealed):
     stated = [row for row in _rows(conn, first["intent_id"]) if row[5] == "human_stated"]
     assert [row[2] for row in stated] == ["Box A", "Front room", "Box B"]
     assert stated[0][0] == first["entities"]["uniti:box_a"]
-    assert stated[0][1] == first["entities"]["uniti:box_label"]
+    assert stated[0][1] == first["entities"][f"{BUSINESS}box_label"]
     assert "facts" not in (into / "v1.yaml").read_text(encoding="utf-8")
 
 
@@ -299,12 +302,12 @@ def test_a_class_ranged_fact_lands_as_a_ref_and_a_type_range_as_a_literal(conn, 
 
     # A type range and no range at all: both literal, and no ref beside them.
     assert literals == {
-        "uniti:box_label": "Box D",
-        "uniti:run_variant": "Speckled",
-        "uniti:run_volume": "18.5",
+        f"{BUSINESS}box_label": "Box D",
+        f"{BUSINESS}run_variant": "Speckled",
+        f"{BUSINESS}run_volume": "18.5",
     }
     # The class range: three refs, and every one of them with a null literal.
-    assert [p for p, ref in refs] == ["uniti:stored_in"] * 3
+    assert [p for p, ref in refs] == [f"{BUSINESS}stored_in"] * 3
     assert all(lit is None for p, lit, ref in stated if ref is not None)
 
 
@@ -351,9 +354,9 @@ def test_a_stated_confidence_reaches_the_log_and_silence_stays_null(conn, confid
     """Absent is NULL, not `high`: a default would claim what nobody said."""
     stated = _confidences(conn, confident["intent_id"])
     assert stated == [
-        ("uniti:supply_amount", "high"),
-        ("uniti:supply_amount", "low"),
-        ("uniti:supply_label", None),
+        (f"{BUSINESS}supply_amount", "high"),
+        (f"{BUSINESS}supply_amount", "low"),
+        (f"{BUSINESS}supply_label", None),
     ]
     # The minted URI rows are the tool's own act and state nothing either.
     with conn.cursor() as cur:
@@ -424,10 +427,14 @@ def test_register_mints_nothing_the_log_already_holds(conn, sealed):
 
 
 def _slot_uris(path):
-    """Every slot_uri a version file declares, read out of the file itself."""
+    """Every predicate a version file declares, read out of the file itself.
+
+    As the log holds them: each CURIE expanded by the file's own prefixes.
+    """
     document = yaml.safe_load(path.read_text(encoding="utf-8"))
     return sorted(
-        slot["slot_uri"] for slot in (document.get("slots") or {}).values()
+        written_uri(document, slot["slot_uri"])
+        for slot in (document.get("slots") or {}).values()
     )
 
 
@@ -514,3 +521,22 @@ def test_a_draft_seals_only_if_every_table_it_can_fill_compiles(
     assert caught.value.code == code
     assert not into.exists()
     assert _counts(conn) == before
+
+
+def test_an_expression_written_with_bare_names_is_answered_with_the_braces(conn, tmp_path):
+    """What stopped three authors of four in the composition experiment.
+
+    They wrote `ordered - received` and read "arithmetic over {columns}" as a
+    placeholder nobody had filled in. The refusal now says what braces are for
+    and hands back the expression that would have been accepted.
+    """
+    from components.refusal import Refusal
+    draft = _ruled_draft(tmp_path, expression="total_size * 2 + (total_size)",
+                         on_the_grouping=True)
+    with pytest.raises(Refusal) as caught:
+        seal(conn, draft, actor_id="test", into=tmp_path / "into")
+    assert caught.value.code == "expression_not_arithmetic"
+    assert "curly braces" in caught.value.expected
+    first, syntax = caught.value.repairs[0], caught.value.repairs[1]
+    assert first.options == ("{total_size} * 2 + ({total_size})",)
+    assert "{total_size}" in syntax.options and "{ordered} - {received}" in syntax.do

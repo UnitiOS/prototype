@@ -163,11 +163,11 @@ def test_every_rule_names_the_module_it_reads(conn, world):
     assert by_name["quantity_on_hand"]["kind"] == "aggregate"
     assert (rule["over"], rule["measure"]) == ("Flow", "amount")
     assert rule["covers"] == ["StockMovement"]
-    assert rule["measure_uris"] == ["inv:movement_quantity"]
-    assert rule["by_uris"] == {"stock_ingredient": ["inv:movement_ingredient"]}
+    assert rule["measure_uris"] == ["https://uniti.example/inventory/movement_quantity"]
+    assert rule["by_uris"] == {"stock_ingredient": ["https://uniti.example/inventory/movement_ingredient"]}
 
     assert by_name["reorder_level"]["kind"] == "parameter"
-    assert by_name["reorder_level"]["rule"]["slot_uris"] == ["cat:ingredient_reorder_level"]
+    assert by_name["reorder_level"]["rule"]["slot_uris"] == ["https://uniti.example/catalog/ingredient_reorder_level"]
     assert by_name["headroom"]["kind"] == "expression"
 
     # None of the three predicates belongs to the module that declares the
@@ -201,9 +201,9 @@ def test_an_application_written_against_roles_survives_replacing_a_module(conn, 
     rule = {c["name"]: c["rule"] for c in swapped["columns"]}["quantity_on_hand"]
     assert (rule["over"], rule["measure"]) == ("Flow", "amount")
     assert rule["covers"] == ["Movement"]
-    assert rule["measure_uris"] == ["rv:qty_delta"]
-    assert "inv:movement_quantity" not in swapped["sql"]
-    assert "rv:qty_delta" in swapped["sql"]
+    assert rule["measure_uris"] == ["https://rival.example/stock-moves/qty_delta"]
+    assert "https://uniti.example/inventory/movement_quantity" not in swapped["sql"]
+    assert "https://rival.example/stock-moves/qty_delta" in swapped["sql"]
 
 
 def test_the_swapped_application_changed_nothing_but_its_pin(world):
@@ -237,20 +237,20 @@ def test_replacing_a_module_leaves_its_statements_in_the_log(conn, world):
         cur.execute("SELECT count(*) FROM assertion a JOIN entity e "
                     "ON e.id = a.predicate_id JOIN assertion u "
                     "ON u.subject_id = e.id AND u.value_literal = %s",
-                    ("inv:movement_quantity",))
+                    ("https://uniti.example/inventory/movement_quantity",))
         (held,) = cur.fetchone()
     assert held == 24
 
     swapped = application.projection(conn, world, SWAP_NAME, SWAP_VERSION,
                                      "IngredientStock",
                                      valid_at="2026-06-30", as_of="2026-09-18")
-    assert "inv:movement_quantity" not in swapped["sql"]
+    assert "https://uniti.example/inventory/movement_quantity" not in swapped["sql"]
 
     # And the fit report counts them rather than leaving anybody to wonder.
     from components.modules import roles as roles_read
     report = roles_read.fit(world, APP_NAME, APP_VERSION, SWAP_VERSION, conn=conn)
     orphans = {o["uri"]: o["held"] for o in report["orphaned"]}
-    assert orphans["inv:movement_quantity"] == 24
+    assert orphans["https://uniti.example/inventory/movement_quantity"] == 24
     assert report["orphaned_statements"] == sum(orphans.values())
 
 
@@ -427,7 +427,7 @@ def test_a_parameter_cell_names_the_one_who_said_so(conn, world):
     assert len(held["statements"]) == 1
     only = held["statements"][0]
     assert only["value"] == "40"
-    assert only["predicate"] == "cat:ingredient_reorder_level"
+    assert only["predicate"] == "https://uniti.example/catalog/ingredient_reorder_level"
     assert only["source"] == "human_stated"
 
     # The same cell after somebody raised it: a different statement, and the
@@ -456,7 +456,7 @@ def test_a_cell_of_an_entity_table_is_one_statement(conn, world):
     assert held["statements"][0]["value"] == "Wheat flour"
     # The slot was renamed in the catalog v2 and the predicate never moved, so
     # the fact stated under the v1 name is the fact the v2 name reads.
-    assert held["statements"][0]["predicate"] == "cat:ingredient_label"
+    assert held["statements"][0]["predicate"] == "https://uniti.example/catalog/ingredient_label"
 
 
 def test_a_column_that_is_not_there_is_refused(conn, world):
@@ -554,7 +554,8 @@ def test_the_api_takes_a_form_and_gives_back_the_cell(conn, world, monkeypatch):
         "subject": "inv:mv_0102", "actor": "test",
         "valid_from": "2026-08-04T00:00:00+00:00",
         "values": {"movement_code": "MV-0102", "movement_ingredient": "cat:ing_yeast",
-                   "movement_location": "inv:loc_store", "movement_quantity": "3"},
+                   "movement_location": "inv:loc_store", "movement_quantity": "3",
+                   "movement_happened_on": "2026-08-04"},
     })
     assert posted.status_code == 200, posted.json()
     assert posted.json()["intent_id"]
@@ -596,7 +597,8 @@ def test_a_form_can_correct_and_withdraw_what_it_wrote(conn, world, monkeypatch)
         "subject": "inv:mv_0103", "actor": "test",
         "valid_from": "2026-08-06T00:00:00+00:00",
         "values": {"movement_code": "MV-0103", "movement_ingredient": "cat:ing_box",
-                   "movement_location": "inv:loc_store", "movement_quantity": "30"},
+                   "movement_location": "inv:loc_store", "movement_quantity": "30",
+                   "movement_happened_on": "2026-08-06"},
     })
     assert typed.status_code == 200, typed.json()
     stated = typed.json()["stated"]
@@ -722,7 +724,9 @@ def test_a_reference_must_be_one_of_the_choices_the_form_offers(conn, world):
     application.state(conn, world, APP_NAME, APP_VERSION, "StockMovement",
                       subject="inv:mv_0111", actor_id="test",
                       values={"movement_code": "MV-0111",
-                              "movement_ingredient": "cat:ing_vanilla"},
+                              "movement_ingredient": "cat:ing_vanilla",
+                              "movement_quantity": "1",
+                              "movement_happened_on": "2026-09-02"},
                       valid_from="2026-09-02T00:00:00+00:00")
 
 
@@ -730,11 +734,15 @@ def test_a_withdrawal_names_a_statement_of_this_field_on_this_subject(conn, worl
     """An id from somewhere else would withdraw somebody else's row, silently."""
     first = application.state(
         conn, world, APP_NAME, APP_VERSION, "StockMovement", subject="inv:mv_0112",
-        actor_id="test", values={"movement_code": "MV-0112", "movement_quantity": "4"},
+        actor_id="test", values={"movement_code": "MV-0112", "movement_quantity": "4",
+                                 "movement_ingredient": "cat:ing_sugar",
+                                 "movement_happened_on": "2026-08-12"},
         valid_from="2026-08-12T00:00:00+00:00")
     other = application.state(
         conn, world, APP_NAME, APP_VERSION, "StockMovement", subject="inv:mv_0113",
-        actor_id="test", values={"movement_code": "MV-0113", "movement_quantity": "5"},
+        actor_id="test", values={"movement_code": "MV-0113", "movement_quantity": "5",
+                                 "movement_ingredient": "cat:ing_sugar",
+                                 "movement_happened_on": "2026-08-12"},
         valid_from="2026-08-12T00:00:00+00:00")
 
     elsewhere = _refused_at_the_door(

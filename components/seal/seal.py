@@ -135,6 +135,81 @@ def _utc(value):
     return moment if moment.tzinfo else moment.replace(tzinfo=timezone.utc)
 
 
+def _declared_in(view, element):
+    """The schema of the closure that declares this class or slot.
+
+    LinkML merges every module's prefixes into one table, and when two modules
+    map one prefix to two namespaces the last one read wins, silently. So a
+    CURIE is only ever expanded against the prefixes of the module that wrote
+    it, which is the one `from_schema` names.
+    """
+    origin = getattr(element, "from_schema", None)
+    if origin:
+        for schema in view.schema_map.values():
+            if schema.id == origin:
+                return schema
+    return view.schema
+
+
+def _expand(view, schema, curie):
+    """A CURIE as the full URI its own module means by it."""
+    text = str(curie)
+    if "://" in text:
+        return text
+    prefix, sep, local = text.partition(":")
+    held = (schema.prefixes or {}).get(prefix) if sep else None
+    if held is not None:
+        return str(held.prefix_reference) + local
+    return str(view.expand_curie(text))
+
+
+def predicate(view, slot):
+    """The full URI a slot's facts are recorded under, or None without one.
+
+    This, and never the `slot_uri` as written, is a predicate's identity in the
+    log. A CURIE is shorthand for one module: two authors who both chose the
+    prefix `stock:` meant two namespaces, and registering `stock:qty` as
+    written made their two predicates one.
+    """
+    if not slot.slot_uri:
+        return None
+    return _expand(view, _declared_in(view, slot), slot.slot_uri)
+
+
+def written_uri(document, curie):
+    """A CURIE in a module document, expanded by that document's own prefixes.
+
+    For readers holding a module's YAML rather than a view of its closure. The
+    same answer `predicate` gives, because the prefixes are the same module's.
+    """
+    text = str(curie)
+    if "://" in text:
+        return text
+    prefix, sep, local = text.partition(":")
+    held = (document.get("prefixes") or {}).get(prefix) if sep else None
+    if isinstance(held, dict):
+        held = held.get("prefix_reference")
+    return f"{held}{local}" if held else text
+
+
+def class_uri(view, class_name):
+    """The full URI an entity's class fact names, for one class.
+
+    A bare class name says nothing about whose class it is: two modules may
+    each declare an `Item`, and a class fact reading `Item` could be either.
+    The class's own `class_uri` when it declares one, otherwise its name in
+    the namespace of the module that declares it.
+    """
+    cls = view.get_class(class_name)
+    schema = _declared_in(view, cls)
+    if cls.class_uri:
+        return _expand(view, schema, cls.class_uri)
+    prefix = schema.default_prefix
+    if prefix and prefix in (schema.prefixes or {}):
+        return _expand(view, schema, f"{prefix}:{class_name}")
+    return f"{str(schema.id).rstrip('/#')}/{class_name}"
+
+
 def _validate(text, name, store=None):
     """Load through SchemaView, which is what "valid LinkML" means here.
 
@@ -193,6 +268,34 @@ def uri_refusals(view, name):
         )
 
 
+def range_refusals(view, draft, name):
+    """Every slot the draft declares whose range names nothing in sight.
+
+    LinkML loads a schema without resolving ranges, so a slot left ranging
+    over a class that was removed or renamed, or never pinned, reads as text
+    everywhere downstream: its values land as strings nothing can follow.
+    A generator, for the reason `uri_refusals` is one.
+    """
+    known = ({str(n) for n in view.all_types()} | {str(n) for n in view.all_classes()}
+             | {str(n) for n in view.all_enums()})
+    for slot_name, body in (draft.get("slots") or {}).items():
+        wanted = (body or {}).get("range")
+        if wanted is None or str(wanted) in known:
+            continue
+        yield DraftError(
+            "range_unknown",
+            where=f"{name}: {slot_name}",
+            expected="a range that is a type, a class or an enum in sight",
+            got=f"{wanted!r}",
+            repairs=[Repair(
+                f"range {slot_name} over one of these, or pin the module that "
+                f"declares {wanted}",
+                where=name,
+                options=sorted(known)),
+            ],
+        )
+
+
 def _slot_ranges(view, name):
     """Every `slot_uri` the draft declares, and whether its range is a class.
 
@@ -224,8 +327,38 @@ def _slot_ranges(view, name):
     for slot_name in view.schema.slots:
         slot = view.induced_slot(slot_name)
         if not slot.abstract:
-            ranges.setdefault(slot.slot_uri, slot.range in classes)
+            ranges.setdefault(predicate(view, slot), slot.range in classes)
     return ranges
+
+
+def _written(view):
+    """Each predicate as the draft writes it, and the full URI it stands for.
+
+    A fact in a draft names its predicate the way the draft's own slots do, as
+    a CURIE; the log holds the full URI. Either spelling is accepted.
+    """
+    out = {}
+    for slot_name in view.schema.slots:
+        slot = view.induced_slot(slot_name)
+        if not slot.abstract and slot.slot_uri:
+            full = predicate(view, slot)
+            out[str(slot.slot_uri)] = full
+            out[full] = full
+    return out
+
+
+def _class_facts(view):
+    """Full predicate -> {class name: class URI}, for every slot naming a class.
+
+    A fact under a `designates_type` slot says which class a subject is, and
+    the draft writes the class by name. The log records the class's full URI,
+    so the same name in two modules is two classes there too.
+    """
+    names = {str(c): class_uri(view, c) for c in view.all_classes()}
+    return {predicate(view, view.induced_slot(s)): names
+            for s in view.all_slots()
+            if view.induced_slot(s).designates_type
+            and view.induced_slot(s).slot_uri}
 
 
 def fillers(view, class_name, binding):
@@ -394,7 +527,73 @@ def _one_version_per_module(store, draft, name):
                 )
 
 
-def _facts(annotations, ranges, name):
+_KINDS = (("classes", "class"), ("slots", "slot"), ("enums", "enum"))
+
+
+def name_clashes(store, draft, name):
+    """Every class, slot or enum name two modules in one closure both declare.
+
+    LinkML puts a closure's names in one space and merges a second declaration
+    over the first without a word: the `Warehouse` one module declared and the
+    `Warehouse` another declared become whichever was read last, and every rule
+    naming it reads the wrong one. Nothing downstream can tell. So it is
+    refused here, where both declarations are in sight.
+
+    The draft's own names are in the closure too. A clash between the draft
+    and a pin is answered by renaming in the draft; one between two pins by
+    not pinning both as they are.
+
+    A generator, for the reason `uri_refusals` is one.
+    """
+    owners = {}
+
+    def declare(owner, document):
+        for key, kind in _KINDS:
+            for term in (document.get(key) or {}):
+                held = owners.setdefault((kind, str(term)), [])
+                # One module at two versions is `two_versions_of_a_module`'s
+                # to refuse; counting it here would say it once per name.
+                if not any(o == owner or (o and owner and o[0] == owner[0])
+                           for o in held):
+                    held.append(owner)
+
+    declare(None, draft)
+    for pin in store.imports(draft):
+        for dep in store.closure(*pin):
+            declare(dep, store.document(*dep))
+
+    pins = [f"{n}@{v}" for n, v in store.imports(draft)]
+    for (kind, term), held in owners.items():
+        if len(held) < 2:
+            continue
+        said = ["this draft" if o is None else f"{o[0]}@{o[1]}" for o in held]
+        if None in held:
+            repairs = [Repair(f"rename the {kind} this draft declares; the "
+                              f"module you pin keeps its name",
+                              where=name,
+                              options=[f"rename_{kind}"] if kind != "enum" else [])]
+        else:
+            repairs = [Repair(f"two modules you pin both declare the {kind} "
+                              f"{term}, so they cannot be read together as they "
+                              f"are. Drop one pin, or seal a version of one that "
+                              f"renames it and pin that",
+                              where=name, options=pins)]
+        yield DraftError(
+            "name_clash",
+            where=f"{name}: {kind} {term}",
+            expected=f"one module in the closure declaring the {kind} {term}",
+            got=f"{len(held)}: {', '.join(said)}",
+            repairs=repairs,
+        )
+
+
+def _no_clash(store, draft, name):
+    """Raise the first clash. The rule itself is in `name_clashes`."""
+    for refusal in name_clashes(store, draft, name):
+        raise refusal
+
+
+def _facts(annotations, ranges, name, view=None):
     """The stated facts, checked against the vocabulary the draft declares.
 
     Each carries `ref`, taken from its predicate's range: `True` where the
@@ -411,6 +610,8 @@ def _facts(annotations, ranges, name):
             repairs=[Repair("write each fact as one `- subject:` item", where=name)],
         )
 
+    written = _written(view) if view is not None else {p: p for p in ranges}
+    class_names = _class_facts(view) if view is not None else {}
     facts = []
     for i, fact in enumerate(stated, start=1):
         at = f"{name}: fact {i}"
@@ -445,14 +646,17 @@ def _facts(annotations, ranges, name):
                                 "records NULL, which claims nothing",
                                 where=name, options=CONFIDENCE_LEVELS)],
             )
-        if fact["predicate"] not in ranges:
+        full = written.get(str(fact["predicate"]))
+        if full not in ranges:
             raise DraftError(
                 "fact_predicate_unknown",
                 where=at,
                 expected="a predicate this draft declares a slot for",
                 got=f"{fact['predicate']!r}",
                 repairs=[Repair("state it under a slot_uri this draft declares",
-                                where=name, options=sorted(ranges))],
+                                where=name,
+                                options=sorted(k for k in written if "://" not in k)
+                                or sorted(ranges))],
             )
         if fact["value"] is None or isinstance(fact["value"], (dict, list)):
             raise DraftError(
@@ -463,12 +667,16 @@ def _facts(annotations, ranges, name):
                 repairs=[Repair("state one value; a fact with several is several "
                                 "facts", where=name)],
             )
+        value = str(fact["value"])
+        named = class_names.get(full)
+        if named is not None:
+            value = named.get(value, value)
         facts.append(
             {
                 "subject": str(fact["subject"]),
-                "predicate": str(fact["predicate"]),
-                "value": str(fact["value"]),
-                "ref": ranges[fact["predicate"]],
+                "predicate": full,
+                "value": value,
+                "ref": ranges[full],
                 "confidence": confidence,
             }
         )
@@ -662,10 +870,13 @@ def seal(conn, draft_path, *, actor_id, into=None, sealed_at=None, store=None):
     if store is not None:
         _pins_already_sealed(store, draft, sealed_at, draft_path.name)
         _one_version_per_module(store, draft, draft_path.name)
+        _no_clash(store, draft, draft_path.name)
     ranges = _slot_ranges(view, draft_path.name)
+    for refusal in range_refusals(view, draft, draft_path.name):
+        raise refusal
     _roles(view, draft, draft_path.name)
     annotations = draft.get("annotations") or {}
-    facts = _facts(annotations, ranges, draft_path.name)
+    facts = _facts(annotations, ranges, draft_path.name, view)
     _compiles(view, draft_path)
 
     valid_from = _valid_from(annotations, draft_path.name)

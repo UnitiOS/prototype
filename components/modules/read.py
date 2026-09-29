@@ -10,9 +10,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT / "components" / "provenance"))
+sys.path.insert(0, str(ROOT / "components" / "seal"))
 
 from components.modules import diff as _diff  # noqa: E402
 from components.modules.store import ModuleError  # noqa: E402
+from seal import written_uri  # noqa: E402
 
 RULES = ("aggregate", "parameter")
 
@@ -120,7 +122,9 @@ def version(store, name, version, registered=None):
                 "rule": _rule(s), "rule_spec": rule_of(s),
                 "title": str(s["title"]) if s.get("title") else slot_name,
                 "description": s.get("description"), "from": origin,
-                "registered": (s.get("slot_uri") in registered) if registered is not None else None,
+                "registered": (written_uri(dep, s["slot_uri"]) in registered
+                               if s.get("slot_uri") else False)
+                              if registered is not None else None,
             }
 
     imported_by = []

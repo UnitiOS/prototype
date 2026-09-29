@@ -36,7 +36,7 @@ sys.path.insert(0, str(ROOT / "components" / "seal"))
 from compile import plan_for, tables  # noqa: E402
 from components.refusal import Refusal  # noqa: E402
 from generate import read_map  # noqa: E402
-from seal import URI_PREDICATE  # noqa: E402
+from seal import URI_PREDICATE, written_uri  # noqa: E402
 
 # Every statement in the log, counted per predicate, for the predicates asked
 # about. The predicate is an entity like any other and is named through the
@@ -239,9 +239,10 @@ def _declared(store, name, version):
     """Every predicate the closure declares, and which module version owns it."""
     owners = {}
     for dep in store.closure(name, version):
-        for slot in (store.document(*dep).get("slots") or {}).values():
+        document = store.document(*dep)
+        for slot in (document.get("slots") or {}).values():
             if (slot or {}).get("slot_uri"):
-                owners.setdefault(str(slot["slot_uri"]), _pin(*dep))
+                owners.setdefault(written_uri(document, slot["slot_uri"]), _pin(*dep))
     return owners
 
 

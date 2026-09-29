@@ -41,7 +41,7 @@ from components.modules.check import check  # noqa: E402
 from components.modules.roles import _closure_documents, roles  # noqa: E402
 from components.refusal import Refusal  # noqa: E402
 from generate import read_map  # noqa: E402
-from seal import URI_PREDICATE  # noqa: E402
+from seal import URI_PREDICATE, class_uri, predicate, written_uri  # noqa: E402
 
 DIAGNOSES = {
     "dead_term": "stated in the log, and read by no rule and no mechanism",
@@ -109,11 +109,13 @@ def _declared_anywhere(store):
     out = {}
     for name in store.names():
         for held in store.versions(name):
-            for slot in (store.document(name, held["version"]).get("slots") or {}).values():
+            document = store.document(name, held["version"])
+            for slot in (document.get("slots") or {}).values():
                 uri = (slot or {}).get("slot_uri")
                 if not uri:
                     continue
-                versions = out.setdefault(str(uri), {}).setdefault(name, [])
+                uri = written_uri(document, uri)
+                versions = out.setdefault(uri, {}).setdefault(name, [])
                 versions.append(held["version"])
     return {uri: [{"name": n, "versions": v} for n, v in sorted(by.items())]
             for uri, by in out.items()}
@@ -188,9 +190,10 @@ def health(store, name, version, *, conn=None):
     # table itself is how somebody sees what the rules are actually built on.
     declared = {}
     for slot_name, s in slots.items():
-        if not s.get("slot_uri"):
+        if not s.get("slot_uri") or slot_name not in view.all_slots():
             continue
-        uri = str(s["slot_uri"])
+        # The log holds the full URI; the document writes a CURIE.
+        uri = predicate(view, view.induced_slot(slot_name))
         declared[uri] = {
             "uri": uri, "slot": slot_name, "module": s["module"],
             "on": sorted(c for c, spec in classes.items()
@@ -223,13 +226,13 @@ def health(store, name, version, *, conn=None):
     statable = sorted(str(c) for c in view.all_classes()
                       if not view.get_class(c).abstract and type_slot(map_, c) is not None)
     if conn is not None:
-        carriers = {str(type_slot(map_, c).slot_uri) for c in statable
+        carriers = {predicate(view, type_slot(map_, c)) for c in statable
                     if type_slot(map_, c).slot_uri}
         members = _members(conn, carriers)
         empty_classes = []
         for class_name in statable:
             below = _covered(view, class_name)
-            if not any(members.get(c) for c in below):
+            if not any(members.get(class_uri(view, c)) for c in below):
                 empty_classes.append({
                     "class": class_name,
                     "module": classes.get(class_name, {}).get("module"),

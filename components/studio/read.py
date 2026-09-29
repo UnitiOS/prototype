@@ -41,12 +41,14 @@ from components.modules.check import check  # noqa: E402
 from components.modules.roles import _above, _bindings, _fills  # noqa: E402
 from components.refusal import Refusal  # noqa: E402
 from components.studio.draft import (  # noqa: E402
-    CLASS_FIELDS, DRAFT, FIELDS, OPERATIONS, SLOT_FIELDS, open_draft, path,
-    ranges, seen, text_of, transcript,
+    CLASS_FIELDS, DRAFT, ENUM_FIELDS, FIELDS, OPERATIONS, SLOT_FIELDS,
+    USAGE_FIELDS, enums_seen, open_draft, path, ranges, seen, text_of,
+    transcript,
 )
 from seal import (  # noqa: E402
     _facts, _one_version_per_module, _pins_already_sealed, _slot_ranges,
-    _transcript, _valid_from, _validate, role_refusals, uri_refusals,
+    _transcript, _valid_from, _validate, name_clashes, range_refusals,
+    role_refusals, uri_refusals,
 )
 
 # What is unfinished without anything refusing it. A closed list, like the
@@ -71,7 +73,7 @@ OPEN = {
 # `where` is read for the names, because that is where the gate put them. The
 # two shapes are the gates' own and a test holds them to it.
 ANSWERS = ("binding_unfilled", "binding_ambiguous", "slot_without_uri",
-           "no_valid_from")
+           "no_valid_from", "name_clash", "range_unknown")
 
 
 def _map(store, name, document):
@@ -107,6 +109,7 @@ def inspect(store, name, document):
     missing_uris = [r for r in uri_refusals(view, DRAFT)]
     out["refusals"] += [r.as_dict() for r in missing_uris]
     out["refusals"] += [r.as_dict() for r in role_refusals(view, document, DRAFT)]
+    out["refusals"] += [r.as_dict() for r in range_refusals(view, document, DRAFT)]
 
     def collect(reader, *args):
         try:
@@ -119,12 +122,16 @@ def inspect(store, name, document):
     collect(_pins_already_sealed, store, document,
             datetime.now(timezone.utc), DRAFT)
     collect(_one_version_per_module, store, document, DRAFT)
+    try:
+        out["refusals"] += [r.as_dict() for r in name_clashes(store, document, DRAFT)]
+    except Refusal as exc:
+        out["refusals"].append(exc.as_dict())
     collect(_valid_from, annotations, DRAFT)
     collect(_transcript, annotations, path(store, name), DRAFT)
     if not missing_uris:
         # Facts are checked against the predicates the draft declares, so a
         # draft still missing one of those is asked about that first.
-        collect(_facts, annotations, _slot_ranges(view, DRAFT), DRAFT)
+        collect(_facts, annotations, _slot_ranges(view, DRAFT), DRAFT, view)
 
     report = check(store, name, "draft", map_=map_)
     out["refusals"] += report["refusals"]
@@ -144,9 +151,13 @@ def _about(refusal):
     if refusal["code"] in ("binding_unfilled", "binding_ambiguous"):
         class_name, _, binding = where.partition(".")
         return {"class": class_name, "binding": binding}
-    if refusal["code"] == "slot_without_uri":
+    if refusal["code"] in ("slot_without_uri", "range_unknown"):
         _, _, slot = where.partition(": ")
         return {"slot": slot}
+    if refusal["code"] == "name_clash":
+        _, _, said = where.partition(": ")
+        kind, _, term = said.partition(" ")
+        return {"kind": kind, kind: term}
     return {}
 
 
@@ -166,6 +177,13 @@ def _step_for(refusal):
     if code == "no_valid_from":
         return {"op": "set", "args": {"field": "valid_from"},
                 "choose": "value", "options": []}
+    if code == "range_unknown":
+        return {"op": "set_slot", "args": {"slot": about["slot"], "field": "range"},
+                "choose": "value", "options": options}
+    if code == "name_clash" and "this draft" in refusal["got"]:
+        kind = about["kind"]
+        return {"op": f"rename_{kind}", "args": {kind: about[kind]},
+                "choose": "to", "options": []}
     return None
 
 
@@ -181,6 +199,12 @@ def _question(kind, where, detail):
         return f"what predicate is {detail.get('slot')} recorded under?"
     if kind == "no_valid_from":
         return "when did these definitions take effect?"
+    if kind == "range_unknown":
+        return f"what does {detail.get('slot')} hold? What it names is not in sight"
+    if kind == "name_clash":
+        what = detail.get("kind")
+        return (f"two modules in sight both declare the {what} "
+                f"{detail.get(what)} — which one is meant?")
     if kind == "nothing_declared":
         return "what kinds of thing does this module know about?"
     if kind == "class_is_empty":
@@ -306,7 +330,8 @@ def holes(store, name, document, found):
     return sorted(out, key=lambda h: (not h["blocking"], h["where"]))
 
 
-_FIELDS_OF = {"set": FIELDS, "set_class": CLASS_FIELDS, "set_slot": SLOT_FIELDS}
+_FIELDS_OF = {"set": FIELDS, "set_class": CLASS_FIELDS, "set_slot": SLOT_FIELDS,
+              "set_enum": ENUM_FIELDS, "set_usage": USAGE_FIELDS}
 
 
 def steps(store, name, document):
@@ -325,6 +350,7 @@ def steps(store, name, document):
     options = {
         "own_class": own_classes,
         "own_slot": own_slots,
+        "own_enum": sorted(document.get("enums") or {}),
         "class": sorted(classes),
         "slot": sorted(slots),
         "role": sorted(c for c, b in classes.items() if b.get("abstract")),
@@ -483,6 +509,9 @@ def state(store, name):
             "fills": [str(m) for m in ((body or {}).get("mixins") or [])],
             "is_a": (body or {}).get("is_a"),
             "slots": list((body or {}).get("slots") or []),
+            # What a slot obliges on this class alone, where it says so.
+            "usage": {s: dict(u or {}) for s, u in
+                      ((body or {}).get("slot_usage") or {}).items()},
             "has_rows": class_name in with_rows,
         } for class_name, body in sorted(own_classes.items())],
         "slots": [{
@@ -493,10 +522,18 @@ def state(store, name):
             "range": (body or {}).get("range"),
             "identifier": bool((body or {}).get("identifier")),
             "designates_type": bool((body or {}).get("designates_type")),
+            "required": bool((body or {}).get("required")),
+            "multivalued": bool((body or {}).get("multivalued")),
             "binds": (body or {}).get("is_a"),
             "rule": _rule_of(body),
             "on": attached.get(slot_name, []),
         } for slot_name, body in sorted(own_slots.items())],
+        "enums": [{
+            "name": enum_name,
+            "description": (body or {}).get("description") or "",
+            "values": list(((body or {}).get("permissible_values") or {})),
+            "module": body["module"],
+        } for enum_name, body in sorted(enums_seen(store, document).items())],
         "roles": _roles_of(store, document),
         "borrowed": _borrowed(store, document),
         "tables": found["tables"],

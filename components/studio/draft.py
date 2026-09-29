@@ -48,8 +48,9 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "components" / "compiler"))
 sys.path.insert(0, str(ROOT / "components" / "generator"))
 
+from components.modules.roles import _above  # noqa: E402
 from components.refusal import Refusal, Repair  # noqa: E402
-from compile import SQL_TYPE  # noqa: E402
+from compile import SQL_TYPE, SYNTAX  # noqa: E402
 
 DRAFT = "draft.yaml"
 TRANSCRIPT = "draft.txt"
@@ -58,7 +59,7 @@ MANIFEST = "package.yaml"
 # The keys a module document holds, in the order they are written. A file
 # whose keys move about on every save is a file whose diff is unreadable.
 ORDER = ("id", "name", "title", "description", "prefixes", "default_prefix",
-         "default_range", "imports", "classes", "slots", "annotations")
+         "default_range", "imports", "classes", "slots", "enums", "annotations")
 
 # Where a module started here declares its own terms, when nobody says
 # otherwise. `.example` is reserved for exactly this (RFC 2606): a namespace
@@ -72,8 +73,14 @@ BASE = "https://uniti.example"
 FIELDS = ("title", "description", "valid_from")
 CLASS_FIELDS = ("description", "is_a")
 SLOT_FIELDS = ("title", "description", "range", "slot_uri",
-               "identifier", "required", "designates_type")
-BOOLEAN_FIELDS = ("identifier", "required", "designates_type")
+               "identifier", "required", "multivalued", "designates_type")
+BOOLEAN_FIELDS = ("identifier", "required", "multivalued", "designates_type")
+# An enum is a closed list of values; `values` is written `a, b, c`.
+ENUM_FIELDS = ("description", "values")
+# What a slot means on one class rather than everywhere it is used. LinkML's
+# `slot_usage`, of which only `required` is offered: the same slot may be
+# obligatory on an order line and optional on a note.
+USAGE_FIELDS = ("required",)
 
 # The operations, what each one does, and what it takes. The kinds are what
 # `steps()` turns into option lists, so they are the vocabulary a form renders
@@ -81,7 +88,7 @@ BOOLEAN_FIELDS = ("identifier", "required", "designates_type")
 #
 #   text  word  uri  moment        typed in
 #   pin   held_pin                 a sealed version, from the store
-#   own_class  own_slot            something this draft declares
+#   own_class  own_slot  own_enum  something this draft declares
 #   class  slot  role  binding     something this draft can see
 #   range  field  column  mapping  computed from what is around it
 OPERATIONS = {
@@ -169,6 +176,29 @@ OPERATIONS = {
         "takes": {"slot": "own_slot", "field": "field", "value": "text"},
         "may": {},
     },
+    "add_enum": {
+        "does": "declare a closed list of values, for a slot that may hold "
+                "only one of them",
+        "takes": {"enum": "word", "values": "text"},
+        "may": {"description": "text"},
+    },
+    "set_enum": {
+        "does": "an enum's description, or its values, written `a, b, c`",
+        "takes": {"enum": "own_enum", "field": "field", "value": "text"},
+        "may": {},
+    },
+    "remove_enum": {
+        "does": "take an enum out of the draft",
+        "takes": {"enum": "own_enum"},
+        "may": {},
+    },
+    "set_usage": {
+        "does": "what one slot obliges on one class only: whether this class "
+                "requires it",
+        "takes": {"class": "own_class", "slot": "slot", "field": "field",
+                  "value": "text"},
+        "may": {},
+    },
     "attach": {
         "does": "put a slot on a class",
         "takes": {"class": "own_class", "slot": "slot"},
@@ -208,7 +238,8 @@ OPERATIONS = {
         "may": {},
     },
     "expression": {
-        "does": "derive a column by arithmetic on other columns of the same table",
+        "does": "derive a column by arithmetic on other columns of the same "
+                "table: " + SYNTAX,
         "takes": {"class": "own_class", "column": "column", "expression": "text"},
         "may": {},
     },
@@ -355,10 +386,23 @@ def seen(store, document):
     return classes, slots
 
 
+def enums_seen(store, document):
+    """Every enum this draft can see, its own overriding what it pins."""
+    enums = {}
+    for pin in store.imports(document):
+        for dep in store.closure(*pin):
+            origin = {"name": dep[0], "version": dep[1]}
+            for enum_name, e in (store.document(*dep).get("enums") or {}).items():
+                enums[enum_name] = {**(e or {}), "module": origin}
+    for enum_name, e in (document.get("enums") or {}).items():
+        enums[enum_name] = {**(e or {}), "module": None}
+    return enums
+
+
 def ranges(store, document):
-    """Everything a slot may range over: the types, then the classes in sight."""
+    """Everything a slot may range over: the types, the classes, the enums in sight."""
     classes, _ = seen(store, document)
-    return sorted(SQL_TYPE) + sorted(classes)
+    return sorted(SQL_TYPE) + sorted(classes) + sorted(enums_seen(store, document))
 
 
 def text_of(document):
@@ -418,9 +462,13 @@ def _word(value, what):
 
 
 def _free(store, document, kind, proposed, what):
-    """A name nothing in sight already uses."""
+    """A name nothing in sight already uses.
+
+    A class and an enum are both things a slot ranges over, so they share one
+    space of names; a slot has its own.
+    """
     classes, slots = seen(store, document)
-    taken = classes if kind == "class" else slots
+    taken = slots if kind == "slot" else {**enums_seen(store, document), **classes}
     if proposed in taken:
         held = taken[proposed]["module"]
         raise StudioError(
@@ -436,8 +484,9 @@ def _free(store, document, kind, proposed, what):
 
 
 def _own(document, kind, wanted, what):
-    """One of the draft's own classes or slots, which are the ones it can change."""
-    held = document.get("classes" if kind == "class" else "slots") or {}
+    """One of the draft's own classes, slots or enums: the ones it can change."""
+    held = document.get({"class": "classes", "slot": "slots",
+                         "enum": "enums"}[kind]) or {}
     if wanted in held:
         return wanted
     raise StudioError(
@@ -494,8 +543,8 @@ def _slots(document):
 
 
 def _tidy(document):
-    """Drop the two containers when the last thing in them goes."""
-    for key in ("classes", "slots"):
+    """Drop a container when the last thing in it goes."""
+    for key in ("classes", "slots", "enums"):
         if key in document and not document[key]:
             del document[key]
     return document
@@ -778,16 +827,19 @@ def _range(store, document, wanted, what):
     if wanted in SQL_TYPE:
         return wanted
     classes, _ = seen(store, document)
-    if wanted in classes:
+    enums = enums_seen(store, document)
+    if wanted in classes or wanted in enums:
         return wanted
     raise StudioError(
         "not_in_draft",
         where=what,
-        expected="a type, or a class this draft can see",
+        expected="a type, a class or an enum this draft can see",
         got=f"{wanted!r}",
         repairs=[Repair("a value is one of these", options=sorted(SQL_TYPE)),
                  Repair("or it names an entity of one of these",
-                        options=sorted(classes))],
+                        options=sorted(classes)),
+                 Repair("or it is one value of a closed list",
+                        options=sorted(enums) + ["add_enum"])],
     )
 
 
@@ -800,6 +852,10 @@ def _remove_slot(store, name, document, args):
             body["slots"] = [s for s in body["slots"] if s != slot_name]
             if not body["slots"]:
                 body.pop("slots")
+        if slot_name in (body.get("slot_usage") or {}):
+            del body["slot_usage"][slot_name]
+            if not body["slot_usage"]:
+                body.pop("slot_usage")
     return _save(store, name, _tidy(document), "remove_slot", args)
 
 
@@ -833,6 +889,9 @@ def _rename_slot(store, name, document, args):
         body = body or {}
         if old in (body.get("slots") or []):
             body["slots"] = [new if s == old else s for s in body["slots"]]
+        if old in (body.get("slot_usage") or {}):
+            body["slot_usage"] = {(new if k == old else k): v
+                                  for k, v in body["slot_usage"].items()}
     return _save(store, name, document, "rename_slot", args)
 
 
@@ -888,6 +947,99 @@ def _detach(store, name, document, args):
         body.pop("slots")
     _classes(document)[class_name] = body
     return _save(store, name, document, "detach", args)
+
+
+def _carried(store, document, class_name):
+    """Every slot a class carries: its own, and what it inherits or mixes in."""
+    classes, _ = seen(store, document)
+    out = list((classes.get(class_name) or {}).get("slots") or [])
+    for parent in _above(classes, class_name):
+        out += [s for s in (classes[parent].get("slots") or []) if s not in out]
+    return out
+
+
+def _set_usage(store, name, document, args):
+    class_name = _own(document, "class", str(args["class"]), "set_usage")
+    slot_name = str(args["slot"])
+    field = _field("set_usage", USAGE_FIELDS, args["field"])
+    carried = _carried(store, document, class_name)
+    if slot_name not in carried:
+        raise StudioError(
+            "not_attached",
+            where=f"{class_name}.{slot_name}",
+            expected="a slot this class carries, its own or inherited",
+            got=f"{slot_name!r}",
+            repairs=[Repair("say how one of these is used here", options=carried),
+                     Repair("or put the slot on the class first",
+                            options=["attach"])],
+        )
+    body = _classes(document)[class_name] or {}
+    usage = dict(body.get("slot_usage") or {})
+    held = {**(usage.get(slot_name) or {}), field: _value(field, args["value"])}
+    # Saying `false` is not a statement worth keeping: it is the default.
+    held = {k: v for k, v in held.items() if v is not False}
+    if held:
+        usage[slot_name] = held
+    else:
+        usage.pop(slot_name, None)
+    if usage:
+        body["slot_usage"] = usage
+    else:
+        body.pop("slot_usage", None)
+    _classes(document)[class_name] = body
+    return _save(store, name, document, "set_usage", args)
+
+
+# ---- enums ----------------------------------------------------------------
+
+def _values(value, what):
+    """A closed list written `a, b, c`: each value once, none of them empty."""
+    out = []
+    for held in str(value).split(","):
+        held = held.strip()
+        if held and held not in out:
+            out.append(held)
+    if out:
+        return out
+    raise StudioError(
+        "operation_arguments",
+        where=what,
+        expected="at least one value, written `a, b, c`",
+        got=f"{value!r}",
+        repairs=[Repair("name every value the slot may hold, separated by commas")],
+    )
+
+
+def _add_enum(store, name, document, args):
+    enum_name = _free(store, document, "enum",
+                      _word(args["enum"], "add_enum"), "add_enum")
+    body = {}
+    if args.get("description"):
+        body["description"] = str(args["description"])
+    body["permissible_values"] = {v: {} for v in _values(args["values"], "add_enum")}
+    document.setdefault("enums", {})[enum_name] = body
+    return _save(store, name, document, "add_enum", args)
+
+
+def _set_enum(store, name, document, args):
+    enum_name = _own(document, "enum", str(args["enum"]), "set_enum")
+    field = _field("set_enum", ENUM_FIELDS, args["field"])
+    body = dict(document["enums"][enum_name] or {})
+    if field == "values":
+        # A value kept keeps whatever was said about it.
+        before = body.get("permissible_values") or {}
+        body["permissible_values"] = {v: before.get(v) or {}
+                                      for v in _values(args["value"], "set_enum")}
+    else:
+        body[field] = str(args["value"])
+    document["enums"][enum_name] = body
+    return _save(store, name, document, "set_enum", args)
+
+
+def _remove_enum(store, name, document, args):
+    enum_name = _own(document, "enum", str(args["enum"]), "remove_enum")
+    del document["enums"][enum_name]
+    return _save(store, name, _tidy(document), "remove_enum", args)
 
 
 def _bindings_in_sight(store, document):
@@ -1062,11 +1214,13 @@ _PERFORM = {
     "fill_role": _fill_role, "unfill_role": _unfill_role,
     "add_slot": _add_slot, "remove_slot": _remove_slot,
     "rename_slot": _rename_slot, "set_slot": _set_slot,
+    "add_enum": _add_enum, "set_enum": _set_enum, "remove_enum": _remove_enum,
+    "set_usage": _set_usage,
     "attach": _attach, "detach": _detach,
     "bind": _bind, "unbind": _unbind,
     "aggregate": _aggregate, "parameter": _parameter,
     "expression": _expression, "unrule": _unrule,
 }
 
-__all__ = ["OPERATIONS", "StudioError", "apply", "drafts", "open_draft",
-           "path", "ranges", "seen", "text_of", "transcript"]
+__all__ = ["OPERATIONS", "StudioError", "apply", "drafts", "enums_seen",
+           "open_draft", "path", "ranges", "seen", "text_of", "transcript"]

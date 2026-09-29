@@ -45,9 +45,9 @@ def test_read_aggregate_parses_valid_where(map_):
     assert parsed["where"] == [
         {
             "slot_name": "transfer_to",
-            "slot_uris": ["fx:transfer_to"],
-            "type_slot_uri": "fx:entity_class",
-            "descendants": ["InnerPlace"],
+            "slot_uris": ["https://uniti.example/fixture/transfer_to"],
+            "type_slot_uri": "https://uniti.example/fixture/entity_class",
+            "descendants": ["https://uniti.example/fixture/InnerPlace"],
         }
     ]
 
@@ -95,17 +95,17 @@ def test_aggregate_cte_includes_where_filter():
     spec = {
         "operator": "sum",
         "over": "Transfer",
-        "measure_uris": ["fx:transfer_quantity"],
+        "measure_uris": ["https://uniti.example/fixture/transfer_quantity"],
         "measure_type": "numeric",
         "by": {
-            "rec_thing": ["fx:transfer_thing"],
-            "rec_place": ["fx:transfer_to"],
+            "rec_thing": ["https://uniti.example/fixture/transfer_thing"],
+            "rec_place": ["https://uniti.example/fixture/transfer_to"],
         },
         "where": [
             {
                 "slot_name": "transfer_to",
-                "slot_uris": ["fx:transfer_to"],
-                "type_slot_uri": "fx:entity_class",
+                "slot_uris": ["https://uniti.example/fixture/transfer_to"],
+                "type_slot_uri": "https://uniti.example/fixture/entity_class",
                 "descendants": ["InnerPlace"],
             }
         ],
@@ -115,10 +115,10 @@ def test_aggregate_cte_includes_where_filter():
         ["rec_thing", "rec_place"], "t0_"
     )
     assert "JOIN stated t0_w0_v ON t0_w0_v.subject_id = r.subject_id" in cte
-    assert "t0_w0_v.slot = 'fx:transfer_to'" in cte
+    assert "t0_w0_v.slot = 'https://uniti.example/fixture/transfer_to'" in cte
     assert "JOIN registry t0_w0_r ON t0_w0_r.uri = t0_w0_v.value" in cte
     assert "JOIN stated t0_w0_c ON t0_w0_c.subject_id = t0_w0_r.entity_id" in cte
-    assert "t0_w0_c.slot = 'fx:entity_class'" in cte
+    assert "t0_w0_c.slot = 'https://uniti.example/fixture/entity_class'" in cte
     assert "t0_w0_c.value = ANY (ARRAY['InnerPlace'])" in cte
 
 
@@ -151,25 +151,25 @@ def test_aggregate_cte_includes_convert():
     spec = {
         "operator": "sum",
         "over": "Transfer",
-        "measure_uris": ["fx:transfer_quantity"],
+        "measure_uris": ["https://uniti.example/fixture/transfer_quantity"],
         "measure_type": "numeric",
         "by": {
-            "rec_thing": ["fx:transfer_thing"],
-            "rec_place": ["fx:transfer_to"],
+            "rec_thing": ["https://uniti.example/fixture/transfer_thing"],
+            "rec_place": ["https://uniti.example/fixture/transfer_to"],
         },
         "convert": {
             "using": "MeasureConversion",
-            "type_slot_uri": "fx:entity_class",
+            "type_slot_uri": "https://uniti.example/fixture/entity_class",
             "descendants": ["MeasureConversion"],
-            "factor_slot_uri": "fx:conversion_factor",
+            "factor_slot_uri": "https://uniti.example/fixture/conversion_factor",
             "on": [
                 {
-                    "conv_slot_uri": "fx:conversion_thing",
-                    "source_slot_uris": ["fx:transfer_thing"],
+                    "conv_slot_uri": "https://uniti.example/fixture/conversion_thing",
+                    "source_slot_uris": ["https://uniti.example/fixture/transfer_thing"],
                 },
                 {
-                    "conv_slot_uri": "fx:conversion_measure",
-                    "source_slot_uris": ["fx:transfer_measure"],
+                    "conv_slot_uri": "https://uniti.example/fixture/conversion_measure",
+                    "source_slot_uris": ["https://uniti.example/fixture/transfer_measure"],
                 },
             ],
         },

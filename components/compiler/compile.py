@@ -77,7 +77,7 @@ from generate import _carriers as carriers  # noqa: E402
 from generate import _grid as grid  # noqa: E402
 from generate import _type_slot as type_slot  # noqa: E402
 from perform import connect as connect_kernel  # noqa: E402
-from seal import URI_PREDICATE  # noqa: E402
+from seal import URI_PREDICATE, class_uri, predicate  # noqa: E402
 
 OPS_DSN = os.environ.get(
     "UNITI_OPS_DSN", "postgresql://uniti:uniti@localhost:5433/uniti_ops"
@@ -150,6 +150,15 @@ def _covered(view, class_name):
     """
     return [str(name) for name in view.class_descendants(class_name)
             if not view.get_class(name).abstract]
+
+
+def _class_uris(view, class_name):
+    """What the log's class facts say for the classes `_covered` names.
+
+    A class fact records the class's full URI, never its bare name, so the
+    same name declared by two modules is two classes in the log.
+    """
+    return [class_uri(view, name) for name in _covered(view, class_name)]
 
 
 def _fillers(view, class_name, binding):
@@ -378,7 +387,7 @@ def _read_aggregate(map_, where, spec):
 
     def uris(slot_name, role):
         """Every predicate the name stands for, across the classes `over` covers."""
-        return [str(slot.slot_uri)
+        return [predicate(view, slot)
                 for slot in _bound(map_, where, over, slot_name, role)]
 
     measures = _bound(map_, where, over, spec[operator], operator)
@@ -450,8 +459,8 @@ def _read_aggregate(map_, where, spec):
         parsed_where.append({
             "slot_name": str(slot_name),
             "slot_uris": uris(slot_name, "where"),
-            "type_slot_uri": t_slot.slot_uri,
-            "descendants": _covered(view, target_class),
+            "type_slot_uri": predicate(view, t_slot),
+            "descendants": _class_uris(view, target_class),
         })
 
     convert_block = dict(as_dict(spec.get("convert") or {}))
@@ -564,15 +573,15 @@ def _read_aggregate(map_, where, spec):
                           _pairs(view, sources),
                           _pairs(view, view.class_induced_slots(over)))
             parsed_on.append({
-                "conv_slot_uri": c_slot.slot_uri,
-                "source_slot_uris": [str(slot.slot_uri) for slot in sources],
+                "conv_slot_uri": predicate(view, c_slot),
+                "source_slot_uris": [predicate(view, slot) for slot in sources],
             })
 
         parsed_convert = {
             "using": using_class,
-            "type_slot_uri": t_slot.slot_uri,
-            "descendants": _covered(view, using_class),
-            "factor_slot_uri": factor_slot.slot_uri,
+            "type_slot_uri": predicate(view, t_slot),
+            "descendants": _class_uris(view, using_class),
+            "factor_slot_uri": predicate(view, factor_slot),
             "on": parsed_on,
         }
 
@@ -588,7 +597,7 @@ def _read_aggregate(map_, where, spec):
         # written, and the predicates it actually reached.
         "measure": str(spec[operator]),
         "measure_slots": [str(m.name) for m in measures],
-        "measure_uris": [str(m.slot_uri) for m in measures],
+        "measure_uris": [predicate(view, m) for m in measures],
         "measure_type": measure_type,
         "by": {str(key): uris(value, "by") for key, value in by.items()},
         "by_names": {str(key): str(value) for key, value in by.items()},
@@ -677,8 +686,8 @@ def _read_parameter(map_, where, spec, keys, cols):
                 got="none",
                 repairs=[Repair(f"declare a slot_uri on {slot.name} and seal again")],
             )
-        if str(slot.slot_uri) not in found:
-            found.append(str(slot.slot_uri))
+        if predicate(view, slot) not in found:
+            found.append(predicate(view, slot))
     if not found:
         below = _covered(view, range_)
         raise CompileError(
@@ -937,7 +946,26 @@ def plan_for(map_, class_name):
                             options=sorted(str(name) for name
                                            in map_["view"].all_classes()))],
         )
-    for slot in map_["view"].class_induced_slots(class_name):
+    induced = map_["view"].class_induced_slots(class_name)
+    several = [str(slot.name) for slot in induced
+               if slot.multivalued and not slot.abstract]
+    if several:
+        # Every cell here is the one statement standing at the two clocks, and
+        # a slot holding several would show whichever came last as if it were
+        # the only one. Refused until a table can read a set.
+        raise CompileError(
+            "multivalued_not_read",
+            where=class_name,
+            expected="one value per field, which is what a cell holds",
+            got=f"{', '.join(several)}, which may hold several",
+            repairs=[
+                Repair("hold one value per field", options=several),
+                Repair("or make each value an entity of its own class, "
+                       "pointing back at this one — a line on a document is "
+                       "one of these"),
+            ],
+        )
+    for slot in induced:
         if _annotation(slot, "aggregate"):
             return plan(map_, class_name)
     return plan_entities(map_, class_name)
@@ -1013,11 +1041,11 @@ def _source_cte(map_, over, alias):
                          if not map_["view"].get_class(name).abstract],
             )],
         )
-    names = ", ".join(_lit(name) for name in covered)
+    names = ", ".join(_lit(uri) for uri in _class_uris(map_["view"], over))
     return (
         f"{alias} AS (\n"
         f"    SELECT s.subject_id FROM stated s\n"
-        f"    WHERE s.slot = {_lit(slot.slot_uri)}\n"
+        f"    WHERE s.slot = {_lit(predicate(map_['view'], slot))}\n"
         f"      AND s.value = ANY (ARRAY[{names}])\n"
         f")"
     )
@@ -1167,7 +1195,15 @@ def _column_sql(plan_, name, aliases, stack=()):
                 where=f"{plan_['class']}.{name}",
                 expected=f"columns {plan_['class']} has",
                 got="{" + referenced + "}",
-                repairs=[Repair("name a column beside it", options=sorted(known))],
+                repairs=[
+                    Repair("name a column beside it",
+                           options=[f"{{{c}}}" for c in sorted(known)]),
+                    Repair("an expression reads only the table it is on. A "
+                           "value from anywhere else is brought in first, as "
+                           "a column of its own: a total, or a fact read off "
+                           "a key",
+                           options=["aggregate", "parameter"]),
+                ],
             )
     try:
         return _arithmetic(text, lambda referenced: _column_sql(
@@ -1176,17 +1212,57 @@ def _column_sql(plan_, name, aliases, stack=()):
         _not_arithmetic(plan_, name, text)
 
 
+# How an expression is written, said once for every reader that has to teach
+# it: the studio's step and this refusal. In the composition experiment three
+# authors of four read "arithmetic over {columns}" as a placeholder nobody had
+# filled in, wrote the column names bare, and gave up on the column.
+SYNTAX = ("write each column of the same table in curly braces, and join them "
+          "with numbers, + - * / and ( ) only — for example "
+          "`{ordered} - {received}` or `{price} * {quantity} / 100`")
+
+_BARE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
+
+
+def _braced(text, known):
+    """The expression with every bare column name put in braces, if that reads."""
+    outside = _REF.split(text)
+    inside = _REF.findall(text)
+    fixed = ""
+    for i, part in enumerate(outside):
+        fixed += _BARE.sub(lambda m: "{" + m.group(0) + "}"
+                           if m.group(0) in known else m.group(0), part)
+        if i < len(inside):
+            fixed += "{" + inside[i] + "}"
+    if fixed == text:
+        return None
+    try:
+        _arithmetic(fixed, lambda referenced: "0")
+    except ValueError:
+        return None
+    return fixed if _ARITHMETIC.match(_REF.sub(" ", fixed)) else None
+
+
 def _not_arithmetic(plan_, name, text):
+    known = sorted(c["name"] for c in plan_["columns"] if c["name"] != name)
+    fixed = _braced(text, set(known))
+    repairs = []
+    if fixed is not None:
+        repairs.append(Repair(
+            "the column names are written bare; in braces this reads",
+            options=[fixed]))
+    repairs += [
+        Repair(SYNTAX[0].upper() + SYNTAX[1:], options=[f"{{{c}}}" for c in known]),
+        Repair("anything more than arithmetic goes in a rule of its own — a "
+               "total, or a fact read off a key. The language stays this small "
+               "so every rule can be read whole"),
+    ]
     raise CompileError(
         "expression_not_arithmetic",
         where=f"{plan_['class']}.{name}",
-        expected="arithmetic over {columns}, and nothing else",
+        expected="arithmetic over the columns beside it, each written in "
+                 "curly braces like {this}",
         got=f"{text!r}",
-        repairs=[Repair(
-            "keep to + - * / ( ) and the columns beside it. The language "
-            "stays smaller than SQL on purpose: a swap report can only be "
-            "exact while every rule can be read whole"
-        )],
+        repairs=repairs,
     )
 
 

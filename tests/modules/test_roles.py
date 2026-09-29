@@ -227,8 +227,8 @@ def test_a_role_gets_no_table_of_its_own(built):
 def test_a_rule_reaches_a_class_the_application_never_named(built):
     """Written against core, resolved to somebody else's private predicate."""
     for version, klass, measure, group in (
-        (APP_VERSION, "StockMovement", "inv:movement_quantity", "inv:movement_ingredient"),
-        (SWAP_VERSION, "Movement", "rv:qty_delta", "rv:item"),
+        (APP_VERSION, "StockMovement", "https://uniti.example/inventory/movement_quantity", "https://uniti.example/inventory/movement_ingredient"),
+        (SWAP_VERSION, "Movement", "https://rival.example/stock-moves/qty_delta", "https://rival.example/stock-moves/item"),
     ):
         map_ = read_map(built.path(APP_NAME, version), built)
         spec = plan_for(map_, "IngredientStock")["aggregates"]["quantity_on_hand"]
@@ -313,7 +313,7 @@ def test_the_fit_report_names_what_moved_and_what_was_rebound(conn, built):
 
     by_column = {r["column"]: r for r in report["rules"]}
     assert by_column["quantity_on_hand"]["status"] == "rebound"
-    assert by_column["quantity_on_hand"]["reads_after"] == ["rv:item", "rv:qty_delta"]
+    assert by_column["quantity_on_hand"]["reads_after"] == ["https://rival.example/stock-moves/item", "https://rival.example/stock-moves/qty_delta"]
     # The bakery's own judgement is read from the same place either way, because
     # it was never written against a role in the first place.
     assert by_column["reorder_level"]["status"] == "unchanged"
@@ -330,8 +330,8 @@ def test_the_report_names_the_predicates_that_stop_being_read(conn, built):
 
     report = roles_read.fit(built, STOCK, APP_VERSION, SWAP_VERSION, conn=conn)
     orphans = {o["uri"]: o for o in report["orphaned"]}
-    assert "inv:movement_quantity" in orphans
-    assert orphans["inv:movement_quantity"]["module"] == {"name": INVENTORY, "version": "v3"}
+    assert "https://uniti.example/inventory/movement_quantity" in orphans
+    assert orphans["https://uniti.example/inventory/movement_quantity"]["module"] == {"name": INVENTORY, "version": "v3"}
 
     # And the other way: nothing @demo/catalog declares is orphaned, because
     # both versions pin it.

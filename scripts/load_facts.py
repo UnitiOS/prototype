@@ -60,7 +60,7 @@ sys.path.insert(0, str(ROOT / "components" / "seal"))
 
 from components.modules.store import PIN, ModuleError, Store  # noqa: E402
 from perform import connect, perform  # noqa: E402
-from seal import _REGISTRY_SQL, URI_PREDICATE  # noqa: E402
+from seal import _REGISTRY_SQL, URI_PREDICATE, class_uri, predicate as predicate_of  # noqa: E402
 
 DEFAULT_SOURCE = "human_stated"
 
@@ -100,10 +100,13 @@ def pinned_map(store, pin):
                 continue
             if not slot.slot_uri:
                 raise DataError(f"{class_name}.{slot.name} declares no slot_uri")
-            slots[str(slot.name)] = (str(slot.slot_uri), str(slot.range) in classes)
+            slots[str(slot.name)] = (predicate_of(view, slot), str(slot.range) in classes)
             if slot.designates_type:
-                type_slot[class_name] = str(slot.slot_uri)
-    return {"label": str(pin), "classes": classes, "slots": slots, "type_slot": type_slot}
+                type_slot[class_name] = predicate_of(view, slot)
+    # A class fact records the class's full URI, as the form does.
+    uris = {name: class_uri(view, name) for name in classes}
+    return {"label": str(pin), "classes": classes, "slots": slots,
+            "type_slot": type_slot, "class_uris": uris}
 
 
 def _statements(map_, action, where):
@@ -130,7 +133,8 @@ def _statements(map_, action, where):
                     f"{at}: {class_name} has no slot carrying designates_type, so "
                     f"nothing in the log can say an entity is one"
                 )
-            out.append((uri, predicate, str(class_name), False, valid_from))
+            out.append((uri, predicate, map_["class_uris"][str(class_name)], False,
+                        valid_from))
 
         for slot_name, value in (item.get("facts") or {}).items():
             known = map_["slots"].get(str(slot_name))
