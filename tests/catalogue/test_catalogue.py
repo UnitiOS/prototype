@@ -47,6 +47,9 @@ RIVAL, CORE = dev_modules.RIVAL, dev_modules.CORE
 APP_NAME, APP_VERSION = dev_modules.APPLICATION
 SWAP_NAME, SWAP_VERSION = dev_modules.SWAPPED
 PROBE = "@probe/health"
+# The business the demonstration log belongs to: its catalogue shows its own
+# application beside everything shared.
+BUSINESS = dev_modules.BUSINESS
 
 
 @pytest.fixture(scope="module")
@@ -247,7 +250,7 @@ def test_without_a_log_nothing_counted_is_reported_as_empty(world):
 # ---- the catalogue -------------------------------------------------------
 
 def test_the_catalogue_says_who_fills_a_role_across_the_store(world):
-    entries = catalogue(world)
+    entries = catalogue(world, business=BUSINESS)
     found = find(entries, fills="Flow")
     assert {(e["kind"], e["name"], e["module"]["name"]) for e in found["entries"]} == {
         ("class", "StockMovement", INVENTORY), ("class", "Movement", RIVAL)}
@@ -263,17 +266,31 @@ def test_the_catalogue_says_who_fills_a_role_across_the_store(world):
 
 def test_the_catalogue_says_nothing_anywhere_reads_a_binding(world):
     """Across every sealed version, not only one application."""
-    found = find(catalogue(world), kind="slot", fills="moment")["entries"]
+    found = find(catalogue(world, business=BUSINESS), kind="slot", fills="moment")["entries"]
     assert {(e["name"], e["module"]["name"]) for e in found} == {
         ("movement_happened_on", INVENTORY), ("move_happened_on", RIVAL)}
     assert all(e["read_by"] == [] for e in found)
 
-    amount = find(catalogue(world), kind="slot", fills="amount")["entries"]
+    amount = find(catalogue(world, business=BUSINESS), kind="slot", fills="amount")["entries"]
     assert all(e["read_by"] for e in amount)
 
 
+def test_an_application_is_in_its_own_business_s_catalogue_only(world):
+    """One business's application is private: another business's catalogue,
+    and one asked for no business, holds the modules and not the application,
+    nor the rules it wrote."""
+    own = catalogue(world, business=BUSINESS)
+    assert STOCK in {e["name"] for e in find(own, kind="module")["entries"]}
+    assert next(e for e in own if e["name"] == STOCK)["of_kind"] == "application"
+    for other in (catalogue(world, business="another"), catalogue(world)):
+        names = {e["name"] for e in find(other, kind="module")["entries"]}
+        assert STOCK not in names and {CATALOG, INVENTORY, RIVAL} <= names
+        flow = next(e for e in find(other, kind="role")["entries"] if e["name"] == "Flow")
+        assert flow["read_by"] == []
+
+
 def test_the_catalogue_is_asked_not_loaded(world):
-    entries = catalogue(world)
+    entries = catalogue(world, business=BUSINESS)
     assert {e["name"] for e in find(entries, pins=CATALOG)["entries"]} == {INVENTORY, STOCK}
     assert {e["kind"] for e in find(entries, module=CORE)["entries"]} == {"module", "role", "slot"}
     nothing = find(entries, text="no entry is called this")

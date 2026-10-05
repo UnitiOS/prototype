@@ -44,6 +44,8 @@ def modules(store):
             "name": name,
             "title": manifest.get("title"),
             "purpose": manifest.get("purpose"),
+            "kind": store.kind(name),
+            "business": store.business(name),
             "description": manifest.get("description"),
             "versions": versions,
             "latest": versions[-1]["version"] if versions else None,
@@ -60,6 +62,8 @@ def graph(store):
             nodes.append({**_pin(module["name"], v["version"]),
                           "latest": v["version"] == module["latest"],
                           "purpose": module["purpose"],
+                          "kind": module["kind"],
+                          "business": module["business"],
                           "sealed_at": v["sealed_at"]})
             for pin in v["imports"]:
                 edges.append({"from": _pin(module["name"], v["version"]), "to": pin, "kind": "imports"})

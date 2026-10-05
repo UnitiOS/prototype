@@ -19,6 +19,11 @@ wider on purpose: every sealed version of every module, because an application
 still pinned to an old version is still an application, and a predicate it
 reads is not unread just because a newer version stopped reading it.
 
+An application is one business's own (DESIGN_NOTES.md §15.2). It is in the
+catalogue only for that business: `business` names whose catalogue this is,
+and every other business's application is left out, its rules included — a
+rule says what a business counts, which is its own affair.
+
 It is a list to be asked, not a document to be loaded. `find()` narrows it by
 text, by kind, by the role an entry fills, by the module that declares it, and
 by the module an entry pins — which is what somebody (or an agent) needs when
@@ -37,6 +42,7 @@ sys.path.insert(0, str(ROOT / "components" / "seal"))
 
 from compile import plan_for, tables, type_slot  # noqa: E402
 from components.modules.roles import _above, _bindings, _closure_documents  # noqa: E402
+from components.modules.store import APPLICATION  # noqa: E402
 from components.refusal import Refusal  # noqa: E402
 from components.standard import (  # noqa: E402
     DIRECTION, TIME_MEANING, annotation, labels, unit_of,
@@ -129,11 +135,18 @@ def _binding_of(slots, slot):
     return None
 
 
-def _rules_everywhere(store):
+def visible(store, business=None):
+    """The modules this business may see: everything shared, and its own
+    applications."""
+    return [name for name in store.names()
+            if store.kind(name) != APPLICATION or store.business(name) == business]
+
+
+def _rules_everywhere(store, business=None):
     """Every rule in every sealed version, and which module owns each class it
     covers; and each version read as a map, keyed by (name, version)."""
     rules, maps = [], {}
-    for name in store.names():
+    for name in visible(store, business):
         for held in store.versions(name):
             version = held["version"]
             try:
@@ -165,12 +178,12 @@ def _required(map_, class_name):
     return [f["name"] for f in fields if f["required"] and not f["designates_type"]]
 
 
-def catalogue(store):
+def catalogue(store, business=None):
     """Every module, role, class and slot the store offers now, as one list."""
-    rules, maps = _rules_everywhere(store)
+    rules, maps = _rules_everywhere(store, business)
     entries = []
 
-    for name in store.names():
+    for name in visible(store, business):
         held = store.versions(name)
         if not held:
             continue
@@ -187,6 +200,7 @@ def catalogue(store):
             "title": manifest.get("title") or document.get("title"),
             "description": manifest.get("description") or document.get("description") or "",
             "purpose": manifest.get("purpose"),
+            "of_kind": store.kind(name),
             "labels": labels(document),
             "versions": [v["version"] for v in held],
             "pins": pins,

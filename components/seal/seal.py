@@ -684,6 +684,20 @@ def kind_refusals(store, draft, name):
             )
 
 
+def _own_business(conn, store, directory):
+    """An application is sealed only into the kernel of the business it is for.
+
+    Its sealing intent and the URIs it mints are that business's records; in
+    another business's kernel they would be somebody else's private
+    composition sitting in a log it has no part in.
+    """
+    module = store.module_of(directory) if store is not None else None
+    if module is None:
+        return
+    from components.business import require_own
+    require_own(conn, store, module)
+
+
 def _no_foreign_kind(store, draft, name):
     """Raise the first. The rule itself is in `kind_refusals`."""
     for refusal in kind_refusals(store, draft, name):
@@ -988,6 +1002,7 @@ def seal(conn, draft_path, *, actor_id, into=None, sealed_at=None, store=None,
     examples = _examples_hold(conn, view, draft, draft_path)
     if standard and store is not None and store.module_of(into):
         _standard_held(view, draft, draft_path)
+    _own_business(conn, store, into)
 
     valid_from = _valid_from(annotations, draft_path.name)
     _flat(annotations, draft_path.name)
@@ -1223,6 +1238,7 @@ def register(conn, version_path, *, actor_id, recorded_at=None, store=None):
 
     ranges = _slot_ranges(view, version_path.name)
     valid_from = _valid_from(annotations, version_path.name)
+    _own_business(conn, store, version_path.parent)
 
     with conn.cursor() as cur:
         cur.execute(_REGISTRY_SQL, (URI_PREDICATE,))
@@ -1232,6 +1248,11 @@ def register(conn, version_path, *, actor_id, recorded_at=None, store=None):
     for uri in [URI_PREDICATE] + list(ranges):
         if uri not in known and uri not in minting:
             minting.append(uri)
+
+    # Nothing new is nothing written: not even an intent saying so.
+    if not minting:
+        return {"version": version, "path": version_path, "valid_from": valid_from,
+                "intent_id": None, "entities": known, "minted": {}, "assertions": []}
 
     def ref(uri):
         return known.get(uri, uri)

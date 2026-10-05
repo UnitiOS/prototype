@@ -1,18 +1,22 @@
 """application — a set of pinned modules, read as one map.
 
-An application is not a new kind of thing in the store. It is one sealed
-version that pins others and declares the tables somebody wants; the compiler
-reads its closure as a single map, and the modules under it never know they
-were composed. So everything here is a read of what is already sealed, plus
-one run of the compiler's own SQL against the log.
+An application is one business's composition (DESIGN_NOTES.md §15.2): a
+sealed version that pins modules and declares the tables somebody wants, whose
+manifest says `kind: application` and which business it belongs to. The
+compiler reads its closure as a single map, and the modules under it never
+know they were composed.
 
-Nothing here writes. The compiler's operational store is filled by the
-compiler; a person looking at a number should not cause a table somewhere to
-be dropped and rebuilt, so this takes the emitted SELECT, runs it on the
-kernel, and stops there.
+Reading works through any version, so a version not yet installed can be
+looked at against real records. The one write here, a form submission, goes
+only through the version the business has installed for that day.
+
+The compiler's operational store is filled by the compiler; a person looking
+at a number should not cause a table somewhere to be dropped and rebuilt, so
+this takes the emitted SELECT, runs it on the kernel, and stops there.
 """
 
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent.parent
@@ -21,6 +25,7 @@ sys.path.insert(0, str(ROOT / "components" / "generator"))
 
 sys.path.insert(0, str(ROOT / "components" / "kernel"))
 
+from components import business  # noqa: E402
 from compile import MapError, plan_for, preview, sql_text, tables  # noqa: E402
 from compile import _REF as EXPRESSION_REFS  # noqa: E402
 from components.modules import read as modules_read  # noqa: E402
@@ -72,6 +77,8 @@ def application(store, name, version):
         "name": name,
         "version": version,
         "title": detail["title"],
+        "kind": store.kind(name),
+        "business": store.business(name),
         "purpose": detail["purpose"],
         "description": detail["description"],
         "modules": [{**pin, "purpose": store.manifest(pin["name"]).get("purpose")}
@@ -322,7 +329,13 @@ def state(conn, store, name, version, class_name, *, subject, values, actor_id,
     withdraws, exactly as `submit` takes it: with a value beside it, a
     correction; alone, a withdrawal. `stated` in the answer is where those ids
     come from.
+
+    It writes only through the version the business has installed for the day
+    the record is about (components/business). Any version can be read; what
+    staff record goes through the one the owner chose.
     """
+    business.require_installed(conn, name, version,
+                               valid_at=valid_from or datetime.now(timezone.utc))
     map_ = _map(store, name, version)
     purpose = store.manifest(name).get("purpose")
     type_slot = _type_slot(map_, class_name)

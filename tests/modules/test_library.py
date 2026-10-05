@@ -45,8 +45,11 @@ from perform import connect  # noqa: E402
 from compile import CompileError, _read_aggregate  # noqa: E402
 from generate import read_map  # noqa: E402
 from seal import DraftError, register, seal  # noqa: E402
+from components.business import BusinessError, declare, install  # noqa: E402
 
 LIBRARY = ("@uniti/party", "@uniti/item", "@uniti/transaction")
+# The business the test log belongs to, as scripts/dev_modules.py declares it.
+BUSINESS = "demo"
 REGISTERED = [("@uniti/core", "v1"), ("@uniti/core", "v2"),
               ("@uniti/party", "v1"), ("@uniti/item", "v1"),
               ("@uniti/transaction", "v1")]
@@ -82,7 +85,7 @@ def test_the_library_is_sealed_in_the_store_and_found_in_the_catalogue(store):
         assert [v["version"] for v in store.versions(name)] == ["v1"], name
         document = store.document(name, "v1")
         assert document["imports"][:2] == ["linkml:types", "@uniti/core@v2"]
-        assert "library" in (ROOT / "packages" / name / "package.yaml").read_text()
+        assert store.kind(name) == "library"
 
     found = catalogue_read.catalogue(store)
     classes = catalogue_read.find(found, kind="class")["entries"]
@@ -210,6 +213,22 @@ def rental(store, conn):
     return name, report, out
 
 
+@pytest.fixture(scope="module")
+def shop(store, conn, rental):
+    """The business's application: the rental module and nothing of its own,
+    installed in the business's kernel. Staff record through this, never
+    through the module, which is shared and installed by nobody."""
+    name = "@probe/shop"
+    step(store, name, "start", title="Shop", kind="application", business=BUSINESS,
+         description="The rental business's application.")
+    step(store, name, "pin", module=f"{rental[0]}@v1")
+    declare(conn, BUSINESS, actor_id="dev")
+    seal(conn, studio.path(store, name), actor_id="dev", into=store.directory(name),
+         store=store)
+    install(conn, store, name, "v1", actor_id="dev", valid_from="2026-01-01T00:00:00Z")
+    return name
+
+
 def test_a_module_on_the_library_points_at_one_party_and_one_item(store, rental):
     name, report, out = rental
     assert [h for h in report["holes"] if h["blocking"]] == []
@@ -287,23 +306,31 @@ def _stated(conn, store, name, class_name, subject, day, **values):
                       values=values, actor_id="test", valid_from=f"{day}T08:00:00Z")
 
 
-def test_a_line_is_grouped_by_the_customer_of_its_rental(store, conn, rental):
+def test_a_line_is_grouped_by_the_customer_of_its_rental(store, conn, rental, shop):
     """In the log, not only in the example: two customers, and each one's
-    lines found through the rental they belong to, at both clocks."""
+    lines found through the rental they belong to, at both clocks.
+
+    Recorded through the business's application; read through the module
+    itself, which anyone may do."""
     name, _, _ = rental
+    with pytest.raises(BusinessError) as refused:
+        _stated(conn, store, name, "Party", "party:nobody", "2026-10-01", party_name="X")
+    assert refused.value.code == "not_installed"
+    assert f"{shop}@v1" in refused.value.as_dict()["repairs"][0]["options"]
+
     for subject, party in (("party:budi", "Budi"), ("party:citra", "Citra")):
-        _stated(conn, store, name, "Party", subject, "2026-10-01", party_name=party)
+        _stated(conn, store, shop, "Party", subject, "2026-10-01", party_name=party)
     for subject, item in (("item:tent", "Tent"), ("item:stove", "Stove")):
-        _stated(conn, store, name, "Item", subject, "2026-10-01", item_name=item)
+        _stated(conn, store, shop, "Item", subject, "2026-10-01", item_name=item)
     for rented, who, number, day in (("rent:r1", "party:budi", "R1", "2026-10-06"),
                                      ("rent:r2", "party:citra", "R2", "2026-10-08")):
-        _stated(conn, store, name, "Rental", rented, day, rental_number=number,
+        _stated(conn, store, shop, "Rental", rented, day, rental_number=number,
                 rental_customer=who, rental_date=day)
     for line, rented, item, quantity, day in (
             ("line:1", "rent:r1", "item:tent", "2", "2026-10-06"),
             ("line:2", "rent:r1", "item:stove", "1", "2026-10-06"),
             ("line:3", "rent:r2", "item:tent", "1", "2026-10-08")):
-        _stated(conn, store, name, "RentalLine", line, day, line_rental=rented,
+        _stated(conn, store, shop, "RentalLine", line, day, line_rental=rented,
                 line_item=item, line_quantity=quantity, line_date=day)
 
     def table(valid_at):

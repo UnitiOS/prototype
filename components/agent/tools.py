@@ -41,6 +41,7 @@ from components.modules import catalogue as catalogue_read  # noqa: E402
 from components.refusal import Refusal  # noqa: E402
 from components.studio import draft as studio  # noqa: E402
 from components.studio import read as reading  # noqa: E402
+from components.business import owner  # noqa: E402
 from perform import connect  # noqa: E402
 
 # Every step an agent takes is an agent's. Nothing the agent says can change it.
@@ -69,6 +70,17 @@ class Bench:
     @classmethod
     def from_env(cls, store):
         return cls(store=store, dsn=os.environ.get("UNITI_DSN"))
+
+    def business(self):
+        """The business the log belongs to, whose applications the agent may
+        see; None without a log or before the log says."""
+        if self.dsn is None:
+            return None
+        try:
+            with connect(self.dsn, connect_timeout=3) as conn:
+                return owner(conn)
+        except psycopg.OperationalError:
+            return None
 
     def state(self, name):
         """The studio's one read of a draft, examples run when there is a log."""
@@ -222,7 +234,7 @@ def catalogue(bench, text="", kind="", fills="", module=""):
     or several separated by commas, read in one call."""
     if kind and kind not in catalogue_read.KINDS:
         return f"kind is one of {', '.join(catalogue_read.KINDS)}."
-    everything = catalogue_read.catalogue(bench.store)
+    everything = catalogue_read.catalogue(bench.store, business=bench.business())
     # A pin names a version; the catalogue holds the latest, the one meant.
     names = [re.sub(r"@v\d+$", "", m.strip()) for m in module.split(",") if m.strip()]
     entries = []

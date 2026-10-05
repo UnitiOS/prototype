@@ -51,6 +51,7 @@ sys.path.insert(0, str(ROOT / "components" / "generator"))
 
 from components.examples import examples as business  # noqa: E402
 from components.modules.roles import _above  # noqa: E402
+from components.modules.store import kind_of  # noqa: E402
 from components.refusal import Refusal, Repair  # noqa: E402
 from components import standard  # noqa: E402
 from compile import SQL_TYPE, SYNTAX  # noqa: E402
@@ -133,7 +134,8 @@ OPERATIONS = {
     "start": {
         "does": "create a module and open its first draft",
         "takes": {"title": "text", "description": "text"},
-        "may": {"purpose": "text", "prefix": "word", "base": "uri"},
+        "may": {"purpose": "text", "prefix": "word", "base": "uri",
+                "kind": "word", "business": "word"},
     },
     "revise": {
         "does": "open a draft from the latest sealed version of a module",
@@ -816,11 +818,23 @@ def _start(store, name, _document, args):
     if core and store.versions(core):
         document["imports"].append(f"{core}@{store.versions(core)[-1]['version']}")
 
-    where.mkdir(parents=True, exist_ok=True)
     manifest = {"name": name, "title": args["title"],
                 "description": args["description"]}
-    if args.get("purpose"):
-        manifest["purpose"] = args["purpose"]
+    for key in ("purpose", "kind", "business"):
+        if args.get(key):
+            manifest[key] = args[key]
+    # Core is written by its keepers, by hand; everything else can be started
+    # here, and an application says whose it is before there is a file to say it.
+    if kind_of(name, manifest) == "core":
+        raise StudioError(
+            "not_possible_yet",
+            where=name,
+            expected="a library module, a module or an application",
+            got="core, which its keepers write by hand",
+            repairs=[Repair("start one of the kinds the studio builds",
+                            options=["module", "library", "application"])],
+        )
+    where.mkdir(parents=True, exist_ok=True)
     (where / MANIFEST).write_text(
         yaml.safe_dump(manifest, sort_keys=False, allow_unicode=True),
         encoding="utf-8", newline="\n")

@@ -1,10 +1,12 @@
-// An application: a set of pinned modules, read as one map.
+// An application: one business's composition of pinned modules, read as one map.
 //
-// Nothing here is a new kind of thing in the store — an application is one
-// sealed version that pins others and declares the tables somebody wants. So
-// this page picks a version, draws every class its pins let it see, fills one
-// of its tables from the log at the two clocks in the URL, and lets a person
-// state something new into the same log.
+// The kernel behind this page belongs to one business, and the applications
+// offered first are that business's own — the version it records through on
+// the page's day ahead of the rest. Any version can be read; only the one
+// installed for a day is recorded through, and installing is the owner's step,
+// taken here. So this page picks a version, says whether it is in use, draws
+// every class its pins let it see, fills one of its tables from the log at the
+// two clocks in the URL, and lets a person state something new into the log.
 //
 // Every number on this page can be taken apart. A cell nobody can explain is a
 // cell nobody should act on.
@@ -12,8 +14,9 @@
 import { useEffect, useState } from "react";
 import { ApiError, appApi, modulesApi } from "./api";
 import type {
-  Application, CellSource, CheckReport, ClassGraph as Graph, Clocks, Column, FitReport,
-  FormSpec, ModuleGraph, Pin, Projection, Refusal as RefusalSpec, Roles, Written,
+  Application, Business, CellSource, CheckReport, ClassGraph as Graph, Clocks, Column,
+  FitReport, FormSpec, InUse, ModuleGraph, Pin, Projection, Refusal as RefusalSpec, Roles,
+  Written,
 } from "./api";
 import { ClassGraph } from "./ClassGraph";
 import { Failure, RefusalCard } from "./Refusal";
@@ -53,20 +56,41 @@ export function roots(graph: ModuleGraph): Pin[] {
     .map((n) => ({ name: n.name, version: n.version }));
 }
 
+/**
+ * The applications to offer, first first: the versions the business records
+ * through on the day asked about, then its other applications at their latest.
+ * A store whose manifests name no application of this business falls back on
+ * the roots of the graph, read as previews.
+ */
+export function applications(graph: ModuleGraph, business: Business | null): Pin[] {
+  const owner = business?.business ?? null;
+  const inUse = business?.installed ?? [];
+  const out: Pin[] = inUse.map((i) => ({ name: i.name, version: i.version }));
+  for (const n of graph.nodes) {
+    if (n.latest && owner !== null && n.kind === "application" && n.business === owner
+        && !out.some((p) => p.name === n.name)) {
+      out.push({ name: n.name, version: n.version });
+    }
+  }
+  return out.length > 0 ? out : roots(graph);
+}
+
 export function ApplicationPage(
   { pick, clocks, onPick }: { pick: AppPick; clocks: Clocks; onPick: (next: AppPick) => void },
 ) {
   const graph = useLoad<ModuleGraph>(() => modulesApi.graph(), []);
-  const candidates = graph.data ? roots(graph.data) : [];
+  // Bumped after an installation, so what is in use is read again.
+  const [installs, setInstalls] = useState(0);
+  const business = useLoad<Business>(() => appApi.business(clocks),
+    [clocks.validAt.getTime(), clocks.asOf.getTime(), installs]);
+  const candidates = graph.data && business.data ? applications(graph.data, business.data) : [];
 
-  // Nothing here names an application: the one offered first is whichever
-  // sealed version nothing else pins, which is what being an application is.
   useEffect(() => {
     if (!pick.name && candidates.length > 0) {
       onPick({ ...pick, name: candidates[0].name, version: candidates[0].version });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [graph.data]);
+  }, [graph.data, business.data]);
 
   const chosen = pick.name && pick.version ? { name: pick.name, version: pick.version } : null;
   // Every sealed version of the chosen application, oldest first. Not only the
@@ -80,6 +104,7 @@ export function ApplicationPage(
   return (
     <>
       {graph.error && <Failure error={graph.error} refusal={graph.refusal} />}
+      {business.error && <Failure error={business.error} refusal={business.refusal} />}
       {graph.data && candidates.length === 0 && (
         <p className="empty">
           No sealed version pins another one, so there is nothing here yet that composes.
@@ -90,12 +115,14 @@ export function ApplicationPage(
           <span className="quiet">Application</span>
           {candidates.map((c) => {
             const on = chosen?.name === c.name && chosen?.version === c.version;
+            const used = business.data?.installed.some(
+              (i) => i.name === c.name && i.version === c.version);
             return (
               <button key={pinText(c)} className={`version-chip${on ? " version-chip-on" : ""}`}
                 aria-current={on}
                 onClick={() => onPick({ name: c.name, version: c.version, klass: null,
                   column: null, keys: null, stating: false, against: null })}>
-                {pinText(c)}
+                {pinText(c)}{used && <span className="badge badge-in-use">in use</span>}
               </button>
             );
           })}
@@ -106,12 +133,14 @@ export function ApplicationPage(
           <span className="quiet">Version</span>
           {siblings.map((v) => {
             const on = chosen.version === v;
+            const used = business.data?.installed.some(
+              (i) => i.name === chosen.name && i.version === v);
             return (
               <button key={v} className={`version-chip${on ? " version-chip-on" : ""}`}
                 aria-current={on}
                 onClick={() => onPick({ name: chosen.name, version: v, klass: null,
                   column: null, keys: null, stating: false, against: null })}>
-                {v}
+                {v}{used && <span className="badge badge-in-use">in use</span>}
               </button>
             );
           })}
@@ -119,16 +148,17 @@ export function ApplicationPage(
       )}
       {chosen && (
         <ApplicationView pin={chosen} pick={pick} clocks={clocks} onPick={onPick}
-          siblings={siblings} />
+          siblings={siblings} business={business.data ?? null}
+          onInstalled={() => setInstalls(installs + 1)} />
       )}
     </>
   );
 }
 
 function ApplicationView(
-  { pin, pick, clocks, onPick, siblings }:
+  { pin, pick, clocks, onPick, siblings, business, onInstalled }:
   { pin: Pin; pick: AppPick; clocks: Clocks; onPick: (next: AppPick) => void;
-    siblings: string[] },
+    siblings: string[]; business: Business | null; onInstalled: () => void },
 ) {
   const klass = pick.klass;
   const app = useLoad<Application>(() => appApi.read(pin.name, pin.version), [pin.name, pin.version]);
@@ -155,6 +185,7 @@ function ApplicationView(
             {a.tables.length === 1 ? "table" : "tables"}, and declares {a.tables.filter((t) => t.module?.name === a.name).length} of the classes behind them.
           </p>
           {a.description && <p>{a.description}</p>}
+          <InUseStrip app={a} business={business} clocks={clocks} onInstalled={onInstalled} />
           <CheckStrip pin={pin} />
         </header>
         {classes.error && <Failure error={classes.error} refusal={classes.refusal} />}
@@ -197,6 +228,110 @@ function ApplicationView(
               onPick={onPick} clocks={clocks} appName={a.name} />
           : <p className="empty">This application fills no table yet.</p>}
       </main>
+    </>
+  );
+}
+
+// Is this the version the business records through? Said for the page's day,
+// with the owner's one step beside it when it is not.
+function InUseStrip(
+  { app, business, clocks, onInstalled }:
+  { app: Application; business: Business | null; clocks: Clocks; onInstalled: () => void },
+) {
+  if (!business) return null;
+  const owner = business.business;
+  const inUse: InUse | null = business.installed.find((i) => i.name === app.name) ?? null;
+  const on = day(clocks.validAt);
+
+  let verdict: string;
+  let installable = false;
+  if (app.kind !== "application") {
+    verdict = `A shared ${app.kind}, read here as a preview. Nobody installs a shared ` +
+      "module: a business records through an application of its own that pins it.";
+  } else if (app.business !== owner) {
+    verdict = `An application of ${app.business}, while this kernel belongs to ` +
+      `${owner ?? "no business yet"}. It can be read here, and not installed here.`;
+  } else if (inUse && inUse.version === app.version) {
+    verdict = `In use since ${day(inUse.since)}. Staff record through this version.`;
+  } else if (inUse) {
+    verdict = `A preview. On ${on} the business records through ${inUse.version}, in use ` +
+      `since ${day(inUse.since)}. This version reads the same records; nothing is ` +
+      "recorded through it until it is installed.";
+    installable = true;
+  } else {
+    verdict = `Not in use on ${on}. It can be read; nothing is recorded through it ` +
+      "until the business's owner installs it.";
+    installable = true;
+  }
+  const used = Boolean(inUse && inUse.version === app.version);
+
+  return (
+    <div className={`check${used ? " check-clean" : ""}`}>
+      <p className="check-verdict">{verdict}</p>
+      {installable && <InstallForm app={app} clocks={clocks} onInstalled={onInstalled} />}
+    </div>
+  );
+}
+
+// The owner's step: from which day the business records through this version.
+function InstallForm(
+  { app, clocks, onInstalled }: { app: Application; clocks: Clocks; onInstalled: () => void },
+) {
+  const [actor, setActor] = useState("");
+  const [since, setSince] = useState(toInput(clocks.validAt));
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState<{ error: string; refusal: RefusalSpec | null } | null>(null);
+  const [done, setDone] = useState<InUse | null>(null);
+
+  // A version installed from a later day is not in use on the page's day, so
+  // the strip above would say nothing new: this says what was decided.
+  if (done) {
+    return (
+      <p className="quiet">
+        Installed. From {day(done.since)} staff record through {done.version}; before
+        that, what was in use stays as it was. Move the valid clock to that day to see it.
+      </p>
+    );
+  }
+
+  const send = async () => {
+    setBusy(true);
+    setFailed(null);
+    try {
+      setDone(await appApi.install({ name: app.name, version: app.version,
+        actor: actor.trim(), valid_from: (fromInput(since) ?? clocks.validAt).toISOString() }));
+      onInstalled();
+    } catch (e) {
+      setFailed({
+        error: e instanceof ApiError ? e.message : "The installation failed.",
+        refusal: e instanceof ApiError ? e.refusal : null,
+      });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <>
+      <div className="form form-install">
+        <label className="field">
+          <span>In use from</span>
+          <input type="datetime-local" value={since} onChange={(e) => setSince(e.target.value)} />
+          <small>The first day staff record through {app.version}. What came before stays as it was.</small>
+        </label>
+        <label className="field">
+          <span>Who decides</span>
+          <input value={actor} placeholder="the business's owner"
+            onChange={(e) => setActor(e.target.value)} />
+          <small>Installing is the owner's decision, written on the intent.</small>
+        </label>
+        <p className="chips">
+          <button className="button" disabled={busy || actor.trim() === ""} onClick={send}>
+            {busy ? "Installing…" : `Install ${app.version}`}
+          </button>
+        </p>
+      </div>
+      {failed && <Failure error={failed.error} refusal={failed.refusal} />}
     </>
   );
 }

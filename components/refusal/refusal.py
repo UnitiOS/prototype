@@ -25,13 +25,14 @@ The sentence is **derived**, never written beside the structure. A refusal
 carrying both would have two places to disagree, and the prose is the one
 nobody updates.
 
-Six gates raise these, and each says which it is, because the answer to
+Seven gates raise these, and each says which it is, because the answer to
 "who can fix this" differs: `DraftError` is the seal refusing to make a
 version, `MapError` is the generator or the compiler refusing to read one,
 `ModuleError` is the store refusing to find one, `StudioError` is the
-studio refusing to perform a step on a draft, and `ExampleError` is a
-business example the map does not bear out, and `StandardError` is the
-recording standard every module is held to.
+studio refusing to perform a step on a draft, `ExampleError` is a business
+example the map does not bear out, `StandardError` is the recording standard
+every module is held to, and `BusinessError` is a business's kernel refusing
+what is not its own.
 
 `repairs` is not decoration and is not optional in spirit. A refusal with no
 repair is a dead end, and the only honest ones are the few where the answer is
@@ -57,6 +58,18 @@ CODES = {
     "import_not_pinned": "an import that names a module but no version of it",
     "import_not_understood": "an import that is neither `@scope/name@vN` nor `linkml:...`",
     "import_cycle": "modules that import each other in a ring",
+    "kind_not_understood": "a manifest naming a kind that is not core, library, module or application",
+    "application_without_business": "an application whose manifest names no business it belongs to",
+    "business_on_a_module": "a manifest naming a business on something that is not an application",
+    "pins_an_application": "an import of an application, which is one business's own",
+
+    # ---- the business kernel: whose it is, and what it has installed -------
+    "not_a_business_name": "a business named by something other than a lower-case word",
+    "kernel_owned": "a kernel already declared to belong to another business",
+    "kernel_not_declared": "a kernel that has not said which business it belongs to",
+    "wrong_business": "an application sealed, registered or installed into another business's kernel",
+    "not_an_application": "a module installed as if it were an application",
+    "not_installed": "a form submitted through an application the business has not installed for that day",
 
     # ---- the seal: a draft becoming a version -----------------------------
     "no_draft": "no file where a draft was named",

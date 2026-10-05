@@ -25,6 +25,11 @@ already exists and pins `@demo/catalog@v1`, and nothing about it changes. And
 v1 of the application is kept rather than rewritten, so both ways of writing a
 rule are in the store side by side and the difference can be read.
 
+`@demo/stock` is an application (DESIGN_NOTES.md §15.2), and its manifest
+says it belongs to the made-up business `demo`. So the log is declared to be
+`demo`'s before anything is sealed, and `@demo/stock@v2` is installed as the
+version `demo` records through, from the first day of its data.
+
 Every one of these modules declares `purpose: demonstration` in its manifest.
 The content is made up, and `seal` carries that word onto the intent, so the
 log says so on every row it wrote.
@@ -50,6 +55,7 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "components" / "kernel"))
 sys.path.insert(0, str(ROOT / "components" / "seal"))
 
+from components.business import declare, install  # noqa: E402
 from components.modules.store import MANIFEST, Store  # noqa: E402
 from perform import connect  # noqa: E402
 from seal import register, seal  # noqa: E402
@@ -97,6 +103,11 @@ APPLICATION = (STOCK, "v2")
 # two worth anything.
 SWAPPED = (STOCK, "v3")
 
+# Whose log this is, and since when it has recorded through the application:
+# the first day of the demonstration data, which starts in January.
+BUSINESS = "demo"
+IN_USE_SINCE = "2026-01-01T00:00:00+00:00"
+
 def uniti_versions(store):
     """Every sealed version of Uniti's own modules — core and the library
     (DESIGN_NOTES.md §15) — in the order they were sealed, which is the order
@@ -122,6 +133,7 @@ def build(conn, root, *, until=None, register_core=True):
         shutil.copyfile(FIXTURES / name / MANIFEST, target / MANIFEST)
 
     store = Store([root, ROOT / "packages"])
+    declare(conn, BUSINESS, actor_id="dev")
     if register_core:
         for name, version in uniti_versions(store):
             register(conn, store.path(name, version), actor_id="dev", store=store)
@@ -138,6 +150,8 @@ def build(conn, root, *, until=None, register_core=True):
         sealed.append(f"{name}@{version}")
         if until == sealed[-1]:
             break
+    if f"{APPLICATION[0]}@{APPLICATION[1]}" in sealed:
+        install(conn, store, *APPLICATION, actor_id="dev", valid_from=IN_USE_SINCE)
     return store, sealed
 
 
@@ -147,6 +161,7 @@ def extend(conn, root):
     Returns what was sealed and the modules left alone for an open draft.
     """
     store = Store([Path(root), ROOT / "packages"])
+    declare(conn, BUSINESS, actor_id="dev")
     sealed, waiting = [], []
     for name, version in SEQUENCE:
         held = [v["version"] for v in store.versions(name)]
@@ -160,6 +175,8 @@ def extend(conn, root):
                    standard=(name, version) not in HISTORY)
         assert out["version"] == version, (name, out["version"], version)
         sealed.append(f"{name}@{version}")
+    if f"{APPLICATION[0]}@{APPLICATION[1]}" in sealed:
+        install(conn, store, *APPLICATION, actor_id="dev", valid_from=IN_USE_SINCE)
     return sealed, waiting
 
 

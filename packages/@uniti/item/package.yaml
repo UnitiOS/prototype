@@ -4,4 +4,4 @@ description: A kind of thing a business holds, counts, moves, buys, sells or ren
   out, recorded once and pointed at by every module that deals with it. What one kind
   of business says about an item, such as a rental rate or a reorder level, is a record
   of that business's own module pointing at the item, not part of the item.
-purpose: library
+kind: library

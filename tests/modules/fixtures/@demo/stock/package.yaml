@@ -1,9 +1,11 @@
 name: "@demo/stock"
 title: Stock
 purpose: demonstration
+kind: application
+business: demo
 description: >-
-  Demonstration data, not real content. The application: it declares no thing
-  and no event of its own, only the table somebody wants to look at, and
-  computes it from two modules it pins — movements from `@demo/inventory`,
+  Demonstration data, not real content. The application of the made-up
+  business `demo`: it declares no thing and no event of its own, only the
+  table somebody wants to look at, and computes it from two modules it pins — movements from `@demo/inventory`,
   grouped by the ingredient and compared against a level set in
   `@demo/catalog`.

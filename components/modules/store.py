@@ -4,7 +4,8 @@ A module is a directory named for it, `@scope/name`, under one of the store's
 roots:
 
     @scope/name/
-        package.yaml      name, title, description — nothing that changes meaning
+        package.yaml      name, title, description, kind — nothing that changes
+                          meaning
         v1.yaml  v1.txt   sealed versions and their transcripts, written by `seal`
         v2.yaml  v2.txt
         draft.yaml        optional: the next version, not yet sealed
@@ -22,6 +23,19 @@ A version is never rewritten, so what `@uniti/core@v1` means today is what it
 meant when it was imported. A module that wants `v2` says so in a version of
 its own. An import without a version, of a module the store does not hold, or
 of a version not yet sealed, is refused by name.
+
+A manifest may say which of four kinds the module is (DESIGN_NOTES.md §15.2):
+
+    kind: core          the roles, kept by Uniti's own keepers
+    kind: library       what almost every domain uses, kept by the same people
+    kind: module        one business function, by whoever wrote it — the
+                        default, so a manifest that says nothing is one
+    kind: application   one business's composition, private to it:
+                        business: <the business it belongs to>
+
+The kind changes no meaning. It says who owns a module and who may use it: an
+application belongs to one business, is pinned by nothing, and is installed
+only into that business's kernel (components/business).
 
 The roots come from `UNITI_PACKAGES`, a path list in the platform's separator,
 or default to `packages/` at the repository root. The first root holding a
@@ -47,12 +61,56 @@ MANIFEST = "package.yaml"
 NAME = re.compile(r"^@[a-z0-9][a-z0-9_-]*/[a-z0-9][a-z0-9_-]*$")
 TAIL = re.compile(r"@[a-z0-9][a-z0-9_-]*/[a-z0-9][a-z0-9_-]*@v[1-9][0-9]*$")
 PIN = re.compile(r"^(?P<name>@[a-z0-9][a-z0-9_-]*/[a-z0-9][a-z0-9_-]*)@(?P<version>v[1-9][0-9]*)$")
+BUSINESS = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
+
+KINDS = ("core", "library", "module", "application")
+APPLICATION = "application"
 
 
 class ModuleError(Refusal, ValueError):
     """A module, a version, or an import that the store cannot stand behind."""
 
     gate = "the module store"
+
+
+def kind_of(name, manifest):
+    """Which of the four kinds a manifest says its module is; `module` when it
+    does not say.
+
+    An application names the business it belongs to and nothing else may:
+    a business on a module would read as a claim of ownership the module
+    does not make.
+    """
+    kind = manifest.get("kind") or "module"
+    where = f"{name}/{MANIFEST}"
+    if kind not in KINDS:
+        raise ModuleError(
+            "kind_not_understood",
+            where=where,
+            expected=f"kind: one of {', '.join(KINDS)}",
+            got=f"{kind!r}",
+            repairs=[Repair("say which kind this module is", options=list(KINDS))],
+        )
+    business = manifest.get("business")
+    if kind == APPLICATION and not BUSINESS.match(str(business or "")):
+        raise ModuleError(
+            "application_without_business",
+            where=where,
+            expected="business: the one business this application belongs to, "
+                     "a lower-case word",
+            got=f"{business!r}" if business else "none",
+            repairs=[Repair("name the business", where=where)],
+        )
+    if kind != APPLICATION and business is not None:
+        raise ModuleError(
+            "business_on_a_module",
+            where=where,
+            expected=f"no business: a {kind} belongs to no one business",
+            got=f"business: {business!r}",
+            repairs=[Repair("drop the business", where=where),
+                     Repair("or make it the application it is", options=[APPLICATION])],
+        )
+    return kind
 
 
 class Store:
@@ -143,6 +201,14 @@ class Store:
         """
         return self.manifest(name).get("purpose")
 
+    def kind(self, name):
+        """Which of the four kinds this module is; `module` when it does not say."""
+        return kind_of(name, self.manifest(name))
+
+    def business(self, name):
+        """The business an application belongs to, None for any other kind."""
+        return self.manifest(name).get("business") if self.kind(name) == APPLICATION else None
+
     def versions(self, name):
         return load_versions(self.directory(name))
 
@@ -225,12 +291,29 @@ class Store:
             return []
 
     def imports(self, document):
-        """The pinned imports a schema document declares, each checked to exist."""
+        """The pinned imports a schema document declares, each checked to exist.
+
+        An application is never one of them: it is one business's own, and a
+        module pinning it would carry that business into everyone who pins the
+        module in turn.
+        """
         pins = []
         for imp in document.get("imports") or []:
             pin = self.pinned(str(imp))
             if pin is not None:
                 self.path(*pin)
+                if self.kind(pin[0]) == APPLICATION:
+                    raise ModuleError(
+                        "pins_an_application",
+                        where="imports",
+                        expected="modules, the library or core: what is shared",
+                        got=f"{imp}, the application of {self.business(pin[0])}",
+                        repairs=[Repair(
+                            "pin the modules that application pins, and declare "
+                            "here what it adds",
+                            options=[f"{n}@{v}" for n, v in
+                                     self.imports(self.document(*pin))])],
+                    )
                 pins.append(pin)
         return pins
 

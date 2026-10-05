@@ -148,8 +148,12 @@ export interface ModuleRow {
   versions: ModuleVersionRow[]; latest: string | null; draft: boolean;
 }
 
+/** Which of the four kinds a module is (DESIGN_NOTES.md §15.2). */
+export type ModuleKind = "core" | "library" | "module" | "application";
+
 export interface ModuleGraph {
-  nodes: (Pin & { latest: boolean; purpose: string | null; sealed_at: string })[];
+  nodes: (Pin & { latest: boolean; purpose: string | null; sealed_at: string;
+                  kind: ModuleKind; business: string | null })[];
   edges: { from: Pin; to: Pin; kind: "imports" | "supersedes" }[];
 }
 
@@ -232,6 +236,7 @@ export interface TableRow {
 
 export interface Application {
   name: string; version: string; title: string | null;
+  kind: ModuleKind; business: string | null;
   purpose: string | null; description: string | null;
   modules: (Pin & { purpose: string | null })[];
   tables: TableRow[];
@@ -336,7 +341,16 @@ export interface CheckReport {
   refusals: (Refusal & { class: string })[];
 }
 
+/** An application the business uses, and the day this version came into use. */
+export interface InUse { name: string; version: string; since: string; assertion: string }
+
+/** Whose kernel this is, and what it uses on the day asked about. */
+export interface Business { business: string | null; installed: InUse[] }
+
 export const appApi = {
+  business: (c: Clocks) => get<Business>("/api/business", clockParams(c)),
+  install: (body: { name: string; version: string; actor: string; valid_from: string }) =>
+    post<InUse & { intent_id: string; registered: string[] }>("/api/app/install", body),
   read: (name: string, version: string) => get<Application>("/api/app", { name, version }),
   roles: (name: string, version: string) => get<Roles>("/api/app/roles", { name, version }),
   check: (name: string, version: string) => get<CheckReport>("/api/app/check", { name, version }),

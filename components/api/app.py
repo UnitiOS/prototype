@@ -32,6 +32,7 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT / "components" / "kernel"))
 sys.path.insert(0, str(ROOT / "components" / "provenance"))
 
+from components import business  # noqa: E402
 from components.api import agent, application, kernel  # noqa: E402
 from components.modules import catalogue as catalogue_read  # noqa: E402
 from components.modules import check as check_read  # noqa: E402
@@ -214,18 +215,30 @@ async def app_check(request: Request):
                         _required(request, "version"))
 
 
+def _owner():
+    """The business this server's kernel belongs to; None without one, or a log."""
+    try:
+        with connect(os.environ.get("UNITI_DSN"), connect_timeout=3) as conn:
+            return business.owner(conn)
+    except psycopg.OperationalError:
+        return None
+
+
 async def catalogue(request: Request):
     """The catalogue, narrowed by whichever filters the query gives.
 
     Computed from the store on every read, so it cannot be stale. Each filter
-    is optional; none given is the whole store.
+    is optional; none given is the whole store — less the applications of any
+    business but the one this kernel belongs to.
     """
     params = request.query_params
     kind = params.get("kind") or None
     if kind and kind not in catalogue_read.KINDS:
         raise HTTPException(400, f"kind is one of {', '.join(catalogue_read.KINDS)}")
+    owner = _owner()
     return _modules(lambda store: catalogue_read.find(
-        catalogue_read.catalogue(store), text=params.get("q") or None, kind=kind,
+        catalogue_read.catalogue(store, business=owner),
+        text=params.get("q") or None, kind=kind,
         fills=params.get("fills") or None, module=params.get("module") or None,
         pins=params.get("pins") or None))
 
@@ -357,6 +370,54 @@ async def app_state(request: Request):
             note=body.get("note") or None, revokes=revokes))
 
 
+async def business_read(request: Request):
+    """Whose kernel this is, and which applications it uses at the clocks."""
+    clocks = _clocks(request)
+    with connect(os.environ.get("UNITI_DSN"), connect_timeout=3) as conn:
+        return JSON(business.summary(conn, **clocks))
+
+
+async def _body(request, *fields):
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(400, "the body is not JSON")
+    if not isinstance(body, dict):
+        raise HTTPException(400, "the body is not an object")
+    for field in fields:
+        if not str(body.get(field) or "").strip():
+            raise HTTPException(400, f"{field} is required")
+    since = body.get("valid_from")
+    if since:
+        try:
+            since = datetime.fromisoformat(str(since).replace("Z", "+00:00"))
+        except ValueError:
+            raise HTTPException(400, f"valid_from is not an ISO 8601 instant: {since!r}")
+        body["valid_from"] = since if since.tzinfo else since.replace(tzinfo=timezone.utc)
+    else:
+        body["valid_from"] = datetime.now(timezone.utc)
+    return body
+
+
+async def app_install(request: Request):
+    """Use one version of an application from a day on. A person's step: the
+    process owner decides when the business starts recording through it."""
+    body = await _body(request, "name", "version", "actor")
+    with connect(os.environ.get("UNITI_DSN"), connect_timeout=3) as conn:
+        return _application(lambda store: business.install(
+            conn, store, str(body["name"]), str(body["version"]),
+            actor_id=str(body["actor"]), valid_from=body["valid_from"]))
+
+
+async def app_stop(request: Request):
+    """Stop using an application from a day on. What was recorded stays."""
+    body = await _body(request, "name", "actor")
+    with connect(os.environ.get("UNITI_DSN"), connect_timeout=3) as conn:
+        return _application(lambda store: business.stop(
+            conn, store, str(body["name"]), actor_id=str(body["actor"]),
+            valid_from=body["valid_from"]))
+
+
 async def studio_drafts(request: Request):
     """Every draft open in the store, and what each one would supersede."""
     return _modules(studio_draft.drafts)
@@ -467,6 +528,9 @@ routes = [
     Route("/api/app/cell", app_cell),
     Route("/api/app/form", app_form),
     Route("/api/app/state", app_state, methods=["POST"]),
+    Route("/api/app/install", app_install, methods=["POST"]),
+    Route("/api/app/stop", app_stop, methods=["POST"]),
+    Route("/api/business", business_read),
     Route("/api/studio/drafts", studio_drafts),
     Route("/api/studio/draft", studio_state),
     Route("/api/studio/step", studio_step, methods=["POST"]),

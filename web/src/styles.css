@@ -407,6 +407,7 @@ details.fact:not([open]) > summary { border-bottom: 0; }
   color: var(--ink-soft); background: var(--surface);
 }
 .badge-demo { color: var(--withdrawn); border-color: var(--withdrawn); background: transparent; }
+.badge-in-use { color: var(--stands); border-color: var(--stands); }
 .badge-grouped, .badge-aggregate { color: var(--known); border-color: var(--known); }
 .badge-entities, .badge-stated { color: var(--ink-soft); }
 .badge-parameter { color: var(--stands); border-color: var(--stands); }
@@ -639,6 +640,8 @@ details.fact:not([open]) > summary { border-bottom: 0; }
 .check-clean .check-verdict { color: var(--stands); border-left-color: var(--stands); }
 .check-dark .check-verdict { color: var(--withdrawn); border-left-color: var(--withdrawn); }
 .check .quiet { margin: 4px 0 0; padding-left: 15px; font-size: var(--step--1); }
+.check .form-install { padding: 8px 0 0 15px; }
+.check .form-install .chips { padding: 0; align-self: end; }
 
 /* ---- catalogue and health ----------------------------------------------
    No status colour here: nothing on this page is a statement's standing, and
