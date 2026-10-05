@@ -1,0 +1,51 @@
+id: https://w3id.org/uniti/item
+name: uniti_item
+version: v1
+title: Item
+description: A kind of thing a business holds, counts, moves, buys, sells or rents
+  out, recorded once and pointed at by every module that deals with it. What one kind
+  of business says about an item, such as a rental rate or a reorder level, is a record
+  of that business's own module pointing at the item, not part of the item.
+structured_aliases:
+- literal_form: Barang
+  in_language: id
+  predicate: EXACT_SYNONYM
+prefixes:
+  linkml: https://w3id.org/linkml/
+  item: https://w3id.org/uniti/item/
+default_prefix: item
+default_range: string
+imports:
+- linkml:types
+- '@uniti/core@v2'
+classes:
+  Item:
+    description: A kind of thing a business holds or moves, recorded once. Modules
+      point at it to say what was bought, sold, rented or counted; they do not declare
+      an item of their own.
+    mixins:
+    - Resource
+    slots:
+    - item_name
+    structured_aliases:
+    - literal_form: Barang
+      in_language: id
+      predicate: EXACT_SYNONYM
+slots:
+  item_name:
+    slot_uri: item:item_name
+    title: Name
+    description: The name the item is known by in this business, which is how somebody
+      picks it out when recording what happened to it.
+    range: string
+    identifier: true
+    required: true
+    structured_aliases:
+    - literal_form: Nama barang
+      in_language: id
+      predicate: EXACT_SYNONYM
+annotations:
+  valid_from: '2026-07-01T00:00:00+00:00'
+  sealed_at: '2026-10-05T18:49:37.391270+00:00'
+  supersedes: null
+  transcript: v1.txt

@@ -285,8 +285,10 @@ def test_the_tools_answer_in_text_short_enough_to_read_every_turn(bench):
     assert "role Flow (@uniti/core@v2): binds amount, affects, moment" in found
     assert "Nothing matches" in tools.catalogue(bench, text="zzz-nothing")
     # A pinned version reads as its module, and several modules go in one call.
-    assert tools.catalogue(bench, kind="role", module="@uniti/core@v2") == found
-    assert tools.catalogue(bench, kind="role", module="@uniti/core, @nobody/here") == found
+    assert "role Transaction (@uniti/transaction@v1)" in found
+    core = tools.catalogue(bench, kind="role", module="@uniti/core@v2")
+    assert "role Flow (@uniti/core@v2)" in core and "Transaction" not in core
+    assert tools.catalogue(bench, kind="role", module="@uniti/core, @nobody/here") == core
     # A class says what a new record of it must be given.
     assert ("a new one must be given movement_code, movement_ingredient, "
             "movement_quantity, movement_happened_on"
@@ -312,7 +314,8 @@ def test_what_the_system_cannot_do_yet_is_refused_as_such(bench):
     name = "@probe/not-yet"
     _started(bench, name)
     for extra, where in (({"where": "level_thing>0"}, "aggregate: where"),
-                         ({"by": "level_thing=affects.ingredient_supplier"}, "aggregate: by")):
+                         ({"by": "level_thing=affects.ingredient_supplier.supplier_name"},
+                          "aggregate: by")):
         said = tools.do(bench, name, [step("aggregate", **{
             "class": "Level", "column": "level_on_hand", "over": "Flow", "sum": "amount",
             "by": "level_thing=affects", **extra})])

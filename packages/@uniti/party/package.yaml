@@ -1,0 +1,7 @@
+name: '@uniti/party'
+title: Party
+description: 'Who takes part in what a business does: a person or an organisation,
+  recorded once and pointed at by every module that needs to say who was involved.
+  Whether somebody is a customer or a supplier is not a kind of party but their place
+  in a transaction, so one person stays one party whatever they buy, sell or rent.'
+purpose: library

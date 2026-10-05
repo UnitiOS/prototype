@@ -50,7 +50,7 @@ from components.studio.draft import (  # noqa: E402
 )
 from seal import (  # noqa: E402
     _facts, _one_version_per_module, _pins_already_sealed, _slot_ranges,
-    _transcript, _valid_from, _validate, name_clashes, range_refusals,
+    _transcript, _valid_from, _validate, kind_refusals, name_clashes, range_refusals,
     role_refusals, uri_refusals,
 )
 
@@ -140,10 +140,11 @@ def inspect(store, name, document, conn=None):
     collect(_pins_already_sealed, store, document,
             datetime.now(timezone.utc), DRAFT)
     collect(_one_version_per_module, store, document, DRAFT)
-    try:
-        out["refusals"] += [r.as_dict() for r in name_clashes(store, document, DRAFT)]
-    except Refusal as exc:
-        out["refusals"].append(exc.as_dict())
+    for reader in (name_clashes, kind_refusals):
+        try:
+            out["refusals"] += [r.as_dict() for r in reader(store, document, DRAFT)]
+        except Refusal as exc:
+            out["refusals"].append(exc.as_dict())
     collect(_valid_from, annotations, DRAFT)
     collect(_transcript, annotations, path(store, name), DRAFT)
     if not missing_uris:
@@ -663,8 +664,15 @@ def _workings(map_, own, shapes):
                     reads.append({
                         "class": source,
                         "fields": [s for s in spec["measure_slots"] if s in held],
+                        # The field of the source each key is read off: for a
+                        # key one record away, the field naming that record,
+                        # and under `via` the fields of that record it is.
                         "by": {key: next((s for s, _ in pairs if s in held), None)
-                               for key, pairs in spec["by_slots"].items()},
+                               for key, pairs in {**spec["by_slots"],
+                                                  **spec.get("through_slots", {})}.items()},
+                        **({"via": {key: [s for s, _ in spec["by_slots"][key]]
+                                    for key in spec["through_slots"]}}
+                           if spec.get("through_slots") else {}),
                     })
                 columns.append({"name": name, "kind": kind,
                                 "operator": spec["operator"], "reads": reads})

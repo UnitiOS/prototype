@@ -496,7 +496,11 @@ export interface DraftBorrowed {
 
 /** What one worked-out column reads, as the compiler reads it: the classes,
  *  the fields of each, and for a sum the field saying which row it lands on. */
-export interface WorkingRead { class: string; fields: string[]; by: Record<string, string | null> }
+export interface WorkingRead {
+  class: string; fields: string[]; by: Record<string, string | null>;
+  /** A key read one record away: the fields of the record `by` names that hold it. */
+  via?: Record<string, string[]>;
+}
 
 export interface WorkingColumn {
   name: string; kind: "aggregate" | "parameter" | "expression";

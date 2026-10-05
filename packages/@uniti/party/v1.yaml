@@ -1,0 +1,80 @@
+id: https://w3id.org/uniti/party
+name: uniti_party
+version: v1
+title: Party
+description: 'Who takes part in what a business does: a person or an organisation,
+  recorded once and pointed at by every module that needs to say who was involved.
+  Whether somebody is a customer or a supplier is not a kind of party but their place
+  in a transaction, so one person stays one party whatever they buy, sell or rent.'
+structured_aliases:
+- literal_form: Pihak
+  in_language: id
+  predicate: EXACT_SYNONYM
+prefixes:
+  linkml: https://w3id.org/linkml/
+  party: https://w3id.org/uniti/party/
+default_prefix: party
+default_range: string
+imports:
+- linkml:types
+- '@uniti/core@v2'
+classes:
+  Party:
+    description: A person or an organisation a business deals with, recorded once.
+      Modules point at it to say who took part; they do not declare a party of their
+      own.
+    mixins:
+    - Thing
+    slots:
+    - party_name
+    - party_kind
+    structured_aliases:
+    - literal_form: Pihak
+      in_language: id
+      predicate: EXACT_SYNONYM
+slots:
+  party_name:
+    slot_uri: party:party_name
+    title: Name
+    description: The name the party is known by in this business, which is how somebody
+      picks it out when recording what it took part in.
+    range: string
+    identifier: true
+    required: true
+    structured_aliases:
+    - literal_form: Nama
+      in_language: id
+      predicate: EXACT_SYNONYM
+  party_kind:
+    slot_uri: party:party_kind
+    title: Kind
+    description: Whether the party is a person or an organisation. Left empty when
+      nobody said.
+    range: PartyKind
+    structured_aliases:
+    - literal_form: Jenis pihak
+      in_language: id
+      predicate: EXACT_SYNONYM
+enums:
+  PartyKind:
+    description: Whether a party is one person or an organisation of people.
+    permissible_values:
+      person:
+        structured_aliases:
+        - literal_form: Orang
+          in_language: id
+          predicate: EXACT_SYNONYM
+      organisation:
+        structured_aliases:
+        - literal_form: Organisasi
+          in_language: id
+          predicate: EXACT_SYNONYM
+    structured_aliases:
+    - literal_form: Jenis pihak
+      in_language: id
+      predicate: EXACT_SYNONYM
+annotations:
+  valid_from: '2026-07-01T00:00:00+00:00'
+  sealed_at: '2026-10-05T18:49:36.337993+00:00'
+  supersedes: null
+  transcript: v1.txt

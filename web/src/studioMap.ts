@@ -697,7 +697,15 @@ export function walkThrough(draft: DraftState, w: Workings, moment: Moment): Map
       const mine = [...things.entries()].filter(([, t]) => t.kind === read.class);
       if (column.kind === "aggregate") {
         const by = single ? read.by[single] : null;
-        const counted = mine.filter(([, t]) => !by || valueSaid(t.facts.get(by)?.value) === moment.row);
+        // A key one record away: the record `by` names, and its own field.
+        const via = single ? read.via?.[single] : undefined;
+        const keyOf = (t: { facts: Map<string, { value: unknown }> }) => {
+          const named = valueSaid(t.facts.get(by!)?.value);
+          if (!via) return named;
+          const far = named === null ? undefined : things.get(named);
+          return valueSaid(via.map((f) => far?.facts.get(f)?.value).find((v) => valueSaid(v) !== null));
+        };
+        const counted = mine.filter(([, t]) => !by || keyOf(t) === moment.row);
         for (const field of read.fields) {
           const items = counted.flatMap(([record, t]) => {
             const v = valueSaid(t.facts.get(field)?.value);
@@ -708,7 +716,7 @@ export function walkThrough(draft: DraftState, w: Workings, moment: Moment): Map
         }
         if (by) {
           out.set(cellId(read.class, by), { ...NOTHING,
-            value: counted.length > 0 ? moment.row : null,
+            value: counted.length > 0 ? (via ? valueSaid(counted[0][1].facts.get(by)?.value) : moment.row) : null,
             note: counted.length === 1 ? "1 record says so"
               : counted.length > 1 ? `${counted.length} records say so` : null });
         }

@@ -1,0 +1,33 @@
+Transcript, @uniti/transaction v1.
+
+Written by hand by the core keeper, as core is: the studio offers no step that
+declares a role, because a role is shared vocabulary every module may fill and
+is not something a module author adds in passing.
+
+WHAT PROMPTED IT
+
+The empty-store test of 4-6 October 2026 (UJI_LINGKUNGAN_KOSONG.md). A rental
+module recorded one row per item rented and nothing for the rental itself, so
+when a second module recorded the deposit a customer paid for a rental, there
+was nothing to point at: Citra's deposit would have had to name one of the three
+lines of her rental. And because no module said who a customer was, the deposit
+module declared a customer of its own.
+
+WHAT WAS DECIDED (DESIGN_NOTES.md section 15, PUSTAKA_UMUM.md)
+
+- A transaction is a role, not a class. Each module keeps its own class for its
+  own transactions, so the owner of every class stays clear; the role is what
+  lets them be found and pointed at by one word.
+- A transaction is an event, so it carries the day it happened (core's
+  `moment`), and it names the party it was with (`transaction_counterparty`, a Party from
+  @uniti/party@v1). Customer and supplier are places in a transaction, not kinds
+  of party.
+- A line names its transaction (`line_transaction`). A line that moves an amount of an
+  item fills core's Flow as well; this module adds nothing for that.
+
+WHAT IT DOES NOT DO YET
+
+No mechanism reads these roles. Grouping a line by something its transaction
+says (the lines of all of Budi's rentals) needs the compiler to reach one record
+further, which is planned next. Until then a line that fills Flow carries its
+own day, the same as its transaction's.

@@ -1,0 +1,4 @@
+name: '@uniti/transaction'
+title: Transaction
+description: The shape every business transaction shares, as two roles a module's own classes fill.
+purpose: library

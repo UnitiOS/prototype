@@ -106,7 +106,9 @@ kinds {", ".join(f"`{kind}`" for kind in COMPUTED)}:
 
     aggregate    total a slot over every entity of a class or of a role:
                  `over` the class, `sum` the slot, `by` key=slot pairs saying
-                 which slot of the source matches each key. `where` narrows
+                 which slot of the source matches each key — or slot.slot,
+                 a slot of the record it points at (line_order.order_buyer:
+                 a line by its order's buyer). `where` narrows
                  the source to rows whose slot is one class (slot=Class).
                  `convert_using`, `convert_on` and `convert_factor` multiply
                  each row by a factor read off another class, matched on
@@ -128,9 +130,9 @@ module.
 
 What the system cannot do yet: total only the rows whose value meets a
 condition (`where` narrows by the class a slot points at, never by a value),
-and group by a fact reached through another record (each key of `by` is a
-slot of the rows totalled themselves). When a request needs one of these, say
-so to the person plainly, in a reply, and build nothing else in its place.
+and group by a fact more than one record away. When a request needs one of
+these, say so to the person plainly, in a reply, and build nothing else in
+its place.
 
 For something to be stated, its class must carry the slot that says which
 class an entity is — usually by filling a role that brings it. One slot per

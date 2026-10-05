@@ -1,0 +1,33 @@
+# @uniti/item — how this version was built
+#
+# One line per step the studio performed, in order. Nobody wrote
+# this file and nobody edits it; `seal` copies it out beside the
+# version it becomes.
+
+2026-10-05T18:49:06+00:00  person  start  title=Item base=https://w3id.org/uniti/item prefix=item purpose=library module=@uniti/item imports=linkml:types, @uniti/core@v2
+  description:
+    A kind of thing a business holds, counts, moves, buys, sells or rents out, recorded once and pointed at by every module that deals with it. What one kind of business says about an item, such as a rental rate or a reorder level, is a record of that business's own module pointing at the item, not part of the item.
+
+2026-10-05T18:49:07+00:00  person  set  field=valid_from value=2026-07-01T00:00:00+00:00
+
+2026-10-05T18:49:09+00:00  person  add_class  class=Item
+  description:
+    A kind of thing a business holds or moves, recorded once. Modules point at it to say what was bought, sold, rented or counted; they do not declare an item of their own.
+
+2026-10-05T18:49:10+00:00  person  fill_role  class=Item role=Resource
+
+2026-10-05T18:49:11+00:00  person  add_slot  slot=item_name range=string title=Name slot_uri=item:item_name
+  description:
+    The name the item is known by in this business, which is how somebody picks it out when recording what happened to it.
+
+2026-10-05T18:49:12+00:00  person  set_slot  slot=item_name field=identifier value=true
+
+2026-10-05T18:49:13+00:00  person  set_slot  slot=item_name field=required value=true
+
+2026-10-05T18:49:14+00:00  person  attach  class=Item slot=item_name
+
+2026-10-05T18:49:15+00:00  person  label  term=module language=id label=Barang
+
+2026-10-05T18:49:17+00:00  person  label  term=Item language=id label=Barang
+
+2026-10-05T18:49:18+00:00  person  label  term=item_name language=id label=Nama barang

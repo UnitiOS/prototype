@@ -30,6 +30,8 @@ from seal import DraftError, seal  # noqa: E402
 
 CATALOG, INVENTORY, STOCK = dev_modules.CATALOG, dev_modules.INVENTORY, dev_modules.STOCK
 RIVAL, CORE = dev_modules.RIVAL, dev_modules.CORE
+# The library sealed beside core in `packages/` (DESIGN_NOTES.md §15).
+LIBRARY = ["@uniti/item", "@uniti/party", "@uniti/transaction"]
 
 
 @pytest.fixture
@@ -56,7 +58,7 @@ def _draft(tmp_path, imports):
 
 
 def test_the_store_holds_every_version_in_order(built):
-    assert built.names() == [CATALOG, INVENTORY, STOCK, RIVAL, CORE]
+    assert built.names() == [CATALOG, INVENTORY, STOCK, RIVAL, CORE, *LIBRARY]
     assert [v["version"] for v in built.versions(CATALOG)] == ["v1", "v2", "v3", "v4"]
     listing = {m["name"]: m for m in read.modules(built)}
     assert listing[INVENTORY]["latest"] == "v4"
@@ -174,11 +176,12 @@ def test_the_kernel_names_a_module_version_in_full(conn, built):
 
     # Only the versions that brought a predicate nobody had registered yet. A
     # seal writes what is new, and `@demo/catalog@v2` was new because it added
-    # a reorder level.
+    # a reorder level. The library's transaction declares roles only, and a
+    # role is never in the log.
     assert labels == ["@demo/catalog@v1", "@demo/catalog@v2",
                       "@demo/inventory@v1", "@demo/inventory@v2",
                       "@demo/stock@v1", "@rival/stock-moves@v1",
-                      "@uniti/core@v1"]
+                      "@uniti/core@v1", "@uniti/item@v1", "@uniti/party@v1"]
 
 
 def test_moving_a_module_onto_roles_writes_nothing_to_the_log(conn, built):
@@ -252,7 +255,7 @@ def test_the_graph_draws_pins_and_supersessions(built):
     # And the same modules brought to the recording standard, by new versions.
     assert (STOCK, "v4", RIVAL, "v2", "imports") in edges
     assert (RIVAL, "v2", RIVAL, "v1", "supersedes") in edges
-    assert len(graph["nodes"]) == 16
+    assert len(graph["nodes"]) == 19
 
 
 def test_a_module_name_is_checked(built):
@@ -270,8 +273,8 @@ def test_the_api_reads_the_store_in_the_environment(conn, built, monkeypatch):
     client = TestClient(app)
 
     names = [m["name"] for m in client.get("/api/modules").json()]
-    assert names == [CATALOG, INVENTORY, STOCK, RIVAL, CORE]
-    assert len(client.get("/api/modules/graph").json()["nodes"]) == 16
+    assert names == [CATALOG, INVENTORY, STOCK, RIVAL, CORE, *LIBRARY]
+    assert len(client.get("/api/modules/graph").json()["nodes"]) == 19
 
     detail = client.get("/api/modules/version",
                         params={"name": CATALOG, "version": "v2"}).json()

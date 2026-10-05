@@ -339,6 +339,32 @@ describe("one example, worked through", () => {
     expect(shown.get("IngredientStock.stock_ingredient")!.value).toBe("flour");
   });
 
+  it("follows a row's key one record further when the rule reads it there", () => {
+    // Each movement names a batch, and the batch says which ingredient it is.
+    const viaBatch = {
+      ...d,
+      workings: [{
+        ...d.workings![0],
+        columns: [{ name: "quantity_on_hand", kind: "aggregate", operator: "sum",
+          reads: [{ class: "Movement", fields: ["qty_delta"], by: { stock_ingredient: "batch" },
+            via: { stock_ingredient: ["batch_ingredient"] } }] }],
+      }],
+      examples: [{
+        ...flour(),
+        recorded: [
+          { record: "b1", class: "Batch", when: null, facts: { batch_ingredient: "flour" } },
+          { record: "b2", class: "Batch", when: null, facts: { batch_ingredient: "salt" } },
+          { record: "m1", class: "Movement", when: "2026-06-02", facts: { batch: "b1", qty_delta: 25 } },
+          { record: "m2", class: "Movement", when: "2026-06-03", facts: { batch: "b2", qty_delta: 5 } },
+          { record: "m3", class: "Movement", when: "2026-06-20", facts: { batch: "b1", qty_delta: -14 } },
+        ],
+      }],
+    } as DraftState;
+    const shown = walkThrough(viaBatch, workingsOf(viaBatch), momentsOf(viaBatch)[0]);
+    expect(shown.get("Movement.qty_delta")!.items.map((i) => i.value)).toEqual(["+25", "-14"]);
+    expect(shown.get("Movement.batch")!.value).toBe("b1");
+  });
+
   it("reads what was recorded as it stood at the moment", () => {
     expect(walkThrough(d, w, moments[0]).get("Ingredient.ingredient_reorder_level"))
       .toMatchObject({ value: "20", note: "from the start" });

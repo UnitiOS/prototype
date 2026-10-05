@@ -83,13 +83,12 @@ MOMENTS = ("date", "datetime")
 PROCEDURE = (
     "Search the catalogue for what the person described, in their words and in "
     "English: a module's labels are the words its people used.",
-    "Reuse what is there: pin the sealed module that already records it, rather "
-    "than declaring it again under another name.",
+    "Reuse what is there: pin the sealed module that already records it and "
+    "point at its classes with slots ranging over them; never declare one "
+    "again under another name, nor make a class a kind of one.",
     "Fill the shared roles: a class that is a kind of thing a role names "
     "fills that role and binds its slots, so other modules can read it.",
-    "Declare only what is missing, to this standard: English names, a "
-    "description of each, a unit and a direction for every number, a time "
-    "meaning for every date, and the person's own words as labels.",
+    "Declare only what is missing, to this standard.",
     "Record the examples the person agreed to.",
     "Write the rules that compute, last, and hold them to the examples.",
 )

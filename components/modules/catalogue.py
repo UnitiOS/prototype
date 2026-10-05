@@ -81,7 +81,7 @@ def readers(map_):
 
         for column, spec in plan_["aggregates"].items():
             reads = list(spec["measure_uris"])
-            for uris in spec["by"].values():
+            for uris in [*spec["by"].values(), *(spec.get("through") or {}).values()]:
                 reads += uris
             for narrowing in spec.get("where") or []:
                 reads += _uris(narrowing["slot_uris"]) + _uris([narrowing["type_slot_uri"]])

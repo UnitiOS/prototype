@@ -643,6 +643,53 @@ def _no_clash(store, draft, name):
         raise refusal
 
 
+def kind_refusals(store, draft, name):
+    """Every class this draft makes a kind of a class another module owns.
+
+    A class may be a kind of a role — an abstract class, which nobody records
+    into and which exists to be filled — or of a class of its own module.
+    Never of another module's class: that is its owner's to grow. A rental
+    module whose `RentalItem` is a kind of the library's `Item` splits one
+    tent into as many kinds as there are modules that deal with tents, and a
+    tent that is both rented and sold can only be one of them. So a module
+    points at another module's class with a slot instead, and the thing stays
+    one thing (DESIGN_NOTES.md §15.4).
+
+    A generator, for the reason `name_clashes` is one.
+    """
+    own = draft.get("classes") or {}
+    theirs = {}
+    for pin in store.imports(draft):
+        for dep in store.closure(*pin):
+            for term, body in (store.document(*dep).get("classes") or {}).items():
+                theirs.setdefault(str(term), (dep, body or {}))
+    for term, body in own.items():
+        body = body or {}
+        for above in [body.get("is_a"), *(body.get("mixins") or [])]:
+            if not above or str(above) in own or str(above) not in theirs:
+                continue
+            (module, version), held = theirs[str(above)]
+            if held.get("abstract"):
+                continue
+            yield DraftError(
+                "kind_of_foreign_class",
+                where=f"{name}: class {term}",
+                expected="a kind of a role, or of a class this module declares",
+                got=f"a kind of {above}, which {module}@{version} owns",
+                repairs=[Repair(f"point at {above} instead: give {term} a slot "
+                                f"whose range is {above}",
+                                where=name, options=["add_slot"]),
+                         Repair("or, where a role says what is meant, fill it",
+                                where=name, options=["fill_role"])],
+            )
+
+
+def _no_foreign_kind(store, draft, name):
+    """Raise the first. The rule itself is in `kind_refusals`."""
+    for refusal in kind_refusals(store, draft, name):
+        raise refusal
+
+
 def _facts(annotations, ranges, name, view=None):
     """The stated facts, checked against the vocabulary the draft declares.
 
@@ -930,6 +977,7 @@ def seal(conn, draft_path, *, actor_id, into=None, sealed_at=None, store=None,
         _pins_already_sealed(store, draft, sealed_at, draft_path.name)
         _one_version_per_module(store, draft, draft_path.name)
         _no_clash(store, draft, draft_path.name)
+        _no_foreign_kind(store, draft, draft_path.name)
     ranges = _slot_ranges(view, draft_path.name)
     for refusal in range_refusals(view, draft, draft_path.name):
         raise refusal

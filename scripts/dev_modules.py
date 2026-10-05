@@ -97,10 +97,18 @@ APPLICATION = (STOCK, "v2")
 # two worth anything.
 SWAPPED = (STOCK, "v3")
 
-# Both core versions go into the log: the first five modules pin v1 and the
-# rest pin v2, and a log that held only one of them would be missing the
-# vocabulary half the store was sealed against.
-CORE_VERSIONS = ("v1", "v2")
+def uniti_versions(store):
+    """Every sealed version of Uniti's own modules — core and the library
+    (DESIGN_NOTES.md §15) — in the order they were sealed, which is the order
+    a log learns their words in: a library version pins the core before it.
+
+    Both core versions go in: the first five demonstration modules pin v1 and
+    the rest pin v2, and a log that held only one of them would be missing the
+    vocabulary half the store was sealed against."""
+    held = [(v["sealed_at"], name, v["version"])
+            for name in store.names() if name.startswith("@uniti/")
+            for v in store.versions(name)]
+    return [(name, version) for _, name, version in sorted(held)]
 
 
 def build(conn, root, *, until=None, register_core=True):
@@ -115,8 +123,8 @@ def build(conn, root, *, until=None, register_core=True):
 
     store = Store([root, ROOT / "packages"])
     if register_core:
-        for version in CORE_VERSIONS:
-            register(conn, store.path(CORE, version), actor_id="dev", store=store)
+        for name, version in uniti_versions(store):
+            register(conn, store.path(name, version), actor_id="dev", store=store)
 
     sealed = []
     for name, version in SEQUENCE:

@@ -983,7 +983,23 @@ def _set_class(store, name, document, args):
     class_name = _own(document, "class", str(args["class"]), "set_class")
     field = _field("set_class", CLASS_FIELDS, args["field"])
     if field == "is_a":
-        _visible(store, document, "class", str(args["value"]), "set_class")
+        above = _visible(store, document, "class", str(args["value"]), "set_class")
+        held = seen(store, document)[0][above]
+        # The seal's rule (`kind_refusals`), said at the step: a kind of
+        # another module's class is that module's to declare, not this one's.
+        if held["module"] is not None and not held.get("abstract"):
+            origin = f"{held['module']['name']}@{held['module']['version']}"
+            raise StudioError(
+                "kind_of_foreign_class",
+                where=f"set_class {class_name}",
+                expected="a kind of a role, or of a class this module declares",
+                got=f"a kind of {above}, which {origin} owns",
+                repairs=[Repair(f"point at {above} instead: give {class_name} "
+                                f"a slot whose range is {above}",
+                                options=["add_slot"]),
+                         Repair("or, where a role says what is meant, fill it",
+                                options=["fill_role"])],
+            )
     _classes(document)[class_name] = {**(_classes(document)[class_name] or {}),
                                       field: _value(field, args["value"])}
     return _save(store, name, document, "set_class", args)
@@ -1114,8 +1130,10 @@ def _rename_slot(store, name, document, args):
             if str(aggregate.get("sum") or "") == old:
                 aggregate["sum"] = new
             if aggregate.get("by"):
+                # Either side of a key one record away may be the slot renamed.
                 aggregate["by"] = {(new if k == old else k):
-                                   (new if str(v) == old else v)
+                                   ".".join(new if part == old else part
+                                            for part in str(v).split("."))
                                    for k, v in aggregate["by"].items()}
         parameter = _rule_spec(body, "parameter")
         if parameter:
@@ -1515,7 +1533,8 @@ def _aggregate(store, name, document, args):
                  "aggregate", said)
 
 
-# Two things a total cannot do yet, refused as such: a builder that is only
+# Two things a total cannot do yet — compare values, and reach further than
+# one record — refused as such: a builder that is only
 # told the pair is malformed tries another spelling, and then another way
 # round, where the answer is to tell the person.
 _COMPARED = re.compile(r"[<>!]|(?<![=])=(?=[=])")
@@ -1538,14 +1557,15 @@ def _possible(args):
     by = args.get("by")
     reached = [v for v in (by.values() if isinstance(by, dict) else
                            [p.partition("=")[2] for p in str(by or "").split(",")])
-               if "." in str(v)]
+               if str(v).count(".") > 1]
     if reached:
         raise StudioError(
             "not_possible_yet",
             where="aggregate: by",
-            expected="pairs key=slot, each a slot of the rows totalled themselves",
-            got=f"{', '.join(map(str, reached))}, reached through another record",
-            repairs=[Repair("grouping by a fact reached through another record: "
+            expected="pairs key=slot, each a slot of the rows totalled, or "
+                     "slot.slot: a slot of the record one of them points at",
+            got=f"{', '.join(map(str, reached))}, reached further than one record",
+            repairs=[Repair("grouping by a fact more than one record away: "
                             + LATER)],
         )
 

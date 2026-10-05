@@ -1,0 +1,85 @@
+id: https://w3id.org/uniti/transaction
+name: uniti_transaction
+version: v1
+title: Transaction
+description: 'The shape every business transaction shares, written as two roles rather
+  than as classes anybody records into. A module that records a rental, a purchase
+  or a deposit declares its own class for it and fills `Transaction`, so the class
+  stays that module''s own while every module and every agent can find it by one word
+  and point at it. A transaction that is made of several lines declares a line class
+  too and fills `TransactionLine`, whose binding says which transaction the line belongs
+  to.
+
+  Not read by any mechanism yet, which is why these roles are a library module and
+  not core.'
+structured_aliases:
+- literal_form: Transaksi
+  in_language: id
+  predicate: EXACT_SYNONYM
+prefixes:
+  linkml: https://w3id.org/linkml/
+  transaction: https://w3id.org/uniti/transaction/
+default_prefix: transaction
+default_range: string
+imports:
+- linkml:types
+- '@uniti/core@v2'
+- '@uniti/party@v1'
+classes:
+  Transaction:
+    is_a: Event
+    abstract: true
+    mixin: true
+    description: 'Something a business did with another party on one day: a rental,
+      a sale, a purchase, a deposit received. A class filling it names the party it
+      was with and, because a transaction is an event, the day it happened.'
+    slots:
+    - transaction_counterparty
+    structured_aliases:
+    - literal_form: Transaksi
+      in_language: id
+      predicate: EXACT_SYNONYM
+  TransactionLine:
+    is_a: Thing
+    abstract: true
+    mixin: true
+    description: One line of a transaction made of several, such as one item of a
+      rental. A class filling it names the transaction it belongs to. A line that
+      moves an amount of an item fills core's `Flow` as well.
+    slots:
+    - line_transaction
+    structured_aliases:
+    - literal_form: Baris transaksi
+      in_language: id
+      predicate: EXACT_SYNONYM
+slots:
+  transaction_counterparty:
+    title: Counterparty
+    abstract: true
+    required: true
+    range: Party
+    description: 'The party the transaction was with: the customer of a rental, the
+      supplier of a purchase. A binding: the class filling `Transaction` declares
+      a slot of its own with `is_a: transaction_counterparty`, and that slot''s predicate
+      is what the log holds.'
+    structured_aliases:
+    - literal_form: Pihak lawan
+      in_language: id
+      predicate: EXACT_SYNONYM
+  line_transaction:
+    title: Part of
+    abstract: true
+    required: true
+    range: Transaction
+    description: 'The transaction this line belongs to. A binding: the class filling
+      `TransactionLine` declares a slot of its own with `is_a: line_transaction`,
+      ranging over its own transaction class.'
+    structured_aliases:
+    - literal_form: Bagian dari
+      in_language: id
+      predicate: EXACT_SYNONYM
+annotations:
+  valid_from: '2026-07-01T00:00:00+00:00'
+  sealed_at: '2026-10-05T18:51:38.581861+00:00'
+  supersedes: null
+  transcript: v1.txt

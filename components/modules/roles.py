@@ -225,7 +225,8 @@ def _rules(store, name, version, map_=None):
                             "kind": "aggregate", "over": spec["over"],
                             "covers": spec["covers"],
                             "reads": sorted(set(spec["measure_uris"])
-                                            | {u for uris in spec["by"].values()
+                                            | {u for uris in [*spec["by"].values(),
+                                                              *(spec.get("through") or {}).values()]
                                                for u in uris})}
             elif column["kind"] == "parameter":
                 spec = plan_["parameters"][column["name"]]

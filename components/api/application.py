@@ -132,6 +132,22 @@ def projection(conn, store, name, version, class_name, *, valid_at, as_of):
     }
 
 
+def _key_value(conn, subject_id, spec, key_column, by_uri, by_id, *, valid_at, as_of):
+    """The value one row groups under for one key, read as the compiler reads
+    it: off the row itself, or one record further — the record the row names
+    under `through`, and the key's slot of that record."""
+    subject = subject_id
+    through = (spec.get("through") or {}).get(key_column)
+    if through:
+        named = _standing(conn, subject_id, through, by_uri, by_id,
+                          valid_at=valid_at, as_of=as_of)
+        subject = by_uri.get((named or {}).get("value"))
+        if subject is None:
+            return None
+    return (_standing(conn, subject, spec["by"][key_column], by_uri, by_id,
+                      valid_at=valid_at, as_of=as_of) or {}).get("value")
+
+
 def _standing(conn, subject_id, predicate_uris, by_uri, by_id, *, valid_at, as_of):
     """One statement, resolved by the same rule everything else is resolved by.
 
@@ -209,10 +225,10 @@ def cell(conn, store, name, version, class_name, column, keys, *, valid_at, as_o
         for subject_id in _row_subjects(conn, map_, spec["over"], by_uri,
                                         valid_at=valid_at, as_of=as_of):
             grouped = all(
-                (_standing(conn, subject_id, slot_uris, by_uri, by_id,
-                           valid_at=valid_at, as_of=as_of) or {}).get("value")
+                _key_value(conn, subject_id, spec, key_column, by_uri, by_id,
+                           valid_at=valid_at, as_of=as_of)
                 == keys.get(key_column)
-                for key_column, slot_uris in spec["by"].items()
+                for key_column in spec["by"]
             )
             if not grouped:
                 continue

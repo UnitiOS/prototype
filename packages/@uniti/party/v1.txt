@@ -1,0 +1,49 @@
+# @uniti/party — how this version was built
+#
+# One line per step the studio performed, in order. Nobody wrote
+# this file and nobody edits it; `seal` copies it out beside the
+# version it becomes.
+
+2026-10-05T18:48:29+00:00  person  start  title=Party base=https://w3id.org/uniti/party prefix=party purpose=library module=@uniti/party imports=linkml:types, @uniti/core@v2
+  description:
+    Who takes part in what a business does: a person or an organisation, recorded once and pointed at by every module that needs to say who was involved. Whether somebody is a customer or a supplier is not a kind of party but their place in a transaction, so one person stays one party whatever they buy, sell or rent.
+
+2026-10-05T18:48:30+00:00  person  set  field=valid_from value=2026-07-01T00:00:00+00:00
+
+2026-10-05T18:48:31+00:00  person  add_class  class=Party
+  description:
+    A person or an organisation a business deals with, recorded once. Modules point at it to say who took part; they do not declare a party of their own.
+
+2026-10-05T18:48:32+00:00  person  fill_role  class=Party role=Thing
+
+2026-10-05T18:48:42+00:00  person  add_slot  slot=party_name range=string title=Name slot_uri=party:party_name
+  description:
+    The name the party is known by in this business, which is how somebody picks it out when recording what it took part in.
+
+2026-10-05T18:48:43+00:00  person  set_slot  slot=party_name field=identifier value=true
+
+2026-10-05T18:48:44+00:00  person  set_slot  slot=party_name field=required value=true
+
+2026-10-05T18:48:45+00:00  person  attach  class=Party slot=party_name
+
+2026-10-05T18:48:46+00:00  person  add_enum  enum=PartyKind values=person, organisation description=Whether a party is one person or an organisation of people.
+
+2026-10-05T18:48:48+00:00  person  add_slot  slot=party_kind range=PartyKind title=Kind slot_uri=party:party_kind
+  description:
+    Whether the party is a person or an organisation. Left empty when nobody said.
+
+2026-10-05T18:48:49+00:00  person  attach  class=Party slot=party_kind
+
+2026-10-05T18:48:50+00:00  person  label  term=module language=id label=Pihak
+
+2026-10-05T18:48:51+00:00  person  label  term=Party language=id label=Pihak
+
+2026-10-05T18:48:52+00:00  person  label  term=party_name language=id label=Nama
+
+2026-10-05T18:48:54+00:00  person  label  term=party_kind language=id label=Jenis pihak
+
+2026-10-05T18:48:55+00:00  person  label  term=PartyKind language=id label=Jenis pihak
+
+2026-10-05T18:48:56+00:00  person  label  term=PartyKind.person language=id label=Orang
+
+2026-10-05T18:48:57+00:00  person  label  term=PartyKind.organisation language=id label=Organisasi

@@ -67,6 +67,7 @@ CODES = {
     "binding_unfilled": "a role claimed and a required binding left unnamed",
     "two_versions_of_a_module": "one closure reaching one module at two versions",
     "name_clash": "two modules in one closure declaring a class, slot or enum of the same name",
+    "kind_of_foreign_class": "a class made a kind of a class another module owns, which only a role may be",
     "pin_sealed_later": "a pin to a version sealed after the draft itself",
     "facts_not_a_list": "`annotations.facts` that is not a list",
     "fact_not_a_mapping": "a stated fact that is not a mapping",
@@ -138,6 +139,7 @@ CODES = {
     # ---- the studio: a draft being built ----------------------------------
     "not_an_operation": "a step the studio does not perform",
     "operation_arguments": "a step given arguments it does not take",
+    "not_a_reference": "a key reached through a slot that does not point at a record",
     "not_possible_yet": "something the system cannot do yet, to be told to the person rather than built around",
     "module_exists": "a module the store already holds",
     "draft_open": "a module whose draft is already open",

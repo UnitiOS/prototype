@@ -17,7 +17,8 @@ Two connections and no join between them: nothing that reads the operational
 store can reach an `assertion` row, because it is not in the same database.
 
 **Nothing here knows what the map is about.** It reads eight words — `over`,
-the operator, `by`, `where` and its `is_a`, `convert`, `equals_expression`,
+the operator, `by` (a slot, or `slot.slot` one record away), `where` and its
+`is_a`, `convert`, `equals_expression`,
 `parameter` and its `of` and `slot` — and emits SQL. A column whose name it
 recognised would be a defect: point it at another map and another table comes out.
 
@@ -348,6 +349,52 @@ def _pairs(view, slots):
     return [(str(slot.name), _range(view, slot)) for slot in slots if not slot.abstract]
 
 
+def _reach(map_, where, over, value):
+    """The slots one key of `by` is read from: `(through, slots)`.
+
+    A key is a slot of the rows totalled, `through` empty. Or it is one record
+    further, written `slot.slot`: the first a slot of the rows that points at
+    a record, the second a slot of that record — a line grouped by the
+    customer of the transaction it is part of. The far record's value is read
+    from `stated` like every other, so it is the one standing at both clocks.
+
+    One record and no further. Two hops is a path, and a path is a query
+    language; the need for it has not been shown.
+    """
+    view = map_["view"]
+    first, dot, second = str(value).partition(".")
+    if not dot:
+        return [], _bound(map_, where, over, first, "by")
+    if "." in second:
+        raise CompileError(
+            "not_possible_yet",
+            where=f"{where}: by",
+            expected="a slot of the rows, or `slot.slot`: one record further",
+            got=f"{value!r}, which reaches further than one record",
+            repairs=[Repair("group by a fact at most one record away")],
+        )
+    through = _bound(map_, where, over, first, "by")
+    # The range as `over` declares it: for a binding, the role every filler
+    # points at, which is what lets one rule read every filler's records.
+    declared = {str(s.name): s for s in view.class_induced_slots(over)}
+    target = _range(view, declared[first])
+    classes = {str(n) for n in view.all_classes()}
+    if target not in classes:
+        raise CompileError(
+            "not_a_reference",
+            where=f"{where}: by",
+            expected=f"`{first}` to point at a record, so a slot of that record "
+                     f"can be read",
+            got=f"{first}, which holds {target}",
+            repairs=[Repair(
+                "reach through a slot whose range is a class",
+                options=sorted(name for name, range_ in _pairs(
+                    view, view.class_induced_slots(over)) if range_ in classes),
+            )],
+        )
+    return through, _bound(map_, where, target, second, "by")
+
+
 def _read_aggregate(map_, where, spec):
     """One `aggregate` annotation, checked against the map it names."""
     view = map_["view"]
@@ -405,6 +452,7 @@ def _read_aggregate(map_, where, spec):
         )
 
     by = as_dict(spec.get("by") or {})
+    reached = {str(key): _reach(map_, where, over, value) for key, value in by.items()}
     if not by:
         raise CompileError(
             "no_grouping",
@@ -599,12 +647,19 @@ def _read_aggregate(map_, where, spec):
         "measure_slots": [str(m.name) for m in measures],
         "measure_uris": [predicate(view, m) for m in measures],
         "measure_type": measure_type,
-        "by": {str(key): uris(value, "by") for key, value in by.items()},
+        "by": {key: [predicate(view, slot) for slot in slots]
+               for key, (_, slots) in reached.items()},
         "by_names": {str(key): str(value) for key, value in by.items()},
-        # The source slots themselves, so the table the grouping lands in can
-        # check that each holds the kind of value its key column does.
-        "by_slots": {str(key): _pairs(view, _bound(map_, where, over, value, "by"))
-                     for key, value in by.items()},
+        # The slots the key is finally read from, so the table the grouping
+        # lands in can check that each holds the kind of value its key column
+        # does. For a key one record away, those are the far record's slots.
+        "by_slots": {key: _pairs(view, slots) for key, (_, slots) in reached.items()},
+        # A key read one record away: the source's slots that point at that
+        # record, which is what the rows themselves are read for.
+        "through": {key: [predicate(view, slot) for slot in through]
+                    for key, (through, _) in reached.items() if through},
+        "through_slots": {key: _pairs(view, through)
+                          for key, (through, _) in reached.items() if through},
         "source_slots": _pairs(view, view.class_induced_slots(over)),
         "where": parsed_where,
         "convert": parsed_convert,
@@ -1057,6 +1112,20 @@ def _aggregate_cte(spec, column, alias, source_alias, keys, prefix):
     for i, key in enumerate(keys):
         k = f"{prefix}k{i}"
         selects.append(f"           {k}.value AS {_ident(key)}")
+        through = (spec.get("through") or {}).get(key)
+        if through:
+            # One record further: the row names a record, and the key is a
+            # fact of that record. A row naming nothing, or a record saying
+            # nothing, groups under an empty key, as a row lacking it does.
+            t, tr = f"{prefix}t{i}", f"{prefix}tr{i}"
+            joins.append(
+                f"    LEFT JOIN stated {t} ON {t}.subject_id = r.subject_id\n"
+                f"                        AND {t}.slot {_any_of(through)}\n"
+                f"    LEFT JOIN registry {tr} ON {tr}.uri = {t}.value\n"
+                f"    LEFT JOIN stated {k} ON {k}.subject_id = {tr}.entity_id\n"
+                f"                        AND {k}.slot {_any_of(spec['by'][key])}"
+            )
+            continue
         joins.append(
             f"    LEFT JOIN stated {k} ON {k}.subject_id = r.subject_id\n"
             f"                        AND {k}.slot {_any_of(spec['by'][key])}"

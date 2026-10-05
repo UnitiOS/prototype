@@ -928,7 +928,9 @@ function ruleSaid(
       const by = Object.entries(r.by).find(([, field]) => field);
       return `the ${r.fields.map((f) => fieldLabel(f, r.class).toLowerCase()).join(" and ")} of every `
         + `${spoken(r.class).toLowerCase()}`
-        + (by ? ` whose ${fieldLabel(by[1]!, r.class).toLowerCase()} is this row's ${called(by[0]).toLowerCase()}` : "");
+        + (by ? ` whose ${fieldLabel(by[1]!, r.class).toLowerCase()}`
+          + (r.via?.[by[0]] ? `'s ${called(by[0]).toLowerCase()} is this row's` : " is this row's")
+          + ` ${called(by[0]).toLowerCase()}` : "");
     });
     return `Added up: ${what.join(", and ")}.`;
   }
