@@ -838,7 +838,10 @@ layer, upper ontology.
 
 ## 15. Jenis modul, peran pengguna, kepemilikan, dan kernel per usaha
 
-> **Diputuskan pemilik pada 6 Oktober 2026. Belum dibangun.** Bagian ini lahir
+> **Diputuskan pemilik pada 6 Oktober 2026.** Pustaka umum (§15.2), larangan
+> menurunkan kelas milik modul lain (§15.4), dan pengelompokan satu catatan
+> lebih jauh di compiler **[dibangun]** hari itu juga (`PUSTAKA_UMUM.md`); sisanya
+> belum. Bagian ini lahir
 > dari uji lingkungan kosong (`UJI_LINGKUNGAN_KOSONG.md`). Di langkah 3 modul
 > jaminan keluar terputus dari modul sewa: ia membuat "pelanggan" sendiri dan
 > tidak punya tempat untuk menempel ke penyewaan. Analisanya menunjukkan bahwa

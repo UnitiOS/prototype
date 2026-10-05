@@ -1628,7 +1628,12 @@ sebelum uji dari lingkungan kosong. Tidak ada panggilan model.
   yang dipisah, kepemilikan nama tanpa perluasan, dan kernel per usaha dengan
   graph bersama tetap di toko berkas. Rinciannya di `UJI_LINGKUNGAN_KOSONG.md`
   §8.
-- **Berikutnya** (urutannya belum ditetapkan pemilik): pustaka umum yang kecil
+- **Langkah 1 dari urutan baru selesai, 6 Oktober 2026:** pustaka umum
+  `@uniti/party`, `@uniti/item` dan `@uniti/transaction` v1 dibekukan;
+  larangan menurunkan kelas milik modul lain (`kind_of_foreign_class`);
+  compiler mengelompokkan satu catatan lebih jauh (`slot.slot`). 321 test
+  Python dan 38 test tampilan lulus. Rinciannya di `PUSTAKA_UMUM.md` §9.
+- **Berikutnya** (urutan disetujui pemilik): pustaka umum yang kecil
   (pihak, barang dan satuan, uang, dokumen nota dengan baris); aplikasi
   sebagai jenis tersendiri yang terikat ke kernel usahanya; aturan siapa boleh
   merilis di bawah nama apa; panduan agent per peran; lalu uji lingkungan
@@ -1638,8 +1643,8 @@ sebelum uji dari lingkungan kosong. Tidak ada panggilan model.
 
 Dari kebutuhan yang terbukti di 2.8, satu per satu, masing-masing dengan
 syarat pertumbuhan di atas: saring berdasarkan nilai; daftar nilai tertutup;
-slot bernilai banyak; kunci lewat satu lompatan rujukan (pembayaran → faktur
-→ pemasok); aggregate di atas tabel hitungan; nilai dari dokumen induk
+slot bernilai banyak; ~~kunci lewat satu lompatan rujukan (pembayaran → faktur
+→ pemasok)~~ **[dibangun 6 Oktober 2026, `PUSTAKA_UMUM.md` §9]**; aggregate di atas tabel hitungan; nilai dari dokumen induk
 (tanggal baris); satu catatan yang menghasilkan catatan lain (posting);
 konversi satuan dengan mencocokkan entity satuan itu sendiri.
 
