@@ -1,0 +1,16 @@
+Transcript, @demo/stock v4. Demonstration content — none of this is real.
+
+The application was brought to the recording standard after the modules under
+it were. It pins @demo/catalog v4 and @rival/stock-moves v2.
+
+Its columns were renamed to start with `stock_`, as every column of one table
+now does. A column's predicate is kept, so a rename loses nothing; the rules
+naming the columns were renamed with them.
+
+Every column is a level in the ingredient's own unit: what is on hand, the
+reorder level, and the headroom between them. The bakery's words for the
+table and its columns — Stok bahan, Stok tersedia, Batas pesan ulang — are
+kept as labels.
+
+The examples are v3's, told again in the rival's new words and the table's
+new column names. Their numbers did not change.

@@ -1,70 +1,125 @@
-# Demonstration data. A scripted builder, standing in for a model: it builds a
-# stock-level application over the demonstration modules, makes one mistake
-# the system catches, proposes too early once, and then proposes properly.
+# Demonstration data. A scripted builder, standing in for a model, builds a
+# stock-level application over the demonstration modules in three requests,
+# as the system has every builder work: a plan the person agrees to; the
+# examples, which the person agrees to before any rule is written; then the
+# rules, until the examples hold. On the way it is held to that order once,
+# proposes an example whose numbers it chose itself and is sent back to the
+# accountant, makes one mistake the system catches, and proposes too early
+# once. The accountant's answer is scripted below the requests.
 module: "@rehearsal/levels"
-says: >-
-  I want to see, for every ingredient, how much is on hand, the level we
-  reorder at, and how far above that level we are.
-moves:
-  - tool: guide
-    args: {topic: rules}
-  - tool: catalogue
-    args: {kind: role}
-  - tool: catalogue
-    args: {text: reorder}
-  - tool: do
-    args:
-      module: "@rehearsal/levels"
-      steps:
-        - op: start
-          args: {title: Stock levels, description: "On hand, reorder level and headroom per ingredient."}
-        - {op: pin, args: {module: "@demo/catalog@v3"}}
-        - {op: pin, args: {module: "@demo/inventory@v3"}}
-        - op: add_class
-          args: {class: Level, description: One row per ingredient anything has moved for.}
-        - {op: add_slot, args: {slot: level_ingredient, range: Ingredient, description: The ingredient this row is about.}}
-        - {op: attach, args: {class: Level, slot: level_ingredient}}
-        - {op: add_slot, args: {slot: level_on_hand, range: decimal, description: Every flow of this ingredient added up.}}
-        - {op: attach, args: {class: Level, slot: level_on_hand}}
-        - {op: aggregate, args: {class: Level, column: level_on_hand, over: Flow, sum: amount, by: level_ingredient=affects}}
-        - {op: add_slot, args: {slot: level_reorder, range: decimal, description: The level somebody set for the ingredient.}}
-        - {op: attach, args: {class: Level, slot: level_reorder}}
-        - {op: parameter, args: {class: Level, column: level_reorder, of: level_ingredient, slot: ingredient_reorder_level}}
-        - {op: add_slot, args: {slot: level_headroom, range: decimal, description: How far above the reorder level.}}
-        - {op: attach, args: {class: Level, slot: level_headroom}}
-        # The mistake the composition experiment's authors made: names written
-        # bare. The step takes it; the next read says how to write it.
-        - {op: expression, args: {class: Level, column: level_headroom, expression: level_on_hand - level_reorder}}
-  - tool: do
-    args:
-      module: "@rehearsal/levels"
-      steps:
-        - {op: expression, args: {class: Level, column: level_headroom, expression: "{level_on_hand} - {level_reorder}"}}
-  - tool: do
-    args:
-      module: "@rehearsal/levels"
-      steps:
-        - op: add_example
-          args: {example: flour, says: "25 kg of flour came in and 5 kg were used, so 20 kg are on hand: 10 above a reorder level of 10."}
-        - op: record
-          args: {example: flour, record: flour, class: Ingredient, facts: "ingredient_code=FLR, ingredient_name=Flour, ingredient_unit=kg, ingredient_reorder_level=10"}
-        - op: record
-          args: {example: flour, record: flour_in, class: StockMovement, when: "2026-06-02", facts: "movement_code=M1, movement_ingredient=flour, movement_quantity=25, movement_happened_on=2026-06-02"}
-        - op: record
-          args: {example: flour, record: flour_used, class: StockMovement, when: "2026-06-03", facts: "movement_code=M2, movement_ingredient=flour, movement_quantity=-5, movement_happened_on=2026-06-03"}
-        - op: expect
-          args: {example: flour, table: Level, row: flour, values: "level_on_hand=20, level_reorder=10, level_headroom=10"}
-  # Too early: it says ready without asking for the one thing missing.
-  - end: Proposal
-    args: {module: "@rehearsal/levels", message: It is ready., agree: [], seal: true}
-  - tool: look
-    args: {module: "@rehearsal/levels"}
-  - end: Proposal
-    args:
-      module: "@rehearsal/levels"
-      message: >-
-        The table is built. Please check the flour example: if 25 kg in and 5 kg
-        used is 20 kg on hand, 10 above a level of 10, agree to it and it can be
-        sealed.
-      agree: [flour]
-      seal: true
+requests:
+  - says: >-
+      I want to see, for every ingredient, how much is on hand, the level we
+      reorder at, and how far above that level we are.
+    moves:
+      - tool: catalogue
+        args: {kind: role}
+      - tool: catalogue
+        args: {text: reorder}
+      - end: Plan
+        args:
+          message: Is this what you need? Agree and I will write the examples first.
+          builds: A table with one row per ingredient, showing what is on hand, its reorder level and how far above it you are.
+          records:
+            - Your stock movements, as you record them already (@demo/inventory).
+            - Each ingredient's reorder level, from your catalogue (@demo/catalog).
+          numbers:
+            - On hand per ingredient, every movement added up.
+            - The reorder level set for the ingredient.
+            - How far on hand is above that level.
+          cannot: []
+  - says: Agreed, go on.
+    moves:
+      - tool: do
+        args:
+          module: "@rehearsal/levels"
+          steps:
+            - op: start
+              args: {title: Stock levels, description: "On hand, reorder level and headroom per ingredient."}
+            - {op: pin, args: {module: "@demo/catalog@v3"}}
+            - {op: pin, args: {module: "@demo/inventory@v3"}}
+            - op: add_class
+              args: {class: Level, description: One row per ingredient anything has moved for.}
+            - {op: add_slot, args: {slot: level_ingredient, range: Ingredient, description: The ingredient this row is about.}}
+            - {op: attach, args: {class: Level, slot: level_ingredient}}
+            - {op: add_slot, args: {slot: level_on_hand, range: decimal, description: Every flow of this ingredient added up., unit: the unit of the ingredient, direction: level}}
+            - {op: attach, args: {class: Level, slot: level_on_hand}}
+            - {op: add_slot, args: {slot: level_reorder, range: decimal, description: The level somebody set for the ingredient., unit: the unit of the ingredient, direction: level}}
+            - {op: attach, args: {class: Level, slot: level_reorder}}
+            - {op: add_slot, args: {slot: level_headroom, range: decimal, description: How far above the reorder level., unit: the unit of the ingredient, direction: level}}
+            - {op: attach, args: {class: Level, slot: level_headroom}}
+            # Ahead of itself: a rule before any example the person agreed to.
+            # The system refuses it and says what comes first.
+            - {op: aggregate, args: {class: Level, column: level_on_hand, over: Flow, sum: amount, by: level_ingredient=affects}}
+      - tool: do
+        args:
+          module: "@rehearsal/levels"
+          steps:
+            - op: add_example
+              args: {example: flour, says: "25 kg of flour came in and 5 kg were used, so 20 kg are on hand: 10 above a reorder level of 10."}
+            - op: record
+              args: {example: flour, record: flour, class: Ingredient, facts: "ingredient_code=FLR, ingredient_name=Flour, ingredient_unit=kg, ingredient_reorder_level=10"}
+            - op: record
+              args: {example: flour, record: flour_in, class: StockMovement, when: "2026-06-02", facts: "movement_code=M1, movement_ingredient=flour, movement_quantity=25, movement_happened_on=2026-06-02"}
+            - op: record
+              args: {example: flour, record: flour_used, class: StockMovement, when: "2026-06-03", facts: "movement_code=M2, movement_ingredient=flour, movement_quantity=-5, movement_happened_on=2026-06-03"}
+            - op: expect
+              args: {example: flour, table: Level, row: flour, values: "level_on_hand=20, level_reorder=10, level_headroom=10"}
+      # Its own numbers: nobody else worked them out.
+      - end: Proposal
+        args:
+          module: "@rehearsal/levels"
+          message: >-
+            Please check the flour example: 25 kg in and 5 kg used is 20 kg on
+            hand, 10 above a level of 10. Agree to it and I will write how the
+            numbers are worked out.
+          agree: [flour]
+      - tool: reckon
+        args:
+          example: flour
+          happened:
+            - "Flour is counted in kg, and its reorder level is 10 kg."
+            - "On 2 June 25 kg of flour came in."
+            - "On 3 June 5 kg of flour were used."
+          wanted:
+            - flour on hand
+            - flour's reorder level
+            - how far flour is above its reorder level
+      - end: Proposal
+        args:
+          module: "@rehearsal/levels"
+          message: >-
+            Please check the flour example: 25 kg in and 5 kg used is 20 kg on
+            hand, 10 above a level of 10. Agree to it and I will write how the
+            numbers are worked out.
+          agree: [flour]
+  - says: Agreed, go on.
+    moves:
+      - tool: do
+        args:
+          module: "@rehearsal/levels"
+          steps:
+            - {op: aggregate, args: {class: Level, column: level_on_hand, over: Flow, sum: amount, by: level_ingredient=affects}}
+            - {op: parameter, args: {class: Level, column: level_reorder, of: level_ingredient, slot: ingredient_reorder_level}}
+            # The mistake the composition experiment's authors made: names
+            # written bare. The step takes it; the next read says how to write it.
+            - {op: expression, args: {class: Level, column: level_headroom, expression: level_on_hand - level_reorder}}
+      # Too early: it says ready while the example still fails.
+      - end: Proposal
+        args: {module: "@rehearsal/levels", message: It is ready., agree: [], seal: true}
+      - tool: do
+        args:
+          module: "@rehearsal/levels"
+          steps:
+            - {op: expression, args: {class: Level, column: level_headroom, expression: "{level_on_hand} - {level_reorder}"}}
+      - end: Proposal
+        args:
+          module: "@rehearsal/levels"
+          message: The flour example now comes out as you agreed. It is ready for you to freeze.
+          agree: []
+          seal: true
+accountant:
+  - figures:
+      - {figure: flour on hand, value: "20", working: "25 kg came in and 5 kg were used: 25 - 5 = 20 kg."}
+      - {figure: "flour's reorder level", value: "10", working: "The reorder level the business set: 10 kg."}
+      - {figure: how far flour is above its reorder level, value: "10", working: "20 kg on hand less the 10 kg level."}

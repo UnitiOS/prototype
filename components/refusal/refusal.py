@@ -25,12 +25,13 @@ The sentence is **derived**, never written beside the structure. A refusal
 carrying both would have two places to disagree, and the prose is the one
 nobody updates.
 
-Five gates raise these, and each says which it is, because the answer to
+Six gates raise these, and each says which it is, because the answer to
 "who can fix this" differs: `DraftError` is the seal refusing to make a
 version, `MapError` is the generator or the compiler refusing to read one,
 `ModuleError` is the store refusing to find one, `StudioError` is the
 studio refusing to perform a step on a draft, and `ExampleError` is a
-business example the map does not bear out.
+business example the map does not bear out, and `StandardError` is the
+recording standard every module is held to.
 
 `repairs` is not decoration and is not optional in spirit. A refusal with no
 repair is a dead end, and the only honest ones are the few where the answer is
@@ -137,6 +138,7 @@ CODES = {
     # ---- the studio: a draft being built ----------------------------------
     "not_an_operation": "a step the studio does not perform",
     "operation_arguments": "a step given arguments it does not take",
+    "not_possible_yet": "something the system cannot do yet, to be told to the person rather than built around",
     "module_exists": "a module the store already holds",
     "draft_open": "a module whose draft is already open",
     "nothing_sealed": "a module with no sealed version to revise",
@@ -152,6 +154,18 @@ CODES = {
     "not_in_example": "a record or an expected number the example does not hold",
     "example_agreed": "an agent changing an example a person agreed to",
     "person_only": "a step only a person may take, taken by an agent",
+    "no_plan": "a plan agreed to when nobody has put one forward",
+    "plan_not_agreed": "an agent writing a rule before the person agreed to its plan",
+    "no_agreed_example": "an agent writing a rule for a table no example the person agreed to gives numbers for",
+
+    # ---- the recording standard: how every module is written down --------
+    "name_not_standard": "a name in the wrong shape for what it names",
+    "prefix_not_shared": "a slot not starting with the word its class's slots share",
+    "description_missing": "a class or slot with nothing said about what it is",
+    "not_in_english": "a name or text that is not English, the language modules are recorded in",
+    "unit_missing": "a number with no unit",
+    "direction_missing": "a number not saying which way it runs",
+    "time_meaning_missing": "a date not saying what moment it is",
 
     # ---- the command line -------------------------------------------------
     "not_field_value": "a `--set` argument that is not FIELD=VALUE",

@@ -1,4 +1,5 @@
-"""The HTTP door: one JSON API that the web application and, later, the agent read.
+"""The HTTP door: one JSON API that the web application reads, and the agent's
+door beside it (`agent`): a request to the agent, streamed as it works.
 
 Every read takes the two clocks as query parameters, `valid_at` and `as_of`,
 as ISO 8601 instants. Either one missing means now. The API never picks a
@@ -31,7 +32,7 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT / "components" / "kernel"))
 sys.path.insert(0, str(ROOT / "components" / "provenance"))
 
-from components.api import application, kernel  # noqa: E402
+from components.api import agent, application, kernel  # noqa: E402
 from components.modules import catalogue as catalogue_read  # noqa: E402
 from components.modules import check as check_read  # noqa: E402
 from components.modules import health as health_read  # noqa: E402
@@ -45,6 +46,10 @@ from perform import connect  # noqa: E402
 from provenance import _registry  # noqa: E402
 
 DIST = ROOT / "web" / "dist"
+
+# The agent's model is reached with credentials from .env; the log is this
+# process's own, whatever .env says.
+agent.environment()
 
 
 def _default(value):
@@ -407,9 +412,32 @@ async def studio_step(request: Request):
         studio_draft.apply(store, name, step, args)
         if step == "discard":
             return JSON({"name": name, "discarded": True})
+        if not studio_draft.path(store, name).is_file():
+            # A plan agreed to before the module is started: there is no
+            # draft to answer with yet, only the plan.
+            return JSON({"name": name, "plan": studio_draft.plan_of(store, name)})
         return JSON(_studio_state(store, name))
     except Refusal as exc:
         return _refused(exc)
+
+
+async def studio_chat(request: Request):
+    """What was said with the agent about one draft, kept beside it."""
+    return _modules(agent.chat, _required(request, "name"))
+
+
+async def studio_seal(request: Request):
+    """Seal one draft, by the person named in the body. The agent cannot."""
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(400, "the body is not JSON")
+    if not isinstance(body, dict):
+        raise HTTPException(400, "the body is not an object")
+    for field in ("name", "actor"):
+        if not str(body.get(field) or "").strip():
+            raise HTTPException(400, f"{field} is required")
+    return _modules(agent.sealed, str(body["name"]).strip(), str(body["actor"]).strip())
 
 
 async def _error(request: Request, exc: HTTPException):
@@ -442,6 +470,9 @@ routes = [
     Route("/api/studio/drafts", studio_drafts),
     Route("/api/studio/draft", studio_state),
     Route("/api/studio/step", studio_step, methods=["POST"]),
+    Route("/api/studio/chat", studio_chat),
+    Route("/api/studio/ask", agent.ask, methods=["POST"]),
+    Route("/api/studio/seal", studio_seal, methods=["POST"]),
 ]
 if DIST.is_dir():
     routes.append(Mount("/", StaticFiles(directory=DIST, html=True)))

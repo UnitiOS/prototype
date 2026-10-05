@@ -61,6 +61,7 @@ GATES = {
     "components/modules/store.py": "ModuleError",
     "components/studio/draft.py": "StudioError",
     "components/examples/examples.py": "ExampleError",
+    "components/standard/standard.py": "StandardError",
 }
 
 
@@ -118,7 +119,8 @@ def test_every_code_the_gates_raise_is_written_down():
     # page can collect them all. Both are the gate saying no — and so is
     # `return`, from a helper that builds the refusal its caller raises.
     gate = (r"(?:raise|yield|return) "
-            r"(?:DraftError|MapError|ModuleError|CompileError|StudioError|ExampleError)")
+            r"(?:DraftError|MapError|ModuleError|CompileError|StudioError|ExampleError"
+            r"|StandardError)")
     literal = re.compile(gate + r'\(\s*"([a-z_]+)"')
     any_raise = re.compile(gate + r"\(")
 

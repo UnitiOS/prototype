@@ -87,7 +87,7 @@ def test_the_demonstration_application_holds_to_its_examples(world, conn):
     """Sealed with its examples, which travelled beside it and are not a version."""
     beside = world.directory(STOCK) / "v2.examples.yaml"
     assert beside.is_file()
-    assert [v["version"] for v in world.versions(STOCK)] == ["v1", "v2", "v3"]
+    assert [v["version"] for v in world.versions(STOCK)] == ["v1", "v2", "v3", "v4"]
 
     map_, held = _demo(world)
     results = {r["name"]: r for r in business.run(conn, map_, held)}
@@ -246,7 +246,11 @@ def _ruled(store, name):
                                       "description": "One row per ingredient."})
     for slot, kind in (("balance_thing", "Ingredient"), ("balance_on_hand", "decimal"),
                        ("balance_level", "decimal"), ("balance_headroom", "decimal")):
-        step(store, name, "add_slot", slot=slot, range=kind, description=slot)
+        # Every number says its unit and which way it runs.
+        meant = ({"unit": "the unit of the ingredient", "direction": "level"}
+                 if kind == "decimal" else {})
+        step(store, name, "add_slot", slot=slot, range=kind,
+             description=f"The {slot.replace('_', ' ')}.", **meant)
         step(store, name, "attach", **{"class": "Balance", "slot": slot})
     step(store, name, "aggregate", **{
         "class": "Balance", "column": "balance_on_hand",
@@ -257,6 +261,13 @@ def _ruled(store, name):
     step(store, name, "expression", **{
         "class": "Balance", "column": "balance_headroom",
         "expression": "{balance_on_hand} - {balance_level}"})
+    return name
+
+
+def _planned(store, name):
+    """A plan the person agreed to, without which an agent takes no step."""
+    studio.propose_plan(store, name, {"builds": "Balances."})
+    studio.apply(store, name, "agree_plan", {})
     return name
 
 
@@ -382,6 +393,44 @@ def test_the_example_steps_refuse_what_they_cannot_do(world):
     step(world, name, "discard")
 
 
+def test_a_record_is_refused_without_what_its_class_requires_and_corrected_on_the_day(
+        world, conn):
+    name = _an_application(world, "@probe/corrected")
+    step(world, name, "add_example", example="late", says="Sugar came in.")
+    step(world, name, "record", example="late", record="sugar",
+         **{"class": "Ingredient"}, facts="ingredient_code=SUG, ingredient_unit=kg")
+    # The first time a record is stated, its class's required facts are asked
+    # for at the step, not found later in a failing example.
+    with pytest.raises(StudioError) as raised:
+        step(world, name, "record", example="late", record="in", when="2026-06-02",
+             **{"class": "StockMovement"},
+             facts="movement_code=S1, movement_ingredient=sugar, movement_quantity=4")
+    assert raised.value.code == "required_missing"
+    assert raised.value.repairs[0].options == ("movement_happened_on",)
+    assert [r["record"] for r in studio.examples_of(world, name)["late"]["records"]] == ["sugar"]
+
+    # Stated again on the same day, a record is that statement corrected: one
+    # statement, keeping the class it was given before.
+    step(world, name, "record", example="late", record="sugar",
+         facts="ingredient_code=SUG, ingredient_name=Sugar, ingredient_unit=kg")
+    records = studio.examples_of(world, name)["late"]["records"]
+    assert records == [{"record": "sugar", "class": "Ingredient", "facts": {
+        "ingredient_code": "SUG", "ingredient_name": "Sugar", "ingredient_unit": "kg"}}]
+
+    # A later day is that record changing, and need not say everything again.
+    step(world, name, "record", example="late", record="in", when="2026-06-02",
+         **{"class": "StockMovement"},
+         facts="movement_code=S1, movement_ingredient=sugar, movement_quantity=4, "
+               "movement_happened_on=2026-06-02")
+    step(world, name, "record", example="late", record="in", when="2026-06-03",
+         facts="movement_quantity=5")
+    step(world, name, "expect", example="late", table="Balance", row="sugar",
+         values="balance_on_hand=5")
+    report = reading.state(world, name, conn)
+    assert {e["name"]: e["passed"] for e in report["examples"]} == {"flour": True, "late": True}
+    step(world, name, "discard")
+
+
 def test_the_api_answers_a_step_with_the_examples_run(world, monkeypatch):
     """Over HTTP the examples run too, on a connection of the API's own."""
     from starlette.testclient import TestClient
@@ -389,7 +438,7 @@ def test_the_api_answers_a_step_with_the_examples_run(world, monkeypatch):
     from components.api.app import app
 
     monkeypatch.setenv("UNITI_PACKAGES", os.pathsep.join(str(r) for r in world.roots))
-    name = _an_application(world, "@probe/served_examples")
+    name = _an_application(world, "@probe/served-examples")
     client = TestClient(app)
     after = client.post("/api/studio/step", json={
         "name": name, "step": "expect",
@@ -454,7 +503,8 @@ def test_every_computed_column_owes_a_number_to_an_example(world, conn, tmp_path
 
 
 def test_an_example_an_agent_writes_is_a_proposal_until_a_person_agrees(world, conn):
-    name = _flour(world, _ruled(world, "@probe/proposed"), actor="agent", headroom=False)
+    name = _planned(world, _ruled(world, "@probe/proposed"))
+    name = _flour(world, name, actor="agent", headroom=False)
     assert studio.examples_of(world, name)["flour"]["agreed"] is False
     # The transcript says who took every step.
     said = studio.transcript(world, name)
@@ -500,7 +550,7 @@ def test_an_example_an_agent_writes_is_a_proposal_until_a_person_agrees(world, c
 def test_an_agent_cannot_change_an_example_a_person_agreed_to(world):
     """Otherwise a failing map could be made to pass by changing the answer
     rather than the rule. Not the agent's judgement: who it is."""
-    name = _an_application(world, "@probe/agreed")
+    name = _planned(world, _an_application(world, "@probe/agreed"))
     before = studio.examples_of(world, name)
     said = studio.transcript(world, name)
     for op, args in (

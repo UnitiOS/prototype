@@ -1,0 +1,62 @@
+examples:
+  flour_in_and_out:
+    says: >-
+      Flour came in twice, 25 kg each time, and 14 kg went into bread, so 36 kg
+      are on hand. The reorder level was 20 kg until it was raised to 30 kg on
+      1 July, so the headroom was 16 kg at the end of June and 6 kg after.
+    labels:
+      id: >-
+        Tepung masuk dua kali, masing-masing 25 kg, dan 14 kg dipakai untuk
+        roti, jadi stok 36 kg. Batas pesan ulang 20 kg sampai dinaikkan menjadi
+        30 kg pada 1 Juli, jadi selisihnya 16 kg di akhir Juni dan 6 kg sesudahnya.
+    records:
+      - record: flour
+        class: Ingredient
+        facts:
+          ingredient_code: FLR
+          ingredient_name: Wheat flour
+          ingredient_unit: kg
+          ingredient_reorder_level: 20
+      - record: flour_in_1
+        class: Movement
+        when: '2026-06-02'
+        facts: {move_ref: M1, move_item: flour, move_change: 25, move_happened_on: '2026-06-02'}
+      - record: flour_in_2
+        class: Movement
+        when: '2026-06-16'
+        facts: {move_ref: M2, move_item: flour, move_change: 25, move_happened_on: '2026-06-16'}
+      - record: flour_used
+        class: Movement
+        when: '2026-06-20'
+        facts: {move_ref: M3, move_item: flour, move_change: -14, move_happened_on: '2026-06-20'}
+      - record: flour
+        when: '2026-07-01'
+        facts: {ingredient_reorder_level: 30}
+    expect:
+      - table: IngredientStock
+        row: flour
+        at: '2026-06-30'
+        values: {stock_quantity_on_hand: 36, stock_reorder_level: 20, stock_headroom: 16}
+      - table: IngredientStock
+        row: flour
+        at: '2026-07-05'
+        values: {stock_quantity_on_hand: 36, stock_reorder_level: 30, stock_headroom: 6}
+  no_level_no_headroom:
+    says: >-
+      Nobody has set a reorder level for salt, so salt has no headroom either:
+      not a headroom of nought, but none at all.
+    labels:
+      id: >-
+        Belum ada yang menetapkan batas pesan ulang untuk garam, jadi garam juga
+        tidak punya selisih: bukan nol, tetapi tidak ada sama sekali.
+    records:
+      - record: salt
+        class: Ingredient
+        facts: {ingredient_code: SLT, ingredient_name: Salt, ingredient_unit: kg}
+      - record: salt_in
+        class: Movement
+        facts: {move_ref: M1, move_item: salt, move_change: 5, move_happened_on: '2026-06-02'}
+    expect:
+      - table: IngredientStock
+        row: salt
+        values: {stock_quantity_on_hand: 5, stock_reorder_level: ~, stock_headroom: ~}

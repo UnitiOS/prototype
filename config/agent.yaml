@@ -1,0 +1,53 @@
+# Which model plays each part of the agent, and what one request may spend.
+#
+# This file is the only place a provider is named. A model is written the way
+# the agent framework (Pydantic AI) takes it, `provider:model`; a self-hosted
+# model behind an OpenAI-compatible server is one more line here, not a change
+# to the code. A model is supported for a part once it passes that part's eval
+# (`make eval`), not because a provider says it can.
+#
+# `settings` are optional and go to the framework as they are (for example
+# `thinking: high`). Nothing depends on them being honoured: a provider that
+# ignores one still gives a correct agent, only a slower or a costlier one.
+#
+# Another file can be used instead by pointing UNITI_AGENT_CONFIG at it.
+
+parts:
+  builder:
+    model: google-cloud:gemini-3.8-flash
+    settings: {thinking: medium}
+  accountant:
+    model: google-cloud:gemini-3.8-flash
+    settings: {thinking: high}
+
+# How long one call to a model may take, in seconds, before it counts as
+# failed. A provider that hangs is a provider that fails, not one to wait for.
+timeout: 60
+
+# What one request from the person may spend, the builder and the accountant
+# together. The last call that fits is kept for the agent to tell the person,
+# in their language, what it did and what is left; then it stops. What it
+# already did stays in the draft.
+budget:
+  requests: 25
+  tokens: 600000
+  dollars: 0.20
+
+# The conversation is sent whole with every call. Once the last call was this
+# many tokens, a reading the agent has read again since is replaced by one line
+# saying so; what the person said, the agent's answers and its steps never are.
+history:
+  clear_above: 100000
+
+# US dollars per million tokens, for the budget and for reports. `cached` is
+# input the provider served from its cache (the start of a conversation it has
+# seen before), which it charges about a tenth for. A model not listed here is
+# still usable: its tokens are counted and its cost is unknown, so only
+# `requests` and `tokens` hold it.
+# Written for the `us` multi-region, which the environment chooses: Google
+# asks about 10% more there than on `global`. The 3.8 Flash price is an
+# introductory one until 2026-12-31 (then 1.50 / 7.50, before that 10%).
+prices:
+  google-cloud:gemini-3.8-flash: {input: 0.825, cached: 0.0825, output: 4.125}
+  google-cloud:gemini-3.5-flash: {input: 1.50, output: 9.00}
+  google-cloud:gemini-3.1-pro-preview: {input: 2.00, output: 12.00}

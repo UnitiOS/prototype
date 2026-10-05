@@ -35,16 +35,18 @@ sys.path.insert(0, str(ROOT / "components" / "compiler"))
 sys.path.insert(0, str(ROOT / "components" / "generator"))
 sys.path.insert(0, str(ROOT / "components" / "seal"))
 
-from compile import tables  # noqa: E402
+from compile import _covered, plan, tables  # noqa: E402
 from components.modules import diff as diff_read  # noqa: E402
 from components.modules.check import check  # noqa: E402
 from components.modules.roles import _above, _bindings, _fills  # noqa: E402
 from components.refusal import Refusal  # noqa: E402
+from components import standard  # noqa: E402
 from components.examples import examples as business  # noqa: E402
+from components.studio import changes as changed  # noqa: E402
 from components.studio.draft import (  # noqa: E402
     CLASS_FIELDS, DRAFT, ENUM_FIELDS, EXAMPLE_FIELDS, FIELDS, OPERATIONS,
     SLOT_FIELDS, USAGE_FIELDS, enums_seen, examples_of, open_draft, path,
-    ranges, seen, text_of, transcript,
+    ranges, seen, terms, text_of, transcript,
 )
 from seal import (  # noqa: E402
     _facts, _one_version_per_module, _pins_already_sealed, _slot_ranges,
@@ -62,8 +64,7 @@ OPEN = {
     "class_is_empty": "a class carrying no slot",
     "class_has_no_rows": "a class nothing can be stated to be and no rule derives",
     "slot_is_loose": "a slot no class carries, so nothing is ever stated under it",
-    "nothing_said_about_it": "a class or slot with no description, which is what "
-                            "somebody choosing between two modules reads",
+    **standard.DOUBTS,
     "no_examples": "a draft no business example holds to anything, so nothing "
                    "says what its numbers must be",
     "example_expects_nothing": "an example that records things and expects no "
@@ -79,7 +80,7 @@ OPEN = {
 # two shapes are the gates' own and a test holds them to it.
 ANSWERS = ("binding_unfilled", "binding_ambiguous", "slot_without_uri",
            "no_valid_from", "name_clash", "range_unknown", "column_unchecked",
-           "example_not_agreed")
+           "example_not_agreed") + tuple(standard.CHECKS)
 
 
 def _map(store, name, document):
@@ -107,7 +108,7 @@ def inspect(store, name, document, conn=None):
     listed and not run, and `examples_run` says so.
     """
     out = {"refusals": [], "tables": [], "map": None, "examples": [],
-           "examples_run": False}
+           "examples_run": False, "doubts": []}
     try:
         held = examples_of(store, name)
     except Refusal as exc:
@@ -157,6 +158,10 @@ def inspect(store, name, document, conn=None):
     # and whether every column the draft computes has a number in one.
     out["refusals"] += [r.as_dict() for r in
                         business.contract_refusals(map_, document, held)]
+    # How it is written down, whoever wrote it: the seal's last reading.
+    out["refusals"] += [r.as_dict() for r in
+                        standard.refusals(document, held, _range_in(view))]
+    out["doubts"] = standard.doubts(document, held)
 
     if conn is not None and held:
         results = business.run(conn, map_, held)
@@ -170,13 +175,24 @@ def inspect(store, name, document, conn=None):
     return out
 
 
+def _range_in(view):
+    """A slot's range as the map reads it: inherited from the binding it
+    fills where it states none."""
+    def range_of(slot_name):
+        try:
+            return view.induced_slot(slot_name).range
+        except Exception:  # noqa: BLE001 - a slot LinkML cannot induce has none
+            return None
+    return range_of
+
+
 def _unrun(example, body):
     """An example as the file holds it, before anything has run it."""
     return {"name": example, "says": str(body.get("says") or ""),
             "agreed": business.agreed(body),
             "records": len(body.get("records") or []),
             "expected": len(body.get("expect") or []),
-            "checks": [], "tables": [], "refusals": [], "passed": None}
+            "checks": [], "tables": [], "refusals": [], "passed": None, "waits": False}
 
 
 def _about(refusal):
@@ -199,6 +215,11 @@ def _about(refusal):
     if refusal["code"] in ("slot_without_uri", "range_unknown"):
         _, _, slot = where.partition(": ")
         return {"slot": slot}
+    if refusal["code"] in standard.CHECKS:
+        # `class Name`, `slot name title`, `enum Name value v`, `module title`.
+        kind, _, rest = where.partition(" ")
+        term, _, part = rest.partition(" ")
+        return {"kind": kind, kind: term, "part": part}
     if refusal["code"] == "name_clash":
         _, _, said = where.partition(": ")
         kind, _, term = said.partition(" ")
@@ -241,6 +262,47 @@ def _step_for(refusal):
     if code == "example_not_agreed":
         return {"op": "agree_example", "args": {"example": about["example"]},
                 "choose": "example", "options": [about["example"]]}
+    if code in standard.CHECKS:
+        return _mend(code, about, options)
+    return None
+
+
+# Where each kind of term has its fields set.
+_SET = {"class": ("set_class", "class"), "slot": ("set_slot", "slot"),
+        "example": ("set_example", "example")}
+
+# The field each break of the standard is mended in.
+_MENDED_IN = {"description_missing": "description", "unit_missing": "unit",
+              "direction_missing": standard.DIRECTION,
+              "time_meaning_missing": standard.TIME_MEANING}
+
+
+def _mend(code, about, options):
+    """The step that mends one break of the standard, where the studio has one.
+
+    A name is mended by renaming; a text by setting it again; a meaning by
+    setting the field that says it. An enum has no rename, so a name of one
+    is left to the refusal's own words.
+    """
+    kind, part = about["kind"], about["part"]
+    term = about.get(kind)
+    steps = ("rename_class", "rename_slot", "set", "set_slot", "set_example", "label")
+    answers = [o for o in options if o not in steps]
+    if kind == "module":
+        return {"op": "set", "args": {"field": term}, "choose": "value",
+                "options": []}
+    if kind in ("class", "slot") and not part and (
+            code in ("name_not_standard", "prefix_not_shared")
+            or (code == "not_in_english" and f"rename_{kind}" in options)):
+        return {"op": f"rename_{kind}", "args": {kind: term}, "choose": "to",
+                "options": answers}
+    field = _MENDED_IN.get(code)
+    if code == "not_in_english":
+        field = part or ("says" if kind == "example" else "description")
+    if field and kind in _SET:
+        op, key = _SET[kind]
+        return {"op": op, "args": {key: term, "field": field}, "choose": "value",
+                "options": answers}
     return None
 
 
@@ -269,6 +331,24 @@ def _question(kind, where, detail):
     if kind == "example_not_agreed":
         return (f"is the example {detail.get('example')} what the business "
                 f"does, and are its numbers right?")
+    if kind == "name_not_standard":
+        return f"what should {where} be called, in the shape every module uses?"
+    if kind == "prefix_not_shared":
+        return (f"{where} does not start with the word the other slots of its "
+                f"class start with: what should it be called?")
+    if kind == "description_missing":
+        return f"what is {where}? Say it in a sentence, in English"
+    if kind == "not_in_english":
+        return f"how is the {where} said in English? Keep the person's words as a label"
+    if kind == "unit_missing":
+        return f"what unit is {where} counted in?"
+    if kind == "direction_missing":
+        return f"which way does {where} run: what does a positive value mean?"
+    if kind == "time_meaning_missing":
+        return (f"what moment is {where}: when it happened, when it was "
+                f"recorded, when it takes effect, or when it is due?")
+    if kind == "maybe_not_english":
+        return f"is what the {where} says written in English?"
     if kind == "nothing_declared":
         return "what kinds of thing does this module know about?"
     if kind == "class_is_empty":
@@ -277,8 +357,6 @@ def _question(kind, where, detail):
         return f"how would anything ever become a {where}?"
     if kind == "slot_is_loose":
         return f"which class is {where} said about?"
-    if kind == "nothing_said_about_it":
-        return f"what is {where}?"
     if kind == "no_examples":
         return ("what would the business expect this to add up to? Give one "
                 "example, with its numbers")
@@ -391,13 +469,6 @@ def holes(store, name, document, found):
                              because=OPEN["class_has_no_rows"],
                              step={"op": "fill_role", "args": {"class": class_name},
                                    "choose": "role", "options": carried}))
-        if not body.get("description"):
-            out.append(_hole("nothing_said_about_it", class_name, blocking=False,
-                             because=OPEN["nothing_said_about_it"],
-                             step={"op": "set_class",
-                                   "args": {"class": class_name,
-                                            "field": "description"},
-                                   "choose": "value", "options": []}))
 
     for slot_name, body in sorted(own_slots.items()):
         body = body or {}
@@ -407,13 +478,17 @@ def holes(store, name, document, found):
                              step={"op": "attach", "args": {"slot": slot_name},
                                    "choose": "class",
                                    "options": sorted(own_classes)}))
-        if not body.get("description"):
-            out.append(_hole("nothing_said_about_it", slot_name, blocking=False,
-                             because=OPEN["nothing_said_about_it"],
-                             step={"op": "set_slot",
-                                   "args": {"slot": slot_name,
-                                            "field": "description"},
-                                   "choose": "value", "options": []}))
+    # What the standard cannot tell is English: asked, never refused.
+    for where, _said in found.get("doubts") or []:
+        kind, _, term = where.partition(" ")
+        step = None
+        if kind in _SET:
+            op, key = _SET[kind]
+            step = {"op": op, "args": {key: term, "field": "says" if kind == "example"
+                                       else "description"},
+                    "choose": "value", "options": []}
+        out.append(_hole("maybe_not_english", where, blocking=False,
+                         because=OPEN["maybe_not_english"], step=step))
     return sorted(out, key=lambda h: (not h["blocking"], h["where"]))
 
 
@@ -456,6 +531,9 @@ def steps(store, name, document):
         "pin": sorted(f"{n}@{v['version']}" for n in store.names()
                       if n != name for v in store.versions(n)),
         "held_pin": pinned,
+        "direction": list(standard.DIRECTIONS),
+        "time_meaning": list(standard.TIME_MEANINGS),
+        "term": terms(document, held),
     }
 
     def argument(op, key, kind, required):
@@ -542,16 +620,136 @@ def _borrowed(store, document):
         found[class_name] = body
         wanted += points_at(body)
 
+    return _described(classes, slots, found)
+
+
+def _workings(map_, own, shapes):
+    """Where every number this draft works out comes from, as the compiler reads it.
+
+    The rule on a slot says `over: Flow`; what it actually adds up is the
+    `qty_delta` of every Movement, because Movement is what fills Flow. That
+    is the compiler's reading, not the document's, so it is asked for here
+    rather than worked out again: per table this draft computes, its keys,
+    and per worked-out column the classes it reads, the fields of each it
+    reads and, for a sum, the field of each that says which row it lands on.
+
+    A table the compiler refuses has no workings to show; its refusal is
+    already on the page.
+    """
+    if map_ is None:
+        return []
+    view = map_["view"]
+
+    def fields_of(class_name):
+        return {str(s.name) for s in view.class_induced_slots(class_name)
+                if not s.abstract}
+
+    out = []
+    for class_name in sorted(own):
+        if shapes.get(class_name) != "grouped":
+            continue
+        try:
+            planned = plan(map_, class_name)
+        except Refusal:
+            continue
+        columns = []
+        for col in planned["columns"]:
+            name, kind = col["name"], col["kind"]
+            if kind == "aggregate":
+                spec = planned["aggregates"][name]
+                reads = []
+                for source in spec["covers"]:
+                    held = fields_of(source)
+                    reads.append({
+                        "class": source,
+                        "fields": [s for s in spec["measure_slots"] if s in held],
+                        "by": {key: next((s for s, _ in pairs if s in held), None)
+                               for key, pairs in spec["by_slots"].items()},
+                    })
+                columns.append({"name": name, "kind": kind,
+                                "operator": spec["operator"], "reads": reads})
+            elif kind == "parameter":
+                spec = planned["parameters"][name]
+                key_range = next((str(c["range"]) for c in planned["columns"]
+                                  if c["name"] == spec["of"]), None)
+                below = _covered(view, key_range) if key_range else []
+                columns.append({"name": name, "kind": kind, "of": spec["of"], "reads": [
+                    {"class": source, "fields": [spec["slot"]], "by": {}}
+                    for source in below if spec["slot"] in fields_of(source)]})
+            elif kind == "expression":
+                columns.append({"name": name, "kind": kind, "reads": []})
+        out.append({"class": class_name, "keys": planned["keys"], "columns": columns})
+    return out
+
+
+def _described(classes, slots, names):
+    """Classes of pinned modules, as the map draws one it cannot change."""
     return [{
         "name": class_name,
-        "description": body.get("description") or "",
-        "module": body["module"],
-        "fills": [str(m) for m in (body.get("mixins") or [])],
+        "description": classes[class_name].get("description") or "",
+        "labels": standard.labels(classes[class_name]),
+        "module": classes[class_name]["module"],
+        "fills": [str(m) for m in (classes[class_name].get("mixins") or [])],
         "slots": [{"name": s,
                    "range": (slots.get(s) or {}).get("range"),
-                   "identifier": bool((slots.get(s) or {}).get("identifier"))}
-                  for s in (body.get("slots") or [])],
-    } for class_name, body in sorted(found.items())]
+                   "identifier": bool((slots.get(s) or {}).get("identifier")),
+                   "labels": standard.labels(slots.get(s))}
+                  for s in (classes[class_name].get("slots") or [])],
+    } for class_name in sorted(names)]
+
+
+def _read_from(store, document, workings, borrowed):
+    """The classes a rule reads that the map would not otherwise draw.
+
+    A sum over a role reaches whichever classes fill it, and nothing in this
+    module points at those — so the place the numbers come from was missing
+    from the map. Drawn beside the borrowed classes, and only these.
+    """
+    classes, slots = seen(store, document)
+    drawn = set(document.get("classes") or {}) | {b["name"] for b in borrowed}
+    wanted = {read["class"] for table in workings for column in table["columns"]
+              for read in column["reads"]}
+    return _described(classes, slots, [n for n in wanted
+                                       if n not in drawn and n in classes])
+
+
+def _recorded(store, name, examples):
+    """Each example with the records it states, in the order it states them.
+
+    What a number on the map was worked out from: the page shows the records
+    that went into it beside it. A record names its class once, where it is
+    first stated, and is carried on by name after that, as the file reads.
+    And what the example says in the words of its people (`labels`), which
+    the page shows them in place of the English it is recorded in.
+    """
+    try:
+        held = examples_of(store, name)
+    except Refusal:
+        return examples
+
+    def plain(value):
+        return value if value is None or isinstance(value, (bool, int, float, str)) \
+            else str(value)
+
+    out = []
+    for example in examples:
+        class_of = {}
+        records = []
+        for record in (held.get(example["name"]) or {}).get("records") or []:
+            record = record or {}
+            called = str(record.get("record") or "")
+            if record.get("class"):
+                class_of[called] = str(record["class"])
+            records.append({
+                "record": called,
+                "class": class_of.get(called),
+                "when": plain(record.get("when")),
+                "facts": {str(k): plain(v) for k, v in (record.get("facts") or {}).items()},
+            })
+        labels = (held.get(example["name"]) or {}).get("labels") or {}
+        out.append({**example, "recorded": records,
+                    "labels": {str(k): str(v) for k, v in labels.items()}})
+    return out
 
 
 def _rule_of(body):
@@ -593,10 +791,21 @@ def state(store, name, conn=None):
     annotations = document.get("annotations") or {}
     found_holes = holes(store, name, document, found)
     with_rows = with_rows_of(found["map"])
+    borrowed = _borrowed(store, document)
+    workings = _workings(found["map"], own_classes,
+                         {t["class"]: t["shape"] for t in found["tables"]})
+    since = changed.between(
+        changed.look_at_version(store, name, revises),
+        {"document": document, "examples": examples_of(store, name)}, name)
+    # Nothing to freeze: a new module that declares nothing of its own, or a
+    # revision that changes nothing. Not a refusal — nothing is wrong with it —
+    # but not a version either.
+    empty = not (own_classes or own_slots or document.get("enums"))         and (revises is None or not since)
     return {
         "name": name,
         "title": document.get("title"),
         "description": document.get("description"),
+        "labels": standard.labels(document),
         "purpose": manifest.get("purpose"),
         "valid_from": annotations.get("valid_from"),
         "versions": held,
@@ -607,6 +816,7 @@ def state(store, name, conn=None):
         "classes": [{
             "name": class_name,
             "description": (body or {}).get("description") or "",
+            "labels": standard.labels(body),
             "fills": [str(m) for m in ((body or {}).get("mixins") or [])],
             "is_a": (body or {}).get("is_a"),
             "slots": list((body or {}).get("slots") or []),
@@ -619,8 +829,12 @@ def state(store, name, conn=None):
             "name": slot_name,
             "title": str((body or {}).get("title") or slot_name),
             "description": (body or {}).get("description") or "",
+            "labels": standard.labels(body),
             "slot_uri": (body or {}).get("slot_uri"),
             "range": (body or {}).get("range"),
+            "unit": standard.unit_of(body),
+            "direction": standard.annotation(body, standard.DIRECTION),
+            "time_meaning": standard.annotation(body, standard.TIME_MEANING),
             "identifier": bool((body or {}).get("identifier")),
             "designates_type": bool((body or {}).get("designates_type")),
             "required": bool((body or {}).get("required")),
@@ -633,12 +847,18 @@ def state(store, name, conn=None):
             "name": enum_name,
             "description": (body or {}).get("description") or "",
             "values": list(((body or {}).get("permissible_values") or {})),
+            "labels": standard.labels(body),
+            "value_labels": {str(v): standard.labels(b) for v, b in
+                             ((body or {}).get("permissible_values") or {}).items()
+                             if standard.labels(b)},
             "module": body["module"],
         } for enum_name, body in sorted(enums_seen(store, document).items())],
         "roles": _roles_of(store, document),
-        "borrowed": _borrowed(store, document),
+        "borrowed": borrowed,
+        "workings": workings,
+        "read_from": _read_from(store, document, workings, borrowed),
         "tables": found["tables"],
-        "examples": found["examples"],
+        "examples": _recorded(store, name, found["examples"]),
         "examples_run": found["examples_run"],
         "refusals": found["refusals"],
         "holes": found_holes,
@@ -647,9 +867,13 @@ def state(store, name, conn=None):
         "taken": transcript(store, name),
         "diff": diff_read.compare(store.document(name, revises) if revises else {},
                                   document),
+        # What sealing it would change, as the map draws it: everything, for a
+        # module with no version yet.
+        "changes": since,
+        "empty": empty,
         # Examples nobody ran are examples nobody knows the answer to.
-        "sealable": not found["refusals"] and (found["examples_run"]
-                                               or not found["examples"]),
+        "sealable": not empty and not found["refusals"]
+                    and (found["examples_run"] or not found["examples"]),
         "document": text_of(document),
     }
 

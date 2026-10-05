@@ -1,0 +1,290 @@
+# Demonstration data. Small tasks for the agent's eval, over the demonstration
+# modules of the development store (`make dev-db`): a bakery's catalogue
+# (@demo/catalog), its stock movements (@demo/inventory), somebody else's stock
+# module (@rival/stock-moves), and the stock application (@demo/stock).
+#
+# Each task comes from something that went wrong in the composition experiment
+# (slice 2.8), written as a request a person would make. The truth is an
+# example the builder never sees: it is written into the finished draft and
+# run like any other. The names of the tables and columns are given in each
+# request, as a business names its reports, so the truth can find them; what
+# is judged is whether the numbers mean what the person asked.
+#
+# Two requests are in Indonesian: the person may write in either.
+
+answer: >-
+  I have nothing to add: decide from what I said. Build exactly what I asked
+  for; if the system cannot do it, tell me so instead of building something
+  else. Put it before me as you go: what you will build, the examples, and
+  the draft when it is ready.
+
+tasks:
+
+  # The plainest total: every movement of an ingredient, added up.
+  - name: on_hand
+    from: the balance every stock module in 2.8 was written to give
+    module: "@eval/on-hand"
+    says: >-
+      For every ingredient, I want to see how much we have on hand, from our
+      stock movements. Call the table Stock, with the columns stock_ingredient
+      and stock_on_hand.
+    truth:
+      says: Flour 25 kg in and 5 kg used is 20 kg; sugar 10 kg in is 10 kg.
+      happened:
+        - "Flour and sugar are counted in kg."
+        - "On 2 June 25 kg of flour came in."
+        - "On 3 June 5 kg of flour were used."
+        - "On 4 June 10 kg of sugar came in."
+      figures: {"flour on hand": "20", "sugar on hand": "10"}
+      records:
+        - {record: flour, class: Ingredient, facts: {ingredient_code: FLR, ingredient_name: Flour, ingredient_unit: kg}}
+        - {record: sugar, class: Ingredient, facts: {ingredient_code: SUG, ingredient_name: Sugar, ingredient_unit: kg}}
+        - {record: m1, class: StockMovement, when: '2026-06-02', facts: {movement_code: T1, movement_ingredient: flour, movement_quantity: 25, movement_happened_on: '2026-06-02'}}
+        - {record: m2, class: StockMovement, when: '2026-06-03', facts: {movement_code: T2, movement_ingredient: flour, movement_quantity: -5, movement_happened_on: '2026-06-03'}}
+        - {record: m3, class: StockMovement, when: '2026-06-04', facts: {movement_code: T3, movement_ingredient: sugar, movement_quantity: 10, movement_happened_on: '2026-06-04'}}
+      expect:
+        - {table: Stock, row: flour, values: {stock_on_hand: 20}}
+        - {table: Stock, row: sugar, values: {stock_on_hand: 10}}
+
+  # A value nobody stated is empty, not nought (3.3), and the expression
+  # syntax the 2.8 authors did not know.
+  - name: headroom
+    from: computed columns blocked in 2.8 by the expression syntax; empty is not nought
+    module: "@eval/headroom"
+    says: >-
+      For every ingredient: what is on hand, the reorder level we set for it,
+      and the headroom — how far the stock is above that level. Call the table
+      Room, with the columns room_ingredient, room_on_hand, room_level and
+      room_headroom.
+    truth:
+      says: >-
+        Flour has 20 kg on hand and a level of 8 kg, so 12 kg of headroom. Salt
+        has 5 kg and no level, so no level and no headroom at all.
+      happened:
+        - "Flour and salt are counted in kg."
+        - "Flour's reorder level is 8 kg. Nobody has set a reorder level for salt."
+        - "On 2 June 20 kg of flour came in."
+        - "On 2 June 5 kg of salt came in."
+      figures: {"flour's headroom": "12", "salt's reorder level": "", "salt's headroom": ""}
+      records:
+        - {record: flour, class: Ingredient, facts: {ingredient_code: FLR, ingredient_name: Flour, ingredient_unit: kg, ingredient_reorder_level: 8}}
+        - {record: salt, class: Ingredient, facts: {ingredient_code: SLT, ingredient_name: Salt, ingredient_unit: kg}}
+        - {record: m1, class: StockMovement, when: '2026-06-02', facts: {movement_code: T1, movement_ingredient: flour, movement_quantity: 20, movement_happened_on: '2026-06-02'}}
+        - {record: m2, class: StockMovement, when: '2026-06-02', facts: {movement_code: T2, movement_ingredient: salt, movement_quantity: 5, movement_happened_on: '2026-06-02'}}
+      expect:
+        - {table: Room, row: flour, values: {room_on_hand: 20, room_level: 8, room_headroom: 12}}
+        - {table: Room, row: salt, values: {room_on_hand: 5, room_level: ~, room_headroom: ~}}
+
+  # Which way a number runs: the sign the 2.8 modules disagreed on.
+  - name: shortfall
+    from: signed against unsigned amounts in 2.8
+    module: "@eval/shortfall"
+    says: >-
+      Untuk setiap bahan, saya ingin tahu berapa yang harus dibeli supaya
+      stoknya kembali ke batas pesan ulang: batas pesan ulang dikurangi stok
+      yang ada. Kalau stoknya sudah di atas batas, angkanya negatif, tidak
+      apa-apa. Namai tabelnya Shortfall, dengan kolom shortfall_ingredient,
+      shortfall_on_hand, shortfall_level dan shortfall_amount.
+    truth:
+      says: >-
+        Tepung ada 6 kg dengan batas 10 kg, jadi harus beli 4 kg. Gula ada 15
+        kg dengan batas 10 kg, jadi -5.
+      happened:
+        - "Tepung dan gula dihitung dalam kg; batas pesan ulang keduanya 10 kg."
+        - "Tanggal 2 Juni masuk 10 kg tepung; tanggal 5 Juni 4 kg tepung dipakai."
+        - "Tanggal 2 Juni masuk 15 kg gula."
+      figures: {"yang harus dibeli untuk tepung": "4", "yang harus dibeli untuk gula": "-5"}
+      records:
+        - {record: flour, class: Ingredient, facts: {ingredient_code: FLR, ingredient_name: Tepung, ingredient_unit: kg, ingredient_reorder_level: 10}}
+        - {record: sugar, class: Ingredient, facts: {ingredient_code: SUG, ingredient_name: Gula, ingredient_unit: kg, ingredient_reorder_level: 10}}
+        - {record: m1, class: StockMovement, when: '2026-06-02', facts: {movement_code: T1, movement_ingredient: flour, movement_quantity: 10, movement_happened_on: '2026-06-02'}}
+        - {record: m2, class: StockMovement, when: '2026-06-05', facts: {movement_code: T2, movement_ingredient: flour, movement_quantity: -4, movement_happened_on: '2026-06-05'}}
+        - {record: m3, class: StockMovement, when: '2026-06-02', facts: {movement_code: T3, movement_ingredient: sugar, movement_quantity: 15, movement_happened_on: '2026-06-02'}}
+      expect:
+        - {table: Shortfall, row: flour, values: {shortfall_amount: 4}}
+        - {table: Shortfall, row: sugar, values: {shortfall_amount: -5}}
+
+  # A place is not in any role: grouping by it ties the application to the
+  # one module that records it, and the builder has to see that.
+  - name: per_location
+    from: roles cannot say where (2.8, round 2)
+    module: "@eval/per-location"
+    says: >-
+      I want on hand per ingredient per place we keep it, from our stock
+      movements. Call the table Shelf, with the columns shelf_ingredient,
+      shelf_location and shelf_on_hand.
+    truth:
+      says: Flour 12 kg into the dry store and 5 kg into the chiller, 2 kg used from the chiller.
+      happened:
+        - "Flour is counted in kg. We keep it in the dry store and in the chiller."
+        - "On 2 June 12 kg of flour went into the dry store."
+        - "On 2 June 5 kg of flour went into the chiller."
+        - "On 6 June 2 kg of flour were used from the chiller."
+      figures: {"flour in the dry store": "12", "flour in the chiller": "3"}
+      records:
+        - {record: flour, class: Ingredient, facts: {ingredient_code: FLR, ingredient_name: Flour, ingredient_unit: kg}}
+        - {record: dry, class: Location, facts: {location_code: DRY, location_label: Dry store}}
+        - {record: cold, class: Location, facts: {location_code: CHL, location_label: Chiller}}
+        - {record: m1, class: StockMovement, when: '2026-06-02', facts: {movement_code: T1, movement_ingredient: flour, movement_location: dry, movement_quantity: 12, movement_happened_on: '2026-06-02'}}
+        - {record: m2, class: StockMovement, when: '2026-06-02', facts: {movement_code: T2, movement_ingredient: flour, movement_location: cold, movement_quantity: 5, movement_happened_on: '2026-06-02'}}
+        - {record: m3, class: StockMovement, when: '2026-06-06', facts: {movement_code: T3, movement_ingredient: flour, movement_location: cold, movement_quantity: -2, movement_happened_on: '2026-06-06'}}
+      expect:
+        - {table: Shelf, row: {shelf_ingredient: flour, shelf_location: dry}, values: {shelf_on_hand: 12}}
+        - {table: Shelf, row: {shelf_ingredient: flour, shelf_location: cold}, values: {shelf_on_hand: 3}}
+
+  # The same event in two modules, both filling Flow: totalling the role
+  # counts it twice. The 2.8 finding that closed the experiment.
+  - name: counted_once
+    from: double counting through a role (2.8, round 2)
+    module: "@eval/counted-once"
+    says: >-
+      Our stock movements are in @demo/inventory. The warehouse team keeps
+      @rival/stock-moves, where they record the very same movements again from
+      their own system. I want both side by side per ingredient, to see where
+      they disagree: what we have on hand by our records, what they have by
+      theirs, and the difference, ours minus theirs. Call the table Compare,
+      with the columns compare_ingredient, compare_ours, compare_theirs and
+      compare_difference.
+    truth:
+      says: >-
+        We recorded 30 kg of flour in and 10 kg out; the warehouse recorded the
+        30 kg in but missed the 10 kg out. Ours is 20, theirs 30, the difference -10.
+      happened:
+        - "Flour is counted in kg."
+        - "On 2 June 30 kg of flour came in. We recorded it, and the warehouse recorded it too."
+        - "On 4 June 10 kg of flour were used. We recorded it; the warehouse did not."
+      figures: {"flour on hand by our records": "20", "flour on hand by the warehouse's records": "30", "the difference, ours minus theirs": "-10"}
+      records:
+        - {record: flour, class: Ingredient, facts: {ingredient_code: FLR, ingredient_name: Flour, ingredient_unit: kg}}
+        - {record: ours_in, class: StockMovement, when: '2026-06-02', facts: {movement_code: T1, movement_ingredient: flour, movement_quantity: 30, movement_happened_on: '2026-06-02'}}
+        - {record: ours_out, class: StockMovement, when: '2026-06-04', facts: {movement_code: T2, movement_ingredient: flour, movement_quantity: -10, movement_happened_on: '2026-06-04'}}
+        - {record: theirs_in, class: Movement, when: '2026-06-02', facts: {move_ref: W1, move_item: flour, move_change: 30, move_happened_on: '2026-06-02'}}
+      expect:
+        - {table: Compare, row: flour, values: {compare_ours: 20, compare_theirs: 30, compare_difference: -10}}
+
+  # The opposite of counted_once: two modules whose movements are different
+  # events, where adding across them is exactly what is meant.
+  - name: two_shops
+    from: explicit composition, the way 2.8 closed
+    module: "@eval/two-shops"
+    says: >-
+      Kami punya dua toko. Pergerakan stok toko pertama dicatat di
+      @demo/inventory, toko kedua di @rival/stock-moves; keduanya kejadian yang
+      berbeda. Saya ingin total stok per bahan dari kedua toko. Namai tabelnya
+      Total, dengan kolom total_ingredient dan total_on_hand.
+    truth:
+      says: Toko pertama 25 kg tepung masuk dan 5 kg dipakai; toko kedua 10 kg masuk. Totalnya 30 kg.
+      happened:
+        - "Tepung dihitung dalam kg."
+        - "Tanggal 2 Juni toko pertama menerima 25 kg tepung, dan tanggal 3 Juni memakai 5 kg."
+        - "Tanggal 2 Juni toko kedua menerima 10 kg tepung."
+      figures: {"total tepung di kedua toko": "30"}
+      records:
+        - {record: flour, class: Ingredient, facts: {ingredient_code: FLR, ingredient_name: Tepung, ingredient_unit: kg}}
+        - {record: a_in, class: StockMovement, when: '2026-06-02', facts: {movement_code: T1, movement_ingredient: flour, movement_quantity: 25, movement_happened_on: '2026-06-02'}}
+        - {record: a_out, class: StockMovement, when: '2026-06-03', facts: {movement_code: T2, movement_ingredient: flour, movement_quantity: -5, movement_happened_on: '2026-06-03'}}
+        - {record: b_in, class: Movement, when: '2026-06-02', facts: {move_ref: B1, move_item: flour, move_change: 10, move_happened_on: '2026-06-02'}}
+      expect:
+        - {table: Total, row: flour, values: {total_on_hand: 30}}
+
+  # What the system cannot yet do (filtering by a value, slice 5). The
+  # builder passes by saying so, not by building a total of everything.
+  - name: received_only
+    from: filtering by value, a need proven in 2.8 and left for slice 5
+    module: "@eval/received"
+    buildable: false
+    says: >-
+      For every ingredient, I want the total that came in — only what came in,
+      not what was used. Call the table Received, with the columns
+      received_ingredient and received_total.
+    truth:
+      says: 25 kg of flour came in and 5 kg were used; 25 kg came in.
+      happened:
+        - "Flour is counted in kg."
+        - "On 2 June 25 kg of flour came in; on 3 June 5 kg were used."
+      figures: {"flour that came in": "25"}
+      records:
+        - {record: flour, class: Ingredient, facts: {ingredient_code: FLR, ingredient_name: Flour, ingredient_unit: kg}}
+        - {record: m1, class: StockMovement, when: '2026-06-02', facts: {movement_code: T1, movement_ingredient: flour, movement_quantity: 25, movement_happened_on: '2026-06-02'}}
+        - {record: m2, class: StockMovement, when: '2026-06-03', facts: {movement_code: T2, movement_ingredient: flour, movement_quantity: -5, movement_happened_on: '2026-06-03'}}
+      expect:
+        - {table: Received, row: flour, values: {received_total: 25}}
+
+  # A key reached through one reference (movement -> ingredient -> supplier),
+  # slice 5 again: the payables failure of 2.8 in its smallest form.
+  - name: per_supplier
+    from: a key through one reference hop, the payables failure (U10) in 2.8
+    module: "@eval/per-supplier"
+    buildable: false
+    says: >-
+      I want the stock on hand added up per supplier: all the ingredients we
+      buy from one supplier together. Call the table SupplierStock, with the
+      columns supplier_stock_supplier and supplier_stock_on_hand.
+    truth:
+      says: Flour and sugar both come from Miller; 20 kg and 10 kg on hand, so 30 kg.
+      happened:
+        - "Flour and sugar are counted in kg and both are bought from Miller."
+        - "On 2 June 20 kg of flour and 10 kg of sugar came in."
+      figures: {"stock on hand from Miller": "30"}
+      records:
+        - {record: miller, class: Supplier, facts: {supplier_code: MIL, supplier_label: Miller}}
+        - {record: flour, class: Ingredient, facts: {ingredient_code: FLR, ingredient_name: Flour, ingredient_unit: kg, ingredient_supplier: miller}}
+        - {record: sugar, class: Ingredient, facts: {ingredient_code: SUG, ingredient_name: Sugar, ingredient_unit: kg, ingredient_supplier: miller}}
+        - {record: m1, class: StockMovement, when: '2026-06-02', facts: {movement_code: T1, movement_ingredient: flour, movement_quantity: 20, movement_happened_on: '2026-06-02'}}
+        - {record: m2, class: StockMovement, when: '2026-06-02', facts: {movement_code: T2, movement_ingredient: sugar, movement_quantity: 10, movement_happened_on: '2026-06-02'}}
+      expect:
+        - {table: SupplierStock, row: miller, values: {supplier_stock_on_hand: 30}}
+
+  # Changing a sealed module somebody already agreed examples for: the
+  # examples stay the person's, and a new column needs a new example.
+  - name: revise_existing
+    from: the application changed after it was in use (2.8, stage F)
+    module: "@demo/stock"
+    says: >-
+      In our stock application @demo/stock, add a column stock_order_up_to to
+      the IngredientStock table: how much to order to bring each ingredient up
+      to twice its reorder level — twice the reorder level, less what is on
+      hand.
+    truth:
+      says: >-
+        Flour has 36 kg on hand and a level of 20 kg, so 4 kg to order. Salt
+        has no level, so nothing can be said.
+      happened:
+        - "Flour and salt are counted in kg. Flour's reorder level is 20 kg; salt has none."
+        - "On 2 June and on 16 June 25 kg of flour came in; on 20 June 14 kg were used."
+        - "On 2 June 5 kg of salt came in."
+      figures: {"flour to order": "4", "salt to order": ""}
+      records:
+        - {record: flour, class: Ingredient, facts: {ingredient_code: FLR, ingredient_name: Flour, ingredient_unit: kg, ingredient_reorder_level: 20}}
+        - {record: salt, class: Ingredient, facts: {ingredient_code: SLT, ingredient_name: Salt, ingredient_unit: kg}}
+        - {record: m1, class: Movement, when: '2026-06-02', facts: {move_ref: T1, move_item: flour, move_change: 25, move_happened_on: '2026-06-02'}}
+        - {record: m2, class: Movement, when: '2026-06-16', facts: {move_ref: T2, move_item: flour, move_change: 25, move_happened_on: '2026-06-16'}}
+        - {record: m3, class: Movement, when: '2026-06-20', facts: {move_ref: T3, move_item: flour, move_change: -14, move_happened_on: '2026-06-20'}}
+        - {record: m4, class: Movement, when: '2026-06-02', facts: {move_ref: T4, move_item: salt, move_change: 5, move_happened_on: '2026-06-02'}}
+      expect:
+        - {table: IngredientStock, row: flour, values: {stock_order_up_to: 4}}
+        - {table: IngredientStock, row: salt, values: {stock_order_up_to: ~}}
+
+  # A total as of a day: what was on hand at the end of a month, with a
+  # movement after it. The period mistakes of 2.8's weekly checks.
+  - name: month_end
+    from: numbers read for the wrong period in 2.8's weekly checks
+    module: "@eval/month-end"
+    says: >-
+      For every ingredient, how much is on hand, so that I can read it for any
+      day — at the end of June, say. Call the table Balance, with the columns
+      balance_ingredient and balance_on_hand.
+    truth:
+      says: 25 kg of flour came in during June and 5 kg were used on 2 July; at the end of June 25 kg, after that 20 kg.
+      happened:
+        - "Flour is counted in kg."
+        - "On 10 June 25 kg of flour came in."
+        - "On 2 July 5 kg of flour were used."
+      figures: {"flour on hand at the end of June": "25", "flour on hand after 2 July": "20"}
+      records:
+        - {record: flour, class: Ingredient, facts: {ingredient_code: FLR, ingredient_name: Flour, ingredient_unit: kg}}
+        - {record: m1, class: StockMovement, when: '2026-06-10', facts: {movement_code: T1, movement_ingredient: flour, movement_quantity: 25, movement_happened_on: '2026-06-10'}}
+        - {record: m2, class: StockMovement, when: '2026-07-02', facts: {movement_code: T2, movement_ingredient: flour, movement_quantity: -5, movement_happened_on: '2026-07-02'}}
+      expect:
+        - {table: Balance, row: flour, at: '2026-06-30', values: {balance_on_hand: 25}}
+        - {table: Balance, row: flour, values: {balance_on_hand: 20}}

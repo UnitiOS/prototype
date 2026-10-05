@@ -1,0 +1,96 @@
+id: https://uniti.example/stock
+name: demo_stock
+title: Stock
+description: >-
+  Demonstration data. The stock application of v3, brought to the recording
+  standard and pinned to the versions of its modules that were brought to it
+  too. Every column of the table now starts with `stock_`, each says its unit
+  and that it is a level, and the bakery's own words are kept as labels.
+
+  The rules are v3's, naming core's Flow and core's bindings, so moving the pin
+  from @rival/stock-moves v1 to v2 changed nothing in them: the rival renamed
+  its slots, and no rule here named one.
+structured_aliases:
+  - {literal_form: Stok, in_language: id, predicate: EXACT_SYNONYM}
+prefixes:
+  linkml: https://w3id.org/linkml/
+  uniti: https://w3id.org/uniti/core#
+  stk: https://uniti.example/stock/
+default_prefix: stk
+default_range: string
+imports:
+  - linkml:types
+  - "@uniti/core@v2"
+  - "@demo/catalog@v4"
+  - "@rival/stock-moves@v2"
+classes:
+  IngredientStock:
+    description: >-
+      One row per ingredient anything has moved for. Every column is derived;
+      nothing states a row of this table, and dropping it loses nothing.
+    structured_aliases:
+      - {literal_form: Stok bahan, in_language: id, predicate: EXACT_SYNONYM}
+    slots:
+      - stock_ingredient
+      - stock_quantity_on_hand
+      - stock_reorder_level
+      - stock_headroom
+slots:
+  stock_ingredient:
+    title: Ingredient
+    slot_uri: stk:stock_ingredient
+    range: Ingredient
+    description: The ingredient this row is about. The grouping, not a value.
+    structured_aliases:
+      - {literal_form: Bahan, in_language: id, predicate: EXACT_SYNONYM}
+  stock_quantity_on_hand:
+    title: On hand
+    slot_uri: stk:quantity_on_hand
+    range: decimal
+    unit: {descriptive_name: the ingredient's own unit}
+    description: >-
+      Every flow affecting this ingredient, added up. This module names no
+      class and no slot belonging to whoever recorded them: it names core's
+      Flow and core's two bindings, and whichever module kept that promise
+      answers. Called `quantity_on_hand` until v4.
+    structured_aliases:
+      - {literal_form: Stok tersedia, in_language: id, predicate: EXACT_SYNONYM}
+    annotations:
+      direction: level
+      aggregate:
+        value:
+          over: Flow
+          sum: amount
+          by: {stock_ingredient: affects}
+  stock_reorder_level:
+    title: Reorder level
+    slot_uri: stk:reorder_level
+    range: decimal
+    unit: {descriptive_name: the ingredient's own unit}
+    description: >-
+      What somebody said the level is, read off the ingredient this row groups
+      by. It belongs to @demo/catalog, and naming it directly is deliberate.
+      Where nobody has said one the cell is empty, which is not the same as
+      nought. Called `reorder_level` until v4.
+    structured_aliases:
+      - {literal_form: Batas pesan ulang, in_language: id, predicate: EXACT_SYNONYM}
+    annotations:
+      direction: level
+      parameter:
+        value: {of: stock_ingredient, slot: ingredient_reorder_level}
+  stock_headroom:
+    title: Headroom
+    slot_uri: stk:headroom
+    range: decimal
+    unit: {descriptive_name: the ingredient's own unit}
+    description: >-
+      How far above the level this ingredient is. Negative means somebody
+      should be told. Called `headroom` until v4.
+    structured_aliases:
+      - {literal_form: Selisih dari batas, in_language: id, predicate: EXACT_SYNONYM}
+    annotations:
+      direction: level
+    equals_expression: "{stock_quantity_on_hand} - {stock_reorder_level}"
+annotations:
+  valid_from: '2026-10-03T00:00:00+00:00'
+  transcript: v4.draft.txt

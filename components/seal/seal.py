@@ -530,6 +530,22 @@ def _examples_hold(conn, view, draft, draft_path):
     return held
 
 
+def _standard_held(view, draft, draft_path):
+    """The draft is written down the way every module is: the first break of
+    the recording standard, as the studio shows them all."""
+    from components.examples.examples import load, path_for
+    from components.standard import refusals
+
+    def range_of(slot_name):
+        try:
+            return view.induced_slot(slot_name).range
+        except Exception:  # noqa: BLE001 - a slot LinkML cannot induce has none
+            return None
+
+    for refusal in refusals(draft, load(path_for(draft_path)), range_of):
+        raise refusal
+
+
 def _one_version_per_module(store, draft, name):
     """No module reachable from this draft appears at two versions.
 
@@ -872,7 +888,8 @@ def _sealed_document(draft, version, valid_from, sealed_at, supersedes):
     return document
 
 
-def seal(conn, draft_path, *, actor_id, into=None, sealed_at=None, store=None):
+def seal(conn, draft_path, *, actor_id, into=None, sealed_at=None, store=None,
+         standard=True):
     """Seal one draft. Returns a dict describing what was written.
 
     Raises DraftError, before anything is written anywhere, if the draft is not
@@ -882,6 +899,14 @@ def seal(conn, draft_path, *, actor_id, into=None, sealed_at=None, store=None):
     `into` is one of the store's modules the kernel records the version as
     `@scope/name@vN`: a bare `v1` names nothing once there is more than one
     module.
+
+    A draft sealed into a module of the store is held to the recording standard
+    (components/standard), last, once everything else holds: the store is
+    where modules find and read each other, and the standard is what one owes
+    the rest. A draft outside a store is read by nobody else. `standard=False`
+    is for one caller only: replaying versions that were sealed before the
+    standard existed, whose bytes are history and are not changed to fit a
+    rule written after them.
     """
     draft_path = Path(draft_path)
     into = Path(into) if into is not None else ROOT / "business"
@@ -913,6 +938,8 @@ def seal(conn, draft_path, *, actor_id, into=None, sealed_at=None, store=None):
     facts = _facts(annotations, ranges, draft_path.name, view)
     _compiles(view, draft_path)
     examples = _examples_hold(conn, view, draft, draft_path)
+    if standard and store is not None and store.module_of(into):
+        _standard_held(view, draft, draft_path)
 
     valid_from = _valid_from(annotations, draft_path.name)
     _flat(annotations, draft_path.name)

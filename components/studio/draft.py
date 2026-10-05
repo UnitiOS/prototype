@@ -52,6 +52,7 @@ sys.path.insert(0, str(ROOT / "components" / "generator"))
 from components.examples import examples as business  # noqa: E402
 from components.modules.roles import _above  # noqa: E402
 from components.refusal import Refusal, Repair  # noqa: E402
+from components import standard  # noqa: E402
 from compile import SQL_TYPE, SYNTAX  # noqa: E402
 
 DRAFT = "draft.yaml"
@@ -59,10 +60,20 @@ TRANSCRIPT = "draft.txt"
 MANIFEST = "package.yaml"
 # The business examples the draft is held to, beside it under its own name.
 EXAMPLES = business.path_for(Path(DRAFT)).name
+# What was said about the draft with the agent, beside it too; the studio never
+# reads it, a discarded draft takes it along, and a sealed one leaves it beside
+# the version it became (`closed`).
+CONVERSATION = "draft.chat.yaml"
+# The plan an agent put before the person — what it will build, from which
+# records, which numbers come out — and whether they agreed. Beside the draft,
+# and before there is one: a plan comes first. It goes where the conversation
+# goes: away with a discarded draft, beside the version a sealed one became.
+PLAN = "draft.plan.yaml"
 
 # The keys a module document holds, in the order they are written. A file
 # whose keys move about on every save is a file whose diff is unreadable.
-ORDER = ("id", "name", "title", "description", "prefixes", "default_prefix",
+ORDER = ("id", "name", "title", "description", "structured_aliases",
+         "prefixes", "default_prefix",
          "default_range", "imports", "classes", "slots", "enums", "annotations")
 
 # Where a module started here declares its own terms, when nobody says
@@ -77,7 +88,8 @@ BASE = "https://uniti.example"
 FIELDS = ("title", "description", "valid_from")
 CLASS_FIELDS = ("description", "is_a")
 SLOT_FIELDS = ("title", "description", "range", "slot_uri",
-               "identifier", "required", "multivalued", "designates_type")
+               "identifier", "required", "multivalued", "designates_type",
+               "unit", standard.DIRECTION, standard.TIME_MEANING)
 BOOLEAN_FIELDS = ("identifier", "required", "multivalued", "designates_type")
 # An enum is a closed list of values; `values` is written `a, b, c`.
 ENUM_FIELDS = ("description", "values")
@@ -96,6 +108,15 @@ EXAMPLE_FIELDS = ("says",)
 ACTORS = ("person", "agent")
 _ACTOR = ContextVar("actor", default="person")
 
+# The order an agent works in, kept by the system rather than remembered by
+# the agent: first what to build, then what the numbers must be, then how
+# they are worked out. An agent takes no step at all — not even starting the
+# draft — until the person has agreed to its plan; and a step that writes a
+# rule computing a number (`RULED`) only once they have also agreed to an
+# example giving the numbers of the table the rule is on. A person building
+# by hand is not held to either.
+RULED = ("aggregate", "parameter", "expression")
+
 # The operations, what each one does, and what it takes. The kinds are what
 # `steps()` turns into option lists, so they are the vocabulary a form renders
 # and an agent chooses from:
@@ -106,6 +127,8 @@ _ACTOR = ContextVar("actor", default="person")
 #   own_example  record            an example beside it, and one of its records
 #   class  slot  role  binding     something this draft can see
 #   range  field  column  mapping  computed from what is around it
+#   direction  time_meaning        one of the recording standard's lists
+#   term  language                 something this draft names, and a language
 OPERATIONS = {
     "start": {
         "does": "create a module and open its first draft",
@@ -172,7 +195,9 @@ OPERATIONS = {
         "does": "declare a slot, and the predicate the log records it under",
         "takes": {"slot": "word"},
         "may": {"slot_uri": "uri", "range": "range", "title": "text",
-                "description": "text"},
+                "description": "text", "unit": "text",
+                standard.DIRECTION: "direction",
+                standard.TIME_MEANING: "time_meaning"},
     },
     "remove_slot": {
         "does": "take a slot out of the draft",
@@ -186,9 +211,18 @@ OPERATIONS = {
         "may": {},
     },
     "set_slot": {
-        "does": "a slot's title, description, range, predicate, or what kind "
-                "of slot it is",
+        "does": "a slot's title, description, range, predicate, what kind "
+                "of slot it is, or what its value means: a number's unit and "
+                "direction, a date's time meaning",
         "takes": {"slot": "own_slot", "field": "field", "value": "text"},
+        "may": {},
+    },
+    "label": {
+        "does": "keep a person's own word for a class, a slot, an enum value "
+                "(`Enum.value`), an example or the module itself, in their "
+                "language: the studio shows it to them in place of the "
+                "English the module is recorded in",
+        "takes": {"term": "term", "language": "language", "label": "text"},
         "may": {},
     },
     "add_enum": {
@@ -285,8 +319,10 @@ OPERATIONS = {
         "does": "state one record in an example, as a form would: what it is "
                 "(`class`, the first time), its facts written `slot=value, ...`, "
                 "and the day it became true (`when`). A value naming another "
-                "record is that record's name. The same record stated again "
-                "with a later `when` is that record changing",
+                "record is that record's name. The first time, it gives every "
+                "fact its class requires. The same record stated again on the "
+                "same day corrects that statement; with a later `when` it is "
+                "that record changing",
         "takes": {"example": "own_example", "record": "word"},
         "may": {"class": "class", "facts": "mapping", "when": "moment"},
     },
@@ -316,6 +352,14 @@ OPERATIONS = {
                 "numbers must be. Only a person agrees: an example an agent "
                 "wrote is a proposal until then, and cannot be sealed",
         "takes": {"example": "own_example"},
+        "may": {},
+    },
+    "agree_plan": {
+        "does": "agree to the plan an agent put forward: what it will build, "
+                "from which records, and which numbers come out. Only a person "
+                "agrees; until then an agent writes no rule that computes a "
+                "number. A plan put forward again needs agreeing to again",
+        "takes": {},
         "may": {},
     },
 }
@@ -406,6 +450,32 @@ def _save_examples(store, name, held, op, args, *, record=True):
         (where / EXAMPLES).unlink(missing_ok=True)
     if record:
         _record(where / TRANSCRIPT, name, op, args)
+
+
+def plan_of(store, name):
+    """The plan beside the draft, or None when nobody put one forward."""
+    where = directory(store, name) / PLAN
+    if not where.is_file():
+        return None
+    return yaml.safe_load(where.read_text(encoding="utf-8")) or None
+
+
+def propose_plan(store, name, plan):
+    """Put an agent's plan before the person: kept beside the draft, not agreed
+    to. A plan put forward again replaces the one before, agreed or not — what
+    the person agrees to is the plan in front of them. Not a step: a plan is
+    how an agent ends a turn, and nothing in the draft changes."""
+    where = directory(store, name)
+    where.mkdir(parents=True, exist_ok=True)
+    held = {**plan, "proposed_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "agreed": False}
+    _write_plan(where, held)
+    return held
+
+
+def _write_plan(where, plan):
+    (where / PLAN).write_text(yaml.safe_dump(plan, sort_keys=False, allow_unicode=True),
+                              encoding="utf-8", newline="\n")
 
 
 def _ordered(document):
@@ -527,8 +597,45 @@ def _perform(store, name, op, args):
             repairs=[Repair("choose a step", options=sorted(OPERATIONS))],
         )
     args = _arguments(op, args)
-    document = None if op in ("start", "revise") else open_draft(store, name)
+    # A plan is agreed to before there is a draft as often as after.
+    document = None if op in ("start", "revise", "agree_plan") else open_draft(store, name)
+    _in_order(store, name, op, args)
     return _PERFORM[op](store, name, document, args)
+
+
+def _in_order(store, name, op, args):
+    """Refuse an agent's step taken out of order: any before the plan is
+    agreed, a rule (`RULED`) before an agreed example for its table."""
+    if _ACTOR.get() != "agent" or op == "agree_plan":
+        return
+    plan = plan_of(store, name)
+    if not (plan and plan.get("agreed")):
+        raise StudioError(
+            "plan_not_agreed",
+            where=f"{op}: {args['class']}.{args['column']}" if op in RULED else op,
+            expected="a plan the person agreed to, before anything is built",
+            got="a plan the person has not agreed to yet" if plan else "no plan yet",
+            repairs=[Repair("put your plan before the person — what you will build, "
+                            "from which records, which numbers come out — and wait "
+                            "for them to agree; reading the catalogue and the "
+                            "modules you may build on needs no plan")],
+        )
+    if op not in RULED:
+        return
+    table = str(args["class"])
+    if not any(business.agreed(body) and any(str(e.get("table")) == table
+                                             for e in body.get("expect") or [])
+               for body in examples_of(store, name).values()):
+        raise StudioError(
+            "no_agreed_example",
+            where=f"{op}: {table}.{args['column']}",
+            expected=f"an example the person agreed to, giving numbers {table} must show",
+            got="none yet",
+            repairs=[Repair(f"write an example with the numbers {table} must show, "
+                            f"its numbers from the accountant, and put it before the "
+                            f"person; the rules come once they agree",
+                            options=["add_example"])],
+        )
 
 
 def _arguments(op, args):
@@ -656,6 +763,13 @@ def _tidy(document):
 
 def _start(store, name, _document, args):
     where = directory(store, name)
+    # A module cannot be renamed, so its name is held to the standard here,
+    # at the one moment it can still be chosen.
+    badly = standard.module_name(name)
+    if badly is not None:
+        raise StudioError("name_not_standard", where=badly.where,
+                          expected=badly.expected, got=badly.got,
+                          repairs=badly.repairs)
     if (where / DRAFT).is_file():
         raise StudioError(
             "draft_open",
@@ -751,10 +865,25 @@ def _revise(store, name, _document, args):
     return _save(store, name, document, "revise", {"module": name, "from": latest})
 
 
+def closed(store, name, version):
+    """The draft became `version`: close it. The seal copied out the draft's
+    transcript and examples beside the version and left the draft as it found
+    it; what is left to do is take the draft away, so the module has no open
+    draft, and keep the conversation that built it beside the version, as
+    `vN.chat.yaml`, and the plan as `vN.plan.yaml`, where the other evidence
+    of that version is."""
+    where = directory(store, name)
+    for leaf, kept in ((CONVERSATION, "chat"), (PLAN, "plan")):
+        if (where / leaf).is_file():
+            (where / leaf).replace(where / f"{version}.{kept}.yaml")
+    for leaf in (DRAFT, TRANSCRIPT, EXAMPLES):
+        (where / leaf).unlink(missing_ok=True)
+
+
 def _discard(store, name, _document, _args):
     """Throw the draft away. Nothing was sealed, so nothing is lost but this."""
     where = directory(store, name)
-    for leaf in (DRAFT, TRANSCRIPT, EXAMPLES):
+    for leaf in (DRAFT, TRANSCRIPT, EXAMPLES, CONVERSATION, PLAN):
         (where / leaf).unlink(missing_ok=True)
     # A module that never sealed anything and has no draft any more is not a
     # module; leaving the shell behind would put a name in the store that
@@ -927,6 +1056,9 @@ def _add_slot(store, name, document, args):
             body[field] = str(args[field])
     if args.get("range"):
         body["range"] = _range(store, document, str(args["range"]), "add_slot")
+    for field in ("unit", standard.DIRECTION, standard.TIME_MEANING):
+        if args.get(field):
+            body = _meaning(body, field, args[field], f"add_slot {slot_name}")
     _slots(document)[slot_name] = body
     return _save(store, name, document, "add_slot", {**args, "slot_uri": uri})
 
@@ -1007,6 +1139,10 @@ def _rename_slot(store, name, document, args):
 def _set_slot(store, name, document, args):
     slot_name = _own(document, "slot", str(args["slot"]), "set_slot")
     field = _field("set_slot", SLOT_FIELDS, args["field"])
+    if field in ("unit", standard.DIRECTION, standard.TIME_MEANING):
+        _slots(document)[slot_name] = _meaning(_slots(document)[slot_name], field,
+                                               args["value"], f"set_slot {slot_name}")
+        return _save(store, name, document, "set_slot", args)
     value = _value(field, args["value"])
     if field == "range":
         value = _range(store, document, str(args["value"]), "set_slot")
@@ -1024,6 +1160,32 @@ def _set_slot(store, name, document, args):
         body.pop(field, None)
     _slots(document)[slot_name] = body
     return _save(store, name, document, "set_slot", args)
+
+
+def _meaning(body, field, value, what):
+    """A slot with its unit, direction or time meaning said.
+
+    The unit is LinkML's own; the other two are annotations, from the
+    standard's closed lists, because LinkML has no place for either.
+    """
+    body = dict(body or {})
+    value = str(value).strip()
+    if field == "unit":
+        body["unit"] = standard.unit(value)
+        return body
+    allowed = (standard.DIRECTIONS if field == standard.DIRECTION
+               else standard.TIME_MEANINGS)
+    if value not in allowed:
+        raise StudioError(
+            "operation_arguments",
+            where=what,
+            expected=f"a {field} from the recording standard's list",
+            got=f"{value!r}",
+            repairs=[Repair("choose one; each says what it means in the guide",
+                            options=list(allowed))],
+        )
+    body["annotations"] = {**(body.get("annotations") or {}), field: value}
+    return body
 
 
 def _attach(store, name, document, args):
@@ -1097,6 +1259,77 @@ def _set_usage(store, name, document, args):
         body.pop("slot_usage", None)
     _classes(document)[class_name] = body
     return _save(store, name, document, "set_usage", args)
+
+
+# ---- labels ---------------------------------------------------------------
+
+LANGUAGE_TAG = re.compile(r"^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$")
+
+
+def terms(document, held):
+    """Everything in this draft a person may have a word for."""
+    out = ["module"]
+    out += sorted(document.get("classes") or {})
+    out += sorted(document.get("slots") or {})
+    for enum_name, body in sorted((document.get("enums") or {}).items()):
+        out.append(enum_name)
+        out += [f"{enum_name}.{v}" for v in ((body or {}).get("permissible_values") or {})]
+    out += sorted(held)
+    return out
+
+
+def _values_of(document, enum_name):
+    body = (document.get("enums") or {}).get(enum_name) or {}
+    return body.get("permissible_values") or {}
+
+
+def _label(store, name, document, args):
+    term, text = str(args["term"]), str(args["label"]).strip()
+    language = str(args["language"]).strip()
+    if not LANGUAGE_TAG.match(language):
+        raise StudioError(
+            "operation_arguments",
+            where=f"label {term}",
+            expected="a language tag such as id, en, ms, es or pt-BR",
+            got=f"{language!r}",
+            repairs=[Repair("name the language the person speaks, by its tag")],
+        )
+    held = examples_of(store, name)
+    enum_name, _, value = term.partition(".")
+    if term == "module":
+        document.update(standard.with_label(
+            {"structured_aliases": document.get("structured_aliases")},
+            language, text))
+    elif term in (document.get("classes") or {}):
+        _classes(document)[term] = standard.with_label(_classes(document)[term],
+                                                       language, text)
+    elif term in (document.get("slots") or {}):
+        _slots(document)[term] = standard.with_label(_slots(document)[term],
+                                                     language, text)
+    elif term in (document.get("enums") or {}):
+        document["enums"][term] = standard.with_label(document["enums"][term],
+                                                      language, text)
+    elif value and value in _values_of(document, enum_name):
+        values = document["enums"][enum_name]["permissible_values"]
+        values[value] = standard.with_label(values[value], language, text)
+    elif term in held:
+        # An example is the business's word, and its label is the business's
+        # own words: an agent may label only its own proposal.
+        example = _changeable(held, term, "label")
+        held[example]["labels"] = {**(held[example].get("labels") or {}),
+                                   language: text}
+        _save_examples(store, name, held, "label", args)
+        return document
+    else:
+        raise StudioError(
+            "not_in_draft",
+            where=f"label {term}",
+            expected="a class, slot, enum, enum value or example of this draft, "
+                     "or the module",
+            got=f"{term!r}",
+            repairs=[Repair("label one of these", options=terms(document, held))],
+        )
+    return _save(store, name, document, "label", args)
 
 
 # ---- enums ----------------------------------------------------------------
@@ -1257,6 +1490,7 @@ def _aggregate(store, name, document, args):
     # `over`, `sum` and `by` are read by the compiler, which is the judge of
     # whether they resolve. Writing them here and letting the check answer is
     # what keeps one judge — and the check runs on the next read.
+    _possible(args)
     spec = {"over": str(args["over"]), "sum": str(args["sum"]),
             "by": _mapping(args["by"], "aggregate")}
     if "where" in args:
@@ -1279,6 +1513,41 @@ def _aggregate(store, name, document, args):
             said[key] = _pairs(_mapping(args[key], "aggregate"))
     return _save(store, name, _rule(document, column, "aggregate", spec),
                  "aggregate", said)
+
+
+# Two things a total cannot do yet, refused as such: a builder that is only
+# told the pair is malformed tries another spelling, and then another way
+# round, where the answer is to tell the person.
+_COMPARED = re.compile(r"[<>!]|(?<![=])=(?=[=])")
+LATER = ("this is not something the system can do yet: tell the person so, "
+         "plainly, rather than building something else in its place")
+
+
+def _possible(args):
+    where = str(args.get("where") or "")
+    if _COMPARED.search(where):
+        raise StudioError(
+            "not_possible_yet",
+            where="aggregate: where",
+            expected="pairs slot=Class, narrowing the rows to those whose slot "
+                     "points at that class",
+            got=f"{where!r}, which compares values",
+            repairs=[Repair("totalling only the rows whose value meets a condition: "
+                            + LATER)],
+        )
+    by = args.get("by")
+    reached = [v for v in (by.values() if isinstance(by, dict) else
+                           [p.partition("=")[2] for p in str(by or "").split(",")])
+               if "." in str(v)]
+    if reached:
+        raise StudioError(
+            "not_possible_yet",
+            where="aggregate: by",
+            expected="pairs key=slot, each a slot of the rows totalled themselves",
+            got=f"{', '.join(map(str, reached))}, reached through another record",
+            repairs=[Repair("grouping by a fact reached through another record: "
+                            + LATER)],
+        )
 
 
 def _pairs(mapping):
@@ -1415,6 +1684,33 @@ def _agree_example(store, name, document, args):
     return document
 
 
+def _agree_plan(store, name, document, args):
+    plan = plan_of(store, name)
+    if plan is None:
+        raise StudioError(
+            "no_plan",
+            where=f"agree_plan: {name}",
+            expected="a plan an agent put forward",
+            got="none",
+            repairs=[Repair("ask the agent what it is going to build")],
+        )
+    if _ACTOR.get() != "person":
+        raise StudioError(
+            "person_only",
+            where=f"agree_plan: {name}",
+            expected="a person, agreeing to what will be built",
+            got="an agent",
+            repairs=[Repair("put the plan before the person and wait for them to agree")],
+        )
+    where = directory(store, name)
+    _write_plan(where, {**plan, "agreed": True,
+                        "agreed_at": datetime.now(timezone.utc).isoformat(timespec="seconds")})
+    # In the transcript like any step, before `start` too: agreeing to what
+    # is built is part of how the version came to be.
+    _record(where / TRANSCRIPT, name, "agree_plan", args)
+    return document
+
+
 def _record_step(store, name, document, args):
     held = examples_of(store, name)
     example = _changeable(held, str(args["example"]), "record")
@@ -1436,12 +1732,63 @@ def _record_step(store, name, document, args):
             repairs=[Repair("give it a class, facts, or both",
                             options=["class", "facts"])],
         )
-    held[example].setdefault("records", []).append(record)
+    records = held[example].setdefault("records", [])
+    # The same record on the same day again is that statement corrected, not
+    # a second one beside it: what it says replaces what was said, and what
+    # it leaves out — the class, the facts — is kept from before.
+    same = next((i for i, r in enumerate(records)
+                 if str(r.get("record")) == record["record"]
+                 and r.get("when") == record.get("when")), None)
+    if same is not None:
+        record = {**records[same], **record}
+    first = not any(str(r.get("record")) == record["record"]
+                    for r in records[:len(records) if same is None else same])
+    if first:
+        _required_given(store, name, document, record, f"record: {example}")
+    if same is None:
+        records.append(record)
+    else:
+        records[same] = record
     said = dict(args)
     if "facts" in args:
         said["facts"] = _pairs(record["facts"])
     _save_examples(store, name, held, "record", said)
     return document
+
+
+def _required_given(store, name, document, record, where):
+    """A record stated for the first time gives every fact its class requires.
+
+    The form asks the same when the example runs (`generate._required_hold`);
+    asked here, it is refused at the step that can still be put right, not
+    found later in a failing example. Only what the draft can already say: a
+    draft that does not read as a map yet, or a class it does not know, is
+    left to the example's run to explain.
+    """
+    from components.studio import read as reading  # read imports this module
+    from generate import columns  # noqa: E402 - on the path read puts it on
+
+    class_name = record.get("class")
+    if not class_name:
+        return
+    try:
+        fields = columns(reading._map(store, name, document), str(class_name))
+    except Refusal:
+        return
+    facts = record.get("facts") or {}
+    missing = [f["name"] for f in fields
+               if f["required"] and not f["designates_type"]
+               and facts.get(f["name"]) in (None, "")]
+    if missing:
+        raise StudioError(
+            "required_missing",
+            where=f"{where}: {record['record']}",
+            expected=f"every fact a new {class_name} requires, the first time it is stated",
+            got=f"none for {', '.join(missing)}",
+            repairs=[Repair("state it again with these facts added; the same "
+                            "record on the same day replaces what was said",
+                            options=missing)],
+        )
 
 
 def _unrecord(store, name, document, args):
@@ -1571,6 +1918,7 @@ _PERFORM = {
     "add_slot": _add_slot, "remove_slot": _remove_slot,
     "rename_slot": _rename_slot, "set_slot": _set_slot,
     "add_enum": _add_enum, "set_enum": _set_enum, "remove_enum": _remove_enum,
+    "label": _label,
     "set_usage": _set_usage,
     "attach": _attach, "detach": _detach,
     "bind": _bind, "unbind": _unbind,
@@ -1580,9 +1928,10 @@ _PERFORM = {
     "remove_example": _remove_example,
     "record": _record_step, "unrecord": _unrecord,
     "expect": _expect, "unexpect": _unexpect,
-    "agree_example": _agree_example,
+    "agree_example": _agree_example, "agree_plan": _agree_plan,
 }
 
-__all__ = ["ACTORS", "EXAMPLES", "OPERATIONS", "StudioError", "apply", "drafts",
-           "enums_seen", "examples_of", "open_draft", "path", "ranges", "seen",
-           "text_of", "transcript"]
+__all__ = ["ACTORS", "CONVERSATION", "closed", "EXAMPLES", "OPERATIONS", "PLAN", "RULED",
+           "StudioError", "apply", "drafts", "enums_seen", "examples_of", "open_draft",
+           "path", "plan_of", "propose_plan", "ranges", "seen", "terms", "text_of",
+           "transcript"]

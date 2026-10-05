@@ -35,6 +35,7 @@ import dev_modules  # noqa: E402
 from components.modules import diff as diff_read  # noqa: E402
 from components.modules.store import ModuleError  # noqa: E402
 from components.refusal import CODES  # noqa: E402
+from components.studio import changes  # noqa: E402
 from components.studio import draft as studio  # noqa: E402
 from components.studio import read as reading  # noqa: E402
 from components.studio.draft import _PERFORM, OPERATIONS, StudioError  # noqa: E402
@@ -75,13 +76,17 @@ def build_a_module(store, name="@probe/parts"):
     step(store, name, "add_class", **{"class": "Movement",
                                       "description": "Something moving."})
     step(store, name, "fill_role", **{"class": "Movement", "role": "Flow"})
+    # What a number and a date mean, as the recording standard asks of both.
+    meant = {"movement_size": {"unit": "piece", "direction": "increase"},
+             "movement_day": {"time_meaning": "happened"}}
     for slot, kind, said in (
         ("movement_code", "string", "What names this one."),
         ("movement_size", "decimal", "How much moved, signed."),
         ("movement_thing", "Resource", "What moved."),
         ("movement_day", "date", "The day it moved."),
     ):
-        step(store, name, "add_slot", slot=slot, range=kind, description=said)
+        step(store, name, "add_slot", slot=slot, range=kind, description=said,
+             **meant.get(slot, {}))
         step(store, name, "attach", **{"class": "Movement", "slot": slot})
     step(store, name, "set_slot", slot="movement_code",
          field="identifier", value="true")
@@ -145,14 +150,14 @@ def test_a_hole_that_nothing_refuses_is_still_a_hole(world):
     name = "@probe/openings"
     step(world, name, "start", title="Openings",
          description="A module with loose ends and nothing refused.")
-    step(world, name, "add_class", **{"class": "Thing_of_mine"})
-    step(world, name, "add_slot", slot="loose_one")
+    step(world, name, "add_class", **{"class": "Keepsake",
+                                      "description": "Something kept."})
+    step(world, name, "add_slot", slot="loose_one",
+         description="Something said about nothing yet.")
 
     holes = {(h["kind"], h["where"]) for h in reading.state(world, name)["holes"]}
-    assert ("class_is_empty", "Thing_of_mine") in holes
+    assert ("class_is_empty", "Keepsake") in holes
     assert ("slot_is_loose", "loose_one") in holes
-    assert ("nothing_said_about_it", "Thing_of_mine") in holes
-    assert ("nothing_said_about_it", "loose_one") in holes
     assert all(not h["blocking"] for h in reading.state(world, name)["holes"])
     assert reading.state(world, name)["sealable"] is True
 
@@ -304,13 +309,16 @@ def test_an_application_is_built_the_same_way_a_module_is(world, conn):
     step(world, name, "pin", module=f"{dev_modules.INVENTORY}@v3")
     step(world, name, "add_class", **{"class": "Balance",
                                       "description": "One row per resource anything moved."})
-    for slot, kind, said in (
-        ("balance_thing", "Ingredient", "The resource this row is about."),
-        ("balance_on_hand", "decimal", "Every flow affecting it, added up."),
-        ("balance_level", "decimal", "What somebody said the level is."),
-        ("balance_headroom", "decimal", "How far above the level that leaves it."),
+    level = {"unit": "the unit of the ingredient", "direction": "level"}
+    for slot, kind, said, meant in (
+        ("balance_thing", "Ingredient", "The resource this row is about.", {}),
+        ("balance_on_hand", "decimal", "Every flow affecting it, added up.", level),
+        ("balance_level", "decimal", "What somebody said the level is.", level),
+        ("balance_headroom", "decimal", "How far above the level that leaves it.",
+         level),
     ):
-        step(world, name, "add_slot", slot=slot, range=kind, description=said)
+        step(world, name, "add_slot", slot=slot, range=kind, description=said,
+             **meant)
         step(world, name, "attach", **{"class": "Balance", "slot": slot})
 
     # A rule written against the role, not against anybody's class: this is
@@ -371,13 +379,16 @@ def _a_converted_total(store, name):
     step(store, name, "fill_role", **{"class": "Rate", "role": "Thing"})
     step(store, name, "add_class", **{"class": "Total",
                                       "description": "One row per resource."})
-    for class_name, slot, kind, said in (
-        ("Rate", "rate_thing", "Ingredient", "The resource this rate is for."),
-        ("Rate", "rate_factor", "decimal", "Base units per counted unit."),
-        ("Total", "total_thing", "Ingredient", "The resource this row is about."),
-        ("Total", "total_base", "decimal", "Every flow of it, in base units."),
+    for class_name, slot, kind, said, meant in (
+        ("Rate", "rate_thing", "Ingredient", "The resource this rate is for.", {}),
+        ("Rate", "rate_factor", "decimal", "Base units per counted unit.",
+         {"unit": "base units per counted unit", "direction": "level"}),
+        ("Total", "total_thing", "Ingredient", "The resource this row is about.", {}),
+        ("Total", "total_base", "decimal", "Every flow of it, in base units.",
+         {"unit": "base unit", "direction": "level"}),
     ):
-        step(store, name, "add_slot", slot=slot, range=kind, description=said)
+        step(store, name, "add_slot", slot=slot, range=kind, description=said,
+             **meant)
         step(store, name, "attach", **{"class": class_name, "slot": slot})
     return name
 
@@ -541,6 +552,100 @@ def test_a_revision_starts_from_the_last_version_without_its_stamps(world, conn)
     step(world, name, "add_slot", slot="movement_note", description="Why.")
     step(world, name, "attach", **{"class": "Movement", "slot": "movement_note"})
     assert reading.state(world, name)["diff"]["slots"]["added"] == ["movement_note"]
+
+
+def test_the_draft_says_where_each_number_comes_from(world):
+    """The compiler's reading of each rule, so the map can draw it.
+
+    Stock's on-hand sums `over: Flow`. What it actually adds up is the
+    `move_change` of every Movement — Movement is what fills Flow, in a module
+    nothing in Stock points at — landing on the row its `move_item` names. That
+    is the compiler's reading, carried as it is, and Movement is drawn
+    because a rule reads it. The examples carry the records they state, so
+    the page can show which of them went into a number.
+    """
+    name = dev_modules.STOCK
+    studio.apply(world, name, "revise", {})
+    try:
+        report = reading.state(world, name)
+        (table,) = report["workings"]
+        assert table["class"] == "IngredientStock"
+        assert table["keys"] == ["stock_ingredient"]
+        columns = {c["name"]: c for c in table["columns"]}
+        assert columns["stock_quantity_on_hand"] == {
+            "name": "stock_quantity_on_hand", "kind": "aggregate", "operator": "sum",
+            "reads": [{"class": "Movement", "fields": ["move_change"],
+                       "by": {"stock_ingredient": "move_item"}}],
+        }
+        assert columns["stock_reorder_level"]["reads"] == [
+            {"class": "Ingredient", "fields": ["ingredient_reorder_level"], "by": {}}]
+        assert columns["stock_headroom"] == {"name": "stock_headroom",
+                                             "kind": "expression", "reads": []}
+
+        assert [c["name"] for c in report["read_from"]] == ["Movement"]
+        assert report["read_from"][0]["module"]["name"] == dev_modules.RIVAL
+        assert "Movement" not in {b["name"] for b in report["borrowed"]}
+
+        flour = next(e for e in report["examples"] if e["name"] == "flour_in_and_out")
+        moved = [r for r in flour["recorded"] if r["class"] == "Movement"]
+        assert [r["facts"]["move_change"] for r in moved] == [25, 25, -14]
+        # A record named again later keeps the class it was first stated as.
+        assert [r["class"] for r in flour["recorded"] if r["record"] == "flour"] \
+            == ["Ingredient", "Ingredient"]
+    finally:
+        studio.apply(world, name, "discard", {})
+
+
+def test_the_draft_says_what_it_changes_as_the_map_draws_it(world):
+    """Against the version it revises, a line per kind, field and example
+    that is new, different or gone. A fresh revision changes nothing; a field
+    added to a kind is that field added and that kind changed; a rule
+    rewritten is the field it is on, changed."""
+    name = dev_modules.STOCK
+    studio.apply(world, name, "revise", {})
+    try:
+        assert reading.state(world, name)["changes"] == []
+        before = changes.look(world, name)
+
+        step(world, name, "add_slot", slot="stock_note", range="string",
+             description="Anything said about this row.")
+        step(world, name, "attach", **{"class": "IngredientStock", "slot": "stock_note"})
+        step(world, name, "add_example", example="quiet", says="Nothing moved.")
+        assert reading.state(world, name)["changes"] == [
+            {"what": "kind", "name": "IngredientStock", "how": "changed"},
+            {"what": "field", "name": "IngredientStock.stock_note", "how": "added"},
+            {"what": "example", "name": "quiet", "how": "added"},
+        ]
+
+        step(world, name, "detach", **{"class": "IngredientStock", "slot": "stock_note"})
+        after = changes.look(world, name)
+        assert changes.between(before, after) == [
+            {"what": "example", "name": "quiet", "how": "added"}]
+        assert changes.between(after, before) == [
+            {"what": "example", "name": "quiet", "how": "removed"}]
+    finally:
+        studio.apply(world, name, "discard", {})
+
+
+def test_a_new_module_changes_everything_in_it(world):
+    name = "@probe/fresh"
+    step(world, name, "start", title="Fresh", description="Never sealed.")
+    try:
+        step(world, name, "add_class", **{"class": "One", "description": "A thing."})
+        step(world, name, "add_slot", slot="one_code", range="string",
+             description="Which one.")
+        step(world, name, "attach", **{"class": "One", "slot": "one_code"})
+        assert reading.state(world, name)["changes"] == [
+            {"what": "pin", "name": "@uniti/core@v2", "how": "added"},
+            {"what": "kind", "name": "One", "how": "added"},
+            {"what": "field", "name": "One.one_code", "how": "added"},
+        ]
+        # A module with no draft looks empty: everything was taken away.
+        assert changes.between(changes.look(world, name), changes.look(world, "@probe/none")) \
+            == [{"what": "pin", "name": "@uniti/core@v2", "how": "removed"},
+                {"what": "kind", "name": "One", "how": "removed"}]
+    finally:
+        studio.apply(world, name, "discard", {})
 
 
 def test_a_discarded_draft_leaves_nothing_behind(world):

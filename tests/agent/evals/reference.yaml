@@ -1,0 +1,110 @@
+# Demonstration data. One way to build each buildable task in tasks.yaml, as
+# studio steps. Not shown to any model: it is here so a test can show that
+# every truth in tasks.yaml can be met by the system as it is — a task the
+# system cannot pass is a broken task, not a failing model. Each is written to
+# the recording standard, as a build has to be to be sealable.
+
+on_hand:
+  - {op: start, args: {title: On hand, description: On hand per ingredient.}}
+  - {op: pin, args: {module: "@demo/catalog@v4"}}
+  - {op: pin, args: {module: "@demo/inventory@v4"}}
+  - {op: add_class, args: {class: Stock, description: One row per ingredient.}}
+  - {op: add_slot, args: {slot: stock_ingredient, range: Ingredient, description: The ingredient this row is about.}}
+  - {op: attach, args: {class: Stock, slot: stock_ingredient}}
+  - {op: add_slot, args: {slot: stock_on_hand, range: decimal, description: Every movement of the ingredient added up., unit: the ingredient's own unit, direction: level}}
+  - {op: attach, args: {class: Stock, slot: stock_on_hand}}
+  - {op: aggregate, args: {class: Stock, column: stock_on_hand, over: StockMovement, sum: movement_quantity, by: stock_ingredient=movement_ingredient}}
+
+headroom:
+  - {op: start, args: {title: Headroom, description: Headroom per ingredient.}}
+  - {op: pin, args: {module: "@demo/catalog@v4"}}
+  - {op: pin, args: {module: "@demo/inventory@v4"}}
+  - {op: add_class, args: {class: Room, description: One row per ingredient.}}
+  - {op: add_slot, args: {slot: room_ingredient, range: Ingredient, description: The ingredient this row is about.}}
+  - {op: attach, args: {class: Room, slot: room_ingredient}}
+  - {op: add_slot, args: {slot: room_on_hand, range: decimal, description: Every movement of the ingredient added up., unit: the ingredient's own unit, direction: level}}
+  - {op: attach, args: {class: Room, slot: room_on_hand}}
+  - {op: aggregate, args: {class: Room, column: room_on_hand, over: StockMovement, sum: movement_quantity, by: room_ingredient=movement_ingredient}}
+  - {op: add_slot, args: {slot: room_level, range: decimal, description: The reorder level set for the ingredient., unit: the ingredient's own unit, direction: level}}
+  - {op: attach, args: {class: Room, slot: room_level}}
+  - {op: parameter, args: {class: Room, column: room_level, of: room_ingredient, slot: ingredient_reorder_level}}
+  - {op: add_slot, args: {slot: room_headroom, range: decimal, description: How far the stock is above the level., unit: the ingredient's own unit, direction: level}}
+  - {op: attach, args: {class: Room, slot: room_headroom}}
+  - {op: expression, args: {class: Room, column: room_headroom, expression: "{room_on_hand} - {room_level}"}}
+
+shortfall:
+  - {op: start, args: {title: Shortfall, description: What to buy per ingredient.}}
+  - {op: pin, args: {module: "@demo/catalog@v4"}}
+  - {op: pin, args: {module: "@demo/inventory@v4"}}
+  - {op: add_class, args: {class: Shortfall, description: One row per ingredient.}}
+  - {op: add_slot, args: {slot: shortfall_ingredient, range: Ingredient, description: The ingredient this row is about.}}
+  - {op: attach, args: {class: Shortfall, slot: shortfall_ingredient}}
+  - {op: add_slot, args: {slot: shortfall_on_hand, range: decimal, description: Every movement of the ingredient added up., unit: the ingredient's own unit, direction: level}}
+  - {op: attach, args: {class: Shortfall, slot: shortfall_on_hand}}
+  - {op: aggregate, args: {class: Shortfall, column: shortfall_on_hand, over: StockMovement, sum: movement_quantity, by: shortfall_ingredient=movement_ingredient}}
+  - {op: add_slot, args: {slot: shortfall_level, range: decimal, description: The reorder level set for the ingredient., unit: the ingredient's own unit, direction: level}}
+  - {op: attach, args: {class: Shortfall, slot: shortfall_level}}
+  - {op: parameter, args: {class: Shortfall, column: shortfall_level, of: shortfall_ingredient, slot: ingredient_reorder_level}}
+  - {op: add_slot, args: {slot: shortfall_amount, range: decimal, description: How much to buy to reach the level., unit: the ingredient's own unit, direction: level}}
+  - {op: attach, args: {class: Shortfall, slot: shortfall_amount}}
+  - {op: expression, args: {class: Shortfall, column: shortfall_amount, expression: "{shortfall_level} - {shortfall_on_hand}"}}
+
+per_location:
+  - {op: start, args: {title: Shelves, description: On hand per ingredient per place.}}
+  - {op: pin, args: {module: "@demo/catalog@v4"}}
+  - {op: pin, args: {module: "@demo/inventory@v4"}}
+  - {op: add_class, args: {class: Shelf, description: One row per ingredient and place.}}
+  - {op: add_slot, args: {slot: shelf_ingredient, range: Ingredient, description: The ingredient this row is about.}}
+  - {op: attach, args: {class: Shelf, slot: shelf_ingredient}}
+  - {op: add_slot, args: {slot: shelf_location, range: Location, description: The place this row is about.}}
+  - {op: attach, args: {class: Shelf, slot: shelf_location}}
+  - {op: add_slot, args: {slot: shelf_on_hand, range: decimal, description: Every movement of the ingredient at the place added up., unit: the ingredient's own unit, direction: level}}
+  - {op: attach, args: {class: Shelf, slot: shelf_on_hand}}
+  - {op: aggregate, args: {class: Shelf, column: shelf_on_hand, over: StockMovement, sum: movement_quantity, by: "shelf_ingredient=movement_ingredient, shelf_location=movement_location"}}
+
+counted_once:
+  - {op: start, args: {title: Compare, description: Our records beside the warehouse's.}}
+  - {op: pin, args: {module: "@demo/catalog@v4"}}
+  - {op: pin, args: {module: "@demo/inventory@v4"}}
+  - {op: pin, args: {module: "@rival/stock-moves@v2"}}
+  - {op: add_class, args: {class: Compare, description: One row per ingredient.}}
+  - {op: add_slot, args: {slot: compare_ingredient, range: Ingredient, description: The ingredient this row is about.}}
+  - {op: attach, args: {class: Compare, slot: compare_ingredient}}
+  - {op: add_slot, args: {slot: compare_ours, range: decimal, description: On hand by our own records., unit: the ingredient's own unit, direction: level}}
+  - {op: attach, args: {class: Compare, slot: compare_ours}}
+  - {op: aggregate, args: {class: Compare, column: compare_ours, over: StockMovement, sum: movement_quantity, by: compare_ingredient=movement_ingredient}}
+  - {op: add_slot, args: {slot: compare_theirs, range: decimal, description: On hand by the warehouse's records., unit: the ingredient's own unit, direction: level}}
+  - {op: attach, args: {class: Compare, slot: compare_theirs}}
+  - {op: aggregate, args: {class: Compare, column: compare_theirs, over: Movement, sum: move_change, by: compare_ingredient=move_item}}
+  - {op: add_slot, args: {slot: compare_difference, range: decimal, description: Ours less theirs., unit: the ingredient's own unit, direction: level}}
+  - {op: attach, args: {class: Compare, slot: compare_difference}}
+  - {op: expression, args: {class: Compare, column: compare_difference, expression: "{compare_ours} - {compare_theirs}"}}
+
+two_shops:
+  - {op: start, args: {title: Two shops, description: Stock of both shops together.}}
+  - {op: pin, args: {module: "@demo/catalog@v4"}}
+  - {op: pin, args: {module: "@demo/inventory@v4"}}
+  - {op: pin, args: {module: "@rival/stock-moves@v2"}}
+  - {op: add_class, args: {class: Total, description: One row per ingredient.}}
+  - {op: add_slot, args: {slot: total_ingredient, range: Ingredient, description: The ingredient this row is about.}}
+  - {op: attach, args: {class: Total, slot: total_ingredient}}
+  - {op: add_slot, args: {slot: total_on_hand, range: decimal, description: Every flow of the ingredient in both shops added up., unit: the ingredient's own unit, direction: level}}
+  - {op: attach, args: {class: Total, slot: total_on_hand}}
+  - {op: aggregate, args: {class: Total, column: total_on_hand, over: Flow, sum: amount, by: total_ingredient=affects}}
+
+revise_existing:
+  - {op: revise}
+  - {op: add_slot, args: {slot: stock_order_up_to, range: decimal, description: How much to order to bring the ingredient up to twice its reorder level., unit: the ingredient's own unit, direction: level}}
+  - {op: attach, args: {class: IngredientStock, slot: stock_order_up_to}}
+  - {op: expression, args: {class: IngredientStock, column: stock_order_up_to, expression: "2 * {stock_reorder_level} - {stock_quantity_on_hand}"}}
+
+month_end:
+  - {op: start, args: {title: Balance, description: "On hand per ingredient, on any day."}}
+  - {op: pin, args: {module: "@demo/catalog@v4"}}
+  - {op: pin, args: {module: "@demo/inventory@v4"}}
+  - {op: add_class, args: {class: Balance, description: One row per ingredient.}}
+  - {op: add_slot, args: {slot: balance_ingredient, range: Ingredient, description: The ingredient this row is about.}}
+  - {op: attach, args: {class: Balance, slot: balance_ingredient}}
+  - {op: add_slot, args: {slot: balance_on_hand, range: decimal, description: Every movement of the ingredient added up., unit: the ingredient's own unit, direction: level}}
+  - {op: attach, args: {class: Balance, slot: balance_on_hand}}
+  - {op: aggregate, args: {class: Balance, column: balance_on_hand, over: StockMovement, sum: movement_quantity, by: balance_ingredient=movement_ingredient}}

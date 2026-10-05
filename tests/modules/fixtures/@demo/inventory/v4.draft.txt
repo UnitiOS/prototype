@@ -1,0 +1,15 @@
+Transcript, @demo/inventory v4. Demonstration content — none of this is real.
+
+The inventory module was brought to the recording standard, and moved its pin
+to the catalogue's v4, which had been brought to it first.
+
+Which way does a quantity run? Positive is stock coming in, negative is stock
+going out; the module always said so in prose, and now says it in the field
+every reader can check.
+
+What day is the happened-on date? The day the goods moved. A delivery note
+found in July for a delivery in June is dated June here; the log keeps the
+July as the day it learned of it.
+
+The bakery's words — Mutasi stok, Jumlah, Tanggal kejadian — are kept as
+labels. Nothing was renamed and no predicate changed.

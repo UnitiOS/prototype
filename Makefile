@@ -13,7 +13,7 @@ export UNITI_OPS_DSN := postgresql://uniti:uniti@localhost:5433/$(CHECK_OPS_DB)
 
 OUT := build/check
 
-.PHONY: check venv db schema test replay dev-db dev-compile app web web-dev
+.PHONY: check venv db schema test replay dev-db dev-compile app web web-test web-dev eval eval-accountant
 
 # Environment, schema, tests, and a replay that must come out byte-identical twice.
 check: venv schema test replay
@@ -92,12 +92,36 @@ dev-compile: venv
 	@$(DC) exec -T db psql -U uniti -d postgres -tAc 	    "SELECT 1 FROM pg_database WHERE datname = '$(DEV_OPS_DB)'" | grep -q 1 	    || $(DC) exec -T db createdb -U uniti $(DEV_OPS_DB)
 	UNITI_DSN=$(DEV_DSN) UNITI_OPS_DSN=$(DEV_OPS_DSN) UNITI_PACKAGES="$(DEV_STORE)" 	    $(PY) components/compiler/compile.py "$(DEMO_APP)" --into build/dev/projections
 
-# Build the web application into web/dist.
+# The agent's eval, on the models config/agent.yaml names, over the development
+# store (`make dev-db` first). Every task three times, one run at a time; a task
+# passes when every run does. It calls the model, so it costs money: it stops at
+# `--dollars` (0.50 unless said), prints a line per run, writes every call to
+# build/calls and the report to build/evals.
+# `EVAL_ARGS="--only on_hand --repeat 1 --dollars 0.15"` narrows.
+EVAL_TASKS := tests/agent/evals/tasks.yaml
+
+eval: venv
+	UNITI_DSN=$(DEV_DSN) UNITI_PACKAGES="$(DEV_STORE)" 	    $(PY) -m components.agent eval $(EVAL_TASKS) --part builder $(EVAL_ARGS)
+
+eval-accountant: venv
+	$(PY) -m components.agent eval $(EVAL_TASKS) --part accountant $(EVAL_ARGS)
+
+# Build the web application into web/dist, after its own tests: what the
+# studio's map draws, what each thing is called, and where each box goes.
 web:
-	cd web && npm install --no-audit --no-fund && npm run build
+	cd web && npm install --no-audit --no-fund && npm test && npm run build
+
+web-test:
+	cd web && npm test
 
 # The API and the built application together, on http://localhost:8200.
+# A request on the rehearsal's own module (@rehearsal/levels) is played from
+# its script, one move every REHEARSAL_PAUSE seconds, with no model behind it:
+# a way to watch the agent build on the map without spending anything.
+REHEARSAL       ?= tests/agent/fixtures/rehearsal.yaml
+REHEARSAL_PAUSE ?= 1.5
 app: venv
+	UNITI_AGENT_REHEARSAL=$(REHEARSAL) UNITI_AGENT_REHEARSAL_PAUSE=$(REHEARSAL_PAUSE) \
 	UNITI_DSN=$(DEV_DSN) UNITI_OPS_DSN=$(DEV_OPS_DSN) UNITI_PACKAGES="$(DEV_STORE)" 	    $(PY) -m uvicorn components.api.app:app --port 8200
 
 # While changing the frontend: Vite on http://localhost:5173, forwarding /api to `make app`.

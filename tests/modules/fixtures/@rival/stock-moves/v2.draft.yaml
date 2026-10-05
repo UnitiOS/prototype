@@ -1,0 +1,115 @@
+id: https://rival.example/stock-moves
+name: rival_stock_moves
+title: Stock moves
+description: >-
+  Demonstration data. Somebody else's inventory module. It pins @uniti/core and
+  nothing else — no catalogue, no bakery, no ingredient. What moves is a
+  Resource, whatever that turns out to be, so the same module serves a bakery
+  and a textile mill without either one being mentioned here.
+
+  This version brings v1 to the recording standard. Every slot of a movement
+  now starts with the same word, `move_`, so `item`, `happened`, `qty_delta`
+  and `kept_at` are renamed; every predicate is kept, so everything stated
+  under v1 still belongs to the same slot. Still not one word is shared with
+  @demo/inventory.
+structured_aliases:
+  - {literal_form: Mutasi barang, in_language: id, predicate: EXACT_SYNONYM}
+prefixes:
+  linkml: https://w3id.org/linkml/
+  uniti: https://w3id.org/uniti/core#
+  rv: https://rival.example/stock-moves/
+default_prefix: rv
+default_range: string
+imports:
+  - linkml:types
+  - "@uniti/core@v2"
+classes:
+  Store:
+    description: Somewhere things are kept.
+    structured_aliases:
+      - {literal_form: Gudang, in_language: id, predicate: EXACT_SYNONYM}
+    mixins:
+      - Thing
+    slots:
+      - store_ref
+      - store_name
+  Movement:
+    description: >-
+      An amount of something going in or out. It fills core's Flow, so anything
+      that can total flows can total these.
+    structured_aliases:
+      - {literal_form: Mutasi, in_language: id, predicate: EXACT_SYNONYM}
+    mixins:
+      - Flow
+    slots:
+      - move_ref
+      - move_change
+      - move_item
+      - move_happened_on
+      - move_store
+slots:
+  store_ref:
+    slot_uri: rv:store_ref
+    identifier: true
+    description: The reference a store is known by.
+    structured_aliases:
+      - {literal_form: Kode gudang, in_language: id, predicate: EXACT_SYNONYM}
+  store_name:
+    title: Store
+    slot_uri: rv:store_name
+    description: What the store is called.
+    structured_aliases:
+      - {literal_form: Nama gudang, in_language: id, predicate: EXACT_SYNONYM}
+  move_ref:
+    slot_uri: rv:move_ref
+    identifier: true
+    description: The reference a movement is known by.
+    structured_aliases:
+      - {literal_form: Nomor mutasi, in_language: id, predicate: EXACT_SYNONYM}
+  move_change:
+    title: Change
+    slot_uri: rv:qty_delta
+    is_a: amount
+    range: decimal
+    unit: {descriptive_name: the unit of the item moved}
+    description: >-
+      How much the amount held changed by. Negative is out. Fills core's
+      `amount`. Called `qty_delta` until v2, under the same predicate.
+    structured_aliases:
+      - {literal_form: Perubahan, in_language: id, predicate: EXACT_SYNONYM}
+    annotations:
+      direction: increase
+  move_item:
+    title: Item
+    slot_uri: rv:item
+    is_a: affects
+    description: >-
+      What moved. The range is left at core's Resource on purpose: this module
+      has no opinion about what its users keep. Called `item` until v2.
+    structured_aliases:
+      - {literal_form: Barang, in_language: id, predicate: EXACT_SYNONYM}
+  move_happened_on:
+    title: Date
+    slot_uri: rv:happened
+    is_a: moment
+    range: date
+    description: >-
+      The day the movement happened. Called `happened` until v2, under the
+      same predicate.
+    structured_aliases:
+      - {literal_form: Tanggal, in_language: id, predicate: EXACT_SYNONYM}
+    annotations:
+      time_meaning: happened
+  move_store:
+    title: Store
+    slot_uri: rv:kept_at
+    range: Store
+    description: >-
+      Where it was kept. This module's own idea of a place, answering no role,
+      and therefore not something another module's rule can reach. Called
+      `kept_at` until v2.
+    structured_aliases:
+      - {literal_form: Gudang, in_language: id, predicate: EXACT_SYNONYM}
+annotations:
+  valid_from: '2026-10-03T00:00:00+00:00'
+  transcript: v2.draft.txt

@@ -57,7 +57,7 @@ export function App() {
   };
 
   return (
-    <div className="app">
+    <div className={inStudio ? "app app-wide" : "app"}>
       <header className="top">
         <h1 className="brand">Uniti</h1>
         <nav className="areas" aria-label="Areas">

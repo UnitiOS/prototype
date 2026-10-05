@@ -24,6 +24,7 @@ and what to do next, and leaves out whatever the reader could ask for again.
 """
 
 import os
+import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -87,7 +88,8 @@ class Bench:
 # ---- the tools ------------------------------------------------------------
 
 def look(bench, module, part="draft"):
-    """Read one module's draft.
+    """Read one module's draft. A sealed module has none: read it with
+    `catalogue` and `module`.
 
     part: `draft` (default) — what it declares, every hole, the examples in
     brief, and whether it could be sealed; `around` — the classes of pinned
@@ -100,7 +102,13 @@ def look(bench, module, part="draft"):
     try:
         report = bench.state(module)
     except Refusal as exc:
-        return _refusal(exc.as_dict())
+        if _unheard_of(exc, module):
+            return _NOT_YET.format(module=module)
+        said = _refusal(exc.as_dict())
+        if exc.code == "no_draft" and _sealed(bench.store, module):
+            said += (f"\n{module} is sealed and has no draft: `catalogue` with "
+                     f"module={module} reads what it declares.")
+        return said
     if part == "around":
         return _around(report)
     if part == "examples":
@@ -110,21 +118,48 @@ def look(bench, module, part="draft"):
     return _draft(report)
 
 
+# A module the store has never held is the usual start of a request, not a
+# fault: the store's own refusal speaks to whoever configures it, of roots
+# and environment variables, which the agent can do nothing about.
+_NOT_YET = ("There is no module {module} yet. The step `start` (title, "
+            "description) creates it and opens its first draft, once the person "
+            "agreed to your plan; take it in the same `do` as the steps that follow.")
+
+
+def _unheard_of(exc, module):
+    return exc.code == "no_such_module" and module in exc.sentence()
+
+
+def _sealed(store, module):
+    try:
+        return bool(store.versions(module))
+    except Refusal:
+        return False
+
+
 def options(bench, module, op=""):
-    """The steps there are, or — naming one — what it takes and the answers
-    that fit this draft right now."""
+    """The steps there are, or — naming one, or several separated by commas —
+    what each takes and the answers that fit this draft right now."""
     if not op:
         return "\n".join(f"{name}: {_first(spec['does'])}"
                          for name, spec in studio.OPERATIONS.items())
-    if op not in studio.OPERATIONS:
-        return (f"There is no step {op!r}. Steps: "
+    wanted = [o.strip() for o in op.split(",") if o.strip()]
+    unknown = [o for o in wanted if o not in studio.OPERATIONS]
+    if unknown:
+        return (f"There is no step {unknown[0]!r}. Steps: "
                 + ", ".join(studio.OPERATIONS) + ".")
-    spec = studio.OPERATIONS[op]
     try:
         offered = {s["op"]: s for s in reading.steps(
-            bench.store, module, studio.open_draft(bench.store, module))}[op]
+            bench.store, module, studio.open_draft(bench.store, module))}
     except Refusal:
-        # No draft yet: the step is still described, without answers to offer.
+        # No draft yet: the steps are still described, without answers to offer.
+        offered = {}
+    return "\n".join(_offered(o, offered.get(o)) for o in wanted)
+
+
+def _offered(op, offered):
+    spec = studio.OPERATIONS[op]
+    if offered is None:
         offered = {"takes": [{"name": k, "kind": v, "required": True, "options": []}
                              for k, v in spec["takes"].items()]
                    + [{"name": k, "kind": v, "required": False, "options": []}
@@ -183,22 +218,28 @@ def catalogue(bench, text="", kind="", fills="", module=""):
     """Search what the store holds: modules, roles, classes and slots, at
     their latest sealed versions. Every filter is optional. `text` matches a
     name, title, description or predicate; `kind` is module, role, class or
-    slot; `fills` is a role or binding; `module` is the module declaring it."""
+    slot; `fills` is a role or binding; `module` is the module declaring it,
+    or several separated by commas, read in one call."""
     if kind and kind not in catalogue_read.KINDS:
         return f"kind is one of {', '.join(catalogue_read.KINDS)}."
-    found = catalogue_read.find(catalogue_read.catalogue(bench.store),
-                                text=text or None, kind=kind or None,
-                                fills=fills or None, module=module or None)
-    entries = found["entries"]
+    everything = catalogue_read.catalogue(bench.store)
+    # A pin names a version; the catalogue holds the latest, the one meant.
+    names = [re.sub(r"@v\d+$", "", m.strip()) for m in module.split(",") if m.strip()]
+    entries = []
+    for name in names or [None]:
+        found = catalogue_read.find(everything, text=text or None, kind=kind or None,
+                                    fills=fills or None, module=name)
+        entries += found["entries"]
     if not entries:
         return ("Nothing matches. The store holds modules "
                 + ", ".join(found["modules"]) + "; roles "
                 + ", ".join(found["roles"]) + ".")
+    shown = SHOWN * max(1, len(names))
     lines = [f"{len(entries)} found."]
-    for entry in entries[:SHOWN]:
+    for entry in entries[:shown]:
         lines.append(_entry(entry))
-    if len(entries) > SHOWN:
-        lines.append(f"And {len(entries) - SHOWN} more: narrow the search.")
+    if len(entries) > shown:
+        lines.append(f"And {len(entries) - shown} more: narrow the search.")
     return "\n".join(lines)
 
 
@@ -256,8 +297,20 @@ def _rule(rule):
     return out
 
 
+def _labelled(name, labels):
+    """A name with the person's words for it: `IngredientStock ("Stok bahan" id)`."""
+    said = ", ".join(f'"{text}" {language}' for language, text in (labels or {}).items())
+    return f"{name} ({said})" if said else name
+
+
 def _slot_line(slot):
     marks = [slot["range"] or "string"]
+    if slot.get("unit"):
+        marks.append(f"unit {slot['unit']}")
+    if slot.get("direction"):
+        marks.append(slot["direction"])
+    if slot.get("time_meaning"):
+        marks.append(slot["time_meaning"])
     if slot["identifier"]:
         marks.append("identifier")
     if slot["designates_type"]:
@@ -268,7 +321,7 @@ def _slot_line(slot):
         marks.append("many values")
     if slot["binds"]:
         marks.append(f"fills binding {slot['binds']}")
-    line = f"{slot['name']}: {', '.join(marks)}"
+    line = f"{_labelled(slot['name'], slot.get('labels'))}: {', '.join(marks)}"
     if slot["rule"]:
         line += f" = {_rule(slot['rule'])}"
     return line
@@ -295,7 +348,7 @@ def _draft(report):
                 else "no table: nothing can be stated to be one")
         fills = f", fills {', '.join(c['fills'])}" if c["fills"] else ""
         above = f", a kind of {c['is_a']}" if c["is_a"] else ""
-        lines.append(f"  {c['name']} ({kind}{fills}{above})")
+        lines.append(f"  {_labelled(c['name'], c.get('labels'))} ({kind}{fills}{above})")
         for slot_name in c["slots"]:
             slot = slots.get(slot_name)
             lines.append(f"    {_slot_line(slot)}" if slot
@@ -308,7 +361,9 @@ def _draft(report):
         lines.append(f"  on no class: {_slot_line(slot)}")
     own_enums = [e for e in report["enums"] if e["module"] is None]
     for enum in own_enums:
-        lines.append(f"  enum {enum['name']}: {', '.join(enum['values'])}")
+        values = [_labelled(v, enum.get("value_labels", {}).get(v)) for v in enum["values"]]
+        lines.append(f"  enum {_labelled(enum['name'], enum.get('labels'))}: "
+                     f"{', '.join(values)}")
     lines.append("")
     lines.append(standing(report))
     return "\n".join(lines)
@@ -328,8 +383,12 @@ def standing(report):
     lines.append("")
     lines.append(_examples(report, tables=False))
     lines.append("")
-    if report["sealable"]:
-        lines.append("It could be sealed now. Propose it to the person; you cannot seal.")
+    if report.get("empty"):
+        # True of any new draft, and no reason to stop: nothing asked is built.
+        lines.append("It declares nothing yet; build what the person asked for.")
+    elif report["sealable"]:
+        lines.append("Nothing blocks a seal. Propose it once it does what the person "
+                     "asked; you cannot seal.")
     elif not blocking and report["examples"] and not report["examples_run"]:
         lines.append("Not sealable: the examples could not be run, there is no log.")
     else:
@@ -337,6 +396,13 @@ def standing(report):
         lines.append("Not sealable yet: only the person's agreement to the examples "
                      "is missing. Propose them." if blocking and agreeing
                      else "Not sealable yet.")
+    waiting = [e for e in report["examples"] if e.get("waits")]
+    if any(not e["agreed"] for e in waiting):
+        lines.append("An example waiting for its rules is put to the person as it is; "
+                     "the rules come once they agree.")
+    if any(e["agreed"] for e in waiting):
+        lines.append("Agreed, and waiting for their rules: "
+                     + ", ".join(e["name"] for e in waiting if e["agreed"]) + ".")
     return "\n".join(lines)
 
 
@@ -402,7 +468,8 @@ def _entry(entry):
         about = about[:157] + "..."
     if entry["kind"] == "module":
         pins = ", ".join(f"{p['name']}@{p['version']}" for p in entry["pins"]) or "nothing"
-        head = (f"module {pin} — {entry['title']}; pins {pins}; declares "
+        head = (f"module {_labelled(pin, entry.get('labels'))} — {entry['title']}; "
+                f"pins {pins}; declares "
                 f"{', '.join(entry['declares']['classes']) or 'no class'}")
     elif entry["kind"] == "role":
         bindings = ", ".join(b["name"] for b in entry["bindings"]) or "nothing"
@@ -412,12 +479,18 @@ def _entry(entry):
     elif entry["kind"] == "class":
         fills = f", fills {', '.join(entry['fills'])}" if entry["fills"] else ""
         statable = "" if entry["statable"] else ", cannot be stated"
-        head = (f"class {entry['name']} ({pin}{fills}{statable}): slots "
+        head = (f"class {_labelled(entry['name'], entry.get('labels'))} "
+                f"({pin}{fills}{statable}): slots "
                 f"{', '.join(entry['slots']) or 'none'}")
+        if entry["statable"] and entry.get("required"):
+            head += f"; a new one must be given {', '.join(entry['required'])}"
     else:
         fills = f", fills {', '.join(entry['fills'])}" if entry["fills"] else ""
-        head = (f"slot {entry['name']} ({pin}): {entry['range'] or 'string'}"
-                f"{fills}; on {', '.join(entry['on']) or 'no class'}")
+        meant = "".join(f", {entry[k]}" if k != "unit" else f", unit {entry[k]}"
+                        for k in ("unit", "direction", "time_meaning") if entry.get(k))
+        head = (f"slot {_labelled(entry['name'], entry.get('labels'))} ({pin}): "
+                f"{entry['range'] or 'string'}{meant}{fills}; on "
+                f"{', '.join(entry['on']) or 'no class'}")
     return f"  {head}" + (f"\n      {about}" if about else "")
 
 

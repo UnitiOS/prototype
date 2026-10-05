@@ -1,0 +1,123 @@
+id: https://uniti.example/inventory
+name: demo_inventory
+title: Inventory
+description: >-
+  Demonstration data. What happened to the ingredients @demo/catalog names.
+  This version brings v3 to the recording standard and moves its pin to
+  @demo/catalog@v4: every class and slot is described, a quantity says its unit
+  and that positive means stock came in, the day says it is when the goods
+  moved, and the bakery's own words are kept as labels. Nothing is renamed.
+structured_aliases:
+  - {literal_form: Persediaan, in_language: id, predicate: EXACT_SYNONYM}
+prefixes:
+  linkml: https://w3id.org/linkml/
+  uniti: https://w3id.org/uniti/core#
+  inv: https://uniti.example/inventory/
+default_prefix: inv
+default_range: string
+imports:
+  - linkml:types
+  - "@uniti/core@v2"
+  - "@demo/catalog@v4"
+classes:
+  Location:
+    description: A place where ingredients are kept.
+    structured_aliases:
+      - {literal_form: Lokasi, in_language: id, predicate: EXACT_SYNONYM}
+    mixins:
+      - Thing
+    slots:
+      - location_code
+      - location_label
+  StockMovement:
+    description: >-
+      A quantity of one ingredient arriving or leaving. Positive is in,
+      negative is out, in the ingredient's own unit. It fills core's Flow:
+      `movement_quantity` is the amount, `movement_ingredient` is what it
+      affects, and `movement_happened_on` is the moment.
+    structured_aliases:
+      - {literal_form: Mutasi stok, in_language: id, predicate: EXACT_SYNONYM}
+    mixins:
+      - Flow
+    slots:
+      - movement_code
+      - movement_ingredient
+      - movement_location
+      - movement_quantity
+      - movement_happened_on
+      - movement_reason
+slots:
+  location_code:
+    slot_uri: inv:location_code
+    identifier: true
+    description: The short code a place is known by.
+    structured_aliases:
+      - {literal_form: Kode lokasi, in_language: id, predicate: EXACT_SYNONYM}
+  location_label:
+    title: Location
+    slot_uri: inv:location_label
+    description: What the place is called.
+    structured_aliases:
+      - {literal_form: Nama lokasi, in_language: id, predicate: EXACT_SYNONYM}
+  movement_code:
+    slot_uri: inv:movement_code
+    identifier: true
+    description: The number written on the note the movement was recorded from.
+    structured_aliases:
+      - {literal_form: Nomor bukti, in_language: id, predicate: EXACT_SYNONYM}
+  movement_ingredient:
+    title: Ingredient
+    slot_uri: inv:movement_ingredient
+    is_a: affects
+    range: Ingredient
+    description: >-
+      Which ingredient moved. It fills core's `affects` and narrows the range
+      from Resource to Ingredient — which is this module saying it is a
+      bakery's, not a general one.
+    structured_aliases:
+      - {literal_form: Bahan, in_language: id, predicate: EXACT_SYNONYM}
+  movement_location:
+    title: Location
+    slot_uri: inv:movement_location
+    range: Location
+    description: >-
+      Where it moved to or from. Core has no role for a place, so this belongs
+      to nobody but this module: an application that groups by it is tied to
+      this module, and that is a choice the application makes with its eyes
+      open.
+    structured_aliases:
+      - {literal_form: Lokasi, in_language: id, predicate: EXACT_SYNONYM}
+  movement_quantity:
+    title: Quantity
+    slot_uri: inv:movement_quantity
+    is_a: amount
+    range: decimal
+    unit: {descriptive_name: the ingredient's own unit}
+    description: Signed, in the ingredient's unit. In is positive, out is negative.
+    structured_aliases:
+      - {literal_form: Jumlah, in_language: id, predicate: EXACT_SYNONYM}
+    annotations:
+      direction: increase
+  movement_happened_on:
+    title: Happened on
+    slot_uri: inv:movement_happened_on
+    is_a: moment
+    range: date
+    description: >-
+      The day the goods actually moved, which may be earlier than the day
+      anybody wrote it down. Filling core's `moment` is what gives it a reader.
+    structured_aliases:
+      - {literal_form: Tanggal kejadian, in_language: id, predicate: EXACT_SYNONYM}
+    annotations:
+      time_meaning: happened
+  movement_reason:
+    title: Reason
+    slot_uri: inv:movement_reason
+    description: >-
+      Why this movement happened, in the words of whoever recorded it. Read by
+      nobody: it is here to be read, not to be computed on.
+    structured_aliases:
+      - {literal_form: Keterangan, in_language: id, predicate: EXACT_SYNONYM}
+annotations:
+  valid_from: '2026-10-03T00:00:00+00:00'
+  transcript: v4.draft.txt

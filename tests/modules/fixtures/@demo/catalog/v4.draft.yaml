@@ -1,0 +1,132 @@
+id: https://uniti.example/catalog
+name: demo_catalog
+title: Catalog
+description: >-
+  Demonstration data. The things a small bakery buys and keeps. This version
+  brings v3 to the recording standard: every class and slot is described, the
+  reorder level says its unit and that it is a level, and the bakery's own
+  Indonesian words are kept beside the English as labels. Nothing is renamed
+  and no predicate changes, so everything already stated still stands.
+structured_aliases:
+  - {literal_form: Katalog bahan, in_language: id, predicate: EXACT_SYNONYM}
+prefixes:
+  linkml: https://w3id.org/linkml/
+  uniti: https://w3id.org/uniti/core#
+  cat: https://uniti.example/catalog/
+default_prefix: cat
+default_range: string
+imports:
+  - linkml:types
+  - "@uniti/core@v2"
+classes:
+  Category:
+    description: A group an ingredient belongs to, such as dry goods or dairy.
+    structured_aliases:
+      - {literal_form: Kategori, in_language: id, predicate: EXACT_SYNONYM}
+    mixins:
+      - Thing
+    slots:
+      - category_code
+      - category_label
+  Supplier:
+    description: Somebody an ingredient is bought from.
+    structured_aliases:
+      - {literal_form: Pemasok, in_language: id, predicate: EXACT_SYNONYM}
+    mixins:
+      - Thing
+    slots:
+      - supplier_code
+      - supplier_label
+  Ingredient:
+    description: >-
+      Something bought, kept, and used up. It fills core's Resource, so a module
+      that moves things can say it moved one of these without having heard of a
+      bakery.
+    structured_aliases:
+      - {literal_form: Bahan, in_language: id, predicate: EXACT_SYNONYM}
+    mixins:
+      - Resource
+    slots:
+      - ingredient_code
+      - ingredient_name
+      - ingredient_unit
+      - ingredient_category
+      - ingredient_supplier
+      - ingredient_reorder_level
+slots:
+  category_code:
+    slot_uri: cat:category_code
+    identifier: true
+    description: The short code a category is known by.
+    structured_aliases:
+      - {literal_form: Kode kategori, in_language: id, predicate: EXACT_SYNONYM}
+  category_label:
+    title: Category
+    slot_uri: cat:category_label
+    description: What the category is called.
+    structured_aliases:
+      - {literal_form: Nama kategori, in_language: id, predicate: EXACT_SYNONYM}
+  supplier_code:
+    slot_uri: cat:supplier_code
+    identifier: true
+    description: The short code a supplier is known by.
+    structured_aliases:
+      - {literal_form: Kode pemasok, in_language: id, predicate: EXACT_SYNONYM}
+  supplier_label:
+    title: Supplier
+    slot_uri: cat:supplier_label
+    description: What the supplier is called.
+    structured_aliases:
+      - {literal_form: Nama pemasok, in_language: id, predicate: EXACT_SYNONYM}
+  ingredient_code:
+    slot_uri: cat:ingredient_code
+    identifier: true
+    description: The short code an ingredient is known by.
+    structured_aliases:
+      - {literal_form: Kode bahan, in_language: id, predicate: EXACT_SYNONYM}
+  ingredient_name:
+    title: Ingredient
+    slot_uri: cat:ingredient_label
+    description: >-
+      What the ingredient is called. Renamed from `ingredient_label` in v2; the
+      predicate is unchanged, so everything already stated under it still
+      stands.
+    structured_aliases:
+      - {literal_form: Nama bahan, in_language: id, predicate: EXACT_SYNONYM}
+  ingredient_unit:
+    title: Unit
+    slot_uri: cat:ingredient_unit
+    description: >-
+      The unit every quantity of this ingredient is counted in, such as kg or
+      litre. A quantity of the ingredient anywhere else is in this unit.
+    structured_aliases:
+      - {literal_form: Satuan, in_language: id, predicate: EXACT_SYNONYM}
+  ingredient_category:
+    title: Category
+    slot_uri: cat:ingredient_category
+    range: Category
+    description: The group this ingredient belongs to.
+    structured_aliases:
+      - {literal_form: Kategori, in_language: id, predicate: EXACT_SYNONYM}
+  ingredient_supplier:
+    title: Supplier
+    slot_uri: cat:ingredient_supplier
+    range: Supplier
+    description: Who this ingredient is bought from.
+    structured_aliases:
+      - {literal_form: Pemasok, in_language: id, predicate: EXACT_SYNONYM}
+  ingredient_reorder_level:
+    title: Reorder level
+    slot_uri: cat:ingredient_reorder_level
+    range: decimal
+    unit: {descriptive_name: the ingredient's own unit}
+    description: >-
+      The quantity somebody decided not to fall below. Stated, never computed:
+      it is a judgement, and the log records who made it and when.
+    structured_aliases:
+      - {literal_form: Batas pesan ulang, in_language: id, predicate: EXACT_SYNONYM}
+    annotations:
+      direction: level
+annotations:
+  valid_from: '2026-10-03T00:00:00+00:00'
+  transcript: v4.draft.txt

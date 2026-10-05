@@ -463,16 +463,23 @@ export interface Hole {
   step: Step | null; refusal: Refusal | null;
 }
 
+/** What the person calls a thing, by language: the words they used for it,
+ *  kept beside the English the module is recorded in. */
+export type Labels = Record<string, string>;
+
 export interface DraftClass {
   name: string; description: string; fills: string[]; is_a: string | null;
-  slots: string[]; has_rows: boolean;
+  slots: string[]; has_rows: boolean; labels?: Labels;
 }
 
 export interface DraftSlot {
   name: string; title: string; description: string; slot_uri: string | null;
   range: string | null; identifier: boolean; designates_type: boolean;
   binds: string | null; rule: { kind: string; spec: unknown } | null;
-  on: string[];
+  on: string[]; labels?: Labels;
+  /** What its value means, as the recording standard asks: a number's unit
+   *  and which way it runs, a date's moment. */
+  unit?: string | null; direction?: string | null; time_meaning?: string | null;
 }
 
 export interface DraftRole {
@@ -483,27 +490,187 @@ export interface DraftRole {
 /** A class from a module this draft pins, reachable from something it declares.
  *  What the map draws around what you are building, and cannot change. */
 export interface DraftBorrowed {
-  name: string; description: string; module: Pin; fills: string[];
-  slots: { name: string; range: string | null; identifier: boolean }[];
+  name: string; description: string; module: Pin; fills: string[]; labels?: Labels;
+  slots: { name: string; range: string | null; identifier: boolean; labels?: Labels }[];
+}
+
+/** What one worked-out column reads, as the compiler reads it: the classes,
+ *  the fields of each, and for a sum the field saying which row it lands on. */
+export interface WorkingRead { class: string; fields: string[]; by: Record<string, string | null> }
+
+export interface WorkingColumn {
+  name: string; kind: "aggregate" | "parameter" | "expression";
+  operator?: string; of?: string; reads: WorkingRead[];
+}
+
+/** One table the draft computes: what a row stands for, and where each
+ *  worked-out column's numbers come from. */
+export interface Working { class: string; keys: string[]; columns: WorkingColumn[] }
+
+/** One record an example states: a thing, what it is, when, and the facts. */
+export interface Recorded {
+  record: string; class: string | null; when: string | null;
+  facts: Record<string, string | number | boolean | null>;
+}
+
+/** One thing a draft changed, as the map draws it: a kind of thing, a field
+ *  (`Kind.field`), an example, a module built on, or the module's own words. */
+export interface DraftChange {
+  what: "kind" | "field" | "example" | "pin" | "module";
+  name: string;
+  how: "added" | "changed" | "removed";
 }
 
 export interface DraftState {
   name: string; title: string | null; description: string | null;
+  labels?: Labels;
   purpose: string | null; valid_from: string | null;
   versions: string[]; revises: string | null; becomes: string;
   pins: Pin[]; sees: { classes: number; slots: number };
   classes: DraftClass[]; slots: DraftSlot[]; roles: DraftRole[];
   borrowed: DraftBorrowed[];
+  /** Where the numbers come from, and the classes only a rule reads. */
+  workings: Working[]; read_from: DraftBorrowed[];
   tables: CheckReport["tables"];
   refusals: Refusal[]; holes: Hole[]; blocking: number;
   steps: StepSpec[]; taken: string; diff: ModuleDiff["diff"];
+  /** What sealing it would change against the version it revises. */
+  changes: DraftChange[];
+  /** Nothing to freeze yet: it declares nothing, or changes nothing. */
+  empty?: boolean;
   sealable: boolean; document: string;
+  examples: ExampleResult[]; examples_run: boolean;
+}
+
+/** One number an example expects, and what the draft made of it. */
+/** One number an example expects. `waiting` when no rule computes it yet:
+ *  not wrong, not there yet. */
+export interface ExampleCheck {
+  table: string; row: string; at: string | null; column: string | null;
+  expected: string; got: string; holds: boolean; waiting?: boolean;
+}
+
+/** A business example, run in a scratch log of its own. `passed` is null when
+ *  nothing could run it; `waits` when the only numbers it lacks are ones no
+ *  rule computes yet, so it can be agreed to before the rules are written. */
+export interface ExampleResult {
+  name: string; says: string; agreed: boolean; records: number; expected: number;
+  /** What it says in the words of its people, by language. */
+  labels?: Labels;
+  checks: ExampleCheck[];
+  tables: { table: string; columns: string[]; rows: string[][] }[];
+  refusals: Refusal[]; passed: boolean | null; waits?: boolean;
+  /** The records it states, in order; only on a draft's examples. */
+  recorded?: Recorded[];
+}
+
+// ---- the agent --------------------------------------------------------------
+
+/** What one request to the agent used, every part together. */
+export interface Spent {
+  requests: number; input: number; output: number; dollars: number | null; seconds: number;
+}
+
+/** How a request ended. `said` is the ending's own fields: `message` for a
+ *  Reply or a Stopped, `question` and `choices` for a Question, for a Plan
+ *  `message` and what it `builds`, from which `records`, which `numbers` come
+ *  out and what it `cannot` do yet, and for a Proposal `message`, the
+ *  examples to `agree` to and whether it may `seal`. */
+export interface ChatTurn {
+  at?: string; person: string;
+  ended: "Reply" | "Question" | "Plan" | "Proposal" | "Stopped";
+  said: {
+    message?: string; question?: string; choices?: string[];
+    builds?: string; records?: string[]; numbers?: string[]; cannot?: string[];
+    module?: string; agree?: string[]; seal?: boolean; cause?: string;
+  };
+  // A Stopped turn carries `agree` and `seal` too: what the system found
+  // waiting for the person when the request stopped.
+  spent: Spent;
+  shown?: string | null;
+  /** What the request changed in the draft. */
+  touched?: DraftChange[];
+}
+
+export interface Reckoning {
+  happened: string[]; wanted: string[];
+  figures: { figure: string; value: string; working: string }[];
+  question: string; by: string;
+}
+
+/** The plan beside a draft, as the person was shown it, and whether they
+ *  agreed to it. */
+export interface PlanHeld {
+  builds: string; records: string[]; numbers: string[]; cannot: string[];
+  proposed_at: string; agreed: boolean; agreed_at?: string;
+}
+
+export interface Chat {
+  name: string; running: boolean; turns: ChatTurn[];
+  reckonings: Record<string, Reckoning>;
+  plan: PlanHeld | null;
+}
+
+/** One thing the agent did in one call: a tool it called, words it said, or
+ *  a thought the model let be seen. */
+export interface Did { tool?: string; args?: Record<string, unknown>; text?: string; thought?: string }
+
+export type AgentEvent =
+  | { event: "started"; watch: string }
+  | { event: "call"; part: string; step: number; seconds: number; did: Did[];
+      answered: { tool: string; first: string }[]; changed: boolean;
+      /** When it changed the draft: in this call, and since the request began. */
+      now?: DraftChange[]; touched?: DraftChange[];
+      tokens: { input: number; output: number; thinking: number; cached: number } }
+  | { event: "note"; text: string }
+  | { event: "error"; part: string; error: string }
+  | ({ event: "turn" } & Omit<ChatTurn, "person" | "at">)
+  | { event: "failed"; error: string };
+
+/** One request to the agent. Each event is handed to `on` as it arrives; the
+ *  promise settles when the request has ended. */
+async function ask(name: string, text: string, on: (e: AgentEvent) => void): Promise<void> {
+  let response: Response;
+  try {
+    response = await fetch("/api/studio/ask", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name, text }),
+    });
+  } catch {
+    throw new ApiError("The API is not reachable. Start it with uvicorn on port 8200.");
+  }
+  if (!response.ok || !response.body) {
+    const answer = await response.json().catch(() => null);
+    throw new ApiError(answer?.error ?? `The API answered ${response.status}.`,
+                       answer?.refusal ?? null);
+  }
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let held = "";
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (value) held += decoder.decode(value, { stream: true });
+    let cut: number;
+    while ((cut = held.indexOf("\n")) !== -1) {
+      const line = held.slice(0, cut).trim();
+      held = held.slice(cut + 1);
+      if (line) on(JSON.parse(line) as AgentEvent);
+    }
+    if (done) break;
+  }
+  if (held.trim()) on(JSON.parse(held) as AgentEvent);
 }
 
 export const studioApi = {
   drafts: () => get<DraftRow[]>("/api/studio/drafts"),
   draft: (name: string) => get<DraftState>("/api/studio/draft", { name }),
   step: (name: string, step: string, args: Record<string, string>) =>
-    post<DraftState & { discarded?: boolean }>(
+    post<DraftState & { discarded?: boolean; plan?: PlanHeld }>(
       "/api/studio/step", { name, step, args }),
+  chat: (name: string) => get<Chat>("/api/studio/chat", { name }),
+  ask,
+  seal: (name: string, actor: string) =>
+    post<{ name: string; version: string; minted: number }>(
+      "/api/studio/seal", { name, actor }),
 };

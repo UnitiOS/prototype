@@ -57,9 +57,9 @@ def _draft(tmp_path, imports):
 
 def test_the_store_holds_every_version_in_order(built):
     assert built.names() == [CATALOG, INVENTORY, STOCK, RIVAL, CORE]
-    assert [v["version"] for v in built.versions(CATALOG)] == ["v1", "v2", "v3"]
+    assert [v["version"] for v in built.versions(CATALOG)] == ["v1", "v2", "v3", "v4"]
     listing = {m["name"]: m for m in read.modules(built)}
-    assert listing[INVENTORY]["latest"] == "v3"
+    assert listing[INVENTORY]["latest"] == "v4"
     assert listing[INVENTORY]["versions"][0]["imports"] == [
         {"name": CORE, "version": "v1"}, {"name": CATALOG, "version": "v1"}]
 
@@ -109,8 +109,10 @@ def test_a_pinned_import_keeps_its_meaning_when_the_module_moves_on(conn, tmp_pa
     assert sealed[-1] == f"{INVENTORY}@v1"
     before = read.version(store, INVENTORY, "v1")
 
+    # The demonstration's own v2, replayed as it was sealed: before the
+    # recording standard, as every version dev_modules replays.
     seal(conn, dev_modules.FIXTURES / CATALOG / "v2.draft.yaml", actor_id="test",
-         into=store.directory(CATALOG), store=store)
+         into=store.directory(CATALOG), store=store, standard=False)
     after = read.version(store, INVENTORY, "v1")
 
     assert after["classes"] == before["classes"]
@@ -247,7 +249,10 @@ def test_the_graph_draws_pins_and_supersessions(built):
     # next pins somebody else's, and nothing else about them differs.
     assert (STOCK, "v2", INVENTORY, "v3", "imports") in edges
     assert (STOCK, "v3", RIVAL, "v1", "imports") in edges
-    assert len(graph["nodes"]) == 12
+    # And the same modules brought to the recording standard, by new versions.
+    assert (STOCK, "v4", RIVAL, "v2", "imports") in edges
+    assert (RIVAL, "v2", RIVAL, "v1", "supersedes") in edges
+    assert len(graph["nodes"]) == 16
 
 
 def test_a_module_name_is_checked(built):
@@ -266,7 +271,7 @@ def test_the_api_reads_the_store_in_the_environment(conn, built, monkeypatch):
 
     names = [m["name"] for m in client.get("/api/modules").json()]
     assert names == [CATALOG, INVENTORY, STOCK, RIVAL, CORE]
-    assert len(client.get("/api/modules/graph").json()["nodes"]) == 12
+    assert len(client.get("/api/modules/graph").json()["nodes"]) == 16
 
     detail = client.get("/api/modules/version",
                         params={"name": CATALOG, "version": "v2"}).json()

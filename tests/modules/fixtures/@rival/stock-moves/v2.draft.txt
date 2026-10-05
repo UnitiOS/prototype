@@ -1,0 +1,13 @@
+Transcript, @rival/stock-moves v2. Demonstration content — none of this is real.
+
+The rival's author brought the module to the recording standard. The one real
+change is names: the standard asks every slot of a class to start with the
+same word, and a movement's slots were called `move_ref`, `qty_delta`, `item`,
+`happened` and `kept_at`. They now all start with `move_`.
+
+A rename here costs nothing that was stated: each slot keeps its predicate, so
+every fact written under v1 is still a fact about the same slot. An
+application pinned to v1 keeps reading v1; one that moves its pin here reads
+the new names.
+
+The change runs in, so positive is more; the date is the day it happened.

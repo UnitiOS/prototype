@@ -13,9 +13,9 @@ business, and wherever it states a name the code also has, the name is taken
 from the code.
 
 One section per topic, asked for when needed. The instructions an agent starts
-with are `instructions()`: who it works for, what it may and may not do, and
-the list of topics — not the whole guide, which would be read once and then
-drowned by everything after it.
+with are `instructions()`: how to work, the rules and how examples are written
+— which every build needs, and which a model otherwise spends a call on each
+— and the list of the other topics, read when the work calls for one.
 """
 
 import re
@@ -31,8 +31,9 @@ from components.examples.examples import (  # noqa: E402
     COMPUTED, EXAMPLE_KEYS, EXPECT_KEYS, RECORD_KEYS,
 )
 from components.modules import catalogue as catalogue_read  # noqa: E402
-from components.refusal import CODES  # noqa: E402
-from components.studio.draft import OPERATIONS  # noqa: E402
+from components.refusal import CODES, Refusal  # noqa: E402
+from components import standard  # noqa: E402
+from components.studio.draft import OPERATIONS, plan_of  # noqa: E402
 from components.studio.read import ANSWERS, OPEN  # noqa: E402
 
 REFUSAL_SOURCE = ROOT / "components" / "refusal" / "refusal.py"
@@ -46,34 +47,48 @@ write a file: every change is one step from a closed list, and the system
 writes the files. You propose; the system checks everything a machine can
 check; the person approves.
 
-Work in this order. Do not skip ahead.
+Work in this order; the system holds you to it. Stages 2, 3 and 5 end your
+turn; the next starts when the person has answered.
 
-1. Understand. Ask what the business does and what it wants to know, in its
-   own words. Ask about anything whose meaning is not certain — which way an
-   amount runs, what unit it is in, whether the same event is recorded
-   somewhere else too, when something counts as happened. Offer choices where
-   you can. Then say back, briefly, what you are going to build.
-2. Agree on examples. Before any rule that computes a number, write business
-   examples with the person: a few records and the numbers they must come to.
-   An example you write is a proposal; only the person can agree to it. The
-   numbers must be the business's, not the graph's: never change an expected
-   number to make the graph pass. If you think an agreed number is wrong, say
-   which and why, and let the person decide.
-3. Look around. Search the catalogue before declaring anything. Pin a sealed
-   module when it already says what is needed; declare your own when it does
-   not. Say which you chose and why.
-4. Build. Take steps in batches. After each batch the system answers with the
-   holes left, the refusals and how to fix them, and the examples run.
-5. Check. Read every hole. A blocking hole must be answered before a seal; its
-   fix names the step and the finite set of answers. A failing example means
-   the graph is wrong, unless the person says the example is.
-6. Propose. When the only thing left is the person's agreement, stop and
-   propose: which examples to agree to, and that the module is ready to be
-   sealed. You cannot seal and you cannot agree; the person does both.
+1. Understand. Learn what the business does and what it wants to know, in its
+   own words, and search the catalogue for what is recorded already. Ask about
+   anything whose meaning is not certain — which way an amount runs, its unit,
+   whether the same event is recorded elsewhere too, when something counts as
+   happened — that neither their words nor the module recording it says.
+   Offer choices where you can.
+2. Plan. End the turn with a Plan: what you will build, from which records
+   (a sealed module's, where one records them), which numbers come out, and
+   what the system cannot do yet. Wait for the person to agree; a changed
+   plan is agreed again. Until then nothing is built, not even the draft.
+3. Examples. Start the draft; declare, without rules, every class and slot
+   the tables will show, looked-up columns too. Write examples giving each
+   column its value, numbers from the accountant (below); propose them. An
+   example waiting only for its rules is agreed to as it is. Only the person
+   agrees.
+4. Rules. Write the rules until every example holds; a rule needs an agreed
+   example giving its table's numbers. A column no agreed example checks
+   needs a new one (agreed ones cannot change): end the turn proposing it.
+   Never change an expected number to make the graph pass: if you think an
+   agreed number is wrong, say which and why, and let the person decide. A
+   blocking hole must be answered before a seal; its fix names the step.
+5. Seal. When the only thing left is the person's agreement, propose it as
+   ready to be sealed. You cannot seal and you cannot agree.
 
-Say what you are doing in plain business language. Never ask the person to
-read YAML, a refusal code or a step name; tell them what it means for their
-business. Reply in the language the person writes in."""
+Read in as few rounds as you can: several `catalogue`, `look` or `options`
+calls side by side cost one round, and every round resends the conversation;
+`catalogue` with `module` and `options` with `op` take comma-separated names.
+Never read again what you read earlier in this conversation, nor the steps
+described below. Take steps in batches; give a slot its description, unit,
+direction or time meaning in the `add_slot` that declares it.
+
+How you speak to the person:
+- follow their language and their way of writing;
+- read from how they write how much they know, and say as much as they need;
+- use a technical word only when they used it first — never a step name, a
+  refusal code, YAML or the English a module is recorded in otherwise — and
+  call things by their own words for them;
+- when you are not sure how much detail they want, ask.
+"Agreed, go on." from a button on their page does not change their language."""
 
 RULES = f"""\
 A module declares classes (kinds of thing) and slots (what is said about
@@ -111,6 +126,12 @@ modules record the same event, totalling the role counts it twice; name the
 class instead. An application says explicitly what it counts from which
 module.
 
+What the system cannot do yet: total only the rows whose value meets a
+condition (`where` narrows by the class a slot points at, never by a value),
+and group by a fact reached through another record (each key of `by` is a
+slot of the rows totalled themselves). When a request needs one of these, say
+so to the person plainly, in a reply, and build nothing else in its place.
+
 For something to be stated, its class must carry the slot that says which
 class an entity is — usually by filling a role that brings it. One slot per
 class is its `identifier`, the name somebody states it under."""
@@ -141,7 +162,16 @@ Write examples that would catch the mistakes that matter: an amount running
 the wrong way, a unit mixed up, one event counted twice, something recorded
 late or corrected, a value nobody stated (empty, not nought). A number you
 cannot work out from what the person said is a question to ask them, not a
-number to guess."""
+number to guess.
+
+The numbers come from the accountant. Decide the whole example first, then
+call `reckon` once for it, and record exactly the situation you described.
+Call `reckon` with the example's name,
+what exists and what happened in it (one line each, in business words, with
+every quantity and day), and the figures wanted (one per number the example
+will expect, such as "on hand for X at the end of June"). Write `expect` from
+the values it gives. An example is only put to the person when every number it
+expects is one the accountant worked out for that example."""
 
 TOPICS = {
     "workflow": "the order to work in, and what you may and may not do",
@@ -149,6 +179,7 @@ TOPICS = {
     "rules": "classes, slots, the two kinds of table, and the three rules",
     "examples": "how a business example is written and run",
     "holes": "the questions a draft is standing in, and which block a seal",
+    "standard": "how every module is recorded: language, names, meaning, procedure",
     "refusals": "every way the system says no, by who says it",
     "roles": "the shared roles in the store, their bindings and who fills them",
 }
@@ -167,12 +198,17 @@ KINDS = {
     "slot": "a slot in sight", "role": "a role in sight", "binding": "a binding in sight",
     "range": "a type, class or enum in sight", "field": "one of the fields listed",
     "column": "a slot of the class named", "mapping": "pairs written key=value, key=value",
+    "direction": "what a positive number means: " + ", ".join(standard.DIRECTIONS),
+    "time_meaning": "what moment a date is: " + ", ".join(standard.TIME_MEANINGS),
+    "term": "a class, slot, enum, Enum.value or example of this draft, or `module`",
+    "language": "a language tag: id, en, ms, es, pt-BR",
 }
 
 
 def _steps():
-    lines = ["Every step, what it does, and what it takes. `options` on a draft",
-             "lists the answers that fit right now. Argument kinds:"]
+    lines = ["Every step, what it does, and what it takes. Call `options` only for",
+             "the answers that fit a draft right now — the pins, classes or slots",
+             "a step may name — never to read a step described here. Argument kinds:"]
     lines += [f"    {kind:<12} {meaning}" for kind, meaning in KINDS.items()]
     for op, spec in OPERATIONS.items():
         lines.append("")
@@ -255,6 +291,8 @@ def section(topic, store=None):
         return EXAMPLES
     if topic == "holes":
         return _holes()
+    if topic == "standard":
+        return standard.teach()
     if topic == "refusals":
         return _refusals()
     if topic == "roles":
@@ -263,12 +301,70 @@ def section(topic, store=None):
             + "\n".join(f"    {name}: {what}" for name, what in TOPICS.items()))
 
 
+# The topics an agent starts with, in `instructions()`: every build reads
+# them, and a topic read with `guide` costs a round and is sent again with
+# every round after it, while the instructions are the same at the top of
+# every call, which a provider can serve from its cache.
+GIVEN = ("workflow", "standard", "rules", "examples", "steps", "holes")
+
+
+# Said once in the instructions, so that the instructions never change: which
+# module is open, and where it stands, comes with each message (`opened`).
+OPENED = """\
+Each message from the person starts with a note from the system, in
+parentheses: which module they have open and where it stands. Everything you
+build for them goes in that module, and a proposal is about it. Other modules
+are read with `catalogue` and pinned; they are not changed from here. A tool
+answer that starts with [unchanged] or [cleared] points you to a reading you
+already have in this conversation."""
+
+
 def instructions():
-    """What an agent starts with: how to work, and where to read the rest."""
-    return (WORKFLOW + "\n\nThe guide has more, one topic at a time; read a topic "
-            "before the work that needs it:\n"
+    """What an agent starts with: how to work, and where to read the rest. The
+    same text on every call of every request."""
+    given = GIVEN
+    return (WORKFLOW
+            + "\n\n" + OPENED
+            + "\n\n# Recording standard\n\n" + standard.teach()
+            + "\n\n# Rules\n\n" + RULES
+            + "\n\n# Examples\n\n" + EXAMPLES
+            + "\n\n# Steps\n\n" + _steps()
+            + "\n\n# Holes\n\n" + _holes()
+            + "\n\nThose are the guide's topics " + ", ".join(given) + ": you have "
+            "them, so do not read them again. The rest of the guide is one topic at "
+            "a time; read one only when the work needs it, and once:\n"
             + "\n".join(f"    {name}: {what}" for name, what in TOPICS.items()
-                        if name != "workflow"))
+                        if name not in given))
 
 
-__all__ = ["TOPICS", "instructions", "section"]
+# How the note opening every request begins; a rehearsal counts requests by it.
+OPENS = "(From the system, not the person: they have "
+
+
+def opened(store, module):
+    """Which module the person has open, where it stands and where its plan
+    stands — said to the agent with the person's message at the start of
+    every request, read off the store each time."""
+    try:
+        sealed = store.versions(module)
+    except Refusal:
+        sealed = []
+    draft = (store.place(module) / "draft.yaml").is_file()
+    if draft:
+        state = "Its draft is open: `look` at it before anything else."
+    elif sealed:
+        state = (f"It is sealed up to {sealed[-1]['version']} and has no draft: `revise` "
+                 f"opens one from the latest version.")
+    else:
+        state = "It does not exist yet: `start` creates it and opens its draft."
+    plan = plan_of(store, module)
+    if plan is None:
+        planned = "No plan is put forward yet: nothing is built before one is agreed."
+    elif plan.get("agreed"):
+        planned = "The person agreed to your plan."
+    else:
+        planned = "Your plan waits for the person's agreement: nothing is built until then."
+    return f"{OPENS}{module} open. {state} {planned})"
+
+
+__all__ = ["GIVEN", "OPENED", "OPENS", "TOPICS", "instructions", "opened", "section"]

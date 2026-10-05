@@ -38,7 +38,10 @@ sys.path.insert(0, str(ROOT / "components" / "seal"))
 from compile import plan_for, tables, type_slot  # noqa: E402
 from components.modules.roles import _above, _bindings, _closure_documents  # noqa: E402
 from components.refusal import Refusal  # noqa: E402
-from generate import _identifier, read_map  # noqa: E402
+from components.standard import (  # noqa: E402
+    DIRECTION, TIME_MEANING, annotation, labels, unit_of,
+)
+from generate import _identifier, columns, read_map  # noqa: E402
 from seal import predicate, written_uri  # noqa: E402
 
 KINDS = ("module", "role", "class", "slot")
@@ -127,8 +130,9 @@ def _binding_of(slots, slot):
 
 
 def _rules_everywhere(store):
-    """Every rule in every sealed version, and which module owns each class it covers."""
-    rules = []
+    """Every rule in every sealed version, and which module owns each class it
+    covers; and each version read as a map, keyed by (name, version)."""
+    rules, maps = [], {}
     for name in store.names():
         for held in store.versions(name):
             version = held["version"]
@@ -136,6 +140,7 @@ def _rules_everywhere(store):
                 map_ = read_map(store.path(name, version), store)
             except Refusal:
                 continue
+            maps[(name, version)] = map_
             origin = {}
             for dep in store.closure(name, version):
                 for class_name in (store.document(*dep).get("classes") or {}):
@@ -146,12 +151,23 @@ def _rules_everywhere(store):
                     continue
                 rules.append({**rule, "module": _pin(name, version),
                               "covers": [(c, origin.get(c)) for c in rule["covers"]]})
-    return rules
+    return rules, maps
+
+
+def _required(map_, class_name):
+    """What a new entity of this class must be given, as the form asks it."""
+    if map_ is None:
+        return []
+    try:
+        fields = columns(map_, class_name)
+    except Refusal:
+        return []
+    return [f["name"] for f in fields if f["required"] and not f["designates_type"]]
 
 
 def catalogue(store):
     """Every module, role, class and slot the store offers now, as one list."""
-    rules = _rules_everywhere(store)
+    rules, maps = _rules_everywhere(store)
     entries = []
 
     for name in store.names():
@@ -171,6 +187,7 @@ def catalogue(store):
             "title": manifest.get("title") or document.get("title"),
             "description": manifest.get("description") or document.get("description") or "",
             "purpose": manifest.get("purpose"),
+            "labels": labels(document),
             "versions": [v["version"] for v in held],
             "pins": pins,
             "declares": {"classes": sorted(own_classes), "slots": sorted(own_slots)},
@@ -187,6 +204,7 @@ def catalogue(store):
                     "kind": "role", "name": class_name, "module": _pin(name, version),
                     "title": class_name,
                     "description": c.get("description") or "",
+                    "labels": labels(c),
                     "bindings": bindings,
                     "fills": fills,
                     "filled_by": [],  # completed below, once every class is known
@@ -201,9 +219,11 @@ def catalogue(store):
                 "kind": "class", "name": class_name, "module": _pin(name, version),
                 "title": class_name,
                 "description": c.get("description") or "",
+                "labels": labels(c),
                 "fills": fills,
                 "statable": any((slots.get(s) or {}).get("designates_type") for s in induced),
                 "slots": list(c.get("slots") or []),
+                "required": _required(maps.get((name, version)), class_name),
                 "read_by": _read_by_class(rules, class_name, name),
             })
 
@@ -215,8 +235,12 @@ def catalogue(store):
                 "kind": "slot", "name": slot_name, "module": _pin(name, version),
                 "title": str(s.get("title") or slot_name),
                 "description": s.get("description") or "",
+                "labels": labels(s),
                 "uri": uri,
                 "range": s.get("range"),
+                "unit": unit_of(s),
+                "direction": annotation(s, DIRECTION),
+                "time_meaning": annotation(s, TIME_MEANING),
                 "abstract": bool(s.get("abstract")),
                 "fills": [binding] if binding else [],
                 "on": sorted(k for k, c in own_classes.items()
@@ -254,7 +278,8 @@ def find(entries, *, text=None, kind=None, fills=None, module=None, pins=None):
     """The entries matching every filter given; an absent filter matches all.
 
     text     a case-insensitive fragment of the name, title, description,
-             predicate or module
+             predicate, module, or a label in any language: somebody looks a
+             thing up in their own words
     kind     module, role, class or slot
     fills    a role or a binding: the classes that fill that role and the
              slots that fill that binding
@@ -277,6 +302,7 @@ def find(entries, *, text=None, kind=None, fills=None, module=None, pins=None):
             hay = " ".join(str(entry.get(k) or "") for k in
                            ("name", "title", "description", "uri"))
             hay += " " + entry["module"]["name"]
+            hay += " " + " ".join((entry.get("labels") or {}).values())
             if needle not in hay.lower():
                 return False
         return True

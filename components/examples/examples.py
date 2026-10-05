@@ -67,6 +67,14 @@ parameter or an expression — must be checked by at least one number in some
 example, or the draft is refused (`contract_refusals`). A module with no rule
 computes nothing and owes nothing: a vocabulary has no numbers to agree on.
 
+**A number waiting for its rule.** An example is agreed to before the rules
+that compute its numbers are written: first what the numbers must be, then
+how they are worked out. Until then a number the draft's own table does not
+compute yet — a table no rule makes yet, or an empty cell in a column no rule
+computes — is `waiting`, not wrong. It is still not the number, so the example
+does not pass and nothing is sealed; but an example whose only failures wait
+for rules `waits`, and can be put to a person to agree to.
+
 **How one example runs.** In a log of its own, which exists for exactly as long
 as the example does. Three temporary tables shadow the kernel's for this one
 connection, inside a transaction that is always rolled back: the records go in
@@ -116,7 +124,9 @@ REASON = "example"
 
 # The closed shapes. An unknown key is a typo, and a typo in a contract is
 # the one kind that must not pass silently.
-EXAMPLE_KEYS = ("says", "agreed", "records", "expect")
+# `says` is the example in English, the language every module is recorded in;
+# `labels` keeps the person's own words for it, by language.
+EXAMPLE_KEYS = ("says", "labels", "agreed", "records", "expect")
 
 # The column kinds a rule computes, as the compiler's planner names them. A key
 # groups and a stated column is what somebody said; neither is a number the map
@@ -215,6 +225,11 @@ def _example(file, name, body):
     if not str(body.get("says") or "").strip():
         raise _shape(f"{where}.says", "the example in the business's own words",
                      "nothing")
+    labels = body.get("labels")
+    if labels is not None and not (isinstance(labels, dict) and all(
+            isinstance(v, str) and v.strip() for v in labels.values())):
+        raise _shape(f"{where}.labels", "the person's words, by language: "
+                     "`id: ...`", repr(labels))
     if "agreed" in body and body["agreed"] is not False:
         raise _shape(f"{where}.agreed", "`false`, on a proposal nobody has agreed "
                      "to yet; an agreed example carries no `agreed`",
@@ -371,7 +386,7 @@ def run_one(conn, map_, name, body):
            "agreed": agreed(body),
            "records": len(body.get("records") or []),
            "expected": len(body.get("expect") or []),
-           "checks": [], "tables": [], "refusals": [], "passed": False}
+           "checks": [], "tables": [], "refusals": [], "passed": False, "waits": False}
     try:
         with conn.transaction():
             _scratch(conn)
@@ -384,8 +399,9 @@ def run_one(conn, map_, name, body):
     finally:
         _gone(conn)
     if not out["refusals"]:
-        out["refusals"] = [_failed(map_, name, out["says"], check)
-                           for check in out["checks"] if not check["holds"]]
+        failing = [check for check in out["checks"] if not check["holds"]]
+        out["refusals"] = [_failed(map_, name, out["says"], check) for check in failing]
+        out["waits"] = bool(failing) and all(c.get("waiting") for c in failing)
     out["passed"] = not out["refusals"]
     return out
 
@@ -406,12 +422,17 @@ def render(reported, *, tables=False):
     example, one per number it expects, and the tables when asked."""
     lines = []
     for result in reported:
-        mark = {True: "holds", False: "FAILS", None: "not run"}[result["passed"]]
+        mark = ("waits for its rules" if result.get("waits")
+                else {True: "holds", False: "FAILS", None: "not run"}[result["passed"]])
         proposed = "" if result.get("agreed", True) else " (proposed, not agreed yet)"
         lines.append(f"[{mark}] {result['name']}{proposed}: {result['says']}")
         for check in result["checks"]:
             at = f" on {check['at']}" if check["at"] else ""
             what = check["column"] or "the row"
+            if check.get("waiting"):
+                lines.append(f"    .. {check['table']} {check['row']}{at}, {what}: "
+                             f"expected {check['expected']}, no rule computes it yet")
+                continue
             sign = "ok " if check["holds"] else "!! "
             lines.append(f"    {sign}{check['table']} {check['row']}{at}, {what}: "
                          f"expected {check['expected']}, got {check['got']}")
@@ -549,6 +570,16 @@ def _row(expectation, names):
             else {names[0]: row})
 
 
+def _own_slots(map_, table):
+    """The slots of a class the draft itself declares, or None when it does
+    not declare one by that name: a table of its own it can still make."""
+    view = map_["view"]
+    own = view.schema.classes or {}
+    if table not in own or own[table].abstract:
+        return None
+    return [str(slot.name) for slot in view.class_induced_slots(table)]
+
+
 def _checks(conn, map_, name, body):
     known = tables(map_)
     read = {}
@@ -556,6 +587,23 @@ def _checks(conn, map_, name, body):
     for expectation in body.get("expect") or []:
         table = str(expectation["table"])
         where = f"example {name}: {table}"
+        waiting = _own_slots(map_, table) if table not in known else None
+        if waiting is not None:
+            # A table of the draft's own that no rule makes yet: every number
+            # in it waits for one. The columns are held to the class's slots.
+            values = {str(k): v for k, v in expectation["values"].items()}
+            unknown = sorted(set(values) - set(waiting))
+            if unknown:
+                raise ExampleError(
+                    "no_such_column", where=where,
+                    expected=f"columns {table} has", got=", ".join(unknown),
+                    repairs=[Repair(f"name a column of {table}", options=waiting)])
+            said = {"table": table, "row": _pairs(expectation["row"]),
+                    "at": None if expectation.get("at") is None else str(expectation["at"])}
+            out += [{**said, "column": column, "expected": _shown(map_, expected),
+                     "got": "nothing yet", "holds": False, "waiting": True}
+                    for column, expected in values.items()]
+            continue
         if table not in known:
             raise ExampleError(
                 "no_such_class", where=where,
@@ -567,8 +615,9 @@ def _checks(conn, map_, name, body):
         if (table, at) not in read:
             built = preview(conn, map_, table, valid_at=at, as_of=END)
             read[(table, at)] = ([c["name"] for c in built["plan"]["columns"]],
-                                 built["rows"])
-        names, rows = read[(table, at)]
+                                 built["rows"],
+                                 {c["name"]: c["kind"] for c in built["plan"]["columns"]})
+        names, rows, kinds = read[(table, at)]
         row = _row(expectation, names)
         values = {str(k): v for k, v in expectation["values"].items()}
         unknown = sorted((set(row) | set(values)) - set(names))
@@ -589,9 +638,13 @@ def _checks(conn, map_, name, body):
             continue
         for column, expected in values.items():
             got = matches[0][names.index(column)]
-            out.append({**said, "column": column, "expected": _shown(map_, expected),
-                        "got": _shown(map_, got),
-                        "holds": _same(map_, expected, got)})
+            holds = _same(map_, expected, got)
+            check = {**said, "column": column, "expected": _shown(map_, expected),
+                     "got": _shown(map_, got), "holds": holds}
+            if not holds and got is None and kinds[column] not in COMPUTED:
+                # Empty, and no rule computes it yet: the number waits for one.
+                check["waiting"] = True
+            out.append(check)
     return out
 
 
@@ -619,6 +672,13 @@ def _failed(map_, name, says, check):
         where += f", {check['column']}"
     if check["at"]:
         where += f" on {check['at']}"
+    if check.get("waiting"):
+        return ExampleError(
+            "example_failed", where=where,
+            expected=f"{check['expected']}, because: {says}",
+            got="nothing yet: no rule computes it",
+            repairs=[Repair("write the rule that computes it, once the example is "
+                            "agreed to", where=f"{check['table']}.{check['column']}")])
     repairs = []
     if check["column"] is None:
         repairs.append(Repair(f"name a row {check['table']} has",

@@ -93,19 +93,29 @@ def world(conn, tmp_path_factory):
         "classes": {
             "Keeper": {"abstract": True, "mixin": True, "is_a": "Thing",
                        "description": "A role nothing here fills."},
-            "Widget": {"mixins": ["Thing"], "slots": ["widget_ref", "widget_weight"]},
-            "Tally": {"slots": ["tally_widget", "tally_weight", "tally_note"]},
+            "Widget": {"mixins": ["Thing"], "slots": ["widget_ref", "widget_weight"],
+                       "description": "A thing that is weighed."},
+            "Tally": {"slots": ["tally_widget", "tally_weight", "tally_note"],
+                      "description": "The weight of each widget, added up."},
         },
         "slots": {
-            "widget_ref": {"slot_uri": "pb:widget_ref", "identifier": True},
-            "widget_weight": {"slot_uri": "pb:widget_weight", "range": "decimal"},
-            "tally_widget": {"slot_uri": "pb:tally_widget"},
+            "widget_ref": {"slot_uri": "pb:widget_ref", "identifier": True,
+                           "description": "The code a widget is known by."},
+            "widget_weight": {"slot_uri": "pb:widget_weight", "range": "decimal",
+                              "description": "How much the widget weighs.",
+                              "unit": {"symbol": "kg"},
+                              "annotations": {"direction": "level"}},
+            "tally_widget": {"slot_uri": "pb:tally_widget",
+                             "description": "The widget this row is about."},
             "tally_weight": {
                 "slot_uri": "pb:tally_weight", "range": "decimal",
-                "annotations": {"aggregate": {"value": {
+                "description": "Every weight of the widget, added up.",
+                "unit": {"symbol": "kg"},
+                "annotations": {"direction": "level", "aggregate": {"value": {
                     "over": "Widget", "sum": "widget_weight",
                     "by": {"tally_widget": "widget_ref"}}}}},
-            "tally_note": {"slot_uri": "pb:tally_note"},
+            "tally_note": {"slot_uri": "pb:tally_note",
+                           "description": "Anything said about the tally."},
         },
         "annotations": {"valid_from": "2026-09-01T00:00:00+00:00",
                         "transcript": "probe.txt"},
@@ -177,7 +187,8 @@ def test_after_the_swap_the_same_term_is_a_fact_the_application_cannot_see(conn,
     orphaned = {f["uri"]: f for f in _diagnosis(report, "orphaned_fact")}
 
     finding = orphaned["https://uniti.example/inventory/movement_happened_on"]
-    assert finding["declared_by"] == [{"name": INVENTORY, "versions": ["v1", "v2", "v3"]}]
+    assert finding["declared_by"] == [{"name": INVENTORY,
+                                       "versions": ["v1", "v2", "v3", "v4"]}]
     assert finding["held"] > 0
     assert "does not pin it" in finding["sentence"]
     # The rival's own moment is dead there for the same reason: nothing reads it.
@@ -188,12 +199,16 @@ def test_after_the_swap_the_same_term_is_a_fact_the_application_cannot_see(conn,
 def test_an_old_application_is_told_what_the_store_has_moved_past(conn, world):
     lagging = _diagnosis(health(world, APP_NAME, "v1", conn=conn), "lagging_pin")
     assert {(f["module"], f["pinned"], f["latest"]) for f in lagging} == {
-        (CORE, "v1", "v2"), (CATALOG, "v2", "v3"), (INVENTORY, "v2", "v3")}
+        (CORE, "v1", "v2"), (CATALOG, "v2", "v4"), (INVENTORY, "v2", "v4")}
     inventory = next(f for f in lagging if f["module"] == INVENTORY)
-    assert inventory["newer"] == ["v3"]
+    assert inventory["newer"] == ["v3", "v4"]
     assert {"name": APP_NAME, "version": "v1"} in inventory["pinned_by"]
 
-    assert _diagnosis(health(world, APP_NAME, APP_VERSION, conn=conn), "lagging_pin") == []
+    # The current application lags only the versions that brought its modules
+    # to the recording standard.
+    lagging = _diagnosis(health(world, APP_NAME, APP_VERSION, conn=conn), "lagging_pin")
+    assert {(f["module"], f["pinned"], f["latest"]) for f in lagging} == {
+        (CATALOG, "v3", "v4"), (INVENTORY, "v3", "v4")}
 
 
 def test_the_three_the_demonstration_does_not_have_are_found_in_a_probe(conn, world):
@@ -242,14 +257,15 @@ def test_the_catalogue_says_who_fills_a_role_across_the_store(world):
     assert {f["class"] for f in flow["filled_by"]} == {"StockMovement", "Movement"}
     assert {(r["module"]["version"], r["rule"]) for r in flow["read_by"]} == {
         ("v2", "IngredientStock.quantity_on_hand"),
-        ("v3", "IngredientStock.quantity_on_hand")}
+        ("v3", "IngredientStock.quantity_on_hand"),
+        ("v4", "IngredientStock.stock_quantity_on_hand")}
 
 
 def test_the_catalogue_says_nothing_anywhere_reads_a_binding(world):
     """Across every sealed version, not only one application."""
     found = find(catalogue(world), kind="slot", fills="moment")["entries"]
     assert {(e["name"], e["module"]["name"]) for e in found} == {
-        ("movement_happened_on", INVENTORY), ("happened", RIVAL)}
+        ("movement_happened_on", INVENTORY), ("move_happened_on", RIVAL)}
     assert all(e["read_by"] == [] for e in found)
 
     amount = find(catalogue(world), kind="slot", fills="amount")["entries"]

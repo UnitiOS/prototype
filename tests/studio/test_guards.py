@@ -174,19 +174,20 @@ def lists(world, conn):
                                           "description": f"A {class_name.lower()}."})
         step(world, name, "fill_role", **{"class": class_name, "role": "Thing"})
     for slot, kind in (("material_code", "string"), ("material_unit", "Unit"),
-                       ("note", "string")):
-        step(world, name, "add_slot", slot=slot, range=kind, description=slot)
+                       ("batch_note", "string")):
+        step(world, name, "add_slot", slot=slot, range=kind,
+             description=f"The {slot.replace('_', ' ')}.")
         step(world, name, "attach", **{"class": "Material", "slot": slot})
-    step(world, name, "attach", **{"class": "Batch", "slot": "note"})
+    step(world, name, "attach", **{"class": "Batch", "slot": "batch_note"})
     step(world, name, "set_slot", slot="material_code", field="identifier", value="true")
-    step(world, name, "set_usage", **{"class": "Material", "slot": "note",
+    step(world, name, "set_usage", **{"class": "Material", "slot": "batch_note",
                                       "field": "required", "value": "true"})
 
     report = reading.state(world, name)
     assert report["sealable"], [h["where"] for h in report["holes"] if h["blocking"]]
     assert report["enums"][0]["values"] == ["kg", "sack", "box"]
     assert {c["name"]: c["usage"] for c in report["classes"]} == {
-        "Batch": {}, "Material": {"note": {"required": True}}}
+        "Batch": {}, "Material": {"batch_note": {"required": True}}}
     seal(conn, studio.path(world, name), actor_id="probe",
          into=studio.directory(world, name), store=world, sealed_at=NOW)
     return read_map(world.path(name, "v1"), world)
@@ -202,7 +203,7 @@ def test_a_closed_list_is_offered_from_the_map_and_held_to(conn, lists):
     with pytest.raises(MapError) as refused:
         submit(conn, lists, "Material", subject="probe:flour",
                values={"material_code": "FLR", "material_unit": "litre",
-                       "note": "dry", "entity_class": "Material"},
+                       "batch_note": "dry", "entity_class": "Material"},
                actor_id="probe", valid_from=NOW, recorded_at=NOW)
     assert refused.value.code == "not_among_the_choices"
     assert refused.value.repairs[0].options == ("kg", "sack", "box")
@@ -216,7 +217,7 @@ def test_what_one_class_requires_another_may_leave_out(conn, lists):
                        "entity_class": "Material"},
                actor_id="probe", valid_from=NOW, recorded_at=NOW)
     assert refused.value.code == "required_missing"
-    assert refused.value.repairs[0].options == ("note",)
+    assert refused.value.repairs[0].options == ("batch_note",)
 
     # A batch carries the same slot and is not obliged to fill it.
     submit(conn, lists, "Batch", subject="probe:batch_1",
@@ -224,7 +225,7 @@ def test_what_one_class_requires_another_may_leave_out(conn, lists):
            actor_id="probe", valid_from=NOW, recorded_at=NOW)
     # And an entity the log already holds is not asked for everything again.
     submit(conn, lists, "Material", subject="probe:sugar",
-           values={"material_code": "SGR", "note": "fine", "entity_class": "Material"},
+           values={"material_code": "SGR", "batch_note": "fine", "entity_class": "Material"},
            actor_id="probe", valid_from=NOW, recorded_at=NOW)
     submit(conn, lists, "Material", subject="probe:sugar",
            values={"material_unit": "sack"},
@@ -236,11 +237,11 @@ def test_a_slot_holding_several_values_is_refused_until_a_table_can_read_it(worl
     step(world, name, "start", title="Several", description="Tags.")
     step(world, name, "add_class", **{"class": "Tagged", "description": "Tagged."})
     step(world, name, "fill_role", **{"class": "Tagged", "role": "Thing"})
-    step(world, name, "add_slot", slot="tag", description="A tag.")
-    step(world, name, "attach", **{"class": "Tagged", "slot": "tag"})
+    step(world, name, "add_slot", slot="tagged_label", description="A label it has.")
+    step(world, name, "attach", **{"class": "Tagged", "slot": "tagged_label"})
     assert reading.state(world, name)["sealable"]
 
-    step(world, name, "set_slot", slot="tag", field="multivalued", value="true")
+    step(world, name, "set_slot", slot="tagged_label", field="multivalued", value="true")
     report = reading.state(world, name)
     assert [h["kind"] for h in report["holes"] if h["blocking"]] == [
         "multivalued_not_read"]
