@@ -714,6 +714,926 @@ server Studio percobaan pertama) dihapus dan diganti; salinannya tetap di tag.
   mengusulkan seal terlalu dini dan dikembalikan; lalu mengusulkan dengan
   benar. Di test, orang menyetujui contohnya dan seal berhasil.
 
+**Hasil 4.3 (30 September 2026).** Agent sungguhan berjalan di Gemini, dengan
+akuntan, batas biaya, percakapan yang disimpan, dan setiap panggilan model
+tercatat. Baseline penuh (10 tugas × 3) belum dijalankan atas keputusan
+pemilik; yang ada adalah uji kecil yang diawasi panggilan demi panggilan.
+
+- **Model per peran lewat `config/agent.yaml`**, satu-satunya tempat nama
+  penyedia ditulis: pembangun `gemini-3.8-flash` berpikir sedang (`medium`),
+  akuntan model yang sama berpikir tinggi. Batas per permintaan 25 panggilan,
+  600.000 token, $0,20; satu panggilan paling lama 60 detik. Harga ditulis per
+  model, termasuk harga masukan yang diambil dari cache penyedia (sekitar
+  sepersepuluh).
+- **Akuntan** konteks terpisah: hanya membaca kata-kata orang dan situasi yang
+  diceritakan pembangun, tidak pernah graph. Usulan yang angkanya tidak
+  dihitung akuntan dikembalikan ke pembangun sebelum sampai ke orang.
+- **Percakapan disimpan di samping draft** (`draft.chat.yaml`): kata orang,
+  cara giliran berakhir, biaya, hitungan akuntan, dan seluruh panggilan tiap
+  giliran. Giliran berikutnya menerima giliran sebelumnya utuh, sehingga yang
+  sudah dibaca tidak dibaca lagi (pilihan pemilik "b"); giliran yang berhenti
+  di tengah diserahkan berakhir pada apa yang dikatakan ke orang, tidak pada
+  panggilan yang tak berjawab.
+- **Setiap panggilan diawasi** (`components/agent/watch.py`): tiap panggilan
+  model ditulis utuh ke `build/calls/*.jsonl` — waktu, token masuk, keluar,
+  berpikir dan dari cache, apa yang dikirim, apa yang dijawab termasuk
+  pikirannya, dan setiap permintaan HTTP dengan statusnya.
+  `python -m components.agent watch FILE` membacakannya.
+- **Gangguan sesaat dari penyedia diulang** paling banyak dua kali
+  (`steady.py`); bila tetap gagal, permintaan berhenti dengan rapi dan
+  menyebut sebabnya.
+- **Eval** (`components/agent/evals.py`, `make eval`): sepuluh tugas dari
+  kegagalan 2.8 dengan kebenaran tersembunyi, dinilai kode, lulus hanya bila
+  ketiga putarannya lulus. Putaran berjalan satu per satu, satu baris per
+  putaran dicetak saat selesai, eval punya batas biaya sendiri
+  (`--dollars`), dan setiap panggilannya tercatat.
+- **Jalur ke Google diperbaiki.** Pydantic AI memakai kunci API (*Express
+  Mode*) setiap kali kunci ada di lingkungan, walaupun proyek dan lokasi
+  disebut. Sekarang lewat login proyek (ADC) dengan proyek tagihan
+  (`GOOGLE_CLOUD_QUOTA_PROJECT`) di wilayah `us`; tanpa perubahan kode. Galat
+  504 "Deadline expired" ternyata batas waktu kita sendiri yang dikirim ke
+  Google (`X-Server-Timeout`): panggilan itu mengantre lebih dari semenit di
+  jalur lama. Di `us` tidak ada antrean seperti itu.
+- **Yang dipelajari dari uji tugas `on_hand`** (satu putaran tiap setelan):
+  berpikir `low` memberi nol token pikiran, agent bekerja refleks satu bacaan
+  per panggilan dan dua kali habis batas; `medium` lulus (27 panggilan, $0,18,
+  4 menit); `high` habis batas tepat sebelum selesai (berpikir hampir dua kali
+  lipat, $0,20). Biaya terbesar adalah percakapan yang dikirim ulang di setiap
+  panggilan, bukan jawaban model. Akuntan: 28 dari 30 hitungan benar pada eval
+  pertama, dua sisanya waktu habis di jalur lama.
+- **Terbuka:** baseline penuh 10 × 3; perbandingan akuntan dengan
+  `gemini-3.1-pro-preview`; agent masih cenderung satu alat per panggilan.
+
+**Hasil 4.4, versi pertama (30 September 2026).** Studio dibangun ulang di
+sekitar agent; belum dicoba pemilik dengan model sungguhan. 274 test lulus,
+replay identik dua kali.
+
+- **Percakapan di kiri, yang dibangun di kanan.** Orang menulis kebutuhan
+  dalam bahasa bisnis ("Build with the agent": nama modul dan kebutuhannya,
+  modul baru atau yang sudah dibekukan). Selama agent bekerja, setiap
+  panggilan muncul saat terjadi: apa yang dibaca, langkah apa yang diambil,
+  kapan bertanya ke akuntan, berapa detik dan token, dan pikirannya bila model
+  memperlihatkannya. Peta diperbarui setiap kali draft berubah.
+- **Empat cara giliran berakhir:** jawaban; pertanyaan dengan pilihan yang
+  bisa diklik; usulan; atau berhenti (batas biaya, model, atau penyedia).
+  Setiap giliran menyebut biayanya.
+- **Kartu usulan** menampilkan yang dibaca sistem dari draft, bukan ringkasan
+  agent; setiap contoh dengan angka yang diharapkan dan yang dihasilkan draft,
+  dan cara akuntan menghitungnya. Dua tombol hanya milik orang: setujui angka
+  contoh, dan bekukan (seal) dengan konfirmasi nama. Seal memakai gerbang yang
+  sama dan menolak bila masih ada yang kurang.
+- **Sesudah seal** draft ditutup; percakapan yang membangunnya disimpan di
+  samping versinya sebagai `vN.chat.yaml`, bersama transkrip dan contohnya.
+- **Tab kanan:** Peta (dengan panel dan kontrol tangan yang lama), Contoh
+  (semua contoh, status setuju, angka, tabel yang dihasilkan, hitungan
+  akuntan), dan *Behind the scenes*.
+- **API:** `POST /api/studio/ask` mengalir satu objek JSON per baris saat agent
+  bekerja, `GET /api/studio/chat`, `POST /api/studio/seal`. Satu permintaan
+  per modul pada satu waktu. Setiap permintaan dari halaman juga menulis
+  berkas pengawasan di `build/calls`.
+
+**4.4 diperbaiki (30 September 2026).** Pemilik mencoba versi pertama: graph
+kurang interaktif, dan Studio harus benar-benar mudah dipakai dan dipahami, di
+layar 4K maupun layar lain. Setelah dilihat langsung di browser: seluruh
+aplikasi dibatasi selebar 1.320 titik sehingga peta hanya mendapat sekitar
+15% layar; modul yang sudah dibekukan tidak bisa dibuka dari Studio; asal
+angka tidak terlihat di peta; nama masih nama mesin; contoh terpisah dari
+peta. Disepakati tiga bagian, masing-masing diperiksa pemilik:
+
+| bagian | isi | status |
+|---|---|---|
+| 1 | Tata letak layar penuh dan peta baru (React Flow), buka modul yang ada, nama yang terbaca | selesai |
+| 2 | Lapis "bagaimana angka dihitung", angka contoh dan tanda periksa di peta | selesai |
+| 3 | Peta hidup bersama agent, percakapan ↔ peta, kartu usulan dengan peta perubahan | selesai |
+
+**Hasil bagian 1.** Diperiksa sendiri di Chrome, di layar lebar dan dalam
+bingkai laptop (1280), tablet (820) dan ponsel (390).
+
+- **Studio memakai seluruh layar** (area lain tetap selebar bacaan). Tiga
+  ukuran menurut lebar: lebar (≥1440) percakapan | peta | panel berdampingan;
+  sedang (1024–1439) percakapan | peta dan panel meluncur di atas peta;
+  sempit (<1024) satu per satu lewat pilihan Percakapan / Peta / Detail. Di
+  layar ≥1920 dan ≥2560 huruf sedikit membesar. Percakapan dan panel bisa
+  dilipat.
+- **Peta baru di atas React Flow** (`web/src/graph.tsx`), susunan bertingkat
+  otomatis dengan dagre (`web/src/studioMap.ts`): yang dirujuk di atas, yang
+  dibangun di bawah, selalu bentuk yang sama untuk modul yang sama. Zoom,
+  peta kecil, "Show all", "Tidy up", pencarian kotak atau isian, panduan "How
+  to read this". Klik kotak: garisnya menyala, yang tidak terhubung meredup,
+  panel detail terbuka. Tarik titik di atas kotak ke kotak lain untuk
+  membuat relasi (langkah `add_slot` + `attach` yang sama). Posisi kotak yang
+  digeser diingat browser ini per modul, tidak pernah ditulis ke modul.
+- **Nama sebagai kata:** `quantity_on_hand` jadi "Quantity on hand",
+  `IngredientStock` jadi "Ingredient stock"; judul isian yang ditulis
+  penulisnya didahulukan; nama kelas di depan nama isian dibuang
+  (`ingredient_code` di Ingredient jadi "Code"). Nama mesin tetap tertulis
+  kecil di panel. Semuanya mekanis, tanpa kamus bisnis mana pun.
+- **Isian hitungan diberi tanda** sum / formula / looked up, dan panel
+  menjelaskannya dalam kalimat ("Worked out by the formula: On hand -
+  Reorder level").
+- **Halaman awal Studio:** "Build with the agent" (dengan daftar modul yang
+  ada, dan keterangan apakah nama itu modul baru atau perubahan), "Open a
+  module" (draft yang sedang dikerjakan, dan setiap modul beku dengan tombol
+  "Change it" yang membuka draft perubahannya), dan mulai dengan tangan.
+- **Bar atas ringkas:** judul, nama modul, satu kalimat keterangan (sisanya
+  di balik "more"), status ("Ready to freeze as v4" atau jumlah pertanyaan),
+  tombol bekukan dengan konfirmasi nama langsung dari bar, lipat panel, buang
+  draft.
+- **Contoh** memakai nama yang sama dengan peta.
+- **Test tampilan pertama:** 11 test (vitest) untuk nama, isi peta, dan
+  susunan kotak (tetap, tidak bertumpuk, yang digeser tetap di tempatnya);
+  `make web-test`, dan `make web` menjalankannya sebelum build. 274 test
+  Python tetap lulus, replay identik dua kali.
+
+**Hasil bagian 2 (2 Oktober 2026).** Tanpa satu pun panggilan model.
+Diperiksa sendiri di Chrome di layar 4K dan dalam bingkai 1280, 820 dan 390.
+
+- **Peta punya dua cara pandang, satu tombol:** "What's in it" (jenis hal
+  dan relasinya, seperti bagian 1) dan "How the numbers are worked out".
+  Pilihan diingat browser.
+- **Asal angka sekarang kelihatan.** Server menambahkan bacaan compiler
+  atas setiap aturan ke keadaan draft (`workings` di
+  `components/studio/read.py`): jumlah `over: Flow` di Stock sebenarnya
+  menjumlahkan `qty_delta` setiap Movement (modul `@rival/stock-moves`,
+  yang mengisi peran Flow), dikelompokkan menurut `item`. Movement
+  sebelumnya tidak ada di peta karena tidak ada yang menunjuk ke sana;
+  sekarang ia digambar (`read_from`) dengan garis titik-titik "adds up".
+- **Lapis angka:** setiap isian hitungan berada di dalam kotak jenisnya,
+  dengan panah dari yang dicatat (kiri), lewat aturan, ke hasilnya (kanan):
+  dijumlahkan, dicari, atau rumus, masing-masing dengan kalimatnya.
+- **Ikuti satu contoh:** pilih contoh dan saatnya ("flour, on 30 Jun
+  2026"), lalu angkanya tertulis di peta: catatan yang masuk ke jumlah
+  (+25, +25, −14 dengan tanggalnya), nilai yang dicari pada saat itu (20,
+  "from the start"; 30 "since 1 Jul 2026"), rumus dengan angkanya (36 − 20),
+  dan hasilnya di samping yang dikatakan contoh ("16 ✓ as the example
+  says", atau merah "✗ the example says 6"). Yang memang harus kosong
+  tertulis "none ✓". Contoh kini membawa catatannya sendiri (`recorded`).
+- **Klik satu isian:** semua yang menjadi asalnya dan semua yang memakainya
+  menyala, sisanya meredup.
+- **Tanda periksa di kedua cara pandang dan di panel:** ✓ diperiksa contoh
+  dan benar, ✗ contoh berkata lain, ? belum ada contoh yang memeriksanya,
+  … contoh belum dijalankan. Panel detail menjelaskan aturan dengan bacaan
+  compiler ("Added up: the qty delta of every movement whose item is this
+  row's ingredient").
+- **Test:** 27 test tampilan (dari 11), satu test Python baru untuk
+  `workings`, `read_from` dan `recorded`. 275 test Python lulus, replay
+  identik dua kali.
+
+**Hasil bagian 3 (2 Oktober 2026).** Tanpa satu pun panggilan model: agent
+dimainkan dari naskah gladi, langsung dari halaman.
+
+- **Apa yang berubah, dibaca dari draft.** `components/studio/changes.py`
+  membandingkan dua kali lihat atas draft (dokumen dan contohnya, tanpa
+  compiler): satu baris per jenis hal, isian (`Kind.field`), contoh, modul
+  yang dipakai, atau keterangan modul — baru, berubah, atau hilang. Dipakai
+  tiga kali: keadaan draft membawa `changes` (semua yang akan dibawa seal
+  dibanding versi yang direvisi), setiap giliran menyimpan `touched` (yang
+  diubah permintaan itu, ikut tersimpan di `draft.chat.yaml`), dan setiap
+  panggilan yang mengubah draft membawa `now` dan `touched` di stream.
+- **Peta hidup selama agent bekerja.** Kotak dan isian yang baru diberi
+  tanda hijau "new", yang berubah kuning "changed", yang baru saja berubah
+  berkedip sekali; di pojok kiri atas peta tertulis "The agent is working
+  — 1 new kind, 4 new fields … so far". Sesudahnya "What the agent just
+  changed", dengan tombol berhenti menampilkan. Berlaku di kedua cara
+  pandang.
+- **Percakapan → peta.** Setiap langkah yang mengubah draft dan setiap
+  jawaban agent menyebut apa yang diubahnya ("+ Level", "~ Ingredient
+  stock", "+ example flour"); klik nama jenis hal membawa peta ke kotaknya
+  dan membuka panelnya; "show on the map" menandai perubahan jawaban itu di
+  peta.
+- **Peta → percakapan.** Panel jenis hal menulis "How it came about":
+  permintaan mana yang membuat atau mengubahnya; klik membawa percakapan ke
+  permintaan itu dan menyalakannya sebentar.
+- **Kartu usulan dengan peta perubahan:** "What freezing it as v1 brings
+  in" — satu kotak kecil per jenis hal dengan isian yang baru/berubah/hilang
+  dan tanda periksanya, contoh dan modul yang dipakai, dan "See it on the
+  map". Dibaca sistem dari draft saat itu, bukan ringkasan agent.
+- **Modul yang belum ada** tidak lagi tampil sebagai penolakan merah: selama
+  agent memulainya peta menulis "The agent is starting …", sebelum itu
+  halaman "belum ada draft" yang biasa.
+- **Diperiksa di Chrome** di layar 4K dan dalam bingkai 1280, 820 dan 390:
+  baris perubahan tidak pernah menutupi kotak (peta disesuaikan dari letak
+  dan tinggi kotak, bukan dari fit React Flow), tidak ada yang melebar ke
+  samping; di layar sempit klik dari percakapan pindah ke tab Peta.
+- **Gladi dari halaman.** `make app` kini memainkan permintaan pada
+  `@rehearsal/levels` dari naskah `tests/agent/fixtures/rehearsal.yaml`,
+  satu langkah tiap 1,5 detik, lewat alat dan draft yang sama; modul lain
+  tetap ke model. Cara melihat agent membangun di peta tanpa biaya.
+- **Test:** 2 test Python baru (perubahan draft terhadap versinya, modul
+  baru), test stream agent diperluas (setiap langkah dan giliran menyebut
+  perubahannya), 4 test tampilan baru (31).
+
+**Evaluasi dan penyetelan agent (mulai 2 Oktober 2026).** Atas permintaan
+pemilik, sebelum 4.5: mengukur kerja agent sungguhan dan menyetel instruksi,
+alat, dan sistemnya. Rencana yang disetujui, setiap langkah diumumkan dengan
+batas panggilan, biaya dan waktu sebelum dijalankan:
+
+1. satu tugas (`on_hand`) sekali, dibaca per panggilan;
+2. kesepuluh tugas masing-masing sekali (paling banyak $2,50);
+3. penyetelan per pola kesalahan, bukan per tugas, dan setiap uji ulang hanya
+   pada tugas yang terkena;
+4. ujian akhir 10 × 3 dan perbandingan akuntan Flash dengan Pro.
+
+Total perkiraan sekitar $12.
+
+- **Langkah 1** (`build/calls/20261002-215110-eval-builder.jsonl`):
+  - Lulus dengan 25 panggilan, $0,159, 283 detik. Pembandingnya 30 September:
+    27 panggilan, $0,179, 243 detik.
+  - Lulusnya tepat di panggilan terakhir yang diizinkan batas, padahal jalan
+    yang efisien sekitar 10 panggilan.
+  - Panggilan terbuang:
+    - 5 untuk catatan contoh tanpa isian wajib yang baru ditolak saat
+      dijalankan. Mencatatnya ulang malah menambah catatan kedua, sehingga
+      semuanya harus dihapus dan diulang.
+    - 5 untuk membaca ulang modul, dan membaca lagi langkah yang sudah ada di
+      instruksi.
+    - 1 builder dan 1 akuntan (50 detik) untuk hitungan contoh yang kemudian
+      tidak dipakai.
+    - Dua pesan sistem menyesatkan: modul yang belum ada terdengar seperti
+      galat konfigurasi, dan draft kosong disebut "could be sealed now".
+- **Perbaikan sesudah langkah 1**, tanpa panggilan model:
+  - **Langkah `record`:**
+    - Menolak catatan baru yang tidak membawa isian wajib kelasnya, saat itu
+      juga, dengan daftar isian yang kurang. Pemeriksanya sama dengan form.
+    - Mencatat ulang catatan yang sama pada hari yang sama berarti
+      membetulkan pernyataan itu; kelas dan isian yang tidak disebut tetap
+      dari yang lama. Aturan ini disetujui pemilik.
+  - **Katalog** menyebut isian yang wajib diberikan untuk setiap kelas yang
+    bisa dicatat ("a new one must be given …").
+  - **Pesan untuk agent:**
+    - `look` pada modul yang belum ada menjawab "There is no module … yet",
+      ditambah petunjuk `start`.
+    - Draft kosong tidak lagi disebut siap diusulkan.
+  - **Instruksi:**
+    - jangan membaca ulang yang sudah dibaca, termasuk langkah yang sudah
+      dijelaskan;
+    - `options` hanya untuk pilihan yang cocok saat itu;
+    - beberapa modul dibaca dalam satu panggilan katalog;
+    - contoh ditentukan utuh dulu, lalu dihitung akuntan sekali.
+- **Uji ulang `on_hand`** (`build/calls/20261002-221546-eval-builder.jsonl`):
+  - Lulus dengan 15 panggilan (dari 25) dan 171 ribu token (dari 364 ribu).
+    Biaya $0,142 (dari $0,159); biaya turun lebih sedikit dari token karena
+    cache penyedia jarang kena kali ini.
+  - Contoh benar sejak percobaan pertama, dan akuntan hanya dipanggil sekali.
+  - Waktu 333 detik, dengan penyebab dari penyedia:
+    - Google lambat saat itu. Percobaan pertama gagal tiga kali karena batas
+      60 detik, lalu diulang otomatis.
+    - Beberapa panggilan memakan 38–67 detik.
+  - Sisa pemborosan:
+    - Membaca modul masih satu per panggilan.
+    - Satu pertanyaan ke orang tentang arah angka, padahal deskripsi modulnya
+      sudah menjawab.
+    - Satu `look` tepat setelah `start`.
+- **Langkah 2, sepuluh tugas sekali**
+  (`build/calls/20261002-223322-eval-builder.jsonl`, laporan
+  `build/evals/20261002T171141-builder.yaml`):
+  - Menurut eval, 9 dari 10 lulus dengan biaya $1,69. Pembacaan jejak
+    mengoreksi kedua angka itu:
+    - **Biaya sebenarnya $2,14.** Eval tidak menghitung $0,45 yang dipakai
+      tiga putaran sebelum jaringan memutusnya.
+    - **Yang lulus sebenarnya 8.** `per_supplier` (tidak bisa dibangun)
+      dinilai lulus padahal agent tidak pernah memberi tahu orang. Ia
+      mencoba berbagai jalan memutar (termasuk faktor konversi yang tidak
+      ada hubungannya), membuang draft, mulai lagi, lalu habis batas $0,20.
+  - **`revise_existing` gagal**, habis 25 panggilan dalam satu giliran:
+    - enam `options` berturut-turut untuk langkah yang sudah ada di
+      instruksi;
+    - akuntan dipanggil empat kali;
+    - salinan store eval ikut membawa draft `@demo/stock` milik pemilik, jadi
+      tugasnya tidak mulai seperti yang ditulis.
+  - **`received_only` lulus dengan 32 panggilan dan $0,33.** Pada giliran
+    kedua agent sudah benar menjawab "tidak bisa". Pemeran orang di eval
+    lalu menjawab "put it before me when it is ready", dan agent mencoba
+    membangun lagi selama 17 panggilan.
+  - **Jaringan:** 19 panggilan habis batas 60 detik (504), dan tiga putaran
+    diulang. Akuntan berpikir `high` kadang memakan 45–165 detik.
+  - **Pola yang masih ada:**
+    - membaca katalog satu per satu;
+    - memanggil `options` untuk langkah yang sudah dijelaskan;
+    - membaca topik panduan yang sudah ada di instruksi;
+    - bertanya tentang arah angka yang sudah ditulis di deskripsi modul.
+- **Perbaikan sesudah langkah 2**, tanpa panggilan model:
+  - **Eval jujur:**
+    - biaya putaran yang diputus jaringan dihitung ke total dan ke batas,
+      dan disebut di laporan;
+    - tugas yang tidak bisa dibangun lulus hanya bila agent memberi tahu
+      orang (giliran berakhir dengan jawaban, bukan habis batas);
+    - jawaban ke orang mengakhiri percakapan, karena orang tidak punya yang
+      perlu ditambahkan;
+    - salinan store eval hanya membawa versi yang sudah di-seal, tanpa draft
+      yang sedang dibuka.
+  - **Sistem menolak dua hal yang belum bisa dilakukannya dengan kode baru
+    `not_possible_yet`.** Pesannya menyuruh agent memberi tahu orang,
+    bukan mencari ejaan lain:
+    - menjumlahkan hanya baris yang nilainya memenuhi syarat (`where` dengan
+      perbandingan);
+    - mengelompokkan menurut fakta yang dicapai lewat catatan lain (`by`
+      dengan titik).
+  - **Instruksi:**
+    - daftar "What the system cannot do yet", dengan perintah memberi tahu
+      orang dalam satu jawaban;
+    - bertanya hanya hal yang belum dijawab kata-kata orang atau deskripsi
+      modulnya;
+    - `options` menerima beberapa langkah sekaligus.
+  - **Pesan:** draft yang tidak terhalang seal kini berbunyi "Nothing blocks
+    a seal. Propose it once it does what the person asked."
+- **Keraguan pemilik (3 Oktober 2026):** eval memakai naskah sebagai
+  "orang".
+  - Naskah itu menjawab setiap pertanyaan dengan kalimat yang sama ("putuskan
+    sendiri, taruh di depan saya kalau siap") dan menyetujui setiap contoh
+    tanpa membacanya.
+  - Permintaannya menyebut nama tabel dan kolom teknis.
+  - Akibatnya, eval mendorong agent menyelesaikan semuanya dalam satu
+    permintaan. Di semua jejak, tiga titik persetujuan (ringkasan kebutuhan,
+    angka contoh, seal) menyusut jadi satu kartu di akhir, dan contoh dibuat
+    sesudah rumus.
+  - Disepakati:
+    - satu sesi realistis dulu dengan agent yang sekarang, Claude berperan
+      sebagai pengguna lewat jalur yang sama dengan Studio;
+    - sesudahnya agent dibuat bertahap secara terstruktur;
+    - eval naskah tetap dipakai sebagai uji mesin.
+- **Sesi realistis 1 (3 Oktober 2026), stok sederhana, `@toko/stok-bahan`:**
+  - **Pengguna:** pemilik toko roti yang tidak tahu istilah teknis dan
+    menulis dalam bahasa Indonesia. Fakta tersembunyinya: catatan toko adalah
+    `@demo/inventory`, dan tim gudang mencatat kejadian yang sama di
+    `@rival/stock-moves`.
+  - **Lima giliran, 40 panggilan, $0,36, sekitar 8,5 menit kerja agent:**
+    - 2 pertanyaan;
+    - 1 giliran berhenti karena batas $0,20;
+    - 1 usulan contoh;
+    - 1 usulan seal.
+  - **Hasil benar:** kebenaran tersembunyi `on_hand` (tepung 20, gula 10)
+    lulus di salinan. Seal sengaja tidak ditekan.
+  - **Yang baik:**
+    - kedua pertanyaannya masuk akal;
+    - contoh diusulkan terpisah dari seal;
+    - contohnya sendiri memuat catatan gudang yang sama untuk membuktikan
+      tidak ada hitung ganda;
+    - semua jawaban dalam bahasa Indonesia.
+  - **Yang kurang:**
+    - tidak ada ringkasan rencana untuk disetujui; agent langsung membangun;
+    - rumus dibuat sebelum contoh;
+    - istilah teknis bocor ke pengguna (`@demo/inventory`, "modul",
+      `StockMovement`);
+    - pesan berhenti karena batas biaya tetap berbahasa Inggris;
+    - giliran 3 boros: tiga topik panduan dibaca, katalog dibaca satu per
+      satu, modul lain dibuka, akuntan dipanggil dua kali, dan satu panggilan
+      berpikir 5.000 token;
+    - percakapan yang dikirim ulang membuat satu panggilan berisi 20–33 ribu
+      token.
+  - **Lingkungan:** Docker mati sejak malam sebelumnya, sehingga giliran 3–4
+    berjalan tanpa database dan contoh tidak bisa dijalankan. Sistem tetap
+    menerima usulan contoh yang belum dijalankan. Itu celah penjaga: usulan
+    hanya boleh memuat contoh yang lulus. Database dinyalakan lagi sebelum
+    contoh disetujui, dan contohnya lulus.
+
+**Rencana implementasi penyetelan agent (disetujui pemilik 3 Oktober
+2026).** Disusun dari sesi realistis 1 dan analisis tiga hal yang diminta
+pemilik:
+- riwayat percakapan tetap utuh, mengikuti praktik umum sistem agent;
+- bahasa ke pengguna luwes mengikuti bahasa dan tingkat pemahaman orangnya;
+- bahasa pencatatan baku dan prosedurnya sama untuk setiap agent, karena
+  tanpa itu modularitas gagal.
+
+Keputusan pemilik:
+- semua rekomendasi diterima;
+- bahasa Inggris menjadi bahasa baku pencatatan, dengan label dalam bahasa
+  pengguna untuk ditampilkan;
+- pelanggaran standar yang bisa dicek mesin menghalangi seal.
+
+Empat tahap, berurutan, masing-masing dengan titik periksa pemilik, lalu 4.5.
+Tahap 1–3 adalah pekerjaan kode tanpa panggilan model, kecuali satu uji kecil
+di tahap 2 yang diumumkan dulu.
+
+Prinsip pembagiannya: ke pengguna agent luwes, ke catatan agent seragam.
+Keseragaman itu dijaga sistem, bukan bergantung pada disiplin masing-masing
+model, sehingga model atau penyedia apa pun menghasilkan catatan yang sama
+bentuknya.
+
+*Tahap penyetelan 1 — standar pencatatan.* Masalahnya terlihat di sesi 1:
+agent mencatat modul dalam bahasa Indonesia (`StokBahan`, `bahan`,
+`sisa_stok`), padahal semua modul lain berbahasa Inggris
+(`IngredientStock`, `movement_quantity`), dan saat ini tidak ada aturan
+pencatatan sama sekali. Akibatnya modul tidak saling menemukan di katalog,
+konsep dibuat ulang, nama bertabrakan antarmodul (`item` milik
+`@rival/stock-moves`), dan makna yang tidak tertulis (satuan, arah angka,
+arti tanggal) menjadi sumber kegagalan 2.8: hitung ganda dan tanda terbalik.
+
+- **Bahasa baku: Inggris.** Berlaku untuk nama modul, jenis, kolom dan enum,
+  serta `title` dan `description`-nya, dan untuk `says` pada contoh.
+- **Label dalam bahasa pengguna** disimpan di samping yang baku, per bahasa,
+  memakai tempat yang sudah disediakan LinkML (label dengan `in_language`).
+  Bentuk pastinya ditetapkan saat implementasi, mengikuti apa yang dibaca
+  generator.
+  - Studio dan alat agent menampilkan label dalam bahasa orangnya bila ada,
+    dan yang baku bila tidak.
+  - Kata-kata orang pada contoh tetap disimpan sebagai labelnya.
+- **Pola nama**, dicek mesin:
+  - Jenis: kata benda tunggal bahasa Inggris, huruf besar di awal setiap kata
+    (`StockMovement`), hanya ASCII.
+  - Kolom: huruf kecil dengan garis bawah, dengan awalan yang sama untuk
+    semua kolom milik satu jenis (`movement_quantity`, `movement_happened_on`).
+  - Modul: `@scope/nama-dengan-tanda-hubung`.
+- **Makna wajib:**
+  - Setiap jenis dan kolom punya deskripsi. Pertanyaan terbuka
+    `nothing_said_about_it` menjadi penghalang.
+  - Setiap kolom angka punya satuan (LinkML `unit`), termasuk kolom hitungan.
+  - Setiap jumlah menyebut arahnya: apa yang positif.
+  - Setiap tanggal menyebut artinya: kapan terjadi atau kapan dicatat.
+
+  Arah dan arti tanggal ditulis sebagai isian terstruktur dari daftar
+  tertutup, bukan hanya prosa. Ini sekaligus menjawab sebagian pertanyaan
+  terbuka nomor 6 (satuan, dan waktu dengan dua sumber).
+- **Bahasa Inggris pada deskripsi** diperiksa dengan pendeteksi bahasa yang
+  ringan. Teks yang jelas bukan bahasa Inggris menghalangi seal; yang
+  meragukan hanya menjadi pertanyaan terbuka.
+- **Prosedur yang sama untuk setiap agent:**
+  1. cari di katalog;
+  2. pakai ulang dan pin yang sudah ada;
+  3. isi peran bersama;
+  4. buat hanya yang belum ada;
+  5. contoh;
+  6. rumus.
+
+  Prosedur dan standar ditulis satu kali, di sistem. Pemeriksaan seal dan
+  panduan agent dibaca dari sumber yang sama, sehingga apa yang diajarkan
+  tidak bisa berbeda dari apa yang ditegakkan.
+- **Penegakan:**
+  - Setiap pelanggaran yang bisa dicek mesin menjadi lubang penghalang di
+    Studio dan penolakan di seal, dengan langkah perbaikannya.
+  - Bila perlu, langkah Studio baru untuk mengisi satuan, arah, arti tanggal
+    dan label.
+  - Panduan agent mendapat bagian "standar pencatatan" yang dihasilkan dari
+    pemeriksaan itu.
+- **Modul demo** (`@demo/*`, `@rival/stock-moves`) dibawa ke standar lewat
+  versi baru dengan prosedur yang sama: satuan, arah, arti tanggal, label
+  Indonesia. Versi lama tetap utuh, karena versi yang sudah di-seal tidak
+  pernah diubah.
+- **Eval "standar pencatatan":** tugas eval mesin juga memeriksa bahwa modul
+  yang dibangun agent memenuhi standar. Sebuah model baru dianggap layak
+  bila lulus.
+- **Titik periksa pemilik:** penolakan standar di Studio, modul demo versi
+  baru dengan labelnya, dan modul `@toko/stok-bahan` dari sesi 1 yang kini
+  ditolak beserta cara memperbaikinya.
+
+*Tahap penyetelan 2 — riwayat utuh yang murah.* Riwayat tetap dikirim utuh:
+kata orang, setiap pemanggilan alat beserta hasilnya, dan setiap jawaban
+agent. Pilihan "b" dari 4.3 dipertahankan. Yang dibenahi adalah biayanya dan
+pengulangannya.
+
+- **Instruksi tetap, keadaan di pesan.**
+  - Kalimat keadaan modul ("belum ada", "draft-nya terbuka") sekarang ada di
+    instruksi dan berubah setiap kali keadaan berubah. Akibatnya potongan
+    cache penyedia (sekitar 90%) tidak berlaku: di jejak, "0 cached" muncul
+    tepat setelah `start` dan di awal setiap giliran.
+  - Instruksi dibuat tetap. Keadaan disampaikan di pesan giliran dan di
+    jawaban alat, sesuai praktik umum: bagian tetap di depan, bagian berubah
+    di belakang.
+  - Dibuktikan dengan satu uji kecil yang diumumkan dulu, dengan
+    membandingkan token yang kena cache di awal giliran dan sesudah `start`.
+- **Alat yang tahu pengulangan.** Bacaan yang sama dengan hasil yang sama
+  dijawab "sama dengan bacaan ke-N di atas, tidak berubah". Ini berlaku untuk
+  `look`, `catalogue`, `options` dan `guide`. Agent tahu ia sudah memegang
+  isinya, dan isi yang sama tidak dibayar dua kali.
+- **Pemendekan bacaan usang**, hanya bila percakapan sangat panjang (ambang
+  awal sekitar 100 ribu token, disetel dari pengukuran). Teknik ini disebut
+  "tool result clearing".
+  - Hasil bacaan yang sudah tergantikan oleh bacaan baru diganti catatan satu
+    baris. Contohnya isi draft yang sudah dibaca ulang.
+  - Pemanggilannya tetap tercatat.
+  - Kata orang, jawaban agent, dan langkah `do` beserta hasilnya tidak pernah
+    dipendekkan.
+- **Berhenti dengan sopan.** Satu panggilan terakhir disisakan dari batas
+  per permintaan, supaya agent sendiri yang menjelaskan apa yang sudah dan
+  belum dikerjakan, dalam bahasa orangnya. Pesan sistem yang tetap hanya
+  dipakai bila panggilan itu pun gagal.
+- **Titik periksa pemilik:** angka cache dan token per panggilan sebelum dan
+  sesudahnya, dari uji kecil tadi.
+
+*Tahap penyetelan 3 — agent bertahap, bahasa yang luwes.*
+
+- **Kartu Rencana.** Agent mendapat cara keempat untuk mengakhiri giliran,
+  `Plan`: apa yang akan dibangun dalam bahasa bisnis, dari catatan mana,
+  angka apa yang dihasilkan, dan apa yang belum bisa dilakukan sistem. Studio
+  menampilkannya dengan tombol "Setuju, lanjut" dan "Ubah". Persetujuannya
+  adalah langkah orang, seperti `agree_example`, dicatat di samping draft dan
+  tidak bisa dilakukan agent.
+- **Urutan dijaga sistem.** Rumus (`aggregate`, `parameter`, `expression`)
+  ditolak sebelum ada rencana yang disetujui, dan sebelum ada contoh yang
+  disetujui orang untuk tabel itu. Jenis dan kolom tanpa rumus boleh dibuat
+  lebih dulu, karena contoh membutuhkannya. Urutannya menjadi:
+  1. pahami;
+  2. rencana disetujui;
+  3. contoh disetujui;
+  4. rumus sampai contohnya cocok;
+  5. seal.
+
+  Setiap tahap adalah satu permintaan dengan batasnya sendiri.
+- **Bahasa yang luwes**, diajarkan sebagai prinsip, bukan daftar larangan:
+  - ikuti bahasa dan gaya orangnya;
+  - baca tingkat pemahamannya dari cara ia menulis;
+  - pakai istilah teknis hanya bila ia sendiri memakainya;
+  - tanyakan bila ragu seberapa rinci penjelasan yang diinginkan.
+
+  Alat menampilkan label dalam bahasa orangnya lebih dulu (dari tahap 1),
+  supaya agent punya kata-kata bisnis untuk dipakai.
+- **Celah yang ditutup:** contoh hanya boleh diusulkan untuk disetujui bila
+  sudah dijalankan dan lulus.
+- **Eval mesin disesuaikan.** Pemeran orang menyetujui rencana dan contoh,
+  dan tidak lagi menyuruh agent menyelesaikan semuanya sendiri. Eval ini
+  tetap dijalankan setelah setiap perubahan untuk memastikan alat dan sistem
+  tidak rusak.
+- **Titik periksa pemilik:** Kartu Rencana dan urutan yang dijaga, dicoba di
+  Studio dengan gladi tanpa model.
+
+*Tahap penyetelan 4 — sesi realistis diulang.*
+
+- Claude kembali berperan sebagai pengguna lewat jalur yang sama dengan
+  Studio. Ada tiga skenario:
+  - stok sederhana, diulang untuk dibandingkan dengan sesi 1;
+  - dua sistem yang mencatat kejadian yang sama;
+  - permintaan yang belum bisa dibangun (per pemasok).
+- Setiap sesi diumumkan dengan batasnya (sekitar $1). Database diperiksa
+  dulu sebelum mulai.
+- Penilaian:
+  - angka akhir terhadap kebenaran tersembunyi;
+  - berhenti di tiga titik persetujuan;
+  - bahasa sesuai orangnya;
+  - catatan memenuhi standar;
+  - biaya dan waktu per giliran.
+- Sesudahnya:
+  - ujian akhir eval mesin 10 × 3;
+  - perbandingan akuntan Flash dan Pro;
+  - 4.5 (PT Maju dibangun ulang lewat agent).
+
+**Hasil tahap penyetelan 1 (3 Oktober 2026).** Standar pencatatan terpasang
+sebagai komponen sendiri, `components/standard`. Komponen ini menjadi satu
+sumber untuk tiga pembaca: seal menolak, Studio menunjukkan lubang beserta
+langkah perbaikannya, dan panduan agent mengajarkannya (bagian "Recording
+standard" dihasilkan dari daftar yang sama). Tidak ada panggilan model.
+
+- **Yang diperiksa mesin**, masing-masing dengan kode penolakan sendiri:
+  - bentuk nama: jenis dan enum `PascalCase`, kolom `snake_case` minimal dua
+    kata dengan kata depan yang sama per jenis, nilai enum `snake_case`;
+  - deskripsi wajib untuk jenis dan kolom;
+  - bahasa Inggris pada nama, judul, deskripsi, dan `says` contoh;
+  - satuan untuk setiap angka;
+  - arah setiap angka dari daftar tertutup: `increase`, `decrease`,
+    `magnitude`, `level`;
+  - arti setiap tanggal dari daftar tertutup: `happened`, `recorded`,
+    `takes_effect`, `expected`.
+
+  Pertanyaan terbuka `nothing_said_about_it` kini menjadi penghalang
+  (`description_missing`). Kolom pengenal tidak diminta satuan atau arah.
+- **Pendeteksi bahasa** ringan dan tanpa pustaka baru. Ia membaca kata umum
+  bahasa Inggris dan beberapa bahasa lain berhuruf Latin, serta aksara
+  tulisan.
+  - Teks yang jelas bukan bahasa Inggris menghalangi seal.
+  - Teks yang tidak bisa ditentukan menjadi pertanyaan terbuka
+    (`maybe_not_english`).
+  - Batasnya: nama dari kata yang tidak dikenalnya lolos, dan deskripsi di
+    sampingnya yang membawa pemeriksaan.
+- **Label** memakai tempat LinkML: `structured_aliases` dengan `in_language`.
+  - Langkah Studio baru `label` mengisinya untuk modul, jenis, kolom, enum,
+    nilai enum, dan contoh. Pada contoh, kata-kata orang disimpan sebagai
+    `labels`.
+  - `add_slot` dan `set_slot` menerima `unit`, `direction` dan
+    `time_meaning`, sehingga satu langkah bisa memenuhi standar.
+  - Katalog mencari juga lewat label, jadi orang bisa mencari dengan kata-kata
+    sendiri.
+  - Alat agent menampilkan label, satuan, arah dan arti tanggal.
+  - Studio menggambar peta dan panel dengan kata orang. Bahasanya mengikuti
+    browser, atau dipilih lewat "Words in" yang muncul bila modul menyimpan
+    label.
+- **Batas berlakunya.** Standar berlaku untuk draft yang di-seal ke modul di
+  penyimpanan, karena di sanalah modul saling menemukan. Nama modul diperiksa
+  saat `start`, sebab modul tidak bisa diganti namanya. Versi yang di-seal
+  sebelum standar ada tidak diubah: `dev_modules` memutar ulang sepuluh versi
+  sejarah tanpa standar.
+- **Modul demo versi baru** dengan standar dan label Indonesia:
+  `@demo/catalog@v4`, `@demo/inventory@v4`, `@rival/stock-moves@v2`, dan
+  `@demo/stock@v4`.
+  - Rival mengganti nama kolomnya ke awalan `move_`; predikatnya tetap,
+    sehingga data lama tetap miliknya.
+  - Aplikasi mengganti nama kolomnya ke awalan `stock_`. Aturannya tidak
+    berubah sama sekali walau rival berganti nama, karena aturan itu menunjuk
+    peran inti.
+- **Eval**:
+  - tugas dan bangunan rujukannya dipindah ke versi baru;
+  - eval kini menyebut terpisah bila draft yang disebut siap melanggar
+    standar ("not to the recording standard").
+- **Uji**: 301 test Python lulus (18 di antaranya baru, untuk standar) dan 34 test
+  tampilan.
+- **Penyimpanan pengembangan** ditambah tanpa dikosongkan
+  (`dev_modules.py --extend`): catalog v4, inventory v4 dan rival v2 masuk.
+  `@demo/stock@v4` belum, karena ada draft `@demo/stock` yang terbuka; isinya
+  hanya langkah `revise` dari v3.
+- **Draft `@toko/stok-bahan` dari sesi 1** sekarang punya 13 pertanyaan
+  penghalang di Studio: nama dan teks berbahasa Indonesia, nama kolom
+  `bahan`, serta satuan dan arah `sisa_stok`. Setiap pertanyaan membawa
+  langkah perbaikannya.
+
+**Hasil tahap penyetelan 2 (3 Oktober 2026).** Riwayat tetap dikirim utuh;
+yang berubah adalah bagaimana ia dikirim.
+
+- **Instruksi tetap.** Keterangan modul mana yang dibuka dan keadaannya tidak
+  lagi di instruksi, tetapi di awal pesan orang, sebagai catatan sistem yang
+  dibaca dari penyimpanan saat permintaan dimulai. Percakapan tetap menyimpan
+  kata-kata orang apa adanya.
+- **Bacaan yang sama dijawab satu baris** (`[unchanged]`) untuk `look`,
+  `options`, `catalogue` dan `guide`, bila isinya sama dengan bacaan terakhir
+  hal yang sama di percakapan itu. Sebagai ganti nomor bacaan, baris itu
+  menyebut panggilannya sendiri.
+- **Bacaan usang dipendekkan** (`[cleared]`) bila panggilan terakhir sudah
+  `clear_above` token (100.000, di `config/agent.yaml`). Semua bacaan usang
+  dipendekkan sekaligus, supaya cache hanya terganggu sekali. Pemanggilannya
+  tetap tercatat; kata orang, jawaban agent, dan langkah `do` tidak pernah
+  dipendekkan.
+- **Berhenti dengan sopan.** Panggilan terakhir yang muat di batas disisakan:
+  agent diberi catatan sistem dan hanya boleh membalas, dan balasannya menjadi
+  pesan berhenti. Pesan tetap sistem hanya dipakai bila model tetap memanggil
+  alat. Perkiraan biaya panggilan berikutnya memakai harga penuh, karena
+  panggilan pamit jarang kena cache (lihat di bawah).
+- **Cacat yang ditemukan dan diperbaiki:** percakapan tidak disimpan sebelum
+  modul di-`start`. Di sesi realistis 1, tiga giliran pertama berjalan tanpa
+  ingatan akan pertanyaan agent sendiri. Kini percakapan disimpan sejak pesan
+  pertama, di tempat draft nanti berada; tempat itu belum menjadi modul karena
+  belum punya manifest.
+- **Uji**: 308 test Python lulus (7 baru, `tests/agent/test_conversation.py`).
+- **Uji kecil dengan model** (disetujui pemilik): dua permintaan bahasa
+  Indonesia untuk modul stok harian di salinan penyimpanan pengembangan,
+  Gemini 3.8 Flash, batas 10 panggilan dan $0,08 per permintaan. Hasilnya 18
+  panggilan builder dan 1 akuntan, $0,149, sekitar 3 menit.
+
+  | Ukuran | Sesi 1 (sebelum) | Uji (sesudah) |
+  |---|---|---|
+  | Panggilan sesudah `start` | 0 dari 24.166 kena cache | 11.649 dari 16.762 |
+  | Panggilan pertama giliran berikutnya | 0 dari 32.851 (giliran 5) | 11.681 dari 16.382 |
+  | Panggilan builder tanpa cache, selain yang pertama | 11 dari 36 | 2 dari 17, keduanya panggilan pamit |
+  | Porsi input kena cache, keseluruhan | 63% | 60% |
+
+  Penilaiannya:
+  - Dua titik yang dituju terbukti: sesudah `start` dan di awal giliran,
+    cache kini berlaku.
+  - Porsi keseluruhan tidak naik. Gemini menyimpan cache per blok sekitar
+    4.000 token dari awal, jadi ujung percakapan yang terus tumbuh selalu
+    dibayar penuh; percakapan uji lebih pendek, sehingga ujung itu porsinya
+    lebih besar. Penghematan nyata ada pada hilangnya panggilan tanpa cache.
+  - Kedua panggilan pamit tidak kena cache sama sekali. Kemungkinan besar
+    karena pembatasan "hanya boleh membalas" ikut menjadi bagian kunci cache
+    penyedia. Biayanya sekitar $0,01 per pamit, dan pamit hanya terjadi saat
+    batas tercapai.
+  - Riwayat sebelum `start` terbukti tersimpan: permintaan 1 berhenti sebelum
+    modul dibuat, dan permintaan 2 menerima seluruhnya (akuntan pun membaca
+    kedua pesan orang).
+  - Bacaan berulang dan pemendekan tidak terpicu di uji ini: tidak ada bacaan
+    yang diulang persis, dan percakapan paling panjang 21 ribu token. Keduanya
+    baru terbukti oleh test otomatis.
+  - Pamit berjalan di kedua permintaan, dalam bahasa Indonesia, dan isinya
+    sesuai dengan yang benar-benar dikerjakan. Istilah teknis masih bocor
+    (`@toko/stok-harian`, `count_date`, "blocking holes"); ini bagian tahap 3.
+  - Batas biaya sempat terlewati $0,006 di permintaan 2, karena perkiraan
+    memakai harga cache dari panggilan sebelumnya, sedangkan pamitnya tidak
+    kena cache. Sudah diperbaiki: perkiraan memakai harga penuh.
+  - Di luar cakupan tahap ini, tetapi tercatat: permintaan 1 ("langsung mulai
+    saja") menghabiskan 9 panggilan hanya untuk membaca, termasuk tiga topik
+    panduan. Lalu di permintaan 2 kolom bahan dibuat sebagai teks, bukan
+    menunjuk `Ingredient` di `@demo/catalog` yang sudah dibacanya. Standar
+    tidak menangkap ini karena tidak bisa dicek mesin. Keduanya bahan untuk
+    tahap 3 dan sesi realistis 2.
+
+**Hasil tahap penyetelan 3 (3 Oktober 2026).** Agent kini bekerja bertahap,
+dan urutannya dijaga sistem, bukan diingat agent. Tidak ada panggilan model.
+
+- **Kartu Rencana.** `Plan` menjadi cara keempat mengakhiri giliran: apa yang
+  dibangun, dari catatan mana, angka apa yang keluar, dan apa yang belum bisa.
+  - Rencana disimpan di samping draft (`draft.plan.yaml`) persis seperti yang
+    ditunjukkan ke orang, juga sebelum modul di-`start`.
+  - Persetujuannya adalah langkah Studio baru, `agree_plan`. Hanya orang yang
+    bisa mengambilnya, dan langkah itu tercatat di transkrip.
+  - Rencana yang diajukan ulang menggantikan yang lama dan harus disetujui
+    lagi.
+  - Setelah seal, rencana disimpan di samping versinya (`vN.plan.yaml`).
+    Draft yang dibuang ikut membawanya pergi.
+  - Catatan sistem di awal setiap permintaan menyebut keadaan rencana: belum
+    ada, menunggu persetujuan, atau sudah disetujui.
+- **Urutan dijaga sistem.** Langkah `aggregate`, `parameter` dan `expression`
+  dari agent ditolak bila rencana belum disetujui (`plan_not_agreed`), dan
+  bila belum ada contoh yang disetujui orang untuk tabel itu
+  (`no_agreed_example`). Penolakannya menyebut apa yang harus didahulukan.
+  Orang yang membangun sendiri di Studio tidak terikat urutan ini.
+- **Angka yang menunggu rumusnya.** Ini bagian yang tidak ada di rencana
+  tahap, tetapi ternyata dibutuhkan. Urutan baru meminta contoh disetujui
+  sebelum rumus ditulis. Padahal, dari percobaan, tabel hitungan yang belum
+  punya rumus belum dianggap tabel, sehingga contohnya ditolak seluruhnya.
+  - Kini angka di tabel milik draft yang belum dibuat rumus, atau sel kosong
+    di kolom yang belum punya rumus, ditandai "menunggu rumus" (`waiting`),
+    bukan salah.
+  - Contoh yang kekurangannya hanya angka yang menunggu bisa diajukan dan
+    disetujui. Contoh itu tetap belum lulus, jadi seal tetap tertahan sampai
+    rumusnya ditulis dan angkanya cocok.
+- **Celah yang ditutup.** Contoh hanya boleh diajukan bila sudah dijalankan,
+  dan bila ia lulus atau hanya menunggu rumus. Contoh yang tidak bisa
+  dijalankan (tidak ada log) kini ditolak dengan alasannya. "Lulus" di
+  rencana tahap ditafsirkan begini, karena dalam urutan baru contoh
+  disetujui sebelum rumusnya ada.
+- **Bahasa yang luwes**, sebagai prinsip di panduan:
+  - ikuti bahasa dan gaya orangnya;
+  - baca tingkat pemahamannya dari cara ia menulis;
+  - pakai istilah teknis hanya bila ia memakainya, dan sebut sesuatu dengan
+    kata-katanya sendiri;
+  - tanyakan bila ragu seberapa rinci penjelasan yang diinginkan.
+
+  Panduan ditulis ulang dalam lima tahap (pahami, rencana, contoh, rumus,
+  seal) dan tetap di bawah 20.000 karakter.
+- **Studio.**
+  - Kartu Rencana punya tombol "Agree, go on" (langkah orang, lalu agent
+    lanjut) dan "Change it" (kotak tulis meminta apa yang harus diubah).
+  - Angka yang menunggu rumus ditandai "…", dengan keterangan "worked out once
+    its rule is written".
+  - Tombol setuju contoh aktif untuk contoh yang menunggu rumus.
+- **Gladi** kini terdiri dari beberapa permintaan. Permintaan yang sedang
+  dimainkan dibaca dari jumlah permintaan di percakapan, sehingga halaman bisa
+  memintanya berulang kali. Skrip gladi dipecah menjadi rencana, contoh dan
+  rumus. Di tengahnya, agent sengaja mencoba rumus terlalu awal dan ditolak.
+- **Eval mesin**:
+  - pemeran orang menyetujui rencana dan contoh lewat fungsi yang sama dengan
+    gladi (`person_agrees`), lalu berkata "I agree. Go on.";
+  - jawaban bakunya tidak lagi menyuruh menyelesaikan semuanya sendiri;
+  - batas giliran naik dari 6 ke 8, karena satu tugas kini paling sedikit
+    tiga permintaan;
+  - bangunan rujukan dijalankan sebagai orang.
+- **Uji**: 310 test Python dan 34 test tampilan lulus.
+- **Dicoba di Studio** (Chrome, server pemeriksaan di salinan penyimpanan
+  pengembangan, tanpa model):
+  - rencana tampil sebelum ada draft;
+  - "Change it" mengarahkan ke kotak tulis;
+  - "Agree, go on" menyetujui lalu menjalankan permintaan berikutnya;
+  - rumus yang dicoba terlalu awal ditolak `no_agreed_example`;
+  - contoh flour tampil menunggu rumus dan bisa disetujui;
+  - permintaan ketiga menulis rumus, lalu draft siap dibekukan sebagai v1.
+- **Catatan untuk berikutnya**:
+  - Contoh yang menunggu rumus masih tampil sebagai tiga pertanyaan
+    penghalang di panel Studio, dengan kalimat teknis. Benar, tetapi ramai.
+  - Teks tombol dan kerangka Studio masih berbahasa Inggris. Pesan yang
+    dikirim tombol, "Agreed, go on.", karenanya juga berbahasa Inggris;
+    panduan memberi tahu agent bahwa itu bukan bahasa orangnya.
+
+**Hasil tahap penyetelan 4 (3 Oktober 2026): sesi realistis diulang.**
+Claude berperan sebagai pemilik toko roti yang menulis dalam bahasa
+Indonesia dan tidak tahu istilah teknis. Agent sungguhan (Gemini 3.8 Flash)
+berjalan di server Studio dengan kode tahap 3, di atas salinan penyimpanan
+pengembangan. Database diperiksa dulu. Batasnya diumumkan sebelum mulai:
+paling banyak 6 permintaan per skenario, batas per permintaan tidak diubah
+(25 panggilan, $0,20).
+
+- **Skenario 1**, stok sederhana, pembanding sesi 1, dijalankan seluruhnya
+  lewat Studio di Chrome dengan tombol-tombolnya:
+  - jalannya: rencana; rencana diubah karena orangnya minta catatan gudang
+    tidak dihitung; contoh yang menunggu rumus; rumus; siap dibekukan;
+  - 4 permintaan, 25 panggilan, $0,20, sekitar 4,5 menit kerja agent;
+    sesi 1 dulu 40 panggilan, $0,36, 8,5 menit.
+- **Skenario 2**, dua sistem yang mencatat kejadian yang sama
+  (`@toko/cek-gudang`, lewat API yang sama dengan Studio):
+  - orangnya ingin melihat sisa stok menurut catatan toko dan menurut catatan
+    gudang, berdampingan per bahan, beserta selisihnya;
+  - agent bertanya dengan dua pilihan arah selisih, lalu mengajukan rencana,
+    contoh dan rumus;
+  - 4 permintaan, 24 panggilan, $0,19, sekitar 4 menit.
+- **Skenario 3**, permintaan yang belum bisa dibangun
+  (`@toko/stok-pemasok`, lewat API):
+  - agent menjawab jujur bahwa sisa stok belum bisa dijumlahkan per pemasok,
+    dengan alasan dalam bahasa sehari-hari, tanpa membangun apa pun;
+  - ketika ditanya apa yang paling mendekati, ia menawarkan sisa stok per bahan
+    beserta pemasok dan satuannya, dan menambahkan alasan sendiri: bahan
+    dengan satuan berbeda memang tidak bisa dijumlahkan jadi satu angka;
+  - rencananya mencantumkan yang belum bisa;
+  - satu permintaan berhenti karena batas biaya: rumus untuk kolom pemasok dan
+    satuan membutuhkan contoh baru yang disetujui orang;
+  - 6 permintaan, 33 panggilan, $0,36, sekitar 8 menit.
+- **Total**: 14 permintaan, 82 panggilan, $0,75, sekitar 16 menit kerja agent.
+
+Penilaian:
+
+- **Angka akhir**: ketiganya lulus kebenaran tersembunyi di salinan, dan
+  ketiganya memenuhi standar pencatatan (bisa dibekukan):
+  - skenario 1: tepung 20, gula 10, dan catatan gudang tidak ikut dihitung;
+  - skenario 2: toko 20, gudang 30, selisih −10;
+  - skenario 3: tepung 20, gula 10, dengan kolom pemasok dan satuan yang
+    diambil lewat bahannya.
+- **Tiga titik persetujuan**: ditaati di ketiga skenario, yaitu rencana,
+  angka contoh, dan pembekuan yang dibiarkan untuk orangnya. Tidak ada rumus
+  sebelum contoh disetujui. Agent juga sempat mencoba mengubah contoh yang
+  sudah disetujui orang, dan sistem menolaknya.
+- **Bahasa**:
+  - pertanyaan, contoh dan penjelasan berbahasa Indonesia sehari-hari, dengan
+    tanggal dan jumlah yang dirinci;
+  - tetapi daftar sumber di setiap rencana memuat nama teknis
+    (`@demo/catalog@v4`, `StockMovement`, "modul", "disematkan"), juga
+    setelah orangnya bilang tidak paham nama dengan tanda @;
+  - pesan akhir memakai "modul" dan "disegel (seal)", dan pesan berhenti
+    menyebut nama contoh (`stok_awal`).
+- **Catatan**: standar pencatatan terpenuhi di ketiga draft.
+- **Biaya dan waktu**: permintaan rencana dan rumus murah ($0,01–0,04);
+  permintaan contoh yang paling mahal ($0,06–0,14), karena di sana tabel
+  dibangun, akuntan dipanggil dan contoh dijalankan.
+
+Temuan untuk diperbaiki:
+
+1. Nama teknis di daftar sumber rencana. Kolom `records` di Kartu Rencana
+   tampaknya mengundang agent menyebut modul. Jalan yang diusulkan:
+   panduannya meminta catatan disebut dengan kata-kata orangnya, dan Studio
+   yang menunjukkan modulnya bila perlu.
+2. Draft yang masih kosong, sebelum rencana disetujui, sudah ditandai "Ready
+   to freeze as v1" di Studio. Sistem menganggap modul yang belum berisi apa
+   pun boleh dibekukan.
+3. Bila rumus membutuhkan contoh baru (kolom baru), satu permintaan bisa habis
+   batasnya sebelum contoh itu diajukan. Contoh baru itu lalu harus dicari
+   orangnya sendiri di panel contoh, bukan di kartu usulan.
+4. Tampilan:
+   - tanda tebal `**...**` di pesan agent tampil mentah;
+   - cerita contoh dan pertanyaan di panel kanan berbahasa Inggris (bahasa
+     pencatatan) dan teknis;
+   - daftar tabel di panel kanan tidak ikut pilihan bahasa;
+   - percakapan melompat posisinya setelah contoh disetujui.
+5. Agent membangun tabel dan kolom sebelum rencana disetujui (skenario 2).
+   Ini diizinkan, karena urutan hanya menjaga rumus, tetapi pemilik bisa
+   memutuskan apakah bangunan juga harus menunggu rencana.
+
+**Perbaikan temuan sesi (4 Oktober 2026).** Pemilik meminta temuan rumus (3)
+dan tampilan (4) diperbaiki lebih dulu, lalu urutan kerja (5) disempurnakan,
+sebelum uji dari lingkungan kosong. Tidak ada panggilan model.
+
+- **Permintaan yang berhenti di tengah (temuan 3).** Ditelusuri dari sesi 3:
+  rumus sudah selesai, tetapi anggaran habis sebelum contoh baru diajukan.
+  Contoh baru itu juga ditulis agent tanpa akuntan.
+  - Bila permintaan berhenti, sistem sendiri membaca draft dan menaruh apa
+    yang menunggu orangnya di samping pesan berhenti: contoh yang bisa
+    disetujui sekarang, dengan angka dan hitungan akuntan, dan apakah draft
+    lalu siap dibekukan (`left_waiting`, `agree` dan `seal` pada `Stopped`).
+    Pemeriksaannya sama dengan usulan agent. Contoh yang angkanya tidak dari
+    akuntan tidak ikut ditaruh, seperti di sesi 3.
+  - Studio menampilkan kartu berhenti itu seperti kartu usulan, dengan tombol
+    setuju dan tombol bekukan.
+  - Pesan perpisahan agent diberi tahu bahwa contoh itu ditunjukkan sistem,
+    dan diminta tidak menyebut kode contoh.
+  - Panduan tahap contoh kini meminta setiap kolom yang akan tampil di tabel,
+    termasuk kolom yang diambil lewat rujukan, sudah diberi nilai di contoh
+    pertama. Kolom baru di tahap rumus butuh contoh baru, dan giliran ditutup
+    dengan mengajukannya.
+- **Draft kosong (temuan 2).** Draft yang belum berisi apa pun, atau revisi
+  yang tidak mengubah apa pun, ditandai `empty` dan tidak lagi disebut bisa
+  dibekukan. Studio menulis "Nothing built yet". Usulan "siap dibekukan" dari
+  agent atas draft kosong dikembalikan.
+- **Tampilan (temuan 4).**
+  - Pesan agent dibaca menjadi paragraf, daftar bernomor dan berbutir, huruf
+    tebal dan kode pendek, tanpa memasukkan HTML. Tanda `**` tidak lagi
+    tampil mentah.
+  - Pilihan bahasa ("Words in") kini berlaku untuk seluruh halaman: daftar
+    tabel di panel kanan, nama tabel dan kolom di setiap contoh, peta
+    perubahan di kartu usulan, dan daftar "Changed:". Contoh membawa label
+    bahasanya ke halaman, sehingga ceritanya tampil dalam bahasa orangnya.
+  - Pertanyaan di panel kanan tentang contoh kini berbahasa biasa: "Apakah
+    angka di contoh ini benar?", "Contoh ini menunggu rumusnya", "Contoh mana
+    yang menyebut angka kolom ini?". Contoh yang menunggu rumus muncul sekali,
+    bukan sekali per angka.
+  - Percakapan hanya bergulir sendiri bila ada yang baru, dan hanya di dalam
+    kotaknya. Diperiksa di Chrome: posisi gulir tetap sama setelah contoh
+    disetujui.
+  - Kerangka Studio tetap berbahasa Inggris, begitu pula bacaan sistem di
+    bawah kartu usulan ("What the system reads off the draft").
+- **Urutan kerja (temuan 5).** Agent kini tidak mengambil langkah apa pun,
+  termasuk membuat draft, sebelum rencananya disetujui (`plan_not_agreed`).
+  Rencana yang diajukan ulang menghentikan pembangunan sampai disetujui lagi.
+  Orang yang membangun sendiri tetap bebas. Catatan sistem di awal permintaan
+  dan pesan "modul belum ada" ikut menyebutnya.
+- **Nama teknis di rencana (temuan 1, sebagian).** Kolom `records` di Kartu
+  Rencana kini meminta kata-kata orangnya, bukan nama modul atau nama
+  Inggrisnya, dan panduan tidak lagi meminta agent menyebut modul yang
+  disematkan. Belum diuji dengan model.
+- **Uji**: 313 test Python dan 37 test tampilan lulus. Panduan tetap di
+  bawah 20.000 karakter.
+- **Dicoba di Chrome**, di server pemeriksaan atas salinan penyimpanan tahap
+  4, tanpa model: kartu berhenti dengan tombol setuju lalu bekukan; teks agent
+  berformat; bahasa Indonesia di panel kanan, contoh dan peta perubahan;
+  draft kosong "Nothing built yet".
+- **Berikutnya**: uji dari lingkungan kosong (hanya inti), lima langkah
+  dengan satu usaha baru (Kemah Ceria), batas paling banyak $7, disetujui
+  pemilik; rinciannya di `UJI_LINGKUNGAN_KOSONG.md`.
+- **Uji dari lingkungan kosong, 4–6 Oktober 2026: berhenti sesudah langkah
+  3** ($0,47 dari $7). Langkah 1–3 berhasil dan angkanya benar, tetapi modul
+  jaminan keluar terputus dari modul sewa. Analisanya membawa pemilik ke
+  keputusan desain yang lebih besar, dicatat di `DESIGN_NOTES.md` §15: empat
+  jenis modul (core, pustaka umum, modul komunitas, aplikasi), peran pengguna
+  yang dipisah, kepemilikan nama tanpa perluasan, dan kernel per usaha dengan
+  graph bersama tetap di toko berkas. Rinciannya di `UJI_LINGKUNGAN_KOSONG.md`
+  §8.
+- **Berikutnya** (urutannya belum ditetapkan pemilik): pustaka umum yang kecil
+  (pihak, barang dan satuan, uang, dokumen nota dengan baris); aplikasi
+  sebagai jenis tersendiri yang terikat ke kernel usahanya; aturan siapa boleh
+  merilis di bawah nama apa; panduan agent per peran; lalu uji lingkungan
+  kosong diulang dalam dua babak (komunitas membuat, pemilik usaha menyusun).
+
 ### Irisan 5: Compiler dan generator tumbuh sesuai kebutuhan
 
 Dari kebutuhan yang terbukti di 2.8, satu per satu, masing-masing dengan
@@ -750,6 +1670,9 @@ konversi satuan dengan mencocokkan entity satuan itu sendiri.
 | Peran setelah 2.8 | Kosakata bersama untuk menemukan dan menyambungkan modul, bukan penjumlah otomatis lintas modul. Aplikasi menyebut jelas apa yang dihitung dari modul mana. Disepakati 29 September 2026. | Putaran 2 irisan 2.8: setiap pengisi `Flow` berkompromi, penerimaan tercatat di dua modul terhitung dua kali, dan peran yang cukup kaya untuk mencegahnya akan menjadi model kanonik. |
 | Studio | Agent mengusulkan, sistem menjamin, user menyetujui; contoh bisnis adalah kontrak yang wajib lulus sebelum seal; LinkML untuk bentuk data plus kosakata aturan Uniti, tanpa stack baru untuk sekarang. Disepakati 29 September 2026. | "Arah sesudah 2.8" di §6. |
 | Agent | Satu agent pembangun ditambah akuntan independen yang menghitung angka contoh tanpa melihat graph; angka yang dikonfirmasi user dikunci; agent tidak punya alat seal; modul beraturan hitung wajib punya contoh. Pydantic AI dengan model per peran lewat konfigurasi, terbuka untuk penyedia lain dan model self-hosted; sekarang Gemini lewat Vertex AI. Disetujui 30 September 2026. | Irisan 4 di §6. |
+| Riwayat agent | Riwayat percakapan dikirim utuh, termasuk setiap pemanggilan alat dan hasilnya. Biaya ditekan dengan cache penyedia (instruksi tetap, keadaan di pesan), alat yang menandai bacaan berulang, dan pemendekan bacaan usang hanya bila percakapan sangat panjang. Disetujui 3 Oktober 2026. | Agent yang lupa apa yang sudah dibaca dan dikerjakannya akan mengulanginya. Ini praktik umum sistem agent. |
+| Bahasa agent ke pengguna | Luwes, mengikuti bahasa dan tingkat pemahaman orangnya; diajarkan sebagai prinsip, bukan aturan kaku. Disetujui 3 Oktober 2026. | Pengguna berbeda-beda; kata-kata bisnis disediakan lewat label. |
+| Standar pencatatan | Bahasa Inggris untuk semua nama, judul, deskripsi dan contoh yang dicatat; label dalam bahasa pengguna untuk ditampilkan. Pola nama, deskripsi, satuan, arah angka, dan arti tanggal wajib. Pelanggaran yang bisa dicek mesin menghalangi seal. Prosedur sama untuk setiap agent, ditulis satu kali di sistem. Disetujui 3 Oktober 2026. | Tanpa catatan yang seragam, modul tidak saling menemukan dan maknanya tidak bisa disambungkan; modularitas gagal. |
 | Kernel pengembangan | Dimulai kosong. Tidak ada lagi seed sintetis 200 assertion di sana; seed itu hanya dipakai `make check` di database test. | Semua yang tampil di penjelajah kernel harus berasal dari mekanisme yang bisa ditelusuri: seal, registrasi, atau isian form. |
 
 ### Masih terbuka
@@ -956,5 +1879,5 @@ konversi satuan dengan mencocokkan entity satuan itu sendiri.
 | 2.8 | ditutup 29 September 2026: putaran 1 tidak menguji peran (rancangan tes); putaran 2 dihentikan setelah kelima modul ditulis dengan peran wajib, dan sudah menjawab: peran bukan penjumlah otomatis lintas modul, komposisi eksplisit menjadi cara resmi; perbaikan F1–F4 tetap di kode, 217 test lulus; rincian di `COMPOSITION_EXPERIMENT.md` |
 | 3.2 | selesai 29 September 2026: bentrok nama ditolak; predikat dan kelas dicatat dengan URI penuh; enum, `required` per kelas, dan `multivalued` dibuka di Studio dan ditegakkan; range tak dikenal ditolak; sintaks rumus diajarkan; 226 test lulus; rincian di bagian "Irisan 3.2" |
 | 3.3 | selesai 29 September 2026: contoh bisnis dijalankan di log sementara lewat pintu form dan compiler yang sama; Studio menjalankannya setiap kali draft dibaca dan seal menolak bila ada yang gagal; tujuh langkah Studio baru; aplikasi demo membawa dua contoh; 239 test lulus; rincian di bagian "Irisan 3.3" |
-| 4 | berjalan, dipecah lima tahap: 4.1 (penjaga kontrak) dan 4.2 (alat agent dan panduan) selesai 30 September 2026, 252 test lulus; berikutnya 4.3 (agent sungguhan, akuntan, eval di Gemini) |
+| 4 | berjalan, dipecah lima tahap: 4.1 (penjaga kontrak) dan 4.2 (alat agent dan panduan) selesai 30 September 2026; 4.3 (agent sungguhan di Gemini lewat ADC `us`, akuntan, batas biaya, pengawasan setiap panggilan, eval) selesai; 4.4 (Studio di sekitar agent) selesai dalam tiga bagian, 2 Oktober 2026; evaluasi dan penyetelan agent berjalan sejak 2 Oktober 2026 (eval mesin 8 dari 10 lulus, sesi realistis 1 benar tetapi belum bertahap); rencana empat tahap penyetelan disetujui 3 Oktober 2026 (standar pencatatan, riwayat utuh yang murah, agent bertahap dengan bahasa luwes, sesi realistis diulang); tahap penyetelan 1 (standar pencatatan), 2 (riwayat utuh yang murah), 3 (agent bertahap, bahasa yang luwes) dan 4 (tiga sesi realistis: semuanya benar dan bertahap, $0,75 total; nama teknis di rencana dan beberapa hal tampilan masih harus diperbaiki) selesai 3 Oktober 2026; temuan sesi diperbaiki 4 Oktober 2026 (kartu berhenti yang menaruh contoh di depan orangnya, draft kosong, tampilan, tidak ada yang dibangun sebelum rencana disetujui); 313 test Python dan 37 test tampilan lulus; uji dari lingkungan kosong berhenti sesudah langkah 3 pada 6 Oktober 2026 ($0,47) dan membawa keputusan desain di `DESIGN_NOTES.md` §15 (empat jenis modul, peran, kepemilikan, kernel per usaha); berikutnya pustaka umum, aplikasi sebagai jenis tersendiri, panduan agent per peran, uji lingkungan kosong diulang dalam dua babak, ujian akhir eval mesin 10 × 3, perbandingan akuntan Flash dan Pro, dan 4.5 (PT Maju dibangun ulang lewat agent) |
 | 5 | belum dimulai: compiler dan generator tumbuh sesuai kebutuhan |

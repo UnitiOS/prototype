@@ -17,6 +17,9 @@
 >   hari yang sama. Semuanya mengubah beberapa hal di sini dari usulan menjadi
 >   kode, dan §8.2 justru dibantah olehnya. Yang sudah berjalan ditandai
 >   **[dibangun]**, dan pertanyaan yang terjawab olehnya ditandai di §12.
+> - **§15 ditambahkan 6 Oktober 2026**, sesudah uji lingkungan kosong: empat
+>   jenis modul, peran pengguna, kepemilikan, dan kernel per usaha. Ia
+>   menggantikan tiga lapis di §4.3 dan arti **aplikasi** di §14.
 > - **Beda dari `REFACTOR_P2.md`**, yang merupakan dokumen kerja sementara dan
 >   dihapus setelah refactoring selesai. Yang ini hidup lebih lama karena isinya
 >   tentang bentuk sistemnya, bukan tentang urutan pengerjaannya.
@@ -29,7 +32,9 @@ Bagian **1–3** adalah diagnosa dan mekanisme yang diusulkan — bagian yang pa
 siap dikerjakan. Bagian **4–6** adalah aturan pertumbuhan: jawaban untuk
 "seberapa besar core". Bagian **7–8** tentang bagaimana pengetahuan itu sampai ke
 manusia dan agent. Bagian **9–14** adalah rencana, jebakan, hal yang sengaja
-tidak dilakukan, pertanyaan terbuka, dan istilah.
+tidak dilakukan, pertanyaan terbuka, dan istilah. Bagian **15** adalah
+keputusan tentang jenis modul, siapa memakainya, siapa memilikinya, dan di mana
+data setiap usaha tinggal.
 
 Kalau Anda hanya punya waktu untuk dua bagian: **§3.2** (contoh penukaran modul,
 lengkap) dan **§11** (yang sudah diputuskan untuk tidak dilakukan).
@@ -306,6 +311,10 @@ modul `@uniti/*` yang hampir semua orang pasang, tapi tetap bisa diganti kalau a
 yang membuat lebih baik. Rust punya `core` kecil dan `std` besar; Nix punya bahasa
 mungil dan nixpkgs raksasa. Itu yang memberi rasa "lengkap" tanpa membayar dengan
 core yang beku dan salah.
+
+> **Diperbarui 6 Oktober 2026:** tiga lapis ini menjadi empat jenis, dengan
+> **aplikasi** sebagai jenis tersendiri yang pribadi dan milik satu usaha. Lihat
+> §15.2.
 
 ### 4.4 Aturan pertumbuhan dan uji "kelewat besar"
 
@@ -740,6 +749,9 @@ Daftar ini menghemat lebih banyak diskusi daripada daftar rencana.
 | Jalur hitung kedua untuk penjelasan sel | sudah ditegakkan di `cell()`; ketidakcocokan harus muncul di layar, bukan tersembunyi |
 | Agent menulis YAML langsung | §8.1 |
 | Memposisikan Uniti sebagai "ontologi untuk enterprise" | ring yang sudah penuh mayat; posisinya adalah log bitemporal yang bisa dikompilasi |
+| Modul menambah keterangan pada kelas milik modul lain, bahkan yang hanya menambah | §15.4 — kepemilikan harus jelas; dua modul terhubung hanya dengan menunjuk, lewat modul penghubung atau aplikasi |
+| Satu kernel bersama untuk semua usaha dengan penanda usaha | §15.5 — data bercampur, sulit dipasang sendiri, menambah kolom ke daftar yang ditutup |
+| Satu kernel per aplikasi | §15.5 — aplikasi berganti versi dan satu usaha bisa punya beberapa; kernelnya per usaha |
 
 ---
 
@@ -765,6 +777,9 @@ Daftar ini menghemat lebih banyak diskusi daripada daftar rencana.
    modul yang tidak pernah ikut standar tetap bisa diintegrasikan.
 8. **Tata kelola.** Di PoC, yang memutuskan core v2 adalah Anda. Di produk?
    Pertanyaan ini terdengar jauh, tapi ia menentukan apakah core bisa tetap kecil.
+   **Sebagian terjawab di §15.4** (6 Oktober 2026): hanya pemilik sebuah nama yang
+   membekukan versi di bawahnya. Tata kelola core dan pustaka umum masih terbuka
+   (§15.7).
 9. **Bisakah modul dipasang sebagian?** Mungkin tidak — tapi belum pernah
    ditanyakan.
 
@@ -810,11 +825,181 @@ layer, upper ontology.
 | **mengisi** (fill) | sebuah kelas menyatakan `mixins: [Flow]` dan menyediakan slot konkret untuk setiap pengikat |
 | **closure** | himpunan versi ter-seal yang terjangkau dari satu versi lewat pin |
 | **pin** | rujukan ke tepat satu versi ter-seal; tidak ada rentang |
-| **aplikasi** | satu versi ter-seal yang mem-pin yang lain dan menyatakan tabel yang diinginkan seseorang. Bukan jenis benda baru |
+| **aplikasi** | susunan versi yang dikunci untuk satu usaha, dengan tambahan khusus dan contoh angka usaha itu; pribadi, milik usaha tersebut, terikat ke kernelnya. **Jenis tersendiri sejak 6 Oktober 2026** (§15.2) — sebelumnya "satu versi ter-seal biasa, bukan jenis benda baru" |
+| **kernel usaha** | catatan yang hanya bertambah milik satu usaha: fakta, aplikasi, modul pribadi, dan kosakata yang dipakainya (§15.5) |
+| **pustaka umum** | `@uniti/*`: pihak, barang dan satuan, uang, dokumen transaksi; dipakai hampir semua domain, bukan core (§15.2) |
+| **modul penghubung** | modul komunitas yang menghubungkan dua modul dengan menunjuk, tanpa mengubah keduanya (§15.2) |
 | **laporan kecocokan** (fit report) | diff yang dihitung sebelum pasang/copot/tukar pin |
 | **lubang** (hole) | kewajiban yang belum terpenuhi, dengan himpunan berhingga pengisi yang sah |
 | **istilah mati** | slot yang dideklarasikan dan dinyatakan di log, tapi tidak dibaca aturan mana pun |
 | **fakta yatim** | pernyataan di log yang predikatnya tidak dideklarasikan modul mana pun lagi |
+
+---
+
+## 15. Jenis modul, peran pengguna, kepemilikan, dan kernel per usaha
+
+> **Diputuskan pemilik pada 6 Oktober 2026. Belum dibangun.** Bagian ini lahir
+> dari uji lingkungan kosong (`UJI_LINGKUNGAN_KOSONG.md`). Di langkah 3 modul
+> jaminan keluar terputus dari modul sewa: ia membuat "pelanggan" sendiri dan
+> tidak punya tempat untuk menempel ke penyewaan. Analisanya menunjukkan bahwa
+> penyebab terbesarnya bukan agent, melainkan lapisan yang belum ada. Bagian
+> ini menggantikan tiga lapis di §4.3 dengan empat jenis, dan mengubah arti
+> **aplikasi** di §14.
+
+### 15.1 Untuk apa modul
+
+1. **Makna ditulis sekali, dipakai banyak usaha.** "Penyewaan alat" dibuat
+   sekali oleh komunitas lalu dipakai ribuan usaha sewa. Inilah isi "milik
+   bersama" (lihat filosofi Uniti).
+2. **Batas tanggung jawab.** Setiap modul punya pemilik; versi yang dibekukan
+   tidak berubah, dan pemakai mengunci versi tertentu. Perubahan satu pihak
+   tidak merusak pihak lain.
+3. **Bisa diganti tanpa kehilangan data.** Catatan milik usaha; modul hanya
+   cara membacanya.
+4. **Bisa dipercaya.** Setiap versi membawa contoh angka yang terbukti dan
+   transkrip cara ia dibuat.
+
+Sistem sampai hari ini baru menangani *membuat* modul. *Menyusun aplikasi dari
+modul yang sudah ada*, yang paling sering terjadi di dunia nyata, belum punya
+bentuk sendiri.
+
+### 15.2 Empat jenis, dipisahkan
+
+| jenis | isi | pemilik | sifat |
+|---|---|---|---|
+| **core** | peran dan pengikatnya; dibaca eksekutor | penjaga inti Uniti | terbuka, tidak bisa di-fork, tumbuh 1–2 kali setahun |
+| **pustaka umum** `@uniti/*` | yang dipakai hampir semua domain: pihak (orang, pelanggan, pemasok), barang dan satuan, uang, dokumen transaksi (nota dengan baris) | penjaga inti Uniti | terbuka, bisa diganti kalau ada yang lebih baik |
+| **modul komunitas** | satu fungsi bisnis — penyewaan, jaminan, gudang, kasir — memakai pustaka umum, tidak membuatnya ulang; termasuk **modul penghubung** yang menghubungkan dua modul ("penyewaan + jaminan") | pembuat modulnya | terbuka |
+| **aplikasi** | susunan versi yang dikunci untuk **satu usaha**, tambahan khusus usaha itu, dan contoh angka dari usaha itu sendiri | usaha tersebut | **pribadi** |
+
+Prosedur keputusan §4.3 tetap berlaku untuk tiga baris pertama. Baris keempat
+baru: aplikasi bukan lagi "satu versi ter-seal biasa yang mem-pin yang lain",
+melainkan jenis tersendiri — pribadi, milik satu usaha, terikat ke kernel usaha
+itu (§15.5).
+
+Pelajaran yang diambil dari ERP (Odoo, ERPNext, SAP):
+- **Modul dipotong per fungsi bisnis**, bukan per tabel.
+- **Data induk bersama ada di modul dasar** — satu "Partner" dipakai Penjualan,
+  Pembelian, dan Akuntansi. Di uji lingkungan kosong, ketiadaan lapisan inilah
+  yang membuat modul jaminan membuat pelanggan sendiri.
+- **Transaksi berbentuk dokumen** (nota dengan baris), dan pembayaran, jaminan,
+  atau pengiriman menempel ke notanya. Di uji, sewa dicatat per baris alat,
+  jadi jaminan tidak punya tempat menempel.
+- **Modul penghubung** (`sale_stock` di Odoo): dua modul saling kenal tanpa
+  digabung.
+
+Yang sengaja **tidak** ditiru: modul yang menimpa field dan logika modul lain
+(`_inherit` di Odoo). Itu sumber tabrakan diam-diam dan "neraka upgrade".
+
+### 15.3 Peran pengguna
+
+| peran | contoh | yang dimilikinya | memakai Studio? |
+|---|---|---|---|
+| penjaga inti | tim Uniti | core dan pustaka umum | ya, jarang |
+| pembuat modul | komunitas open source, ahli domain, vendor | modul komunitas | ya, inti pekerjaannya |
+| penyusun aplikasi | mitra implementor, tim IT perusahaan | aplikasi satu usaha, atas nama usaha itu | ya, paling sering |
+| pemilik proses | pemilik Kemah Ceria, manajer | persetujuan: contoh angka dan kapan aplikasi dipakai | lewat percakapan, tanpa membangun |
+| staf | Sari di kasir | tidak ada; mengisi data | tidak — formulir dan laporan |
+| pemeriksa | akuntan, auditor | tidak ada; membaca angka dan asal-usulnya | tidak |
+
+**Agent membantu setiap peran dan tidak pernah memiliki apa pun** — ia
+mengusulkan, manusia memutuskan (prinsip yang sudah berjalan sejak irisan 4).
+Panduannya berbeda per peran: bagi penyusun aplikasi, *cari dulu di koleksi
+bersama, susun, buat hanya yang kurang, dan sebut di jenis mana yang kurang
+itu seharusnya dibuat*; bagi pembuat modul, *buat yang umum, bukan yang khusus
+satu usaha*.
+
+### 15.4 Kepemilikan
+
+- **Hanya pemilik sebuah nama** (`@kemahceria`, `@uniti`) yang boleh
+  membekukan versi baru di bawah nama itu.
+- **Orang lain yang butuh perubahan** punya tiga jalan: mengusulkannya ke
+  pemiliknya; menyalin ke nama sendiri (fork); atau menghubungkan lewat modul
+  penghubung atau aplikasinya sendiri.
+- **Tidak ada perluasan.** Modul tidak boleh menambah keterangan pada kelas
+  milik modul lain, bahkan yang hanya menambah tanpa menimpa. Alasannya
+  kepemilikan yang jelas: siapa pun yang membaca sebuah kelas tahu persis
+  siapa yang bertanggung jawab atas seluruh isinya. Akibatnya **dua modul
+  terhubung hanya dengan menunjuk** — jaminan menunjuk ke nota sewa, dan nota
+  sewanya tidak berubah. Ini yang sudah ditegakkan studio hari ini (langkah
+  pada kelas hanya untuk kelas milik draft sendiri) ✓.
+
+### 15.5 Kernel per usaha; graph bersama di toko berkas
+
+**Setiap usaha punya kernelnya sendiri.** Kernel adalah catatan yang hanya
+bertambah (tiga tabel, `components/kernel/001_schema.sql`), dan yang ditulis
+ke dalamnya adalah fakta usaha. Satu usaha, satu kernel:
+
+- **Bukan satu kernel per aplikasi.** Aplikasi berganti versi dan menukar
+  modul, sedangkan datanya harus tetap di satu tempat. Satu usaha juga bisa
+  punya lebih dari satu aplikasi (sewa dan pembukuan) yang membaca pelanggan
+  dan transaksi yang sama; memisahkan kernelnya mengulang masalah "modul
+  terputus" di tingkat yang lebih tinggi. Sama dengan ERP: satu database untuk
+  satu perusahaan, semua modul yang dipasang memakainya.
+- **Bukan satu kernel bersama dengan penanda usaha.** Data bercampur, sulit
+  dipasang di server sendiri, dan menambah kolom ke daftar yang sengaja
+  ditutup.
+
+Isi kernel usaha: seluruh catatan transaksinya, aplikasi-aplikasinya, modul
+pribadinya, dan salinan kosakata dari versi yang dipakainya. **Aplikasi dan
+modul pribadi tidak pernah masuk ke koleksi bersama** — isinya bisa membuka
+rahasia bisnis.
+
+**Graph bersama (core, pustaka umum, modul komunitas) tetap di toko berkas
+untuk sekarang.** Berkas versi memang tidak pernah berubah, jadi itu cukup
+untuk PoC; yang ditambahkan dulu adalah aturan kepemilikan nama (§15.4).
+Arahnya, nanti: **kernel Uniti** — catatan yang hanya bertambah, sama
+bentuknya, yang hanya berisi urusan graph: istilah baru, versi, siapa yang
+merilis, versi mana yang memakai versi mana, dan penggantian. Berkas tetap
+menjadi isi modulnya; kernel Uniti mencatat peristiwanya, sehingga "versi mana
+yang dianjurkan pada tanggal sekian" bisa ditanyakan dengan kejujuran yang
+sama seperti angka usaha. Satu kernel Uniti pusat cukup untuk awal, tanpa
+menutup kemungkinan perusahaan besar menjalankan miliknya sendiri untuk modul
+internal (seperti registry pribadi di dunia open source).
+
+**Makna tetap sama di semua kernel usaha.** Setiap predikat dicatat dengan URI
+lengkap dari modulnya (irisan 3.2) ✓, jadi "jumlah sewa" di kernel Kemah Ceria
+dan di kernel usaha lain berarti hal yang persis sama. Ini membuka jalan,
+kelak, untuk membandingkan angka antarusaha dan mengirim catatan dari satu
+usaha ke usaha lain beserta asal-usulnya (`source = 'imported'`).
+
+Yang sudah ada di kode hari ini ✓:
+- Toko modul adalah berkas, terpisah dari database (`components/modules/store`).
+- `seal.register` memperkenalkan kosakata satu versi yang sudah dibekukan ke
+  catatan lain tanpa membekukan ulang — pemisahan "satu toko makna, banyak
+  catatan" sudah diantisipasi.
+- Uji lingkungan kosong berjalan di database sendiri (`uniti_blank`), membaca
+  toko modul yang sama.
+
+Yang belum: aplikasi sebagai jenis tersendiri yang tahu kernel mana miliknya;
+aturan siapa boleh merilis di bawah nama apa; pemisahan toko pribadi usaha
+dari toko bersama; kernel Uniti sebagai catatan.
+
+### 15.6 Alur pembentukan aplikasi dalam praktik
+
+1. Pemilik usaha bercerita ke agent tentang usahanya.
+2. Agent **mencari di koleksi bersama dulu**, mengusulkan susunan modul, dan
+   menyebut apa yang belum ada serta di jenis mana itu sebaiknya dibuat.
+3. Pemilik memberi contoh angka dari usahanya; sistem membuktikan susunan itu
+   menghasilkan angka yang sama.
+4. Pemilik menyetujui; aplikasi dibekukan ke kernel usahanya; staf mulai
+   mengisi.
+5. Ketika pembuat modul merilis versi baru, contoh angka usaha itu dijalankan
+   terhadap versi baru **sebelum** pindah.
+
+Membuat modul baru dari nol hanya terjadi bila koleksi bersama belum
+memilikinya — dan yang dibuat masuk ke jenis yang benar: umum ke komunitas,
+khusus ke aplikasi.
+
+### 15.7 Pertanyaan yang masih terbuka
+
+1. Di mana toko pribadi sebuah usaha tinggal — di samping kernelnya, atau
+   sebagai toko berkas tersendiri?
+2. Bagaimana aplikasi menyatakan kernel miliknya, dan apakah satu aplikasi
+   boleh dipasang ke lebih dari satu usaha (template oleh implementor)?
+3. Usaha dengan beberapa perusahaan (grup) — satu kernel atau beberapa?
+4. Tata kelola pustaka umum: siapa memutuskan isinya, dan seberapa cepat ia
+   boleh tumbuh (§4.4 berlaku, tapi untuk `@uniti/*` belum ada ujinya).
 
 ---
 
