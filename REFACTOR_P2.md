@@ -1633,9 +1633,11 @@ sebelum uji dari lingkungan kosong. Tidak ada panggilan model.
   larangan menurunkan kelas milik modul lain (`kind_of_foreign_class`);
   compiler mengelompokkan satu catatan lebih jauh (`slot.slot`). 321 test
   Python dan 38 test tampilan lulus. Rinciannya di `PUSTAKA_UMUM.md` §9.
-- **Berikutnya** (urutan disetujui pemilik): pustaka umum yang kecil
-  (pihak, barang dan satuan, uang, dokumen nota dengan baris); aplikasi
-  sebagai jenis tersendiri yang terikat ke kernel usahanya; aturan siapa boleh
+- **Langkah 2 selesai, 6 Oktober 2026:** aplikasi menjadi jenis tersendiri
+  milik satu usaha; kernel menyatakan pemiliknya; membekukan dan memasang
+  dipisah; formulir hanya mencatat lewat versi yang terpasang untuk hari itu.
+  Rinciannya di `APLIKASI_USAHA.md` §9.
+- **Berikutnya** (urutan disetujui pemilik): aturan siapa boleh
   merilis di bawah nama apa; panduan agent per peran; lalu uji lingkungan
   kosong diulang dalam dua babak (komunitas membuat, pemilik usaha menyusun).
 

@@ -826,6 +826,7 @@ layer, upper ontology.
 | **closure** | himpunan versi ter-seal yang terjangkau dari satu versi lewat pin |
 | **pin** | rujukan ke tepat satu versi ter-seal; tidak ada rentang |
 | **aplikasi** | susunan versi yang dikunci untuk satu usaha, dengan tambahan khusus dan contoh angka usaha itu; pribadi, milik usaha tersebut, terikat ke kernelnya. **Jenis tersendiri sejak 6 Oktober 2026** (§15.2) — sebelumnya "satu versi ter-seal biasa, bukan jenis benda baru" |
+| **memasang** (install) | pemilik usaha menyatakan di kernelnya bahwa staf mencatat lewat satu versi aplikasi sejak tanggal tertentu. Terpisah dari membekukan (§15.5) |
 | **kernel usaha** | catatan yang hanya bertambah milik satu usaha: fakta, aplikasi, modul pribadi, dan kosakata yang dipakainya (§15.5) |
 | **pustaka umum** | `@uniti/*`: pihak, barang dan satuan, uang, dokumen transaksi; dipakai hampir semua domain, bukan core (§15.2) |
 | **modul penghubung** | modul komunitas yang menghubungkan dua modul dengan menunjuk, tanpa mengubah keduanya (§15.2) |
@@ -840,8 +841,9 @@ layer, upper ontology.
 
 > **Diputuskan pemilik pada 6 Oktober 2026.** Pustaka umum (§15.2), larangan
 > menurunkan kelas milik modul lain (§15.4), dan pengelompokan satu catatan
-> lebih jauh di compiler **[dibangun]** hari itu juga (`PUSTAKA_UMUM.md`); sisanya
-> belum. Bagian ini lahir
+> lebih jauh di compiler **[dibangun]** hari itu juga (`PUSTAKA_UMUM.md`);
+> aplikasi sebagai jenis tersendiri yang terikat ke kernel usahanya juga
+> **[dibangun]** (`APLIKASI_USAHA.md`); sisanya belum. Bagian ini lahir
 > dari uji lingkungan kosong (`UJI_LINGKUNGAN_KOSONG.md`). Di langkah 3 modul
 > jaminan keluar terputus dari modul sewa: ia membuat "pelanggan" sendiri dan
 > tidak punya tempat untuk menempel ke penyewaan. Analisanya menunjukkan bahwa
@@ -974,9 +976,17 @@ Yang sudah ada di kode hari ini ✓:
 - Uji lingkungan kosong berjalan di database sendiri (`uniti_blank`), membaca
   toko modul yang sama.
 
-Yang belum: aplikasi sebagai jenis tersendiri yang tahu kernel mana miliknya;
-aturan siapa boleh merilis di bawah nama apa; pemisahan toko pribadi usaha
-dari toko bersama; kernel Uniti sebagai catatan.
+Dibangun 6 Oktober 2026 ✓ (`components/business`, `APLIKASI_USAHA.md`):
+- jenis modul di berkas keterangan (`kind`, dan `business` untuk aplikasi);
+- kernel menyatakan sekali milik usaha mana;
+- aplikasi hanya masuk ke kernel usahanya, tidak bisa disematkan, dan tidak
+  tampil di katalog usaha lain;
+- membekukan dan **memasang** dipisah: memasang adalah pernyataan di kernel
+  dengan tanggal mulai, dan formulir hanya mencatat lewat versi yang
+  terpasang untuk hari itu.
+
+Yang belum: aturan siapa boleh merilis di bawah nama apa; kernel Uniti
+sebagai catatan.
 
 ### 15.6 Alur pembentukan aplikasi dalam praktik
 
@@ -996,10 +1006,13 @@ khusus ke aplikasi.
 
 ### 15.7 Pertanyaan yang masih terbuka
 
-1. Di mana toko pribadi sebuah usaha tinggal — di samping kernelnya, atau
-   sebagai toko berkas tersendiri?
-2. Bagaimana aplikasi menyatakan kernel miliknya, dan apakah satu aplikasi
-   boleh dipasang ke lebih dari satu usaha (template oleh implementor)?
+1. ~~Di mana toko pribadi sebuah usaha tinggal~~ **Dijawab 6 Oktober
+   2026:** folder berkas tersendiri per usaha, dibaca lebih dulu dari koleksi
+   bersama.
+2. ~~Bagaimana aplikasi menyatakan kernel miliknya~~ **Dijawab 6 Oktober
+   2026:** lewat `business` di berkas keterangannya, dicocokkan dengan
+   pernyataan pemilik di kernel. Satu aplikasi hanya untuk satu usaha;
+   implementor membuat modul komunitas atau menyalin ke nama klien.
 3. Usaha dengan beberapa perusahaan (grup) — satu kernel atau beberapa?
 4. Tata kelola pustaka umum: siapa memutuskan isinya, dan seberapa cepat ia
    boleh tumbuh (§4.4 berlaku, tapi untuk `@uniti/*` belum ada ujinya).
