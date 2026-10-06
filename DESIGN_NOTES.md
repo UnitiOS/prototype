@@ -914,7 +914,13 @@ mengusulkan, manusia memutuskan (prinsip yang sudah berjalan sejak irisan 4).
 Panduannya berbeda per peran: bagi penyusun aplikasi, *cari dulu di koleksi
 bersama, susun, buat hanya yang kurang, dan sebut di jenis mana yang kurang
 itu seharusnya dibuat*; bagi pembuat modul, *buat yang umum, bukan yang khusus
-satu usaha*.
+satu usaha*. **[dibangun 6 Oktober 2026, `components/agent/guide.py`]** Satu
+panduan untuk semua, dengan bagian "kinds"; peran mengikuti jenis modul yang
+dibuka dan disebut di catatan pembuka setiap permintaan, jadi petunjuk awal
+tetap sama di setiap panggilan. Modul baru yang jenisnya belum jelas
+ditanyakan dulu ke orangnya. Rencana menyebut apa yang diambil dari koleksi
+dan apa yang kurang serta seharusnya ada di mana; rencana sebelum mencari di
+katalog ditolak. Pemilik proses, staf, dan pemeriksa belum dibantu agent.
 
 ### 15.4 Kepemilikan
 

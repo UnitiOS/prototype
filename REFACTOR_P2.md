@@ -1641,9 +1641,13 @@ sebelum uji dari lingkungan kosong. Tidak ada panggilan model.
   membekukan di bawahnya; yang pertama membekukan di bawah nama baru menjadi
   pemiliknya; pemilik menambah dan mencabut pemilik lain dengan tanggal; nama
   aplikasi adalah nama usahanya. Rinciannya di `PEMILIK_NAMA.md` §9.
-- **Berikutnya** (urutan disetujui pemilik): panduan agent per peran; lalu
-  uji lingkungan kosong diulang dalam dua babak (komunitas membuat, pemilik
-  usaha menyusun).
+- **Langkah 4 selesai, 6 Oktober 2026:** panduan agent mengenal tiga jenis
+  modul yang dibangun dan peran yang dibantunya; peran mengikuti jenis modul
+  yang dibuka; rencana menyebut apa yang diambil dari koleksi dan apa yang
+  kurang; rencana sebelum mencari di katalog ditolak; batas panduan naik ke
+  22.000 karakter. Rinciannya di `PANDUAN_PERAN.md` §9.
+- **Berikutnya** (urutan disetujui pemilik): uji lingkungan kosong diulang
+  dalam dua babak (komunitas membuat, pemilik usaha menyusun).
 
 ### Irisan 5: Compiler dan generator tumbuh sesuai kebutuhan
 
