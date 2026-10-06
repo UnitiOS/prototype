@@ -30,6 +30,11 @@ says it belongs to the made-up business `demo`. So the log is declared to be
 `demo`'s before anything is sealed, and `@demo/stock@v2` is installed as the
 version `demo` records through, from the first day of its data.
 
+Only a name's owners seal under it (components/owners). Declaring the
+business makes `dev` the owner of `@demo`, sealing `@rival` first makes it
+`@rival`'s, and `@uniti`, whose versions are registered rather than sealed
+here, is given to `dev` outright so that nobody else takes it by sealing.
+
 Every one of these modules declares `purpose: demonstration` in its manifest.
 The content is made up, and `seal` carries that word onto the intent, so the
 log says so on every row it wrote.
@@ -55,6 +60,7 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "components" / "kernel"))
 sys.path.insert(0, str(ROOT / "components" / "seal"))
 
+from components import owners  # noqa: E402
 from components.business import declare, install  # noqa: E402
 from components.modules.store import MANIFEST, Store  # noqa: E402
 from perform import connect  # noqa: E402
@@ -108,6 +114,10 @@ SWAPPED = (STOCK, "v3")
 BUSINESS = "demo"
 IN_USE_SINCE = "2026-01-01T00:00:00+00:00"
 
+# Core and the library's name: kept by Uniti, registered here, not sealed.
+UNITI = "@uniti"
+
+
 def uniti_versions(store):
     """Every sealed version of Uniti's own modules — core and the library
     (DESIGN_NOTES.md §15) — in the order they were sealed, which is the order
@@ -134,6 +144,7 @@ def build(conn, root, *, until=None, register_core=True):
 
     store = Store([root, ROOT / "packages"])
     declare(conn, BUSINESS, actor_id="dev")
+    owners.first(conn, UNITI, actor_id="dev")
     if register_core:
         for name, version in uniti_versions(store):
             register(conn, store.path(name, version), actor_id="dev", store=store)
@@ -162,6 +173,7 @@ def extend(conn, root):
     """
     store = Store([Path(root), ROOT / "packages"])
     declare(conn, BUSINESS, actor_id="dev")
+    owners.first(conn, UNITI, actor_id="dev")
     sealed, waiting = [], []
     for name, version in SEQUENCE:
         held = [v["version"] for v in store.versions(name)]

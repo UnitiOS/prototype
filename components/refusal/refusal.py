@@ -25,14 +25,15 @@ The sentence is **derived**, never written beside the structure. A refusal
 carrying both would have two places to disagree, and the prose is the one
 nobody updates.
 
-Seven gates raise these, and each says which it is, because the answer to
+Eight gates raise these, and each says which it is, because the answer to
 "who can fix this" differs: `DraftError` is the seal refusing to make a
 version, `MapError` is the generator or the compiler refusing to read one,
 `ModuleError` is the store refusing to find one, `StudioError` is the
 studio refusing to perform a step on a draft, `ExampleError` is a business
 example the map does not bear out, `StandardError` is the recording standard
-every module is held to, and `BusinessError` is a business's kernel refusing
-what is not its own.
+every module is held to, `BusinessError` is a business's kernel refusing
+what is not its own, and `OwnerError` is a name refusing whoever does not own
+it.
 
 `repairs` is not decoration and is not optional in spirit. A refusal with no
 repair is a dead end, and the only honest ones are the few where the answer is
@@ -62,6 +63,7 @@ CODES = {
     "application_without_business": "an application whose manifest names no business it belongs to",
     "business_on_a_module": "a manifest naming a business on something that is not an application",
     "pins_an_application": "an import of an application, which is one business's own",
+    "name_not_the_business": "an application named under a name other than its business's",
 
     # ---- the business kernel: whose it is, and what it has installed -------
     "not_a_business_name": "a business named by something other than a lower-case word",
@@ -70,6 +72,11 @@ CODES = {
     "wrong_business": "an application sealed, registered or installed into another business's kernel",
     "not_an_application": "a module installed as if it were an application",
     "not_installed": "a form submitted through an application the business has not installed for that day",
+
+    # ---- the owners of names: who seals under which name ------------------
+    "no_person": "an owner, or the person acting as one, left unnamed",
+    "not_an_owner": "a seal, or a change of owners, by somebody who does not own the name",
+    "last_owner": "the only owner of a name removed, which would leave it to whoever seals next",
 
     # ---- the seal: a draft becoming a version -----------------------------
     "no_draft": "no file where a draft was named",

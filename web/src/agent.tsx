@@ -28,10 +28,11 @@
 import { useEffect, useRef, useState } from "react";
 import { ApiError, studioApi } from "./api";
 import type {
-  AgentEvent, Chat, ChatTurn, Did, DraftChange, DraftState, ExampleResult, PlanHeld, Reckoning,
-  Spent,
+  AgentEvent, Chat, ChatTurn, Did, DraftChange, DraftState, ExampleResult, NameOwners,
+  PlanHeld, Reckoning, Refusal, Spent,
 } from "./api";
 import { ChangeTag, CheckMark } from "./graph";
+import { Failure } from "./Refusal";
 import { changedOf, firstSentence, spoken } from "./studioMap";
 import type { ChangeHow } from "./studioMap";
 import { Said, useSay } from "./words";
@@ -613,6 +614,18 @@ function ChangeMap({ draft, map }: { draft: DraftState; map: ToMap }) {
   );
 }
 
+/** Who may freeze under a draft's name, in a sentence; null without a log. */
+export function ownersSaid(owners: NameOwners | undefined): string | null {
+  if (!owners) return null;
+  if (!owners.owned) {
+    return `Nobody owns ${owners.name} yet: whoever freezes it first becomes its owner.`;
+  }
+  const people = owners.owners.map((o) => o.owner);
+  const list = people.length <= 1 ? people.join("")
+    : `${people.slice(0, -1).join(", ")} and ${people[people.length - 1]}`;
+  return `Only an owner of ${owners.name} freezes under it: ${list}.`;
+}
+
 /** Freezing a draft: only a person does it, and says who they are. The seal's
  *  own gates judge, so a refusal comes back here rather than being guessed. */
 export function SealButton(
@@ -623,12 +636,14 @@ export function SealButton(
   const [sealing, setSealing] = useState(false);
   const [actor, setActor] = useState("");
   const [busy, setBusy] = useState(false);
-  const [failure, setFailure] = useState<string | null>(null);
+  const [failure, setFailure] = useState<{ error: string; refusal: Refusal | null } | null>(
+    null);
   const seal = () => {
     setBusy(true);
     studioApi.seal(name, actor.trim())
       .then((out) => { setFailure(null); setSealing(false); onSealed(out.version); })
-      .catch((e) => setFailure(e instanceof ApiError ? e.message : String(e)))
+      .catch((e) => setFailure(e instanceof ApiError
+        ? { error: e.message, refusal: e.refusal } : { error: String(e), refusal: null }))
       .finally(() => setBusy(false));
   };
   if (!sealing) {
@@ -641,7 +656,8 @@ export function SealButton(
   return (
     <form className="seal-form" onSubmit={(e) => { e.preventDefault(); seal(); }}>
       <label>
-        <span>Freezing {name} as {draft.becomes} cannot be undone. Your name:</span>
+        <span>Freezing {name} as {draft.becomes} cannot be undone.
+          {ownersSaid(draft.owners) && <> {ownersSaid(draft.owners)}</>} Your name:</span>
         <input value={actor} onChange={(e) => setActor(e.target.value)} autoFocus
           placeholder="who is freezing it" required />
       </label>
@@ -652,7 +668,7 @@ export function SealButton(
           Not yet
         </button>
       </div>
-      {failure && <p className="failure" role="alert">{failure}</p>}
+      {failure && <Failure error={failure.error} refusal={failure.refusal} />}
     </form>
   );
 }

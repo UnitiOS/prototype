@@ -135,7 +135,7 @@ def world(conn, tmp_path_factory):
             "expect": [{"table": "Tally", "row": "W1",
                         "values": {"tally_weight": 2}}],
         }}}, sort_keys=False), encoding="utf-8")
-    seal(conn, path, actor_id="test", into=directory, store=store)
+    seal(conn, path, actor_id="probe", into=directory, store=store)
 
     yield store
     conn.rollback()

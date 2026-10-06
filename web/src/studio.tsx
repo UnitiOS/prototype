@@ -32,7 +32,7 @@ import type {
   Binding, Chat, ChatTurn, DraftBorrowed, DraftClass, DraftRow, DraftState, ExampleResult, Hole,
   ModuleRow, Refusal as RefusalSpec, Step, StepSpec,
 } from "./api";
-import { AgentPanel, ExamplesPanel, SealButton } from "./agent";
+import { AgentPanel, ExamplesPanel, SealButton, ownersSaid } from "./agent";
 import type { Marking, ToMap } from "./agent";
 import { ApiError } from "./api";
 import { Failure, RefusalCard } from "./Refusal";
@@ -516,6 +516,9 @@ function StudioBar(
                 {" "}Freezing it makes {draft.becomes}
                 {draft.revises ? `, replacing ${draft.revises}` : ", its first version"}.
               </span>
+            )}
+            {ownersSaid(draft.owners) && (
+              <span className="quiet studio-pins">{ownersSaid(draft.owners)}</span>
             )}
           </p>
         )}

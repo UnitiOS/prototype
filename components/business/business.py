@@ -5,6 +5,10 @@ business it belongs to once, when it is set up, and from then on an
 application of another business is refused at its door: it cannot be sealed,
 registered or installed here.
 
+The person who declares it becomes the first owner of the business's name,
+`@kemahceria`, in this kernel (components/owners): an application is sealed
+under its business's name, by that name's owners.
+
 Sealing and installing are two decisions made by two people (§15.3). Sealing
 says a composition is right; that is the composer's, with the owner's
 agreement. Installing says the business's staff record through it from a given
@@ -40,11 +44,11 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "components" / "kernel"))
 sys.path.insert(0, str(ROOT / "components" / "seal"))
 
+from components import owners  # noqa: E402
 from components.modules.store import APPLICATION, BUSINESS  # noqa: E402
 from components.refusal import Refusal, Repair  # noqa: E402
-from perform import perform  # noqa: E402
 from resolve import resolve_single  # noqa: E402
-from seal import _REGISTRY_SQL, MINT_SOURCE, URI_PREDICATE, _utc, register  # noqa: E402
+from seal import _utc, register  # noqa: E402
 
 # The kernel itself, as the subject of the one statement of whose it is.
 KERNEL = "uniti:kernel"
@@ -69,32 +73,17 @@ class BusinessError(Refusal):
 
 
 def _known(conn):
-    """Every URI the log has registered, and the entity it names."""
-    with conn.cursor() as cur:
-        cur.execute(_REGISTRY_SQL, (URI_PREDICATE,))
-        return {uri: entity_id for uri, entity_id in cur.fetchall()}
+    return owners.known(conn)
 
 
 def _state(conn, *, actor_id, action_name, ontology_version, note, subject, predicate,
-           value, valid_from=None, reason_code=None, recorded_at=None):
-    """One intent stating one value, registering whichever URIs are new."""
-    known = _known(conn)
-    minting = [uri for uri in dict.fromkeys([URI_PREDICATE, subject, predicate])
-               if uri not in known]
-
-    def ref(uri):
-        return known.get(uri, uri)
-
-    registered = [{"subject": ref(uri), "predicate": ref(URI_PREDICATE), "value": uri,
-                   "valid_from": valid_from, "source": MINT_SOURCE}
-                  for uri in minting]
-    stated = {"subject": ref(subject), "predicate": ref(predicate), "value": value,
-              "valid_from": valid_from, "source": SOURCE}
-    intent_id, _, assertion_ids = perform(
-        conn, actor_id=actor_id, action_name=action_name,
-        ontology_version=ontology_version, reason_code=reason_code, note=note,
-        mint=minting, assertions=registered + [stated], recorded_at=recorded_at)
-    return intent_id, assertion_ids[-1]
+           value, valid_from=None, reason_code=None, recorded_at=None, also=()):
+    """One intent stating one value, and any statements `also` carries."""
+    intent_id, assertion_ids = owners.state(
+        conn, [(subject, predicate, value, valid_from, SOURCE), *also],
+        actor_id=actor_id, action_name=action_name, ontology_version=ontology_version,
+        note=note, reason_code=reason_code, recorded_at=recorded_at)
+    return intent_id, assertion_ids[0]
 
 
 # ---------------------------------------------------------------- the kernel
@@ -142,11 +131,17 @@ def declare(conn, business, *, actor_id, recorded_at=None):
                      Repair("or work in this kernel as the business it belongs to",
                             options=[current])],
         )
+    # Whoever sets the kernel up owns the business's name in it, unless
+    # somebody already does: its applications are sealed under that name.
+    scope = "@" + business
+    also = [] if owners.owned(conn, scope) else [
+        owners.claim(scope, actor_id, recorded_at or datetime.now(timezone.utc))]
     intent_id, _ = _state(
         conn, actor_id=actor_id, action_name="declare_business", ontology_version=LABEL,
         note=f"this kernel belongs to {business}", subject=KERNEL, predicate=BELONGS_TO,
-        value=business, recorded_at=recorded_at)
-    return {"business": business, "intent_id": intent_id}
+        value=business, recorded_at=recorded_at, also=also)
+    return {"business": business, "intent_id": intent_id,
+            "owner": actor_id if also else None}
 
 
 def require_own(conn, store, name):

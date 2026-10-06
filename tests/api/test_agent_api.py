@@ -123,7 +123,7 @@ def test_a_request_is_streamed_as_it_works_and_a_person_agrees_and_seals(client,
 
     # Sealing is refused while the example is only proposed. The person
     # agrees to it, and it waits for its rules.
-    refused = client.post("/api/studio/seal", json={"name": name, "actor": "owner"})
+    refused = client.post("/api/studio/seal", json={"name": name, "actor": "probe"})
     assert refused.status_code == 400
     agreed = client.post("/api/studio/step", json={
         "name": name, "step": "agree_example", "args": {"example": "flour"}})
@@ -138,7 +138,7 @@ def test_a_request_is_streamed_as_it_works_and_a_person_agrees_and_seals(client,
 
     # The person seals. The draft is closed; the conversation and the plan
     # that built the version stay beside it, and are not taken for versions.
-    sealed = client.post("/api/studio/seal", json={"name": name, "actor": "owner"})
+    sealed = client.post("/api/studio/seal", json={"name": name, "actor": "probe"})
     assert sealed.status_code == 200, sealed.json()
     assert sealed.json()["version"] == "v1"
     where = studio.directory(world, name)

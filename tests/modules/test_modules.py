@@ -113,7 +113,7 @@ def test_a_pinned_import_keeps_its_meaning_when_the_module_moves_on(conn, tmp_pa
 
     # The demonstration's own v2, replayed as it was sealed: before the
     # recording standard, as every version dev_modules replays.
-    seal(conn, dev_modules.FIXTURES / CATALOG / "v2.draft.yaml", actor_id="test",
+    seal(conn, dev_modules.FIXTURES / CATALOG / "v2.draft.yaml", actor_id="dev",
          into=store.directory(CATALOG), store=store, standard=False)
     after = read.version(store, INVENTORY, "v1")
 

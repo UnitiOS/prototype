@@ -558,7 +558,16 @@ export interface DraftState {
   empty?: boolean;
   sealable: boolean; document: string;
   examples: ExampleResult[]; examples_run: boolean;
+  /** Who may freeze it; absent when there is no log to ask. */
+  owners?: NameOwners;
 }
+
+/** One owner of a name, and the day they became one. */
+export interface NameOwner { owner: string; since: string; assertion: string }
+
+/** The name a module is published under, and who may seal under it. `owned`
+ *  is false for a name nobody has taken: the first to freeze under it does. */
+export interface NameOwners { name: string; owned: boolean; owners: NameOwner[] }
 
 /** One number an example expects, and what the draft made of it. */
 /** One number an example expects. `waiting` when no rule computes it yet:

@@ -63,6 +63,7 @@ GATES = {
     "components/examples/examples.py": "ExampleError",
     "components/standard/standard.py": "StandardError",
     "components/business/business.py": "BusinessError",
+    "components/owners/owners.py": "OwnerError",
 }
 
 
@@ -121,7 +122,7 @@ def test_every_code_the_gates_raise_is_written_down():
     # `return`, from a helper that builds the refusal its caller raises.
     gate = (r"(?:raise|yield|return) "
             r"(?:DraftError|MapError|ModuleError|CompileError|StudioError|ExampleError"
-            r"|StandardError|BusinessError)")
+            r"|StandardError|BusinessError|OwnerError)")
     literal = re.compile(gate + r'\(\s*"([a-z_]+)"')
     any_raise = re.compile(gate + r"\(")
 

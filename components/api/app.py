@@ -32,7 +32,7 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT / "components" / "kernel"))
 sys.path.insert(0, str(ROOT / "components" / "provenance"))
 
-from components import business  # noqa: E402
+from components import business, owners  # noqa: E402
 from components.api import agent, application, kernel  # noqa: E402
 from components.modules import catalogue as catalogue_read  # noqa: E402
 from components.modules import check as check_read  # noqa: E402
@@ -418,6 +418,33 @@ async def app_stop(request: Request):
             valid_from=body["valid_from"]))
 
 
+async def names_read(request: Request):
+    """Who owns each name the kernel knows an owner of, at the clocks; or one
+    name's owners, with `name`, which may be one nobody owns yet."""
+    clocks = _clocks(request)
+    scope = request.query_params.get("name")
+    with connect(os.environ.get("UNITI_DSN"), connect_timeout=3) as conn:
+        if scope:
+            scope = owners.scope_of(scope)
+            return JSON({"name": scope, "owned": owners.owned(conn, scope),
+                         "owners": owners.owners(conn, scope, **clocks)})
+        return JSON({"names": owners.names(conn, **clocks)})
+
+
+def _names(change):
+    async def route(request: Request):
+        """An owner of a name adds or removes one, from a day on."""
+        body = await _body(request, "name", "person", "actor")
+        try:
+            with connect(os.environ.get("UNITI_DSN"), connect_timeout=3) as conn:
+                return JSON(change(conn, owners.scope_of(str(body["name"]).strip()),
+                                   str(body["person"]), actor_id=str(body["actor"]),
+                                   valid_from=body["valid_from"]))
+        except Refusal as exc:
+            return _refused(exc)
+    return route
+
+
 async def studio_drafts(request: Request):
     """Every draft open in the store, and what each one would supersede."""
     return _modules(studio_draft.drafts)
@@ -429,7 +456,8 @@ def _studio_state(store, name):
     They run on a connection to the log, each in a scratch log of its own that
     is rolled back, so reading a draft writes nothing. Without a log to connect
     to, the draft is still read and the examples are listed, not run — the
-    state says so, and does not call the draft sealable.
+    state says so, and does not call the draft sealable. With one, the state
+    also says who owns the draft's name.
     """
     try:
         conn = connect(os.environ.get("UNITI_DSN"), connect_timeout=3)
@@ -437,7 +465,13 @@ def _studio_state(store, name):
         return studio_read.state(store, name)
     with conn:
         try:
-            return studio_read.state(store, name, conn)
+            state = studio_read.state(store, name, conn)
+            # Who may seal it, said while it is still a draft rather than
+            # at the end, when the seal refuses.
+            scope = owners.scope_of(name)
+            state["owners"] = {"name": scope, "owned": owners.owned(conn, scope),
+                               "owners": owners.owners(conn, scope)}
+            return state
         finally:
             conn.rollback()
 
@@ -531,6 +565,9 @@ routes = [
     Route("/api/app/install", app_install, methods=["POST"]),
     Route("/api/app/stop", app_stop, methods=["POST"]),
     Route("/api/business", business_read),
+    Route("/api/names", names_read),
+    Route("/api/names/add", _names(owners.add), methods=["POST"]),
+    Route("/api/names/remove", _names(owners.remove), methods=["POST"]),
     Route("/api/studio/drafts", studio_drafts),
     Route("/api/studio/draft", studio_state),
     Route("/api/studio/step", studio_step, methods=["POST"]),

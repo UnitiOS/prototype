@@ -208,7 +208,7 @@ def rental(store, conn):
     """The module, built by steps, and its first version sealed."""
     name = _rental(store)
     report = reading.state(store, name, conn)
-    out = seal(conn, studio.path(store, name), actor_id="dev",
+    out = seal(conn, studio.path(store, name), actor_id="probe",
                into=store.directory(name), store=store)
     return name, report, out
 
@@ -218,7 +218,7 @@ def shop(store, conn, rental):
     """The business's application: the rental module and nothing of its own,
     installed in the business's kernel. Staff record through this, never
     through the module, which is shared and installed by nobody."""
-    name = "@probe/shop"
+    name = "@demo/shop"
     step(store, name, "start", title="Shop", kind="application", business=BUSINESS,
          description="The rental business's application.")
     step(store, name, "pin", module=f"{rental[0]}@v1")
@@ -292,7 +292,7 @@ def test_a_kind_of_another_modules_class_is_refused_by_the_seal(store, conn):
     where.write_text(yaml.safe_dump(document, sort_keys=False), encoding="utf-8")
 
     with pytest.raises(DraftError) as refused:
-        seal(conn, where, actor_id="dev", into=store.directory(name), store=store)
+        seal(conn, where, actor_id="probe", into=store.directory(name), store=store)
     assert refused.value.code == "kind_of_foreign_class"
     assert refused.value.where.endswith("class RentalItem")
 

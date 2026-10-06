@@ -698,6 +698,20 @@ def _own_business(conn, store, directory):
     require_own(conn, store, module)
 
 
+def _own_name(conn, store, directory, actor_id, sealed_at):
+    """Only an owner of a module's name seals under it (components/owners).
+
+    Returns the claim that makes the person sealing its first owner when
+    nobody has owned the name yet: it is stated in the seal's own intent, so
+    the log says where the name was taken.
+    """
+    module = store.module_of(directory) if store is not None else None
+    if module is None:
+        return []
+    from components.owners import at_seal
+    return at_seal(conn, module, actor_id, sealed_at=sealed_at)
+
+
 def _no_foreign_kind(store, draft, name):
     """Raise the first. The rule itself is in `kind_refusals`."""
     for refusal in kind_refusals(store, draft, name):
@@ -968,6 +982,10 @@ def seal(conn, draft_path, *, actor_id, into=None, sealed_at=None, store=None,
     is for one caller only: replaying versions that were sealed before the
     standard existed, whose bytes are history and are not changed to fit a
     rule written after them.
+
+    Into a module of the store, only an owner of the module's name seals, and
+    the first person to seal under a name nobody owns becomes its owner
+    (components/owners).
     """
     draft_path = Path(draft_path)
     into = Path(into) if into is not None else ROOT / "business"
@@ -1003,6 +1021,7 @@ def seal(conn, draft_path, *, actor_id, into=None, sealed_at=None, store=None,
     if standard and store is not None and store.module_of(into):
         _standard_held(view, draft, draft_path)
     _own_business(conn, store, into)
+    claimed = _own_name(conn, store, into, actor_id, sealed_at)
 
     valid_from = _valid_from(annotations, draft_path.name)
     _flat(annotations, draft_path.name)
@@ -1059,7 +1078,7 @@ def seal(conn, draft_path, *, actor_id, into=None, sealed_at=None, store=None,
     named += [fact["value"] for fact in facts if fact["ref"]]
 
     minting = []
-    for uri in [URI_PREDICATE] + list(ranges) + named:
+    for uri in [URI_PREDICATE] + list(ranges) + named + [u for c in claimed for u in c[:2]]:
         if uri not in known and uri not in minting:
             minting.append(uri)
 
@@ -1092,6 +1111,10 @@ def seal(conn, draft_path, *, actor_id, into=None, sealed_at=None, store=None,
             "confidence": fact["confidence"],
         }
         for fact in facts
+    ] + [
+        {"subject": ref(owner), "predicate": ref(owns), "value": value,
+         "valid_from": since, "source": source}
+        for owner, owns, value, since, source in claimed
     ]
 
     intent_id, names, assertion_ids = perform(
@@ -1120,6 +1143,7 @@ def seal(conn, draft_path, *, actor_id, into=None, sealed_at=None, store=None,
         "entities": {**known, **names},
         "minted": names,
         "assertions": assertion_ids,
+        "claimed": bool(claimed),
     }
 
 

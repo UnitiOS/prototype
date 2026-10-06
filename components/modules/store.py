@@ -31,7 +31,8 @@ A manifest may say which of four kinds the module is (DESIGN_NOTES.md §15.2):
     kind: module        one business function, by whoever wrote it — the
                         default, so a manifest that says nothing is one
     kind: application   one business's composition, private to it:
-                        business: <the business it belongs to>
+                        business: <the business it belongs to>, and named
+                        under it: @<business>/...
 
 The kind changes no meaning. It says who owns a module and who may use it: an
 application belongs to one business, is pinned by nothing, and is installed
@@ -79,7 +80,8 @@ def kind_of(name, manifest):
 
     An application names the business it belongs to and nothing else may:
     a business on a module would read as a claim of ownership the module
-    does not make.
+    does not make. It is named under that business, `@kemahceria/rental`, so
+    the owners of the business's name are the people who seal it.
     """
     kind = manifest.get("kind") or "module"
     where = f"{name}/{MANIFEST}"
@@ -100,6 +102,15 @@ def kind_of(name, manifest):
                      "a lower-case word",
             got=f"{business!r}" if business else "none",
             repairs=[Repair("name the business", where=where)],
+        )
+    if kind == APPLICATION and name.split("/")[0] != "@" + business:
+        raise ModuleError(
+            "name_not_the_business",
+            where=where,
+            expected=f"an application named under its business, @{business}/...",
+            got=name,
+            repairs=[Repair("name the application under its business",
+                            options=[f"@{business}/{name.split('/')[-1]}"])],
         )
     if kind != APPLICATION and business is not None:
         raise ModuleError(
