@@ -1637,9 +1637,13 @@ sebelum uji dari lingkungan kosong. Tidak ada panggilan model.
   milik satu usaha; kernel menyatakan pemiliknya; membekukan dan memasang
   dipisah; formulir hanya mencatat lewat versi yang terpasang untuk hari itu.
   Rinciannya di `APLIKASI_USAHA.md` §9.
-- **Berikutnya** (urutan disetujui pemilik): aturan siapa boleh
-  merilis di bawah nama apa; panduan agent per peran; lalu uji lingkungan
-  kosong diulang dalam dua babak (komunitas membuat, pemilik usaha menyusun).
+- **Langkah 3 selesai, 6 Oktober 2026:** hanya pemilik sebuah nama yang
+  membekukan di bawahnya; yang pertama membekukan di bawah nama baru menjadi
+  pemiliknya; pemilik menambah dan mencabut pemilik lain dengan tanggal; nama
+  aplikasi adalah nama usahanya. Rinciannya di `PEMILIK_NAMA.md` §9.
+- **Berikutnya** (urutan disetujui pemilik): panduan agent per peran; lalu
+  uji lingkungan kosong diulang dalam dua babak (komunitas membuat, pemilik
+  usaha menyusun).
 
 ### Irisan 5: Compiler dan generator tumbuh sesuai kebutuhan
 

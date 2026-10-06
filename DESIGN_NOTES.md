@@ -827,6 +827,7 @@ layer, upper ontology.
 | **pin** | rujukan ke tepat satu versi ter-seal; tidak ada rentang |
 | **aplikasi** | susunan versi yang dikunci untuk satu usaha, dengan tambahan khusus dan contoh angka usaha itu; pribadi, milik usaha tersebut, terikat ke kernelnya. **Jenis tersendiri sejak 6 Oktober 2026** (§15.2) — sebelumnya "satu versi ter-seal biasa, bukan jenis benda baru" |
 | **memasang** (install) | pemilik usaha menyatakan di kernelnya bahwa staf mencatat lewat satu versi aplikasi sejak tanggal tertentu. Terpisah dari membekukan (§15.5) |
+| **pemilik nama** (name owner) | orang yang boleh membekukan versi baru di bawah satu nama depan seperti `@uniti` atau `@kemahceria`. Dicatat di kernel dengan tanggal; yang pertama membekukan di bawah nama baru menjadi pemiliknya (§15.4) |
 | **kernel usaha** | catatan yang hanya bertambah milik satu usaha: fakta, aplikasi, modul pribadi, dan kosakata yang dipakainya (§15.5) |
 | **pustaka umum** | `@uniti/*`: pihak, barang dan satuan, uang, dokumen transaksi; dipakai hampir semua domain, bukan core (§15.2) |
 | **modul penghubung** | modul komunitas yang menghubungkan dua modul dengan menunjuk, tanpa mengubah keduanya (§15.2) |
@@ -843,7 +844,8 @@ layer, upper ontology.
 > menurunkan kelas milik modul lain (§15.4), dan pengelompokan satu catatan
 > lebih jauh di compiler **[dibangun]** hari itu juga (`PUSTAKA_UMUM.md`);
 > aplikasi sebagai jenis tersendiri yang terikat ke kernel usahanya juga
-> **[dibangun]** (`APLIKASI_USAHA.md`); sisanya belum. Bagian ini lahir
+> **[dibangun]** (`APLIKASI_USAHA.md`), begitu pula aturan pemilik nama
+> (§15.4, `PEMILIK_NAMA.md`); sisanya belum. Bagian ini lahir
 > dari uji lingkungan kosong (`UJI_LINGKUNGAN_KOSONG.md`). Di langkah 3 modul
 > jaminan keluar terputus dari modul sewa: ia membuat "pelanggan" sendiri dan
 > tidak punya tempat untuk menempel ke penyewaan. Analisanya menunjukkan bahwa
@@ -917,7 +919,14 @@ satu usaha*.
 ### 15.4 Kepemilikan
 
 - **Hanya pemilik sebuah nama** (`@kemahceria`, `@uniti`) yang boleh
-  membekukan versi baru di bawah nama itu.
+  membekukan versi baru di bawah nama itu. **[dibangun 6 Oktober 2026,
+  `components/owners`]** Pemilik dicatat di kernel sebagai pernyataan
+  bertanggal; yang pertama membekukan di bawah nama baru menjadi pemiliknya;
+  pemilik menambah dan mencabut pemilik lain, tetapi pemilik terakhir tidak
+  bisa keluar; nama aplikasi adalah nama usahanya, dan yang menyatakan
+  pemilik kernel usaha menjadi pemilik pertama nama itu. Belum ada login, jadi
+  pemilik adalah nama yang ditulis orang; aturan ini menjaga catatan, belum
+  mengamankan.
 - **Orang lain yang butuh perubahan** punya tiga jalan: mengusulkannya ke
   pemiliknya; menyalin ke nama sendiri (fork); atau menghubungkan lewat modul
   penghubung atau aplikasinya sendiri.
@@ -985,8 +994,12 @@ Dibangun 6 Oktober 2026 ✓ (`components/business`, `APLIKASI_USAHA.md`):
   dengan tanggal mulai, dan formulir hanya mencatat lewat versi yang
   terpasang untuk hari itu.
 
-Yang belum: aturan siapa boleh merilis di bawah nama apa; kernel Uniti
-sebagai catatan.
+Dibangun 6 Oktober 2026 ✓ (`components/owners`, `PEMILIK_NAMA.md`): pemilik
+nama dicatat di kernel tempat versi dibekukan. Sampai kernel Uniti ada,
+setiap kernel menjaga nama sendiri; untuk koleksi bersama yang berlaku adalah
+kernel komunitas.
+
+Yang belum: kernel Uniti sebagai catatan, satu tempat nama dicatat.
 
 ### 15.6 Alur pembentukan aplikasi dalam praktik
 
