@@ -117,7 +117,8 @@ def test_the_instructions_are_the_same_on_every_call_and_the_state_comes_with_th
     assert seen[0][0] == guide_read.instructions()
     # Where it stood came with the person's words, read as the request began.
     (first,) = [p.content for p in seen[0][1][0].parts if isinstance(p, UserPromptPart)]
-    assert first == (f"(From the system, not the person: they have {name} open. It does "
+    assert first == (f"(From the system, not the person: they have {name} open. This log "
+                     f"belongs to no business yet, so it will be a community module. It does "
                      f"not exist yet: `start` creates it and opens its draft. The person "
                      f"agreed to your plan.)\n\nStart it.")
     # The conversation keeps the person's words as they said them.

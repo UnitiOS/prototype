@@ -144,6 +144,7 @@ def _played(task, steps, believed):
     rest = [s for s in steps if s["op"] not in studio.RULED]
     requests = [
         {"says": task["says"], "moves": [
+            {"tool": "catalogue", "args": {"text": module}},
             {"end": "Plan", "args": {"message": "Shall I?", "builds": "What was asked.",
                                      "numbers": list(figures)}}]},
         {"says": evals.AGREED, "moves": [
@@ -182,7 +183,7 @@ def test_a_run_that_builds_the_right_thing_passes(world):
     assert [t["ended"] for t in run["turns"]] == ["Plan", "Proposal", "Proposal"]
     assert [t["person"] for t in run["turns"]] == [task["says"], evals.AGREED, evals.AGREED]
     assert (run["ended"], run["requests"], run["calls"], run["refused"],
-            run["sent_back"]) == ("Proposal", 8, 4, 0, 0)
+            run["sent_back"]) == ("Proposal", 9, 5, 0, 0)
     assert run["steps"] == len(REFERENCE["shortfall"]) + len(_example({"truth": believed}))
 
 

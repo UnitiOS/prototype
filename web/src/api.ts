@@ -600,8 +600,9 @@ export interface Spent {
 
 /** How a request ended. `said` is the ending's own fields: `message` for a
  *  Reply or a Stopped, `question` and `choices` for a Question, for a Plan
- *  `message` and what it `builds`, from which `records`, which `numbers` come
- *  out and what it `cannot` do yet, and for a Proposal `message`, the
+ *  `message` and what it `builds`, from which `records`, what it `reuses` from
+ *  the catalogue and what belongs `elsewhere`, which `numbers` come out and
+ *  what it `cannot` do yet, and for a Proposal `message`, the
  *  examples to `agree` to and whether it may `seal`. */
 export interface ChatTurn {
   at?: string; person: string;
@@ -609,6 +610,7 @@ export interface ChatTurn {
   said: {
     message?: string; question?: string; choices?: string[];
     builds?: string; records?: string[]; numbers?: string[]; cannot?: string[];
+    reuses?: string[]; elsewhere?: string[];
     module?: string; agree?: string[]; seal?: boolean; cause?: string;
   };
   // A Stopped turn carries `agree` and `seal` too: what the system found
@@ -629,6 +631,8 @@ export interface Reckoning {
  *  agreed to it. */
 export interface PlanHeld {
   builds: string; records: string[]; numbers: string[]; cannot: string[];
+  /** What it takes from what others built, and what is missing there. */
+  reuses?: string[]; elsewhere?: string[];
   proposed_at: string; agreed: boolean; agreed_at?: string;
 }
 

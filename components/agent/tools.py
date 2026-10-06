@@ -473,6 +473,11 @@ def _around(report):
     return "\n".join(lines)
 
 
+# How the catalogue names each kind of module to the agent (guide: kinds).
+OF_KIND = {"core": "core", "library": "standard library", "module": "community module",
+           "application": "this business's application"}
+
+
 def _entry(entry):
     pin = f"{entry['module']['name']}@{entry['module']['version']}"
     about = " ".join(str(entry.get("description") or "").split())
@@ -480,8 +485,9 @@ def _entry(entry):
         about = about[:157] + "..."
     if entry["kind"] == "module":
         pins = ", ".join(f"{p['name']}@{p['version']}" for p in entry["pins"]) or "nothing"
-        head = (f"module {_labelled(pin, entry.get('labels'))} — {entry['title']}; "
-                f"pins {pins}; declares "
+        head = (f"module {_labelled(pin, entry.get('labels'))} "
+                f"({OF_KIND.get(entry.get('of_kind'), entry.get('of_kind'))}) — "
+                f"{entry['title']}; pins {pins}; declares "
                 f"{', '.join(entry['declares']['classes']) or 'no class'}")
     elif entry["kind"] == "role":
         bindings = ", ".join(b["name"] for b in entry["bindings"]) or "nothing"

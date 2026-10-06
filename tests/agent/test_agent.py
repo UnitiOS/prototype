@@ -289,11 +289,32 @@ def test_the_tools_answer_in_text_short_enough_to_read_every_turn(bench):
     core = tools.catalogue(bench, kind="role", module="@uniti/core@v2")
     assert "role Flow (@uniti/core@v2)" in core and "Transaction" not in core
     assert tools.catalogue(bench, kind="role", module="@uniti/core, @nobody/here") == core
+    # Each module says its kind, so the library is told from the rest.
+    assert "(standard library) — " in tools.catalogue(bench, kind="module",
+                                                      module="@uniti/party")
+    assert "(community module) — " in tools.catalogue(bench, kind="module",
+                                                      module="@demo/inventory")
     # A class says what a new record of it must be given.
     assert ("a new one must be given movement_code, movement_ingredient, "
             "movement_quantity, movement_happened_on"
             in tools.catalogue(bench, text="StockMovement", kind="class"))
     tools.do(bench, name, [step("discard")])
+
+
+def test_the_note_opening_a_request_says_which_kind_is_open_and_whom_it_helps(world):
+    opened = guide_read.opened
+    assert "standard library: you help its keepers." in opened(world, "@uniti/party")
+    assert "community module: you help its author." in opened(world, "@demo/inventory")
+    assert ("an application of the business demo: you help its composer."
+            in opened(world, "@demo/stock"))
+    # Not started yet: the library by its name; otherwise the person is asked.
+    assert "`start` it as a library." in opened(world, "@uniti/brand-new")
+    asked = opened(world, "@kemah/rental", business="kemah")
+    assert "ask whether it serves this business alone" in asked
+    assert "named @kemah/..." in asked
+    assert "it will be a community module." in opened(world, "@kemah/rental")
+    # The guide every request starts with is the same whichever kind is open.
+    assert guide_read.KINDS_OF_MODULE in guide_read.instructions()
 
 
 def test_a_module_not_started_yet_is_said_so_in_the_agents_terms(bench):
@@ -379,9 +400,10 @@ def test_the_instructions_are_what_every_build_needs_and_a_list_of_the_rest():
     for topic in guide_read.TOPICS:
         if topic not in guide_read.GIVEN:
             assert f"    {topic}: " in text
-    # Short enough to sit at the top of every call: about five thousand
-    # tokens, the recording standard included, which every build follows.
-    assert len(text) < 20000
+    # Short enough to sit at the top of every call: about five and a half
+    # thousand tokens, the recording standard and the kinds of module
+    # included, which every build follows.
+    assert len(text) < 22000
 
 
 # ---- a proposal is checked -------------------------------------------------
@@ -437,12 +459,21 @@ def test_a_plan_is_kept_beside_the_draft_and_only_the_person_agrees_to_it(bench,
     plan = {"end": "Plan", "args": {
         "message": "Shall I?", "builds": "On hand per ingredient.",
         "records": ["Stock movements, as recorded already."],
+        "reuses": ["Ingredients, from a community module."],
+        "elsewhere": ["Suppliers belong in the standard library."],
         "numbers": ["On hand per ingredient."], "cannot": []}}
-    turn = Session(bench, name, _scripted([plan])).ask("What is on hand?")
+    # A plan before the catalogue is searched is sent back; after it, it goes.
+    turn = Session(bench, name, _scripted([
+        plan, {"tool": "catalogue", "args": {"text": "stock"}}, plan,
+    ])).ask("What is on hand?")
     assert turn.ended == "Plan" and turn.output.builds == "On hand per ingredient."
+    sent_back = "\n".join(rehearsal.trace(turn.messages))
+    assert "search the catalogue for what they described first" in sent_back
     # Kept as the person was shown it, before there is a draft, and not agreed.
     held = studio.plan_of(world, name)
     assert held["builds"] == "On hand per ingredient." and held["agreed"] is False
+    assert held["reuses"] == ["Ingredients, from a community module."]
+    assert held["elsewhere"] == ["Suppliers belong in the standard library."]
     assert "message" not in held and not studio.path(world, name).exists()
     assert guide_read.opened(world, name).endswith(
         "Your plan waits for the person's agreement: nothing is built until then.)")
@@ -695,7 +726,8 @@ def test_every_call_of_every_part_is_written_down_whole(bench, world, tmp_path):
     first = calls[0]
     (sent,) = first["sent"]
     assert sent["person"].startswith("(From the system, not the person: they have "
-                                     "@probe/watched open. It does not exist yet")
+                                     "@probe/watched open. ")
+    assert "It does not exist yet" in sent["person"]
     assert sent["person"].endswith(f"\n\n{played[0]['says']}")
     assert first["received"] == [{"call": "catalogue", "args": {"kind": "role"}}]
     assert {"input", "output"} <= set(first["tokens"])

@@ -13,7 +13,8 @@ A turn ends one of four ways, each a structured answer the page can draw:
 
     Reply      something said to the person, who answers when they like
     Question   something only the person can answer, with choices where there are
-    Plan       what it is going to build, from which records, which numbers
+    Plan       what it is going to build, from which records, what it takes
+               from the catalogue and what is missing there, which numbers
                come out, and what of the request the system cannot do yet —
                for the person to agree to or change
     Proposal   the draft put before the person: the examples to agree to, and
@@ -24,7 +25,9 @@ no rule computing a number is written until the person has agreed to the plan
 and to an example giving that table's numbers. Each is one request: the plan,
 then the examples, then the rules until the examples hold, then the seal.
 
-A proposal is checked before it reaches anybody. The agent may only propose
+A plan is put forward only after the catalogue was searched in the
+conversation: what is built for one person stands on what others built
+(DESIGN_NOTES.md §15.3). A proposal is checked before it reaches anybody. The agent may only propose
 examples that are still proposals, that have run, that pass or wait only for
 their rules, and whose every expected number the accountant worked out; and
 may only say a draft is ready when the one thing it is waiting for is the
@@ -64,7 +67,7 @@ from pydantic import BaseModel, Field  # noqa: E402
 from pydantic_ai import Agent, ModelRetry, RunContext  # noqa: E402
 from pydantic_ai.capabilities import Hooks  # noqa: E402
 from pydantic_ai.exceptions import UsageLimitExceeded  # noqa: E402
-from pydantic_ai.messages import ModelResponse, UserPromptPart  # noqa: E402
+from pydantic_ai.messages import ModelResponse, ToolCallPart, UserPromptPart  # noqa: E402
 from pydantic_ai.usage import RequestUsage  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent.parent
@@ -241,9 +244,11 @@ class Question(BaseModel):
 class Plan(BaseModel):
     """Put your plan before the person and wait for them to agree, before you
     write any rule that computes a number: what you will build, from which
-    records, which numbers come out, and what of their request the system
-    cannot do yet. In their language and their words. They agree or tell you
-    what to change; you cannot agree for them."""
+    records, what you take from the catalogue and what is missing from it,
+    which numbers come out, and what of their request the system cannot do
+    yet. In their language and their words. They agree or tell you what to
+    change; you cannot agree for them. Search the catalogue first: a plan put
+    forward before it is refused."""
 
     message: str = Field(description="what you ask of them, briefly")
     builds: str = Field(description="what you will build, in a sentence or two")
@@ -253,6 +258,19 @@ class Plan(BaseModel):
                     "person's words: what they record already and what they "
                     "will record — never a module's name or an English name "
                     "it is recorded under")
+    reuses: list[str] = Field(
+        default_factory=list,
+        description="what you take from the catalogue, one each, in the "
+                    "person's words, saying where it is kept as they would "
+                    "understand it (the standard library, a community module); "
+                    "empty when nothing there fits")
+    elsewhere: list[str] = Field(
+        default_factory=list,
+        description="what is missing from the catalogue and belongs in another "
+                    "kind of module or to another owner, one each: what it is, "
+                    "where it belongs and why, and in an application the "
+                    "person's choice: build it here for now, or wait; empty "
+                    "when nothing is")
     numbers: list[str] = Field(
         default_factory=list,
         description="each number that comes out: what, for whom, as of when")
@@ -335,7 +353,14 @@ for wrapper, tool in ((look, tools.look), (options, tools.options), (do, tools.d
 TOOLS = (look, options, do, catalogue, guide, reckon)
 
 
-# ---- the proposal, checked -----------------------------------------------
+# ---- the plan and the proposal, checked -----------------------------------
+
+def searched(messages):
+    """Whether the catalogue was searched in this conversation, in any turn."""
+    return any(isinstance(part, ToolCallPart) and part.tool_name == "catalogue"
+               for message in messages if isinstance(message, ModelResponse)
+               for part in message.parts)
+
 
 def unsupported(work, proposal):
     """What a proposal claims that the draft does not bear out, or None."""
@@ -513,6 +538,10 @@ def builder(model=None, *, retries=3, watch=None):
 
     @agent.output_validator
     def _honest(ctx: RunContext[Work], output):
+        if isinstance(output, Plan) and not searched(ctx.messages):
+            raise ModelRetry("That plan cannot go to the person: search the catalogue "
+                             "for what they described first, then plan from what it "
+                             "holds and what it is missing.")
         if isinstance(output, Proposal):
             problem = unsupported(ctx.deps, output)
             if problem:
@@ -523,4 +552,5 @@ def builder(model=None, *, retries=3, watch=None):
 
 
 __all__ = ["ENDING", "Arg", "Plan", "Proposal", "Question", "Reply", "Step", "TOOLS", "Work",
-           "builder", "ending", "put_before", "reckoned", "unreckoned", "unsupported"]
+           "builder", "ending", "put_before", "reckoned", "searched", "unreckoned",
+           "unsupported"]

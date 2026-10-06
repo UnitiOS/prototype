@@ -13,9 +13,14 @@ business, and wherever it states a name the code also has, the name is taken
 from the code.
 
 One section per topic, asked for when needed. The instructions an agent starts
-with are `instructions()`: how to work, the rules and how examples are written
-— which every build needs, and which a model otherwise spends a call on each
-— and the list of the other topics, read when the work calls for one.
+with are `instructions()`: how to work, the kinds of module and whom each
+serves, the rules and how examples are written — which every build needs, and
+which a model otherwise spends a call on each — and the list of the other
+topics, read when the work calls for one.
+
+The guide is the same for every person (DESIGN_NOTES.md §15.3): what differs
+by role is which kind of module is open, and the note opening every request
+says it (`opened`), so the instructions stay the same at the top of every call.
 """
 
 import re
@@ -31,6 +36,7 @@ from components.examples.examples import (  # noqa: E402
     COMPUTED, EXAMPLE_KEYS, EXPECT_KEYS, RECORD_KEYS,
 )
 from components.modules import catalogue as catalogue_read  # noqa: E402
+from components.modules.store import MANIFEST  # noqa: E402
 from components.refusal import CODES, Refusal  # noqa: E402
 from components import standard  # noqa: E402
 from components.studio.draft import OPERATIONS, plan_of  # noqa: E402
@@ -174,8 +180,43 @@ will expect, such as "on hand for X at the end of June"). Write `expect` from
 the values it gives. An example is only put to the person when every number it
 expects is one the accountant worked out for that example."""
 
+KINDS_OF_MODULE = """\
+What you build is one of three kinds of module, and the note opening each
+message says which, so whom you help. The catalogue says each module's kind.
+Core is written by hand, never here.
+
+    library      the standard library, kept by Uniti's keepers: parties,
+                 items, documents with lines: only what nearly every business
+                 records. Keep it small, with no rule of one trade.
+    module       a community module, for one trade, not one business: it
+                 names no business, its examples use invented people and
+                 things, and another business of that trade could use it.
+    application  one business's own. It pins sealed modules and adds only
+                 what is that business's alone: the rules joining them, the
+                 numbers it asks for, examples with its own numbers. What
+                 every business of its trade records (an order, a payment)
+                 is not its alone: with no module recording it, it is
+                 missing, and the plan says so.
+
+Whatever the kind:
+- Search the catalogue before you plan; a plan before it is refused. People,
+  organisations, items and documents with lines come from the library: point
+  at them, never declare them again.
+- Plan around what happens in the business and who takes part (an order by
+  one customer, with several lines), not only today's number: the next
+  question stands on it.
+- Whether two things belong together (is a payment for one order?) is the
+  person's to say: ask, never assume.
+- Say in the plan what you take from the catalogue, and what is missing that
+  belongs in another kind or to another owner. You cannot change another
+  module here: its owner can, or the person copies it to a name of their own,
+  or links to it from their own module or application. In an application the
+  person chooses: build the missing part here for now, for this business
+  alone, or wait for it to be built where it belongs."""
+
 TOPICS = {
     "workflow": "the order to work in, and what you may and may not do",
+    "kinds": "the three kinds of module, whom each serves, and what goes where",
     "steps": "every studio step, what it does and what it takes",
     "rules": "classes, slots, the two kinds of table, and the three rules",
     "examples": "how a business example is written and run",
@@ -284,6 +325,8 @@ def section(topic, store=None):
     """One topic of the guide, or the list of topics when there is no such one."""
     if topic == "workflow":
         return WORKFLOW
+    if topic == "kinds":
+        return KINDS_OF_MODULE
     if topic == "steps":
         return _steps()
     if topic == "rules":
@@ -306,7 +349,7 @@ def section(topic, store=None):
 # them, and a topic read with `guide` costs a round and is sent again with
 # every round after it, while the instructions are the same at the top of
 # every call, which a provider can serve from its cache.
-GIVEN = ("workflow", "standard", "rules", "examples", "steps", "holes")
+GIVEN = ("workflow", "kinds", "standard", "rules", "examples", "steps", "holes")
 
 
 # Said once in the instructions, so that the instructions never change: which
@@ -326,6 +369,7 @@ def instructions():
     given = GIVEN
     return (WORKFLOW
             + "\n\n" + OPENED
+            + "\n\n# Kinds\n\n" + KINDS_OF_MODULE
             + "\n\n# Recording standard\n\n" + standard.teach()
             + "\n\n# Rules\n\n" + RULES
             + "\n\n# Examples\n\n" + EXAMPLES
@@ -342,10 +386,39 @@ def instructions():
 OPENS = "(From the system, not the person: they have "
 
 
-def opened(store, module):
-    """Which module the person has open, where it stands and where its plan
-    stands — said to the agent with the person's message at the start of
-    every request, read off the store each time."""
+LIBRARY_SCOPE = "@uniti"
+
+
+def kind_open(store, module, business=None):
+    """Which kind the open module is, and so whom the agent helps: read off
+    its manifest once it is started, and before that off its name, or left
+    for the agent to ask. `business` is the business the log belongs to."""
+    try:
+        kind = store.kind(module) if (store.place(module) / MANIFEST).is_file() else None
+        owner = store.business(module) if kind else None
+    except Refusal:
+        kind = owner = None
+    if kind == "library":
+        return "It is part of the standard library: you help its keepers."
+    if kind == "module":
+        return "It is a community module: you help its author."
+    if kind == "application":
+        return f"It is an application of the business {owner}: you help its composer."
+    if kind == "core":
+        return "It is core, which its keepers write by hand."
+    if module.split("/", 1)[0] == LIBRARY_SCOPE:
+        return "It will be part of the standard library: `start` it as a library."
+    if business:
+        return ("Before `start`, ask whether it serves this business alone (an "
+                f"application of the business {business}, named @{business}/...) or "
+                "many businesses (a module), unless the person said so.")
+    return "This log belongs to no business yet, so it will be a community module."
+
+
+def opened(store, module, business=None):
+    """Which module the person has open, which kind it is, where it stands and
+    where its plan stands — said to the agent with the person's message at the
+    start of every request, read off the store each time."""
     try:
         sealed = store.versions(module)
     except Refusal:
@@ -365,7 +438,9 @@ def opened(store, module):
         planned = "The person agreed to your plan."
     else:
         planned = "Your plan waits for the person's agreement: nothing is built until then."
-    return f"{OPENS}{module} open. {state} {planned})"
+    return (f"{OPENS}{module} open. {kind_open(store, module, business)} {state} "
+            f"{planned})")
 
 
-__all__ = ["GIVEN", "OPENED", "OPENS", "TOPICS", "instructions", "opened", "section"]
+__all__ = ["GIVEN", "KINDS_OF_MODULE", "OPENED", "OPENS", "TOPICS", "instructions",
+           "kind_open", "opened", "section"]

@@ -27,8 +27,8 @@ stop (`agree`, `seal`, and `shown` as a proposal's are) — so a request that
 ran out on the last step still ends where the person can take the next one.
 
 What the model is sent with the person's words is a note on which module is
-open, where it stands and where its plan stands (`guide.opened`), read off the
-store as the request starts; the conversation keeps the person's words as they
+open, which kind it is and so whom the agent helps, where it stands and where
+its plan stands (`guide.opened`), read off the store as the request starts; the conversation keeps the person's words as they
 said them.
 
 Whatever happens, what the builder did before it stopped is in the draft, and
@@ -119,7 +119,9 @@ class Session:
         started = time.monotonic()
         before = changes.look(self.bench.store, self.module)
         earlier = self.conversation.history()
-        said = f"{guide.opened(self.bench.store, self.module)}\n\n{text}"
+        opening = await asyncio.to_thread(guide.opened, self.bench.store, self.module,
+                                          self.bench.business())
+        said = f"{opening}\n\n{text}"
         # Kept as they happen, so a request that stops part way can still be
         # read call by call.
         with capture_run_messages() as happened:

@@ -457,6 +457,8 @@ function PlanCard(
         </header>
         <Said text={said.builds ?? ""} className="" />
         {listed("Worked out from", said.records)}
+        {listed("Taken from what others built", said.reuses)}
+        {listed("Missing, and where it belongs", said.elsewhere)}
         {listed("Numbers it gives", said.numbers)}
         {listed("Not possible yet", said.cannot)}
       </section>
