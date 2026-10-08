@@ -229,6 +229,45 @@ def shop(store, conn, rental):
     return name
 
 
+def test_an_application_made_of_the_modules_it_pins_is_a_version(store, conn, rental):
+    # Nothing of its own: the modules it pins, and an example of what their
+    # numbers must come to for this business. Not empty, and nothing to ask
+    # it to declare.
+    name = "@demo/counted"
+    step(store, name, "start", title="Counted", kind="application", business=BUSINESS,
+         description="The rental business's own numbers, from the rental module.")
+    assert reading.state(store, name, conn)["empty"] is True
+    step(store, name, "pin", module=f"{rental[0]}@v1")
+    step(store, name, "add_example", example="ours",
+         says="Sari rents out two tents.")
+    step(store, name, "record", example="ours", record="sari", **{"class": "Party"},
+         facts="party_name=Sari")
+    step(store, name, "record", example="ours", record="tent", **{"class": "Item"},
+         facts="item_name=Tent")
+    step(store, name, "record", example="ours", record="r1", **{"class": "Rental"},
+         when="2026-10-06",
+         facts="rental_number=R1, rental_customer=sari, rental_date=2026-10-06")
+    step(store, name, "record", example="ours", record="l1", **{"class": "RentalLine"},
+         when="2026-10-06",
+         facts="line_rental=r1, line_item=tent, line_quantity=2, line_date=2026-10-06")
+    step(store, name, "expect", example="ours", table="ItemOut", row="tent",
+         values="out_quantity=2")
+    step(store, name, "agree_example", example="ours")
+
+    report = reading.state(store, name, conn)
+    assert report["empty"] is False
+    assert "nothing_declared" not in [h["kind"] for h in report["holes"]]
+    [ours] = report["examples"]
+    assert ours["passed"] is True, ours
+    assert report["sealable"] is True
+    # A module pinning only core and declaring nothing is still empty.
+    step(store, "@demo/bare", "start", title="Bare",
+         description="A module that declares nothing yet.")
+    assert reading.state(store, "@demo/bare", conn)["empty"] is True
+    studio.apply(store, name, "discard", {})
+    studio.apply(store, "@demo/bare", "discard", {})
+
+
 def test_a_module_on_the_library_points_at_one_party_and_one_item(store, rental):
     name, report, out = rental
     assert [h for h in report["holes"] if h["blocking"]] == []

@@ -38,6 +38,7 @@ sys.path.insert(0, str(ROOT / "components" / "seal"))
 from compile import _covered, plan, tables  # noqa: E402
 from components.modules import diff as diff_read  # noqa: E402
 from components.modules.check import check  # noqa: E402
+from components.modules.store import APPLICATION  # noqa: E402
 from components.modules.roles import _above, _bindings, _fills  # noqa: E402
 from components.refusal import Refusal  # noqa: E402
 from components import standard  # noqa: E402
@@ -407,6 +408,26 @@ def with_rows_of(map_):
         return set()
 
 
+# The one module every draft pins whatever it is about (`studio.draft`).
+CORE = "@uniti/core"
+
+
+def composes(store, name, document):
+    """Whether the draft is an application made of the modules it pins.
+
+    An application is a business's composition: the modules it pins, and its
+    own examples of what their numbers must come to for that business
+    (DESIGN_NOTES.md §15.2). It may declare nothing of its own, and is a
+    version all the same: what it holds is the choice of modules, and the
+    examples that check them.
+    """
+    try:
+        kind = store.kind(name)
+    except Refusal:
+        return False
+    return kind == APPLICATION and any(pinned != CORE for pinned, _ in store.imports(document))
+
+
 def holes(store, name, document, found):
     """Every question this draft is standing in, the blocking ones first.
 
@@ -428,7 +449,7 @@ def holes(store, name, document, found):
 
     own_classes = document.get("classes") or {}
     own_slots = document.get("slots") or {}
-    if not own_classes:
+    if not own_classes and not composes(store, name, document):
         out.append(_hole("nothing_declared", name, blocking=False,
                          because=OPEN["nothing_declared"],
                          step={"op": "add_class", "args": {}, "choose": "class",
@@ -807,8 +828,11 @@ def state(store, name, conn=None):
         {"document": document, "examples": examples_of(store, name)}, name)
     # Nothing to freeze: a new module that declares nothing of its own, or a
     # revision that changes nothing. Not a refusal — nothing is wrong with it —
-    # but not a version either.
-    empty = not (own_classes or own_slots or document.get("enums"))         and (revises is None or not since)
+    # but not a version either. An application made of the modules it pins is
+    # not empty: the composition is what it holds.
+    empty = not (own_classes or own_slots or document.get("enums")
+                 or composes(store, name, document)) \
+        and (revises is None or not since)
     return {
         "name": name,
         "title": document.get("title"),

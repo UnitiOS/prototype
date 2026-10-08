@@ -403,7 +403,9 @@ def kind_open(store, module, business=None):
     if kind == "module":
         return "It is a community module: you help its author."
     if kind == "application":
-        return f"It is an application of the business {owner}: you help its composer."
+        return (f"It is an application of the business {owner}: you help its composer. "
+                "It may declare nothing of its own: its examples can check the tables "
+                "of the modules it pins.")
     if kind == "core":
         return "It is core, which its keepers write by hand."
     if module.split("/", 1)[0] == LIBRARY_SCOPE:
