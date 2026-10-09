@@ -1,6 +1,6 @@
 """Who may seal under a name: the owners of it, kept in the kernel.
 
-What has to hold (DESIGN_NOTES.md §15.4, PEMILIK_NAMA.md):
+What has to hold (DESIGN_NOTES.md §15.4, archived/PEMILIK_NAMA.md):
 
     the first to seal        under a name nobody owns becomes its owner, in
     owns the name            the seal's own intent

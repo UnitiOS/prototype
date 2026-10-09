@@ -20,9 +20,9 @@
 > - **§15 ditambahkan 6 Oktober 2026**, sesudah uji lingkungan kosong: empat
 >   jenis modul, peran pengguna, kepemilikan, dan kernel per usaha. Ia
 >   menggantikan tiga lapis di §4.3 dan arti **aplikasi** di §14.
-> - **Beda dari `REFACTOR_P2.md`**, yang merupakan dokumen kerja sementara dan
->   dihapus setelah refactoring selesai. Yang ini hidup lebih lama karena isinya
->   tentang bentuk sistemnya, bukan tentang urutan pengerjaannya.
+> - **Beda dari `P2.md`**, yang mencatat perjalanan P2: tujuan, tahap demi
+>   tahap, masalah, dan arah. Yang ini tentang bentuk sistemnya, bukan tentang
+>   urutan pengerjaannya. Dokumen kerja setiap tahap ada di `archived/`.
 
 ---
 
@@ -842,11 +842,11 @@ layer, upper ontology.
 
 > **Diputuskan pemilik pada 6 Oktober 2026.** Pustaka umum (§15.2), larangan
 > menurunkan kelas milik modul lain (§15.4), dan pengelompokan satu catatan
-> lebih jauh di compiler **[dibangun]** hari itu juga (`PUSTAKA_UMUM.md`);
+> lebih jauh di compiler **[dibangun]** hari itu juga (`archived/PUSTAKA_UMUM.md`);
 > aplikasi sebagai jenis tersendiri yang terikat ke kernel usahanya juga
-> **[dibangun]** (`APLIKASI_USAHA.md`), begitu pula aturan pemilik nama
-> (§15.4, `PEMILIK_NAMA.md`); sisanya belum. Bagian ini lahir
-> dari uji lingkungan kosong (`UJI_LINGKUNGAN_KOSONG.md`). Di langkah 3 modul
+> **[dibangun]** (`archived/APLIKASI_USAHA.md`), begitu pula aturan pemilik nama
+> (§15.4, `archived/PEMILIK_NAMA.md`); sisanya belum. Bagian ini lahir
+> dari uji lingkungan kosong (`archived/UJI_LINGKUNGAN_KOSONG.md`). Di langkah 3 modul
 > jaminan keluar terputus dari modul sewa: ia membuat "pelanggan" sendiri dan
 > tidak punya tempat untuk menempel ke penyewaan. Analisanya menunjukkan bahwa
 > penyebab terbesarnya bukan agent, melainkan lapisan yang belum ada. Bagian
@@ -991,7 +991,7 @@ Yang sudah ada di kode hari ini ✓:
 - Uji lingkungan kosong berjalan di database sendiri (`uniti_blank`), membaca
   toko modul yang sama.
 
-Dibangun 6 Oktober 2026 ✓ (`components/business`, `APLIKASI_USAHA.md`):
+Dibangun 6 Oktober 2026 ✓ (`components/business`, `archived/APLIKASI_USAHA.md`):
 - jenis modul di berkas keterangan (`kind`, dan `business` untuk aplikasi);
 - kernel menyatakan sekali milik usaha mana;
 - aplikasi hanya masuk ke kernel usahanya, tidak bisa disematkan, dan tidak
@@ -1000,7 +1000,7 @@ Dibangun 6 Oktober 2026 ✓ (`components/business`, `APLIKASI_USAHA.md`):
   dengan tanggal mulai, dan formulir hanya mencatat lewat versi yang
   terpasang untuk hari itu.
 
-Dibangun 6 Oktober 2026 ✓ (`components/owners`, `PEMILIK_NAMA.md`): pemilik
+Dibangun 6 Oktober 2026 ✓ (`components/owners`, `archived/PEMILIK_NAMA.md`): pemilik
 nama dicatat di kernel tempat versi dibekukan. Sampai kernel Uniti ada,
 setiap kernel menjaga nama sendiri; untuk koleksi bersama yang berlaku adalah
 kernel komunitas.

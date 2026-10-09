@@ -1,6 +1,6 @@
 """One business, one kernel: whose a kernel is, and what it has installed.
 
-What has to hold (DESIGN_NOTES.md §15, APLIKASI_USAHA.md):
+What has to hold (DESIGN_NOTES.md §15, archived/APLIKASI_USAHA.md):
 
     a kernel says once     it belongs to one business; saying so again for
     whose it is            the same one writes nothing, for another is refused

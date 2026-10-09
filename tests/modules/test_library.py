@@ -18,7 +18,7 @@ What has to hold, and what is asserted here:
                      apart; two records away is refused as not possible yet
 
 The module built here is a rental with a deposit: the shape the empty-store
-test (UJI_LINGKUNGAN_KOSONG.md) could not build, because nothing said who a
+test (archived/UJI_LINGKUNGAN_KOSONG.md) could not build, because nothing said who a
 customer was or what one rental is.
 """
 
