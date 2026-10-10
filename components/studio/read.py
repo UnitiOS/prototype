@@ -39,7 +39,9 @@ from compile import _covered, plan, tables  # noqa: E402
 from components.modules import diff as diff_read  # noqa: E402
 from components.modules.check import check  # noqa: E402
 from components.modules.store import APPLICATION  # noqa: E402
-from components.modules.roles import _above, _bindings, _fills  # noqa: E402
+from components.modules.roles import (  # noqa: E402
+    NOT_TAUGHT, _above, _bindings, _fills, taught,
+)
 from components.refusal import Refusal  # noqa: E402
 from components import standard  # noqa: E402
 from components.examples import examples as business  # noqa: E402
@@ -389,7 +391,7 @@ def _carriers(store, document):
         carried = [s for c in reach for s in (classes[c].get("slots") or [])]
         if any((slots.get(s) or {}).get("designates_type") for s in carried):
             out.append(role)
-    return sorted(out)
+    return taught(sorted(out))
 
 
 def with_rows_of(map_):
@@ -547,7 +549,7 @@ def steps(store, name, document):
         "own_enum": sorted(document.get("enums") or {}),
         "class": sorted(classes),
         "slot": sorted(slots),
-        "role": sorted(c for c, b in classes.items() if b.get("abstract")),
+        "role": taught(sorted(c for c, b in classes.items() if b.get("abstract"))),
         "binding": sorted(s for s, b in slots.items() if b.get("abstract")),
         "range": ranges(store, document),
         "pin": sorted(f"{n}@{v['version']}" for n in store.names()
@@ -599,6 +601,9 @@ def _roles_of(store, document):
                                                 b["name"]) or [None])[0]
                              for b in bindings},
             })
+        # Not offered to a new class, so in sight only where one fills it.
+        if role in NOT_TAUGHT and not filled:
+            continue
         out.append({"name": role, "module": classes[role]["module"],
                     "description": classes[role].get("description") or "",
                     "bindings": bindings, "filled_by": filled})

@@ -50,7 +50,7 @@ sys.path.insert(0, str(ROOT / "components" / "compiler"))
 sys.path.insert(0, str(ROOT / "components" / "generator"))
 
 from components.examples import examples as business  # noqa: E402
-from components.modules.roles import _above  # noqa: E402
+from components.modules.roles import _above, taught  # noqa: E402
 from components.modules.store import kind_of  # noqa: E402
 from components.refusal import Refusal, Repair  # noqa: E402
 from components import standard  # noqa: E402
@@ -1034,7 +1034,7 @@ def _fill_role(store, name, document, args):
             expected="a role — a class declared abstract, carrying bindings",
             got=f"{role!r}",
             repairs=[Repair("claim a role in sight",
-                            options=_roles_in_sight(store, document)),
+                            options=taught(_roles_in_sight(store, document))),
                      Repair("an ordinary class is not claimed but inherited",
                             options=["set_class"])],
         )

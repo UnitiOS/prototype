@@ -86,8 +86,8 @@ PROCEDURE = (
     "Reuse what is there: pin the sealed module that already records it and "
     "point at its classes with slots ranging over them; never declare one "
     "again under another name, nor make a class a kind of one.",
-    "Fill the shared roles: a class that is a kind of thing a role names "
-    "fills that role and binds its slots, so other modules can read it.",
+    "Fill the library's roles: a class that is a kind of thing one names "
+    "fills it and binds its slots, so other modules can find it.",
     "Declare only what is missing, to this standard.",
     "Record the examples the person agreed to.",
     "Write the rules that compute, last, and hold them to the examples.",

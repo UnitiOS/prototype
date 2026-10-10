@@ -53,6 +53,19 @@ WHERE u.predicate_id = (
 GROUP BY 1
 """
 
+# Core's roles no new module is asked to fill (ECOSYSTEM_PLAN.md, step 0).
+# Nothing reads `Event`'s `moment`, which the recording standard's time
+# meaning already says of every date, and no module an agent built has ever
+# filled `Flow`. Both stay in core, and every module sealed under them is read
+# and totalled as before; they are only no longer offered or taught, so that
+# new modules are not built on what core v3 may remove.
+NOT_TAUGHT = ("Event", "Flow")
+
+
+def taught(roles):
+    """The roles of `roles` a new module is offered, in their order."""
+    return [r for r in roles if r not in NOT_TAUGHT]
+
 
 def _pin(name, version):
     return {"name": name, "version": version}
@@ -352,4 +365,4 @@ def fit(store, name, version, against, *, conn=None):
     }
 
 
-__all__ = ["roles", "fit"]
+__all__ = ["NOT_TAUGHT", "roles", "fit", "taught"]

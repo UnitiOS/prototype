@@ -468,7 +468,9 @@ def test_every_step_is_performed_and_offered(world):
     by_op = {s["op"]: s for s in offered}
     fills = {t["name"]: t for t in by_op["fill_role"]["takes"]}
     assert fills["class"]["options"] == ["Movement"]
-    assert "Flow" in fills["role"]["options"] and "Movement" not in fills["role"]["options"]
+    assert "Resource" in fills["role"]["options"] and "Movement" not in fills["role"]["options"]
+    # Core's retired roles are not offered, though this draft's Movement fills one.
+    assert not {"Event", "Flow"} & set(fills["role"]["options"])
     binds = {t["name"]: t for t in by_op["bind"]["takes"]}
     assert binds["binding"]["options"] == ["affects", "amount", "moment"]
     assert {t["name"]: t for t in by_op["set_slot"]["takes"]}["field"]["options"] \

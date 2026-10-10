@@ -42,7 +42,7 @@ requests:
               args: {class: Level, description: One row per ingredient anything has moved for.}
             - {op: add_slot, args: {slot: level_ingredient, range: Ingredient, description: The ingredient this row is about.}}
             - {op: attach, args: {class: Level, slot: level_ingredient}}
-            - {op: add_slot, args: {slot: level_on_hand, range: decimal, description: Every flow of this ingredient added up., unit: the unit of the ingredient, direction: level}}
+            - {op: add_slot, args: {slot: level_on_hand, range: decimal, description: Every movement of this ingredient added up., unit: the unit of the ingredient, direction: level}}
             - {op: attach, args: {class: Level, slot: level_on_hand}}
             - {op: add_slot, args: {slot: level_reorder, range: decimal, description: The level somebody set for the ingredient., unit: the unit of the ingredient, direction: level}}
             - {op: attach, args: {class: Level, slot: level_reorder}}
@@ -50,7 +50,7 @@ requests:
             - {op: attach, args: {class: Level, slot: level_headroom}}
             # Ahead of itself: a rule before any example the person agreed to.
             # The system refuses it and says what comes first.
-            - {op: aggregate, args: {class: Level, column: level_on_hand, over: Flow, sum: amount, by: level_ingredient=affects}}
+            - {op: aggregate, args: {class: Level, column: level_on_hand, over: StockMovement, sum: movement_quantity, by: level_ingredient=movement_ingredient}}
       - tool: do
         args:
           module: "@rehearsal/levels"
@@ -99,7 +99,7 @@ requests:
         args:
           module: "@rehearsal/levels"
           steps:
-            - {op: aggregate, args: {class: Level, column: level_on_hand, over: Flow, sum: amount, by: level_ingredient=affects}}
+            - {op: aggregate, args: {class: Level, column: level_on_hand, over: StockMovement, sum: movement_quantity, by: level_ingredient=movement_ingredient}}
             - {op: parameter, args: {class: Level, column: level_reorder, of: level_ingredient, slot: ingredient_reorder_level}}
             # The mistake the composition experiment's authors made: names
             # written bare. The step takes it; the next read says how to write it.

@@ -38,6 +38,7 @@ sys.path.insert(0, str(ROOT / "components" / "kernel"))
 from components.agent import guide as guide_read  # noqa: E402
 from components.examples.examples import render as render_examples  # noqa: E402
 from components.modules import catalogue as catalogue_read  # noqa: E402
+from components.modules.roles import NOT_TAUGHT, taught  # noqa: E402
 from components.refusal import Refusal  # noqa: E402
 from components.studio import draft as studio  # noqa: E402
 from components.studio import read as reading  # noqa: E402
@@ -245,7 +246,7 @@ def catalogue(bench, text="", kind="", fills="", module=""):
     if not entries:
         return ("Nothing matches. The store holds modules "
                 + ", ".join(found["modules"]) + "; roles "
-                + ", ".join(found["roles"]) + ".")
+                + ", ".join(taught(found["roles"])) + ".")
     shown = SHOWN * max(1, len(names))
     lines = [f"{len(entries)} found."]
     for entry in entries[:shown]:
@@ -494,6 +495,11 @@ def _entry(entry):
         filled = ", ".join(f"{f['class']} ({f['module']['name']})"
                            for f in entry["filled_by"]) or "nothing"
         head = f"role {entry['name']} ({pin}): binds {bindings}; filled by {filled}"
+        if entry["name"] in NOT_TAUGHT:
+            # Found, so what was sealed under it still reads; not taught.
+            head = (f"role {entry['name']} ({pin}), kept for the modules sealed under "
+                    f"it: fill no new class with it; binds {bindings}; filled by {filled}")
+            about = ""
     elif entry["kind"] == "class":
         fills = f", fills {', '.join(entry['fills'])}" if entry["fills"] else ""
         statable = "" if entry["statable"] else ", cannot be stated"

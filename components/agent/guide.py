@@ -36,6 +36,7 @@ from components.examples.examples import (  # noqa: E402
     COMPUTED, EXAMPLE_KEYS, EXPECT_KEYS, RECORD_KEYS,
 )
 from components.modules import catalogue as catalogue_read  # noqa: E402
+from components.modules.roles import NOT_TAUGHT  # noqa: E402
 from components.modules.store import MANIFEST  # noqa: E402
 from components.refusal import CODES, Refusal  # noqa: E402
 from components import standard  # noqa: E402
@@ -133,6 +134,9 @@ then every class filling it counts — only when that is truly meant. When two
 modules record the same event, totalling the role counts it twice; name the
 class instead. An application says explicitly what it counts from which
 module.
+
+Core's {" and ".join(f"`{role}`" for role in NOT_TAUGHT)} stay only for modules sealed under them:
+fill neither directly. A date says its moment by its `time_meaning`.
 
 What the system cannot do yet: total only the rows whose value meets a
 condition (`where` narrows by the class a slot points at, never by a value),
@@ -305,7 +309,8 @@ def _roles(store):
     found = catalogue_read.find(catalogue_read.catalogue(store), kind="role")["entries"]
     lines = ["The roles the store offers. A class fills a role with `fill_role`,",
              "then names the slot filling each binding with `bind`."]
-    for role in found:
+    kept = [r for r in found if r["name"] in NOT_TAUGHT]
+    for role in (r for r in found if r["name"] not in NOT_TAUGHT):
         lines.append("")
         pin = f"{role['module']['name']}@{role['module']['version']}"
         above = f", a kind of {', '.join(role['fills'])}" if role["fills"] else ""
@@ -318,6 +323,10 @@ def _roles(store):
         filled = [f"{f['class']} ({f['module']['name']}@{f['module']['version']})"
                   for f in role["filled_by"]]
         lines.append(f"    filled by: {', '.join(filled) or 'nothing yet'}")
+    if kept:
+        lines += ["", "Kept only for the modules sealed under them, and filled by no new "
+                  "class: " + ", ".join(f"{r['name']} ({r['module']['name']}@"
+                                        f"{r['module']['version']})" for r in kept) + "."]
     return "\n".join(lines)
 
 

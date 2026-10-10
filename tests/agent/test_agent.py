@@ -28,6 +28,7 @@ What has to hold with no model anywhere:
 """
 
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -49,6 +50,7 @@ from components.agent import rehearsal, tools  # noqa: E402
 from components.agent.session import Session, Stopped, person_agrees  # noqa: E402
 from components.agent.__main__ import main as agent_main  # noqa: E402
 from components.examples import examples as business  # noqa: E402
+from components.modules.roles import NOT_TAUGHT  # noqa: E402
 from components.refusal import CODES  # noqa: E402
 from components.studio import draft as studio  # noqa: E402
 from components.studio.read import ANSWERS, OPEN  # noqa: E402
@@ -272,7 +274,10 @@ def test_the_tools_answer_in_text_short_enough_to_read_every_turn(bench):
             "over Flow, sum amount, by level_thing=affects") in looked
     assert len(looked) < 2500
     around = tools.look(bench, name, "around")
-    assert "Ingredient (" in around and "Flow: binds amount, affects, moment" in around
+    assert "Ingredient (" in around and "Resource: binds no binding" in around
+    # A role no new module is asked to fill is not in sight, though the
+    # draft totals over it: nothing here fills it.
+    assert "  Flow:" not in around and "  Event:" not in around
     offered = tools.options(bench, name, "parameter")
     assert "of (a slot of the class named), depends on class" in offered
     assert len(offered) < 3000
@@ -282,7 +287,11 @@ def test_the_tools_answer_in_text_short_enough_to_read_every_turn(bench):
     both = tools.options(bench, name, "parameter, expression")
     assert both == offered + "\n" + tools.options(bench, name, "expression")
     found = tools.catalogue(bench, kind="role")
-    assert "role Flow (@uniti/core@v2): binds amount, affects, moment" in found
+    # Still found, so a module sealed under it can still be read and totalled,
+    # but said to be no role for new work, and without the text teaching it.
+    assert ("role Flow (@uniti/core@v2), kept for the modules sealed under it: fill "
+            "no new class with it; binds amount, affects, moment" in found)
+    assert "the role that makes a balance possible" not in found
     assert "Nothing matches" in tools.catalogue(bench, text="zzz-nothing")
     # A pinned version reads as its module, and several modules go in one call.
     assert "role Transaction (@uniti/transaction@v1)" in found
@@ -387,8 +396,53 @@ def test_the_guide_names_everything_the_system_has(world):
     for kind in business.COMPUTED:
         assert f"`{kind}`" in everything, kind
     assert SYNTAX in everything
-    assert "Flow (@uniti/core@v2, a kind of Event, Thing)" in everything
+    # Every role in the store: those a new module fills with what they bind,
+    # and core's retired ones named once, as kept and not to be filled.
+    assert "Transaction (@uniti/transaction@v1, a kind of Event, Thing)" in everything
+    assert "binding transaction_counterparty: Party" in everything
+    assert "Resource (@uniti/core@v2, a kind of Thing)" in everything
+    assert ("Kept only for the modules sealed under them, and filled by no new "
+            "class: Event (@uniti/core@v2), Flow (@uniti/core@v2).") in everything
     assert "There is no topic 'nope'" in guide_read.section("nope")
+
+
+def test_no_new_module_is_asked_to_fill_what_core_v3_may_remove(bench, world):
+    """ECOSYSTEM_PLAN.md step 0: `Flow` and `Event`'s `moment` are no longer
+    taught or offered, so nothing is built on them that core v3 may remove.
+    Core is unchanged, and what was sealed under them still reads."""
+    retired = NOT_TAUGHT
+    text = guide_read.instructions()
+    # Said once, and as what not to do; a date says its moment otherwise.
+    assert ("Core's `Event` and `Flow` stay only for modules sealed under them: "
+            "fill neither directly.") in " ".join(text.split())
+    assert "`time_meaning`" in text
+    assert "Fill the shared roles" not in text and "Fill the library's roles" in text
+    roles = guide_read.section("roles", world)
+    for role in retired:
+        assert f"\n{role} (" not in roles and f"binding {role}" not in roles
+    assert "binding amount" not in roles and "binding affects" not in roles
+
+    # Neither is offered where a role is chosen, and choosing one still works:
+    # a module sealed under it is revised as before.
+    name = "@probe/retired"
+    _planned(bench.store, name)
+    tools.do(bench, name, [
+        step("start", title="Retired", description="D."),
+        step("pin", module=f"{dev_modules.INVENTORY}@v3"),
+        step("add_class", **{"class": "Gift", "description": "A gift."}),
+        step("add_slot", slot="gift_note", description="What it says."),
+        step("attach", **{"class": "Gift", "slot": "gift_note"})])
+    offered = tools.options(bench, name, "fill_role")
+    looked = tools.look(bench, name)
+    for role in retired:
+        assert not re.search(rf"one of: [^\n]*\b{role}\b", offered + looked), role
+    assert re.search(r"one of: [^\n]*\bResource\b", offered + looked)
+    said = tools.do(bench, name, [step("fill_role", **{"class": "Gift", "role": "Nope"})])
+    assert "[not_a_role]" in said and "Resource" in said
+    assert not re.search(r"one of: [^\n]*\bFlow\b", said)
+    said = tools.do(bench, name, [step("fill_role", **{"class": "Gift", "role": "Flow"})])
+    assert "1. done: fill_role" in said
+    tools.do(bench, name, [step("discard")])
 
 
 def test_the_instructions_are_what_every_build_needs_and_a_list_of_the_rest():
@@ -403,7 +457,7 @@ def test_the_instructions_are_what_every_build_needs_and_a_list_of_the_rest():
     # Short enough to sit at the top of every call: about five and a half
     # thousand tokens, the recording standard and the kinds of module
     # included, which every build follows.
-    assert len(text) < 22000
+    assert len(text) < 22500
 
 
 # ---- a proposal is checked -------------------------------------------------
@@ -524,6 +578,17 @@ def test_a_scripted_builder_builds_an_application_a_person_then_seals(bench, wor
     assert "sent back: That proposal cannot go to the person: it is not ready" in lines[2]
     assert (ready.output.agree, ready.output.seal) == ([], True)
     assert ready.shown.endswith("Ready to be sealed as v1.")
+    # Nothing it was shown asks for a role core v3 may remove: neither is
+    # offered as a choice nor taught, and the total names the class it counts.
+    shown = guide_read.instructions() + "\n" + "\n".join(lines)
+    for role in NOT_TAUGHT:
+        assert not re.search(rf"one of: [^\n]*\b{role}\b", shown), role
+        assert not re.search(rf"over[=:] ?{role}\b", shown), role
+        for line in shown.splitlines():
+            if f"role {role} (" in line:
+                assert "fill no new class with it" in line, line
+    assert "binding moment" not in shown and "bind moment" not in shown
+    assert "over=StockMovement sum=movement_quantity" in lines[2]
 
     # The conversation is beside the draft: each request, how it ended, and
     # what the accountant worked out.
