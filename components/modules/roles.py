@@ -72,10 +72,10 @@ def _pin(name, version):
 
 
 def _closure_documents(store, name, version):
-    """Every sealed document this version can see, with where each came from."""
+    """Every sealed document this version can see, with where each came from,
+    under the names the version reads them by (`Store.composition`)."""
     classes, slots = {}, {}
-    for dep in store.closure(name, version):
-        document = store.document(*dep)
+    for dep, document in store.version_composition(name, version):
         for class_name, c in (document.get("classes") or {}).items():
             classes[class_name] = {**(c or {}), "module": _pin(*dep)}
         for slot_name, s in (document.get("slots") or {}).items():

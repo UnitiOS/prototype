@@ -41,7 +41,7 @@ import type { Showing } from "./graph";
 import {
   CHANGE_SAID, HOLDS, askedOnce, changedOf, checksOf, chooseLanguage, exampleOf, fieldLabel,
   firstSentence, holds, holdsSaid, languageSaid, languagesOf, mapOf, marksOf, personLanguage,
-  pinText, snake, spoken, turnsAbout, wordsOf,
+  nameShown, pinText, snake, spoken, turnsAbout, wordsOf,
 } from "./studioMap";
 import { Language, useSay } from "./words";
 import type { StudioPick } from "./route";
@@ -1245,7 +1245,7 @@ function Answer({ step, run }: { step: Step; run: Run }) {
         <select value={value} onChange={(e) => setValue(e.target.value)}>
           <option value="">choose…</option>
           {step.options.map((option) => (
-            <option key={option} value={option}>{option}</option>
+            <option key={option} value={option}>{nameShown(option)}</option>
           ))}
         </select>
       ) : long ? (
@@ -1276,7 +1276,7 @@ function Pick(
       <select value={value} onChange={(e) => setValue(e.target.value)}>
         <option value="">{label}…</option>
         {options.map((option) => (
-          <option key={option} value={option}>{option}</option>
+          <option key={option} value={option}>{nameShown(option)}</option>
         ))}
       </select>
       <button className="button" type="submit" disabled={!value}>Do it</button>
@@ -1377,7 +1377,7 @@ function AddField(
         <select value={range} onChange={(e) => setRange(e.target.value)}>
           {offered.map((option) => (
             <option key={option} value={option}>
-              {HOLDS[option] ? `${HOLDS[option]}` : `a ${option}`}
+              {HOLDS[option] ? `${HOLDS[option]}` : `a ${nameShown(option)}`}
             </option>
           ))}
         </select>
@@ -1528,7 +1528,7 @@ function StepForm(
                 onChange={(e) => set(takes.name, e.target.value)}>
                 <option value="">choose…</option>
                 {options.map((option) => (
-                  <option key={option} value={option}>{option}</option>
+                  <option key={option} value={option}>{nameShown(option)}</option>
                 ))}
               </select>
             ) : (

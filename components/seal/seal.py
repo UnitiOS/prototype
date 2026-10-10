@@ -88,6 +88,8 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "components" / "kernel"))
 sys.path.insert(0, str(ROOT / "components"))
 
+from components.modules import compose  # noqa: E402
+from components.modules.store import SHARED  # noqa: E402
 from components.refusal import Refusal, Repair  # noqa: E402
 from ontology.resolve import load_versions  # noqa: E402
 from perform import connect, perform  # noqa: E402
@@ -580,66 +582,95 @@ def _one_version_per_module(store, draft, name):
 _KINDS = (("classes", "class"), ("slots", "slot"), ("enums", "enum"))
 
 
-def name_clashes(store, draft, name):
-    """Every class, slot or enum name two modules in one closure both declare.
+def composed(store, draft, module=None):
+    """The draft as the store composes it: its own names plain, every name it
+    takes from a module it pins resolved to that module's qualified one
+    (components/modules/compose.py). Every check below reads this, so what is
+    checked is what is sealed. Two pinned modules sharing a tag stop it here,
+    because nothing below could tell their names apart."""
+    return store.composition(draft, module)[-1][1]
 
-    LinkML puts a closure's names in one space and merges a second declaration
-    over the first without a word: the `Warehouse` one module declared and the
-    `Warehouse` another declared become whichever was read last, and every rule
-    naming it reads the wrong one. Nothing downstream can tell. So it is
-    refused here, where both declarations are in sight.
 
-    The draft's own names are in the closure too. A clash between the draft
-    and a pin is answered by renaming in the draft; one between two pins by
-    not pinning both as they are.
+def name_refusals(store, draft, name, module=None):
+    """Every name this draft declares or mentions that cannot stand as written.
 
+    The store composes modules under their own tags, so two modules it pins
+    may each declare a `Rental` and both are read. What is still refused:
+
+      name_reserved   a name core or the library declares, or one with `__`
+                      in it, which is how a composition marks a module's
+                      name. Core and the library declare their own.
+      name_clash      a name the draft declares that a module it pins also
+                      declares: `Rental` in the draft would read as either.
+      name_ambiguous  a plain name the draft mentions that two modules it
+                      pins both declare: which one is meant is the author's
+                      to say.
+
+    `module` is the module the draft belongs to, when it belongs to one.
     A generator, for the reason `uri_refusals` is one.
     """
-    owners = {}
-
-    def declare(owner, document):
+    shared = module is not None and _kind_of(store, module) in SHARED
+    reserved = set() if shared else store.reserved()
+    theirs = {}
+    for dep in store.reached(draft):
+        held = store.document(*dep)
         for key, kind in _KINDS:
-            for term in (document.get(key) or {}):
-                held = owners.setdefault((kind, str(term)), [])
-                # One module at two versions is `two_versions_of_a_module`'s
-                # to refuse; counting it here would say it once per name.
-                if not any(o == owner or (o and owner and o[0] == owner[0])
-                           for o in held):
-                    held.append(owner)
+            for term in (held.get(key) or {}):
+                theirs.setdefault((kind, str(term)), dep)
 
-    declare(None, draft)
-    for pin in store.imports(draft):
-        for dep in store.closure(*pin):
-            declare(dep, store.document(*dep))
+    for key, kind in _KINDS:
+        for term in (draft.get(key) or {}):
+            term = str(term)
+            if not shared and (term in reserved or compose.SEP in term):
+                yield DraftError(
+                    "name_reserved",
+                    where=f"{name}: {kind} {term}",
+                    expected=f"a {kind} name of this module's own",
+                    got=(f"{term}, which core or the library declares"
+                         if term in reserved else
+                         f"{term}, with `{compose.SEP}` in it, which marks the "
+                         f"module a name comes from"),
+                    repairs=[Repair(f"rename the {kind}", where=name,
+                                    options=[f"rename_{kind}"] if kind != "enum" else []),
+                             Repair("where the library's is meant, use it: point "
+                                    "at it, or fill its role",
+                                    options=["add_slot", "fill_role"])],
+                )
+                continue
+            if (kind, term) in theirs:
+                pin = theirs[(kind, term)]
+                yield DraftError(
+                    "name_clash",
+                    where=f"{name}: {kind} {term}",
+                    expected=f"a {kind} name no module this draft pins declares",
+                    got=f"{term}, which this draft and {pin[0]}@{pin[1]} both declare",
+                    repairs=[Repair(f"rename the {kind} this draft declares; the "
+                                    f"module you pin keeps its name",
+                                    where=name,
+                                    options=[f"rename_{kind}"] if kind != "enum" else [])],
+                )
 
-    pins = [f"{n}@{v}" for n, v in store.imports(draft)]
-    for (kind, term), held in owners.items():
-        if len(held) < 2:
-            continue
-        said = ["this draft" if o is None else f"{o[0]}@{o[1]}" for o in held]
-        if None in held:
-            repairs = [Repair(f"rename the {kind} this draft declares; the "
-                              f"module you pin keeps its name",
-                              where=name,
-                              options=[f"rename_{kind}"] if kind != "enum" else [])]
-        else:
-            repairs = [Repair(f"two modules you pin both declare the {kind} "
-                              f"{term}, so they cannot be read together as they "
-                              f"are. Drop one pin, or seal a version of one that "
-                              f"renames it and pin that",
-                              where=name, options=pins)]
+    for term, could in compose.ambiguous(draft, store.known(draft)):
         yield DraftError(
-            "name_clash",
-            where=f"{name}: {kind} {term}",
-            expected=f"one module in the closure declaring the {kind} {term}",
-            got=f"{len(held)}: {', '.join(said)}",
-            repairs=repairs,
+            "name_ambiguous",
+            where=f"{name}: {term}",
+            expected=f"to know which {term} is meant",
+            got=f"{len(could)} modules this draft pins declare it: {', '.join(could)}",
+            repairs=[Repair(f"say which one, by its full name", where=name,
+                            options=could)],
         )
 
 
-def _no_clash(store, draft, name):
-    """Raise the first clash. The rule itself is in `name_clashes`."""
-    for refusal in name_clashes(store, draft, name):
+def _kind_of(store, module):
+    try:
+        return store.kind(module)
+    except Refusal:
+        return "module"
+
+
+def _names_hold(store, draft, name, module=None):
+    """Raise the first. The rule itself is in `name_refusals`."""
+    for refusal in name_refusals(store, draft, name, module):
         raise refusal
 
 
@@ -655,14 +686,16 @@ def kind_refusals(store, draft, name):
     points at another module's class with a slot instead, and the thing stays
     one thing (DESIGN_NOTES.md §15.4).
 
-    A generator, for the reason `name_clashes` is one.
+    Read on the draft as composed, so `is_a` names a pinned class as the
+    store calls it. A generator, for the reason `name_refusals` is one.
     """
+    composition = store.composition(draft)
+    draft = composition[-1][1]
     own = draft.get("classes") or {}
     theirs = {}
-    for pin in store.imports(draft):
-        for dep in store.closure(*pin):
-            for term, body in (store.document(*dep).get("classes") or {}).items():
-                theirs.setdefault(str(term), (dep, body or {}))
+    for dep, document in composition[:-1]:
+        for term, body in (document.get("classes") or {}).items():
+            theirs.setdefault(str(term), (dep, body or {}))
     for term, body in own.items():
         body = body or {}
         for above in [body.get("is_a"), *(body.get("mixins") or [])]:
@@ -1006,9 +1039,11 @@ def seal(conn, draft_path, *, actor_id, into=None, sealed_at=None, store=None,
     draft = yaml.safe_load(text) or {}
 
     if store is not None:
+        module = store.module_of(into)
+        draft = composed(store, draft, module)
         _pins_already_sealed(store, draft, sealed_at, draft_path.name)
         _one_version_per_module(store, draft, draft_path.name)
-        _no_clash(store, draft, draft_path.name)
+        _names_hold(store, draft, draft_path.name, module)
         _no_foreign_kind(store, draft, draft_path.name)
     ranges = _slot_ranges(view, draft_path.name)
     for refusal in range_refusals(view, draft, draft_path.name):

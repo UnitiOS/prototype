@@ -11,9 +11,11 @@ worked alone and could not see each other's modules:
     one class name, two       a class fact recorded as the bare name `Item`
     classes                   made one module's items rows of the other's table.
 
-The first is refused where both declarations are in sight. The other two are
-not refused, because nothing is wrong with them: they are recorded under full
-URIs, so they never meet in the log.
+The first is no longer refused: the store reads each module under its own
+tag, `penyewaan__Rental` beside `kasir__Rental` (tests/modules/test_compose.py).
+What is refused is two modules with one tag, which the store could not tell
+apart. The other two are not refused, because nothing is wrong with them: they
+are recorded under full URIs, so they never meet in the log.
 """
 
 import os
@@ -21,6 +23,7 @@ import sys
 from pathlib import Path
 
 import pytest
+import yaml
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -29,6 +32,7 @@ sys.path.insert(0, str(ROOT / "components" / "seal"))
 sys.path.insert(0, str(ROOT / "components" / "generator"))
 
 import dev_modules  # noqa: E402
+from components.modules.store import ModuleError  # noqa: E402
 from components.refusal import Refusal  # noqa: E402
 from components.studio import draft as studio  # noqa: E402
 from components.studio import read as reading  # noqa: E402
@@ -84,29 +88,33 @@ def two(world, conn):
     return sealed
 
 
-# ---- one name, two meanings: refused --------------------------------------
+# ---- one tag, two modules: refused ---------------------------------------
 
-def test_two_pins_declaring_one_class_are_refused_where_both_are_in_sight(world, two):
+def test_two_pins_sharing_a_tag_are_refused_where_both_are_in_sight(world, two):
+    """Two modules that declare one class name are read side by side, each
+    under its tag (tests/modules/test_compose.py). Two whose tags are the same
+    cannot be: `stock__Warehouse` would be either."""
     name = "@probe/both"
     step(world, name, "start", title="Both", description="Pins two stock modules.")
     step(world, name, "pin", module="@alpha/stock@v1")
-    step(world, name, "pin", module="@beta/stock@v1")
+    with pytest.raises(ModuleError) as refused:
+        step(world, name, "pin", module="@beta/stock@v1")
+    assert refused.value.code == "tag_taken"
+    assert list(refused.value.repairs[0].options) == ["@alpha/stock", "@beta/stock"]
+    assert studio.open_draft(world, name)["imports"][-1] == "@alpha/stock@v1"
 
+    # Written in by hand, it is a hole, and the seal says the same.
+    where = studio.path(world, name)
+    document = yaml.safe_load(where.read_text(encoding="utf-8"))
+    document["imports"].append("@beta/stock@v1")
+    where.write_text(yaml.safe_dump(document, sort_keys=False), encoding="utf-8")
     report = reading.state(world, name)
-    clash = [h for h in report["holes"] if h["kind"] == "name_clash"]
-    assert [h["where"] for h in clash] == ["draft.yaml: class Warehouse"]
-    assert clash[0]["blocking"] and not report["sealable"]
-    assert "@alpha/stock@v1" in clash[0]["refusal"]["got"]
-    assert "@beta/stock@v1" in clash[0]["refusal"]["got"]
-    # Neither pin is this draft's to rename, so the answer is which pin.
-    assert clash[0]["step"] is None
-    assert clash[0]["refusal"]["repairs"][0]["options"] == [
-        "@uniti/core@v2", "@alpha/stock@v1", "@beta/stock@v1"]
-
-    with pytest.raises(DraftError) as refused:
-        seal(None, studio.path(world, name), actor_id="probe",
+    [hole] = [h for h in report["holes"] if h["kind"] == "tag_taken"]
+    assert hole["blocking"] and not report["sealable"]
+    with pytest.raises(ModuleError) as refused:
+        seal(None, where, actor_id="probe",
              into=studio.directory(world, name), store=world)
-    assert refused.value.code == "name_clash"
+    assert refused.value.code == "tag_taken"
 
 
 def test_a_draft_naming_what_a_pin_declares_is_asked_to_rename(world, two):

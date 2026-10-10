@@ -107,9 +107,10 @@ def version(store, name, version, registered=None):
     document = store.document(name, version)
     latest = {n: store.versions(n)[-1]["version"] for n in store.names() if store.versions(n)}
 
+    # Under the names this version reads them by: its own plain, what it pins
+    # qualified by each module's tag (`Store.composition`).
     classes, slots = {}, {}
-    for dep_name, dep_version in store.closure(name, version):
-        dep = store.document(dep_name, dep_version)
+    for (dep_name, dep_version), dep in store.version_composition(name, version):
         origin = _pin(dep_name, dep_version)
         for class_name, c in (dep.get("classes") or {}).items():
             c = c or {}
@@ -194,8 +195,7 @@ def class_graph(store, name, version):
     closure = store.closure(name, version)
 
     classes, slots = {}, {}
-    for dep in closure:
-        document = store.document(*dep)
+    for dep, document in store.version_composition(name, version):
         origin = _pin(*dep)
         for class_name, c in (document.get("classes") or {}).items():
             classes[class_name] = {**(c or {}), "module": origin}

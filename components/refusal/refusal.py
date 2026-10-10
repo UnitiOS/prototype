@@ -64,6 +64,9 @@ CODES = {
     "business_on_a_module": "a manifest naming a business on something that is not an application",
     "pins_an_application": "an import of an application, which is one business's own",
     "name_not_the_business": "an application named under a name other than its business's",
+    "tag_taken": "two modules in one closure whose names end alike, so their names cannot be told apart",
+    "name_reserved": "a module declaring a name core or the library declares, or one with `__` in it",
+    "name_ambiguous": "a plain name that more than one module in sight declares",
 
     # ---- the business kernel: whose it is, and what it has installed -------
     "not_a_business_name": "a business named by something other than a lower-case word",
@@ -86,7 +89,7 @@ CODES = {
     "binding_ambiguous": "two or more slots filling one binding of a role",
     "binding_unfilled": "a role claimed and a required binding left unnamed",
     "two_versions_of_a_module": "one closure reaching one module at two versions",
-    "name_clash": "two modules in one closure declaring a class, slot or enum of the same name",
+    "name_clash": "a draft declaring a class, slot or enum of the same name as a module it pins",
     "kind_of_foreign_class": "a class made a kind of a class another module owns, which only a role may be",
     "pin_sealed_later": "a pin to a version sealed after the draft itself",
     "facts_not_a_list": "`annotations.facts` that is not a list",

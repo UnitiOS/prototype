@@ -155,8 +155,8 @@ def _rules_everywhere(store, business=None):
                 continue
             maps[(name, version)] = map_
             origin = {}
-            for dep in store.closure(name, version):
-                for class_name in (store.document(*dep).get("classes") or {}):
+            for dep, document in store.version_composition(name, version):
+                for class_name in (document.get("classes") or {}):
                     origin[class_name] = dep[0]
             found, _ = readers(map_)
             for rule in found:

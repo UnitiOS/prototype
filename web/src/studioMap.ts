@@ -31,10 +31,27 @@ export const holds = (range: string | null) => (range ? HOLDS[range] ?? range : 
 
 export const pinText = (p: Pin) => `${p.name}@${p.version}`;
 
+/** A name as its module wrote it. Read beside other modules, a pinned
+ *  module's names carry its tag, `penyewaan__Rental`; a person is shown
+ *  `Rental`, and the module it came from as a mark of its own. */
+export const plainName = (name: string) =>
+  name.includes("__") ? name.slice(name.lastIndexOf("__") + 2) : name;
+
+/** The tag a composed name carries, or null for a name of one's own. */
+export const tagOf = (name: string): string | null =>
+  name.includes("__") ? name.slice(0, name.lastIndexOf("__")) : null;
+
+/** A name offered in a list: the plain name, and the module's tag as a mark
+ *  after it where it carries one — two `Rental`s are told apart, and the
+ *  value chosen is still the full name. */
+export const nameShown = (name: string): string =>
+  tagOf(name) ? `${plainName(name)} · ${tagOf(name)}` : name;
+
 /** A name as words: `quantity_on_hand` and `QuantityOnHand` are both
- *  "Quantity on hand". Runs of capitals stay as they are ("SKU code"). */
+ *  "Quantity on hand". Runs of capitals stay as they are ("SKU code"). A
+ *  pinned module's tag is not part of what it is called. */
 export function spoken(name: string): string {
-  const words = name
+  const words = plainName(name)
     .replace(/[_\-.]+/g, " ")
     .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
     .replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2")
@@ -130,9 +147,10 @@ export const snake = (name: string) =>
 export function fieldLabel(slot: string, kind: string, title?: string | null): string {
   const written = title?.trim();
   if (written && written !== slot) return written;
-  const lead = `${snake(kind)}_`;
-  const rest = slot.toLowerCase().startsWith(lead) ? slot.slice(lead.length) : slot;
-  return spoken(rest || slot);
+  const own = plainName(slot);
+  const lead = `${snake(plainName(kind))}_`;
+  const rest = own.toLowerCase().startsWith(lead) ? own.slice(lead.length) : own;
+  return spoken(rest || own);
 }
 
 /** The first sentence of what somebody wrote, for a line that has room for one. */

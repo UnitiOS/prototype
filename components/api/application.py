@@ -29,8 +29,9 @@ from components import business  # noqa: E402
 from compile import MapError, plan_for, preview, sql_text, tables  # noqa: E402
 from compile import _REF as EXPRESSION_REFS  # noqa: E402
 from components.modules import read as modules_read  # noqa: E402
+from components.modules.compose import matches  # noqa: E402
 from components.refusal import Repair  # noqa: E402
-from generate import IDENTITY_COLUMN, form, read_map, submit, table_name  # noqa: E402
+from generate import IDENTITY_COLUMN, form, named, read_map, submit, table_name  # noqa: E402
 from generate import _registry, _row_subjects, _type_slot  # noqa: E402
 from resolve import resolve_single  # noqa: E402
 
@@ -45,10 +46,10 @@ def _map(store, name, version):
 
 
 def _origins(store, name, version):
-    """Which module version declares each class and each slot, across the closure."""
+    """Which module version declares each class and each slot, across the
+    closure, under the names the application reads them by."""
     classes, slots = {}, {}
-    for pin in store.closure(name, version):
-        document = store.document(*pin)
+    for pin, document in store.version_composition(name, version):
         origin = {"name": pin[0], "version": pin[1]}
         for class_name in (document.get("classes") or {}):
             classes[class_name] = origin
@@ -96,6 +97,7 @@ def projection(conn, store, name, version, class_name, *, valid_at, as_of):
     of it was written by hand.
     """
     map_ = _map(store, name, version)
+    class_name = named(map_, class_name)
     _, slot_origin = _origins(store, name, version)
     built = preview(conn, map_, class_name, valid_at=valid_at, as_of=as_of)
     plan_ = built["plan"]
@@ -192,6 +194,11 @@ def _standing(conn, subject_id, predicate_uris, by_uri, by_id, *, valid_at, as_o
     }
 
 
+def _column_named(column, names):
+    found = matches(column, names)
+    return found[0] if len(found) == 1 else str(column)
+
+
 def cell(conn, store, name, version, class_name, column, keys, *, valid_at, as_of):
     """What one cell of a table stands on: the statements underneath it.
 
@@ -207,7 +214,12 @@ def cell(conn, store, name, version, class_name, column, keys, *, valid_at, as_o
     rather than hidden.
     """
     map_ = _map(store, name, version)
+    class_name = named(map_, class_name)
     plan_ = plan_for(map_, class_name)
+    # A column and a key, too, by the plain name a person reads them by.
+    names = [c["name"] for c in plan_["columns"]]
+    column = _column_named(column, names)
+    keys = {_column_named(k, names): v for k, v in (keys or {}).items()}
     col = next((c for c in plan_["columns"] if c["name"] == column), None)
     if col is None:
         raise MapError(
@@ -294,6 +306,7 @@ def form_of(conn, store, name, version, class_name, *, valid_at, as_of):
     this form's clocks — so the page can say it rather than leave it implied.
     """
     map_ = _map(store, name, version)
+    class_name = named(map_, class_name)
     built = form(conn, map_, class_name, valid_at=valid_at, as_of=as_of)
     slot_origin = _origins(store, name, version)[1]
     type_slot = _type_slot(map_, class_name)
@@ -338,6 +351,13 @@ def state(conn, store, name, version, class_name, *, subject, values, actor_id,
                                valid_at=valid_from or datetime.now(timezone.utc))
     map_ = _map(store, name, version)
     purpose = store.manifest(name).get("purpose")
+    given = values
+    class_name, values = named(map_, class_name, values)
+    # The answer speaks the caller's names back: `stated` is keyed by what
+    # was sent, whether that was `movement_quantity` or its full name.
+    sent = dict(zip(values, given))
+    if revokes:
+        revokes = named(map_, class_name, revokes)[1]
     type_slot = _type_slot(map_, class_name)
     entered = {name: value for name, value in values.items()
                if value not in (None, "")}
@@ -354,7 +374,7 @@ def state(conn, store, name, version, class_name, *, subject, values, actor_id,
     return {"intent_id": written["intent_id"], "subject_id": written["subject_id"],
             "assertions": len(written["assertions"]),
             "minted": len(written["minted"]),
-            "stated": {k: str(v) for k, v in written["stated"].items()},
+            "stated": {sent.get(k, k): str(v) for k, v in written["stated"].items()},
             "class": class_name, "subject": subject,
             "ontology_version": map_["label"]}
 

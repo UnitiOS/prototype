@@ -378,8 +378,8 @@ evidence, not implementation: none of them is to be copied into `components/`.
 
 | Topic | Direction | Confirmed in |
 |---|---|---|
-| Composition owned by Uniti | The `Store` qualifies names and locks URIs; LinkML never merges names | Step 1 |
-| Reserved names | Core and library names (`Thing`, `Party`, `Item`, `Transaction`, …) stay unqualified and no other module may declare them | Step 1 |
+| Composition owned by Uniti | The `Store` qualifies names and locks URIs; LinkML never merges names | Step 1 (confirmed 10 Oct) |
+| Reserved names | Core and library names (`Thing`, `Party`, `Item`, `Transaction`, …) stay unqualified and no other module may declare them | Step 1 (confirmed 10 Oct) |
 | Facets | Official way to add facts to another module's thing | Step 2 |
 | Own predicates | A `slot_uri` must be in the module's own namespace | Step 3 |
 | Role references | Taught with three rules; narrower roles extracted into community interface modules | Step 4 |
@@ -447,6 +447,29 @@ before any commit. Step 8 may be done at any time.
 - **Done when:** the P3a scenario (§4.3) passes as a real test: both `Rental`s,
   Rudi's own rules intact, example passes, seal succeeds, and URIs are identical
   before and after.
+- **Decided 10 October 2026 (owner):**
+  - **Tag form:** the module's name alone, `-` read as `_`
+    (`@komunitas/penyewaan` → `penyewaan__Rental`, table
+    `p_penyewaan__rental`). Two modules with one tag in a closure are refused
+    (`tag_taken`), at the `pin` step and at the seal.
+  - **One resolution rule** instead of re-sealing: a plain name stands for the
+    one qualified name in sight whose plain part it is; with several, the
+    reader asks "which one?" (`name_ambiguous`). The same rule reads a pinned
+    module, the draft, an example and a form, so versions sealed before step 1
+    keep working unchanged. Studio and the seal keep the qualified name in
+    what they write.
+  - **Reserved names** are computed from the store: every class, slot and enum
+    name any `kind: core` or `kind: library` version declares, plus any name
+    with `__` in it (`name_reserved`). Core and the library may declare their
+    own.
+- **Built (`components/modules/compose.py`, `Store.composition`):** the 22 raw
+  readers were each decided: the closure readers (`roles`, `catalogue`,
+  `health` via `roles`, `read.version`, `read.class_graph`,
+  `api/application._origins`, `seal.kind_refusals`, `studio.draft.seen`) read
+  the composition; the readers of one version's own document (counts, its
+  page's title, diffs between its own versions, `revise`, the imports a
+  version pins, URI registries keyed by full URI) stay on `store.document`,
+  because they never compare a name across modules.
 
 ### Step 2 — Facets
 

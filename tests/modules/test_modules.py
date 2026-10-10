@@ -123,8 +123,9 @@ def test_a_pinned_import_keeps_its_meaning_when_the_module_moves_on(conn, tmp_pa
     # What changed is only that a newer version exists beside the pin.
     pin = next(i for i in after["imports"] if i["name"] == CATALOG)
     assert pin["version"] == "v1" and pin["latest"] == "v2"
+    # Under the catalog's tag, as a version reads what it pins.
     seen = {s["name"] for s in after["slots"]}
-    assert "ingredient_label" in seen and "ingredient_name" not in seen
+    assert "catalog__ingredient_label" in seen and "catalog__ingredient_name" not in seen
 
 
 def test_a_version_sees_what_it_imports_and_says_where_it_came_from(built):
@@ -134,7 +135,8 @@ def test_a_version_sees_what_it_imports_and_says_where_it_came_from(built):
         {"name": INVENTORY, "version": "v2"}]
     by_name = {c["name"]: c for c in detail["classes"]}
     assert by_name["StockMovement"]["from"] == {"name": INVENTORY, "version": "v2"}
-    assert by_name["Ingredient"]["from"] == {"name": CATALOG, "version": "v2"}
+    # Its own names plain; what it pins under that module's tag.
+    assert by_name["catalog__Ingredient"]["from"] == {"name": CATALOG, "version": "v2"}
     assert detail["classes"][0]["from"]["name"] == INVENTORY
 
     # The one thing core holds is the predicate a class fact is stated under,

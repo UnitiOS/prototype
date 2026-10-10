@@ -438,6 +438,7 @@ details.fact:not([open]) > summary { border-bottom: 0; }
 .cg-node rect { fill: var(--surface); stroke: var(--mod); stroke-width: 1.5; }
 .cg-node text { fill: var(--ink); font-size: 12px; font-weight: 600; }
 .cg-node .cg-sub { fill: var(--ink-soft); font-size: 10px; font-weight: 400; }
+.cg-node .cg-tag { fill: var(--ink-soft); font-size: 10px; font-weight: 400; }
 .cg-node:hover rect { fill: var(--field); }
 .cg-node:focus-visible { outline: none; }
 .cg-node:focus-visible rect { stroke: var(--focus); stroke-width: 3; }

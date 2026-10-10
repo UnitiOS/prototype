@@ -38,23 +38,33 @@ The kind changes no meaning. It says who owns a module and who may use it: an
 application belongs to one business, is pinned by nothing, and is installed
 only into that business's kernel (components/business).
 
+Modules are read together by the store, never by LinkML merging their names
+(components/modules/compose.py): a pinned module's names are qualified by its
+tag, `penyewaan__Rental`, with the URIs its plain names meant, and core's and
+the library's names stay plain for everybody. `composition` is the one reader
+of a closure as composed, and `view` reads through it.
+
 The roots come from `UNITI_PACKAGES`, a path list in the platform's separator,
 or default to `packages/` at the repository root. The first root holding a
 module wins, so a development root can sit beside the real one.
 """
 
+import copy
 import os
 import re
 import sys
 from pathlib import Path
 
 import yaml
-from linkml_runtime.utils.schemaview import SchemaView, load_schema_wrap
+from linkml_runtime.linkml_model.meta import SchemaDefinition
+from linkml_runtime.loaders import yaml_loader
+from linkml_runtime.utils.schemaview import SchemaView
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "components"))
 
+from components.modules import compose  # noqa: E402
 from components.refusal import Refusal, Repair  # noqa: E402
 from ontology.resolve import load_versions  # noqa: E402
 
@@ -66,6 +76,9 @@ BUSINESS = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
 
 KINDS = ("core", "library", "module", "application")
 APPLICATION = "application"
+# What every module shares, kept by Uniti's own keepers: its names are the
+# reserved ones, plain in every composition and declared by nothing else.
+SHARED = ("core", "library")
 
 
 class ModuleError(Refusal, ValueError):
@@ -127,6 +140,8 @@ def kind_of(name, manifest):
 class Store:
     def __init__(self, roots):
         self.roots = [Path(r).resolve() for r in roots]
+        # A sealed version never changes, so neither does how it composes.
+        self._composed, self._declared = {}, {}
 
     @classmethod
     def from_env(cls):
@@ -329,7 +344,7 @@ class Store:
         return pins
 
     def document(self, name, version):
-        return yaml.safe_load(self.path(name, version).read_text(encoding="utf-8")) or {}
+        return copy.deepcopy(_parsed(self.path(name, version)))
 
     def closure(self, name, version):
         """This version and everything it imports, dependencies first, each once."""
@@ -361,20 +376,162 @@ class Store:
         visit((name, version), [])
         return order
 
+    # ------------------------------------------------------------ composing
+
+    def tag(self, name):
+        """The tag this module's names are qualified with when it is pinned,
+        or None for core and the library, whose names stay plain."""
+        return None if self.kind(name) in SHARED else compose.tag_of(name)
+
+    def reserved(self):
+        """Every name core and the library declare, in any version.
+
+        They are what modules share, so they are never qualified, and a module
+        declaring one of them would be declaring somebody else's word.
+        """
+        out = set()
+        for name in self.names():
+            if self.kind(name) not in SHARED:
+                continue
+            for held in self.versions(name):
+                document = self.document(name, held["version"])
+                out |= {n for names in compose.declared(document).values() for n in names}
+        return frozenset(out)
+
+    def _rename(self, name):
+        tag = self.tag(name)
+        return (lambda n: str(n)) if tag is None else (lambda n: compose.qualified(tag, n))
+
+    def _names(self, pin):
+        """Every name a sealed version declares, as a composition calls it."""
+        if pin not in self._declared:
+            rename = self._rename(pin[0])
+            self._declared[pin] = frozenset(
+                rename(n) for names in compose.declared(self.document(*pin)).values()
+                for n in names)
+        return set(self._declared[pin])
+
+    def composed(self, name, version):
+        """This version as the modules that pin it read it: its own names
+        qualified, every reference resolved through its own closure, every URI
+        locked to the one its plain name meant."""
+        key = (name, version)
+        if key not in self._composed:
+            document = self.document(name, version)
+            if self.tag(name) is None:
+                self._composed[key] = document
+            else:
+                known = set()
+                for dep in self.closure(name, version)[:-1]:
+                    known |= self._names(dep)
+                rename = self._rename(name)
+                own = [n for names in compose.declared(document).values() for n in names]
+                self._composed[key] = compose.rewrite(
+                    document, rename, compose.resolver(own, known, rename), lock=True)
+        return copy.deepcopy(self._composed[key])
+
+    def reached(self, document):
+        """Every version a document's pins reach, dependencies first, each once."""
+        order = []
+        for pin in self.imports(document):
+            for dep in self.closure(*pin):
+                if dep not in order:
+                    order.append(dep)
+        return order
+
+    def known(self, document):
+        """Every name a document can see in what it pins, as composed."""
+        out = set()
+        for dep in self.reached(document):
+            out |= self._names(dep)
+        return out
+
+    def composition(self, document, name=None, *, tags=True):
+        """A document and everything it pins, read together: the one reader
+        for every place that reads a closure.
+
+        `[(pin, document)]`, dependencies first, each as `composed` gives it;
+        then `(None, document)` — the document itself, its own names plain
+        and each reference to a pinned name resolved by the one rule. `name`
+        is the module the document belongs to, when there is one: its tag
+        counts among the closure's, because whoever pins it reads them all.
+        `tags=False` reads a closure whose tags collide anyway, for a reader
+        that has to show what is there while `tag_taken` is asked about.
+        """
+        order = self.reached(document)
+        if tags:
+            self._tags_apart(order, name)
+        known = set()
+        for dep in order:
+            known |= self._names(dep)
+        own = [n for names in compose.declared(document).values() for n in names]
+        root = compose.rewrite(document, lambda n: str(n), compose.resolver(own, known))
+        return [(dep, self.composed(*dep)) for dep in order] + [(None, root)]
+
+    def version_composition(self, name, version):
+        """`composition` of a sealed version, its own entry carrying its pin."""
+        out = self.composition(self.document(name, version), name)
+        return out[:-1] + [((name, version), out[-1][1])]
+
+    def _tags_apart(self, order, name=None):
+        """No two modules in one closure share a tag: it is the whole of what
+        tells their names apart."""
+        held = {}
+        for module in dict.fromkeys([n for n, _ in order] + ([name] if name else [])):
+            try:
+                tag = self.tag(module)
+            except ModuleError:
+                # The draft's own module, not started yet: it has no manifest
+                # to say its kind, and is a module until it says otherwise.
+                tag = compose.tag_of(module)
+            if tag is None:
+                continue
+            if tag in held and held[tag] != module:
+                raise ModuleError(
+                    "tag_taken",
+                    where=name or "imports",
+                    expected=f"one module tagged `{tag}` in one closure, because "
+                             f"the tag is what tells their names apart",
+                    got=f"{held[tag]} and {module}",
+                    repairs=[Repair("pin one of the two, not both",
+                                    options=[held[tag], module])],
+                )
+            held[tag] = module
+
     def view(self, source):
         """A SchemaView whose module imports resolve through this store.
 
         `source` is a path or the text of a schema. The imports are resolved
         here, eagerly, so a schema that names something the store does not
         hold fails now rather than at whichever later read first needs it.
+        The schema is read as composed: every pinned module under its
+        qualified names, and the schema's own references to them resolved.
         """
         text = Path(source).read_text(encoding="utf-8") if _is_file(source) else str(source)
+        document = yaml.safe_load(text) or {}
         # The schema's own imports are held to the exact form; only the ones
         # SchemaView rewrites on its way down the closure are read by their tail.
-        self.imports(yaml.safe_load(text) or {})
+        self.imports(document)
+        resolved = self.composition(document)[-1][1]
+        if resolved != document:
+            text = yaml.safe_dump(resolved, sort_keys=False, allow_unicode=True)
         view = ModuleView(text, store=self)
         view.imports_closure()
         return view
+
+
+# A sealed version's file, parsed once: reading a closure parses every
+# document in it, and a composition reads closures often. Keyed by the file's
+# size and time as well, so a file that does change is read again.
+_PARSED = {}
+
+
+def _parsed(path):
+    stat = Path(path).stat()
+    key = (str(path), stat.st_mtime_ns, stat.st_size)
+    if key not in _PARSED:
+        _PARSED[key] = yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
+    return _PARSED[key]
 
 
 def _is_file(source):
@@ -400,4 +557,4 @@ class ModuleView(SchemaView):
         pin = self.store.pinned(imp)
         if pin is None:
             return super().load_import(imp, from_schema)
-        return load_schema_wrap(str(self.store.path(*pin)))
+        return yaml_loader.load(self.store.composed(*pin), SchemaDefinition)

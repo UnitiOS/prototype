@@ -104,6 +104,7 @@ sys.path.insert(0, str(ROOT / "components" / "generator"))
 sys.path.insert(0, str(ROOT / "components" / "kernel"))
 
 from compile import plan_for, preview, tables  # noqa: E402
+from components.modules.compose import matches  # noqa: E402
 from components.refusal import Refusal, Repair  # noqa: E402
 from generate import _type_slot, submit  # noqa: E402
 from perform import perform  # noqa: E402
@@ -513,6 +514,23 @@ def _text(value):
     return str(value)
 
 
+def _named(name, known, where, what):
+    """The name an example means, by the composition's one rule.
+
+    An example is written in the names a person uses: `Rental`, not
+    `penyewaan__Rental`. Where only one module in sight declares it, that is
+    the one; where several do, the example has to say which.
+    """
+    found = matches(name, known)
+    if len(found) > 1:
+        raise ExampleError(
+            "name_ambiguous", where=where,
+            expected=f"one {what} by the name {name}",
+            got=f"{len(found)}: {', '.join(found)}",
+            repairs=[Repair(f"write the {what} out in full", options=found)])
+    return found[0] if found else str(name)
+
+
 def _state(conn, map_, name, records):
     """Every record, through the form's own door, in the order written."""
     view = map_["view"]
@@ -527,7 +545,7 @@ def _state(conn, map_, name, records):
                 expected="what it is, the first time it is stated",
                 got="no class",
                 repairs=[Repair("say which class it is", options=_stateable(map_))])
-        class_name = str(class_name)
+        class_name = _named(class_name, set(view.all_classes()), where, "class")
         if class_name not in view.all_classes():
             raise ExampleError(
                 "no_such_class", where=where,
@@ -544,8 +562,9 @@ def _state(conn, map_, name, records):
                        else "carries no slot saying which class an entity is"),
                 repairs=[Repair("name a class a record can be",
                                 options=_stateable(map_))])
-        values = {str(k): _text(v) for k, v in (record.get("facts") or {}).items()
-                  if v is not None}
+        carried = {str(s.name) for s in view.class_induced_slots(class_name)}
+        values = {_named(k, carried, where, "slot"): _text(v)
+                  for k, v in (record.get("facts") or {}).items() if v is not None}
         if record.get("class") or rid not in classes:
             values[str(slot.name)] = class_name
         classes[rid] = class_name
@@ -585,7 +604,9 @@ def _checks(conn, map_, name, body):
     read = {}
     out = []
     for expectation in body.get("expect") or []:
-        table = str(expectation["table"])
+        where = f"example {name}: {expectation['table']}"
+        table = _named(expectation["table"],
+                       set(known) | set(map_["view"].schema.classes or {}), where, "table")
         where = f"example {name}: {table}"
         waiting = _own_slots(map_, table) if table not in known else None
         if waiting is not None:
@@ -618,8 +639,10 @@ def _checks(conn, map_, name, body):
                                  built["rows"],
                                  {c["name"]: c["kind"] for c in built["plan"]["columns"]})
         names, rows, kinds = read[(table, at)]
-        row = _row(expectation, names)
-        values = {str(k): v for k, v in expectation["values"].items()}
+        row = {_named(k, names, where, "column"): v
+               for k, v in _row(expectation, names).items()}
+        values = {_named(k, names, where, "column"): v
+                  for k, v in expectation["values"].items()}
         unknown = sorted((set(row) | set(values)) - set(names))
         if unknown:
             raise ExampleError(

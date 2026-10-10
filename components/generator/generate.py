@@ -59,6 +59,7 @@ sys.path.insert(0, str(ROOT / "components" / "seal"))
 sys.path.insert(0, str(ROOT / "components" / "kernel"))
 sys.path.insert(0, str(ROOT / "components"))
 
+from components.modules.compose import matches  # noqa: E402
 from components.modules.store import Store  # noqa: E402
 from components.refusal import Refusal, Repair  # noqa: E402
 from perform import connect, perform  # noqa: E402
@@ -269,15 +270,48 @@ def columns(map_, class_name):
     return out
 
 
+def named(map_, class_name, values=None):
+    """A class, and the slots `values` names, as the map calls them.
+
+    A person writes `Rental`; a composition calls a pinned module's class
+    `penyewaan__Rental`. Where only one module in sight declares the plain
+    name, it means that one (components/modules/compose.py). Where several
+    do, nothing is guessed. `values` comes back keyed by the map's names.
+    """
+    view = map_["view"]
+
+    def one(name, known, what):
+        found = matches(name, known)
+        if len(found) > 1:
+            raise MapError(
+                "name_ambiguous",
+                where=map_["path"].name,
+                expected=f"one {what} by the name {name}",
+                got=f"{len(found)}: {', '.join(found)}",
+                repairs=[Repair(f"name the {what} in full", options=found)],
+            )
+        return found[0] if found else str(name)
+
+    class_name = one(class_name, set(view.all_classes()), "class")
+    if values is None:
+        return class_name
+    carried = ({str(s.name) for s in view.class_induced_slots(class_name)}
+               if class_name in view.all_classes() else set())
+    return class_name, {one(k, carried, "slot"): v for k, v in values.items()}
+
+
 def table_name(class_name):
     """What a class is called in the operational store.
 
     One rule, in one place, because two components need the same answer: the
     compiler names the table it fills, and a form asks the store for the
     choices a field offers. It is a transliteration of the class's own name and
-    knows nothing else.
+    knows nothing else. A pinned module's class keeps its tag ahead of the
+    same transliteration: `penyewaan__CustomerDeposit` is
+    `p_penyewaan__customer_deposit`.
     """
-    return "p_" + re.sub(r"(?<!^)(?=[A-Z])", "_", str(class_name)).lower()
+    return "p_" + "__".join(re.sub(r"(?<!^)(?=[A-Z])", "_", part).lower()
+                            for part in str(class_name).split("__"))
 
 
 def _identifier(map_, class_name):

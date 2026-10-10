@@ -3,7 +3,7 @@ import type { DraftState, ExampleResult } from "./api";
 import {
   BOX, CELL, GROUP, arrange, arrangeWorkings, cellHeight, changedOf, checksOf, fieldLabel, heightOf,
   askedOnce, blocksOf, exampleOf, lineage, mapOf, marksOf, momentsOf, neighbours, piecesOf, roomFor,
-  spoken, turnsAbout, walkThrough,
+  nameShown, plainName, spoken, tagOf, turnsAbout, walkThrough,
   workingsOf,
 } from "./studioMap";
 
@@ -127,6 +127,17 @@ describe("names said as words", () => {
     expect(fieldLabel("ingredient_reorder_level", "Ingredient")).toBe("Reorder level");
     expect(fieldLabel("stock_ingredient", "IngredientStock")).toBe("Stock ingredient");
     expect(fieldLabel("ingredient", "Ingredient")).toBe("Ingredient");
+  });
+
+  it("says a pinned module's name as its module wrote it, and keeps the tag apart", () => {
+    expect(plainName("penyewaan__Rental")).toBe("Rental");
+    expect(plainName("Rental")).toBe("Rental");
+    expect(tagOf("penyewaan__Rental")).toBe("penyewaan");
+    expect(tagOf("Rental")).toBeNull();
+    expect(nameShown("kasir__Rental")).toBe("Rental · kasir");
+    expect(nameShown("Party")).toBe("Party");
+    expect(spoken("penyewaan__RentalLine")).toBe("Rental line");
+    expect(fieldLabel("penyewaan__rental_deposit", "penyewaan__Rental")).toBe("Deposit");
   });
 
   it("prefers the title its author wrote", () => {

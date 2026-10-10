@@ -38,6 +38,7 @@ sys.path.insert(0, str(ROOT / "components" / "seal"))
 from compile import _covered, plan, tables  # noqa: E402
 from components.modules import diff as diff_read  # noqa: E402
 from components.modules.check import check  # noqa: E402
+from components.modules.compose import matches  # noqa: E402
 from components.modules.store import APPLICATION  # noqa: E402
 from components.modules.roles import (  # noqa: E402
     NOT_TAUGHT, _above, _bindings, _fills, taught,
@@ -53,7 +54,8 @@ from components.studio.draft import (  # noqa: E402
 )
 from seal import (  # noqa: E402
     _facts, _one_version_per_module, _pins_already_sealed, _slot_ranges,
-    _transcript, _valid_from, _validate, kind_refusals, name_clashes, range_refusals,
+    _transcript, _valid_from, _validate, composed, kind_refusals, name_refusals,
+    range_refusals,
     role_refusals, uri_refusals,
 )
 
@@ -125,6 +127,12 @@ def inspect(store, name, document, conn=None):
         return out
     out["map"] = map_
     view = map_["view"]
+    # Read as it would be sealed: under the names the store composes it with.
+    try:
+        document = composed(store, document, name)
+    except Refusal as exc:
+        out["refusals"].append(exc.as_dict())
+        return out
     annotations = document.get("annotations") or {}
 
     missing_uris = [r for r in uri_refusals(view, DRAFT)]
@@ -143,9 +151,9 @@ def inspect(store, name, document, conn=None):
     collect(_pins_already_sealed, store, document,
             datetime.now(timezone.utc), DRAFT)
     collect(_one_version_per_module, store, document, DRAFT)
-    for reader in (name_clashes, kind_refusals):
+    for reader, args in ((name_refusals, (name,)), (kind_refusals, ())):
         try:
-            out["refusals"] += [r.as_dict() for r in reader(store, document, DRAFT)]
+            out["refusals"] += [r.as_dict() for r in reader(store, document, DRAFT, *args)]
         except Refusal as exc:
             out["refusals"].append(exc.as_dict())
     collect(_valid_from, annotations, DRAFT)
@@ -326,8 +334,8 @@ def _question(kind, where, detail):
         return f"what does {detail.get('slot')} hold? What it names is not in sight"
     if kind == "name_clash":
         what = detail.get("kind")
-        return (f"two modules in sight both declare the {what} "
-                f"{detail.get(what)} — which one is meant?")
+        return (f"a module this draft pins declares the {what} "
+                f"{detail.get(what)} too — what should this draft's be called?")
     if kind == "column_unchecked":
         return (f"what number should {detail.get('class')}'s "
                 f"{detail.get('column')} come to, in an example the business "
@@ -747,7 +755,7 @@ def _read_from(store, document, workings, borrowed):
                                        if n not in drawn and n in classes])
 
 
-def _recorded(store, name, examples):
+def _recorded(store, name, examples, view=None):
     """Each example with the records it states, in the order it states them.
 
     What a number on the map was worked out from: the page shows the records
@@ -755,7 +763,21 @@ def _recorded(store, name, examples):
     first stated, and is carried on by name after that, as the file reads.
     And what the example says in the words of its people (`labels`), which
     the page shows them in place of the English it is recorded in.
+
+    Names as the map names them, by the composition's one rule, so a record
+    of `Movement` is drawn on the map's `stock_moves__Movement`.
     """
+    known = set(view.all_classes()) if view is not None else set()
+
+    def called_as(wanted, among):
+        found = matches(wanted, among)
+        return found[0] if len(found) == 1 else str(wanted)
+
+    def slots_of(class_name):
+        if view is None or class_name not in known:
+            return set()
+        return {str(s.name) for s in view.class_induced_slots(class_name)}
+
     try:
         held = examples_of(store, name)
     except Refusal:
@@ -773,12 +795,14 @@ def _recorded(store, name, examples):
             record = record or {}
             called = str(record.get("record") or "")
             if record.get("class"):
-                class_of[called] = str(record["class"])
+                class_of[called] = called_as(record["class"], known)
+            carried = slots_of(class_of.get(called))
             records.append({
                 "record": called,
                 "class": class_of.get(called),
                 "when": plain(record.get("when")),
-                "facts": {str(k): plain(v) for k, v in (record.get("facts") or {}).items()},
+                "facts": {called_as(k, carried): plain(v)
+                          for k, v in (record.get("facts") or {}).items()},
             })
         labels = (held.get(example["name"]) or {}).get("labels") or {}
         out.append({**example, "recorded": records,
@@ -895,7 +919,8 @@ def state(store, name, conn=None):
         "workings": workings,
         "read_from": _read_from(store, document, workings, borrowed),
         "tables": found["tables"],
-        "examples": _recorded(store, name, found["examples"]),
+        "examples": _recorded(store, name, found["examples"],
+                              found["map"]["view"] if found["map"] else None),
         "examples_run": found["examples_run"],
         "refusals": found["refusals"],
         "holes": found_holes,

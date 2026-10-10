@@ -138,6 +138,10 @@ module.
 Core's {" and ".join(f"`{role}`" for role in NOT_TAUGHT)} stay only for modules sealed under them:
 fill neither directly. A date says its moment by its `time_meaning`.
 
+A pinned module's names carry its tag, `penyewaan__Rental`; core's and the
+library's stay plain. Write the plain name: where two pinned modules declare
+it, the step asks which (`name_ambiguous`) — answer with the full name.
+
 What the system cannot do yet: total only the rows whose value meets a
 condition (`where` narrows by the class a slot points at, never by a value),
 and group by a fact more than one record away. When a request needs one,

@@ -166,21 +166,21 @@ def test_a_class_nothing_can_ever_be_says_so(world):
     """A class with slots, no role, and no rule: it compiles, and it is empty."""
     name = "@probe/rowless"
     step(world, name, "start", title="Rowless", description="One class, no rows.")
-    step(world, name, "add_class", **{"class": "Item", "description": "A thing."})
-    step(world, name, "add_slot", slot="item_name", description="Its name.")
-    step(world, name, "attach", **{"class": "Item", "slot": "item_name"})
+    step(world, name, "add_class", **{"class": "Tool", "description": "A thing."})
+    step(world, name, "add_slot", slot="tool_name", description="Its name.")
+    step(world, name, "attach", **{"class": "Tool", "slot": "tool_name"})
 
     report = reading.state(world, name)
     hole = next(h for h in report["holes"] if h["kind"] == "class_has_no_rows")
-    assert hole["where"] == "Item"
-    assert hole["question"] == "how would anything ever become a Item?"
+    assert hole["where"] == "Tool"
+    assert hole["question"] == "how would anything ever become a Tool?"
     # The answer is a role that brings the predicate saying which class an
     # entity is — computed, not named here.
     assert hole["step"]["op"] == "fill_role"
     assert "Thing" in hole["step"]["options"]
     assert report["classes"][0]["has_rows"] is False
 
-    step(world, name, "fill_role", **{"class": "Item", "role": "Thing"})
+    step(world, name, "fill_role", **{"class": "Tool", "role": "Thing"})
     after = reading.state(world, name)
     assert after["classes"][0]["has_rows"] is True
     assert not [h for h in after["holes"] if h["kind"] == "class_has_no_rows"]
@@ -216,13 +216,14 @@ def test_the_map_carries_what_the_draft_points_at_and_stops_there(world):
          field="range", value="Ingredient")
 
     report = reading.state(world, name)
+    # Under the names the store composes them with: the catalog's own tag.
     assert [held["name"] for held in report["borrowed"]] == [
-        "Category", "Ingredient", "Supplier"]
+        "catalog__Category", "catalog__Ingredient", "catalog__Supplier"]
     assert {held["module"]["name"] for held in report["borrowed"]} == {
         dev_modules.CATALOG}
     # Ingredient is pointed at; the other two are reached through it.
-    ingredient = next(h for h in report["borrowed"] if h["name"] == "Ingredient")
-    assert "Category" in [s["range"] for s in ingredient["slots"]]
+    ingredient = next(h for h in report["borrowed"] if h["name"] == "catalog__Ingredient")
+    assert "catalog__Category" in [s["range"] for s in ingredient["slots"]]
     assert ingredient["fills"] == ["Resource"]
     # Sight is wider than the map, and that is the point of the map.
     assert report["sees"]["classes"] > len(report["borrowed"]) + 1
@@ -412,7 +413,8 @@ def test_an_aggregate_step_narrows_and_converts(world):
     written = studio.open_draft(world, name)["slots"]["total_base"]
     assert written["annotations"]["aggregate"]["value"] == {
         "over": "Flow", "sum": "amount", "by": {"total_thing": "affects"},
-        "where": {"affects": {"is_a": "Ingredient"}},
+        # The plain name, kept in full: only the catalog declares it.
+        "where": {"affects": {"is_a": "catalog__Ingredient"}},
         "convert": {"using": "Rate", "on": {"rate_thing": "affects"},
                     "factor": "rate_factor"},
     }
@@ -576,24 +578,27 @@ def test_the_draft_says_where_each_number_comes_from(world):
         columns = {c["name"]: c for c in table["columns"]}
         assert columns["stock_quantity_on_hand"] == {
             "name": "stock_quantity_on_hand", "kind": "aggregate", "operator": "sum",
-            "reads": [{"class": "Movement", "fields": ["move_change"],
-                       "by": {"stock_ingredient": "move_item"}}],
+            "reads": [{"class": "stock_moves__Movement",
+                       "fields": ["stock_moves__move_change"],
+                       "by": {"stock_ingredient": "stock_moves__move_item"}}],
         }
         assert columns["stock_reorder_level"]["reads"] == [
-            {"class": "Ingredient", "fields": ["ingredient_reorder_level"], "by": {}}]
+            {"class": "catalog__Ingredient",
+             "fields": ["catalog__ingredient_reorder_level"], "by": {}}]
         assert columns["stock_headroom"] == {"name": "stock_headroom",
                                              "kind": "expression", "reads": []}
 
-        assert [c["name"] for c in report["read_from"]] == ["Movement"]
+        assert [c["name"] for c in report["read_from"]] == ["stock_moves__Movement"]
         assert report["read_from"][0]["module"]["name"] == dev_modules.RIVAL
-        assert "Movement" not in {b["name"] for b in report["borrowed"]}
+        assert "stock_moves__Movement" not in {b["name"] for b in report["borrowed"]}
 
+        # The example says `Movement`; it is read as the map names it.
         flour = next(e for e in report["examples"] if e["name"] == "flour_in_and_out")
-        moved = [r for r in flour["recorded"] if r["class"] == "Movement"]
-        assert [r["facts"]["move_change"] for r in moved] == [25, 25, -14]
+        moved = [r for r in flour["recorded"] if r["class"] == "stock_moves__Movement"]
+        assert [r["facts"]["stock_moves__move_change"] for r in moved] == [25, 25, -14]
         # A record named again later keeps the class it was first stated as.
         assert [r["class"] for r in flour["recorded"] if r["record"] == "flour"] \
-            == ["Ingredient", "Ingredient"]
+            == ["catalog__Ingredient", "catalog__Ingredient"]
     finally:
         studio.apply(world, name, "discard", {})
 

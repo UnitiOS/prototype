@@ -51,7 +51,8 @@ sys.path.insert(0, str(ROOT / "components" / "generator"))
 
 from components.examples import examples as business  # noqa: E402
 from components.modules.roles import _above, taught  # noqa: E402
-from components.modules.store import kind_of  # noqa: E402
+from components.modules.compose import SEP, matches, plain  # noqa: E402
+from components.modules.store import SHARED, kind_of  # noqa: E402
 from components.refusal import Refusal, Repair  # noqa: E402
 from components import standard  # noqa: E402
 from compile import SQL_TYPE, SYNTAX  # noqa: E402
@@ -486,6 +487,15 @@ def _ordered(document):
 
 
 def _save(store, name, document, op, args):
+    # Every name the draft takes from a module it pins, kept in full: what a
+    # plain `Rental` meant today, it still means after another pin arrives.
+    # Two pins sharing a tag are refused here, at the step that made them;
+    # anything else wrong with a pin is the seal's and the holes' to say.
+    try:
+        document = store.composition(document, name)[-1][1]
+    except Refusal as exc:
+        if exc.code == "tag_taken":
+            raise
     where = directory(store, name)
     where.mkdir(parents=True, exist_ok=True)
     (where / DRAFT).write_text(
@@ -528,35 +538,53 @@ def seen(store, document):
     Each carries the module version it came from, and `None` for the draft's
     own — which is the whole of the difference between what can be changed
     here and what has to be changed by sealing a new version of somebody
-    else's module.
+    else's module. What it pins is seen as the store composes it: under each
+    module's qualified names, `penyewaan__Rental`, its own under its plain ones.
     """
     classes, slots = {}, {}
-    for pin in store.imports(document):
-        for dep in store.closure(*pin):
-            held = store.document(*dep)
-            origin = {"name": dep[0], "version": dep[1]}
-            for class_name, c in (held.get("classes") or {}).items():
-                classes[class_name] = {**(c or {}), "module": origin}
-            for slot_name, s in (held.get("slots") or {}).items():
-                slots[slot_name] = {**(s or {}), "module": origin}
-    for class_name, c in (document.get("classes") or {}).items():
-        classes[class_name] = {**(c or {}), "module": None}
-    for slot_name, s in (document.get("slots") or {}).items():
-        slots[slot_name] = {**(s or {}), "module": None}
+    for dep, held in _composition(store, document):
+        origin = {"name": dep[0], "version": dep[1]} if dep else None
+        for class_name, c in (held.get("classes") or {}).items():
+            classes[class_name] = {**(c or {}), "module": origin}
+        for slot_name, s in (held.get("slots") or {}).items():
+            slots[slot_name] = {**(s or {}), "module": origin}
     return classes, slots
 
 
 def enums_seen(store, document):
     """Every enum this draft can see, its own overriding what it pins."""
     enums = {}
-    for pin in store.imports(document):
-        for dep in store.closure(*pin):
-            origin = {"name": dep[0], "version": dep[1]}
-            for enum_name, e in (store.document(*dep).get("enums") or {}).items():
-                enums[enum_name] = {**(e or {}), "module": origin}
-    for enum_name, e in (document.get("enums") or {}).items():
-        enums[enum_name] = {**(e or {}), "module": None}
+    for dep, held in _composition(store, document):
+        origin = {"name": dep[0], "version": dep[1]} if dep else None
+        for enum_name, e in (held.get("enums") or {}).items():
+            enums[enum_name] = {**(e or {}), "module": origin}
     return enums
+
+
+def _composition(store, document):
+    # What is in sight is shown even while two pins share a tag: that is a
+    # hole of its own (`tag_taken`), and the draft has to be readable to ask it.
+    return store.composition(document, tags=False)
+
+
+def _named(wanted, held, what, kind):
+    """The name in sight `wanted` stands for, by the composition's one rule.
+
+    A person writes the plain name, `Rental`; where one module in sight
+    declares it, that module's is meant, and the draft keeps the full name so
+    a module pinned later cannot change what it meant. Where two do, nothing
+    is guessed.
+    """
+    found = matches(wanted, held)
+    if len(found) > 1:
+        raise StudioError(
+            "name_ambiguous",
+            where=what,
+            expected=f"one {kind} by the name {wanted}",
+            got=f"{len(found)} modules in sight declare it: {', '.join(found)}",
+            repairs=[Repair(f"say which one, by its full name", options=found)],
+        )
+    return found[0] if found else str(wanted)
 
 
 def ranges(store, document):
@@ -672,16 +700,34 @@ def _word(value, what):
     )
 
 
-def _free(store, document, kind, proposed, what):
+def _free(store, document, kind, proposed, what, module=None):
     """A name nothing in sight already uses.
 
     A class and an enum are both things a slot ranges over, so they share one
-    space of names; a slot has its own.
+    space of names; a slot has its own. A pinned module's name counts by its
+    plain part: `Rental` beside a pinned `penyewaan__Rental` would read as
+    either. Core's and the library's names are theirs alone, and `__` marks
+    the module a name comes from, so neither is a name of one's own.
     """
+    shared = module is not None and _kind(store, module) in SHARED
+    if not shared and (SEP in proposed or proposed in store.reserved()):
+        raise StudioError(
+            "name_reserved",
+            where=what,
+            expected=f"a {kind} name of this module's own",
+            got=(f"{proposed!r}, with `{SEP}` in it, which marks the module a "
+                 f"name comes from" if SEP in proposed else
+                 f"{proposed!r}, which core or the library declares"),
+            repairs=[Repair(f"choose another name for the {kind}"),
+                     Repair("where the library's is meant, use it: point at "
+                            "it, or fill its role",
+                            options=["add_slot", "fill_role"])],
+        )
     classes, slots = seen(store, document)
     taken = slots if kind == "slot" else {**enums_seen(store, document), **classes}
-    if proposed in taken:
-        held = taken[proposed]["module"]
+    clash = next((t for t in taken if plain(t) == proposed), None)
+    if clash is not None:
+        held = taken[clash]["module"]
         raise StudioError(
             "name_taken",
             where=what,
@@ -692,6 +738,13 @@ def _free(store, document, kind, proposed, what):
             repairs=[Repair(f"choose another name for the {kind}")],
         )
     return proposed
+
+
+def _kind(store, module):
+    try:
+        return store.kind(module)
+    except Refusal:
+        return "module"
 
 
 def _own(document, kind, wanted, what):
@@ -714,6 +767,7 @@ def _own(document, kind, wanted, what):
 def _visible(store, document, kind, wanted, what):
     classes, slots = seen(store, document)
     held = classes if kind == "class" else slots
+    wanted = _named(wanted, held, what, kind)
     if wanted in held:
         return wanted
     raise StudioError(
@@ -956,7 +1010,7 @@ def _unpin(store, name, document, args):
 
 def _add_class(store, name, document, args):
     class_name = _free(store, document, "class",
-                       _word(args["class"], "add_class"), "add_class")
+                       _word(args["class"], "add_class"), "add_class", name)
     body = {}
     if args.get("description"):
         body["description"] = str(args["description"])
@@ -973,7 +1027,7 @@ def _remove_class(store, name, document, args):
 def _rename_class(store, name, document, args):
     old = _own(document, "class", str(args["class"]), "rename_class")
     new = _free(store, document, "class",
-                _word(args["to"], "rename_class"), "rename_class")
+                _word(args["to"], "rename_class"), "rename_class", name)
     classes = _classes(document)
     classes[new] = classes.pop(old)
     for body in classes.values():
@@ -1026,7 +1080,8 @@ def _roles_in_sight(store, document):
 
 def _fill_role(store, name, document, args):
     class_name = _own(document, "class", str(args["class"]), "fill_role")
-    role = str(args["role"])
+    role = _named(str(args["role"]), _roles_in_sight(store, document),
+                  "fill_role", "role")
     if role not in _roles_in_sight(store, document):
         raise StudioError(
             "not_a_role",
@@ -1064,7 +1119,7 @@ def _unfill_role(store, name, document, args):
 
 def _add_slot(store, name, document, args):
     slot_name = _free(store, document, "slot",
-                      _word(args["slot"], "add_slot"), "add_slot")
+                      _word(args["slot"], "add_slot"), "add_slot", name)
     # A predicate's identity is written down, never derived at read time: a
     # rename would otherwise orphan every fact recorded before it. The studio
     # offers one made from the module's own prefix; it lands in the file as a
@@ -1098,6 +1153,7 @@ def _range(store, document, wanted, what):
         return wanted
     classes, _ = seen(store, document)
     enums = enums_seen(store, document)
+    wanted = _named(wanted, {**classes, **enums}, what, "class or enum")
     if wanted in classes or wanted in enums:
         return wanted
     raise StudioError(
@@ -1132,7 +1188,7 @@ def _remove_slot(store, name, document, args):
 def _rename_slot(store, name, document, args):
     old = _own(document, "slot", str(args["slot"]), "rename_slot")
     new = _free(store, document, "slot",
-                _word(args["to"], "rename_slot"), "rename_slot")
+                _word(args["to"], "rename_slot"), "rename_slot", name)
     slots = _slots(document)
     slots[new] = slots.pop(old)
     for body in slots.values():
@@ -1386,7 +1442,7 @@ def _values(value, what):
 
 def _add_enum(store, name, document, args):
     enum_name = _free(store, document, "enum",
-                      _word(args["enum"], "add_enum"), "add_enum")
+                      _word(args["enum"], "add_enum"), "add_enum", name)
     body = {}
     if args.get("description"):
         body["description"] = str(args["description"])
@@ -1423,7 +1479,8 @@ def _bindings_in_sight(store, document):
 
 def _bind(store, name, document, args):
     slot_name = _own(document, "slot", str(args["slot"]), "bind")
-    binding = str(args["binding"])
+    binding = _named(str(args["binding"]), _bindings_in_sight(store, document),
+                     "bind", "binding")
     if binding not in _bindings_in_sight(store, document):
         raise StudioError(
             "not_a_binding",
@@ -1775,6 +1832,17 @@ def _record_step(store, name, document, args):
                  and r.get("when") == record.get("when")), None)
     if same is not None:
         record = {**records[same], **record}
+    if record.get("facts"):
+        # Each fact under the full name of the slot it states, as the class
+        # names it: `rental_deposit` of a pinned `penyewaan__Rental` is kept
+        # as `penyewaan__rental_deposit`.
+        class_name = record.get("class") or next(
+            (r.get("class") for r in records
+             if str(r.get("record")) == record["record"] and r.get("class")), None)
+        carried = _carried_by(store, name, document, class_name)
+        if carried is not None:
+            record["facts"] = {_named(k, carried, f"record: {example}", "slot"): v
+                               for k, v in record["facts"].items()}
     first = not any(str(r.get("record")) == record["record"]
                     for r in records[:len(records) if same is None else same])
     if first:
@@ -1788,6 +1856,22 @@ def _record_step(store, name, document, args):
         said["facts"] = _pairs(record["facts"])
     _save_examples(store, name, held, "record", said)
     return document
+
+
+def _carried_by(store, name, document, class_name):
+    """The slots a class carries, as the draft's map names them; None where
+    the draft does not read as a map yet or does not know the class."""
+    from components.studio import read as reading  # read imports this module
+
+    if not class_name:
+        return None
+    try:
+        view = reading._map(store, name, document)["view"]
+    except Refusal:
+        return None
+    if str(class_name) not in view.all_classes():
+        return None
+    return [str(s.name) for s in view.class_induced_slots(str(class_name))]
 
 
 def _required_given(store, name, document, record, where):

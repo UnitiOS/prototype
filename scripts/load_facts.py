@@ -58,6 +58,7 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "components" / "kernel"))
 sys.path.insert(0, str(ROOT / "components" / "seal"))
 
+from components.modules.compose import matches  # noqa: E402
 from components.modules.store import PIN, ModuleError, Store  # noqa: E402
 from perform import connect, perform  # noqa: E402
 from seal import _REGISTRY_SQL, URI_PREDICATE, class_uri, predicate as predicate_of  # noqa: E402
@@ -109,6 +110,17 @@ def pinned_map(store, pin):
             "type_slot": type_slot, "class_uris": uris}
 
 
+def _named(name, known, at, what):
+    """The name a data file means, by the composition's one rule: a plain
+    name one module in the map declares is that module's
+    (components/modules/compose.py); one several declare is not guessed."""
+    found = matches(name, known)
+    if len(found) > 1:
+        raise DataError(f"{at} names the {what} {name!r}, which more than one module "
+                        f"declares: write one of {', '.join(found)}")
+    return found[0] if found else str(name)
+
+
 def _statements(map_, action, where):
     """One action's facts as (subject uri, predicate uri, value, is_ref, valid_from)."""
     default_valid = _utc(action.get("valid_from"), _utc(action.get("occurred_at")))
@@ -124,6 +136,7 @@ def _statements(map_, action, where):
 
         class_name = item.get("class")
         if class_name is not None:
+            class_name = _named(class_name, map_["classes"], at, "class")
             if str(class_name) not in map_["classes"]:
                 raise DataError(
                     f"{at} is a {class_name!r}, which {map_['label']} has no class for")
@@ -137,7 +150,7 @@ def _statements(map_, action, where):
                         valid_from))
 
         for slot_name, value in (item.get("facts") or {}).items():
-            known = map_["slots"].get(str(slot_name))
+            known = map_["slots"].get(_named(slot_name, map_["slots"], at, "slot"))
             if known is None:
                 raise DataError(
                     f"{at} states {slot_name!r}, which {map_['label']} has no slot for")

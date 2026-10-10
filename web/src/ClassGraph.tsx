@@ -9,6 +9,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ClassGraph as Graph, ClassEdge } from "./api";
+import { plainName, tagOf } from "./studioMap";
 
 const BAND = 108;
 const BOX_W = 150;
@@ -145,9 +146,9 @@ export function ClassGraph({ graph, selected, onSelect }: Props) {
           const labelY = sameBand ? y1 + dip - 3 : y1 + 13 + (rank % 4) * 12;
           return (
             <g key={i} className={`cg-edge cg-edge-${e.kind}${on ? " cg-lit" : selected ? " cg-dim" : ""}`}>
-              <title>{`${e.from} ${KIND_LABEL[e.kind]} ${e.to} — ${e.label}`}</title>
+              <title>{`${plainName(e.from)} ${KIND_LABEL[e.kind]} ${plainName(e.to)} — ${plainName(e.label)}`}</title>
               <path d={d} markerEnd={on ? "url(#cg-arrow-lit)" : "url(#cg-arrow)"} />
-              <text x={(x1 + x2) / 2} y={labelY} textAnchor="middle">{e.label}</text>
+              <text x={(x1 + x2) / 2} y={labelY} textAnchor="middle">{plainName(e.label)}</text>
             </g>
           );
         })}
@@ -161,7 +162,7 @@ export function ClassGraph({ graph, selected, onSelect }: Props) {
                 + `${on ? " cg-selected" : ""}${lit(node.name) ? "" : " cg-faded"}`}
               transform={`translate(${at.x} ${at.y})`}
               role="button" tabIndex={0}
-              aria-label={`${node.name}, declared by ${node.module.name} ${node.module.version}`}
+              aria-label={`${plainName(node.name)}, declared by ${node.module.name} ${node.module.version}`}
               onClick={() => onSelect(on ? null : node.name)}
               onKeyDown={(ev) => {
                 if (ev.key === "Enter" || ev.key === " ") {
@@ -169,9 +170,12 @@ export function ClassGraph({ graph, selected, onSelect }: Props) {
                   onSelect(on ? null : node.name);
                 }
               }}>
-              <title>{node.description ?? node.name}</title>
+              <title>{node.description ?? plainName(node.name)}</title>
               <rect width={BOX_W} height={BOX_H} rx={6} />
-              <text x={10} y={18}>{node.name}</text>
+              <text x={10} y={18}>
+                {plainName(node.name)}
+                {tagOf(node.name) && <tspan className="cg-tag"> · {tagOf(node.name)}</tspan>}
+              </text>
               <text x={10} y={33} className="cg-sub">
                 {node.shape === "role" ? "a role"
                   : node.shape === "derived" ? "derived table"
