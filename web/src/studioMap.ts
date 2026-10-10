@@ -163,7 +163,7 @@ export function firstSentence(text: string | null | undefined): string {
 // ---- the map --------------------------------------------------------------
 
 /** How a field's value comes to be, in a word or two. */
-export type MarkKind = "key" | "role" | "sum" | "formula" | "lookup" | "worked";
+export type MarkKind = "key" | "role" | "sum" | "formula" | "lookup" | "worked" | "adds";
 export interface Mark { kind: MarkKind; text: string }
 
 export interface MapField {
@@ -332,13 +332,19 @@ export function mapOf(draft: DraftState, language: string = personLanguage()): D
   const reading = new Set(readOnly.map((k) => k.name));
   for (const kind of [...draft.borrowed, ...readOnly]) {
     const fields: MapField[] = kind.slots.map((slot) => {
-      const said = words.get(slot.name) ?? fieldLabel(slot.name, kind.name);
+      // A field this module adds to somebody else's kind (a facet): drawn on
+      // their box, marked as this module's, and asked about like its own.
+      const added = slotOf.get(slot.name)?.adds_to === kind.name ? slotOf.get(slot.name)! : null;
+      const said = words.get(slot.name) ?? fieldLabel(slot.name, kind.name, added?.title);
       const points = slot.range && label.has(slot.range) ? slot.range : null;
-      if (points) line(kind.name, slot.name, said, points, false);
+      if (points) line(kind.name, slot.name, said, points, added !== null);
       return {
         name: slot.name, label: said,
-        holds: points ? label.get(points)! : holds(slot.range),
-        points, mark: slot.identifier ? { kind: "key", text: "key" } : null, asks: false,
+        holds: points ? label.get(points)! : added ? holdsSaid(added) : holds(slot.range),
+        points,
+        mark: added ? { kind: "adds", text: "added here" }
+          : slot.identifier ? { kind: "key", text: "key" } : null,
+        asks: added ? asksAbout(draft, slot.name) > 0 : false,
         check: null,
       };
     });

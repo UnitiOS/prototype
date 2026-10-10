@@ -380,7 +380,7 @@ evidence, not implementation: none of them is to be copied into `components/`.
 |---|---|---|
 | Composition owned by Uniti | The `Store` qualifies names and locks URIs; LinkML never merges names | Step 1 (confirmed 10 Oct) |
 | Reserved names | Core and library names (`Thing`, `Party`, `Item`, `Transaction`, …) stay unqualified and no other module may declare them | Step 1 (confirmed 10 Oct) |
-| Facets | Official way to add facts to another module's thing | Step 2 |
+| Facets | Official way to add facts to another module's thing | Step 2 (confirmed 10 Oct) |
 | Own predicates | A `slot_uri` must be in the module's own namespace | Step 3 |
 | Role references | Taught with three rules; narrower roles extracted into community interface modules | Step 4 |
 | Several sources | One rule, explicit sources, guarded by unit and direction | Step 5 |
@@ -491,6 +491,29 @@ before any commit. Step 8 may be done at any time.
   be read by `parameter` (verified).
 - **Done when:** the P4 scenario is a real test, and a facet appears in the form
   and table of the application, with its own predicate in the kernel.
+- **Decided 10 October 2026 (owner):** a facet is made with the existing
+  `attach` step. A slot of the draft's own attached to a class another module
+  owns is written as LinkML's `domain` on the slot; `detach` takes it off. No
+  new step, and the `slot_is_loose` hole offers the things in sight beside the
+  draft's own classes.
+- **Built (`compose.facets`/`compose.attach`, `seal.facet_refusals`,
+  `tests/modules/test_facets.py`):**
+  - `Store.composition` hangs every facet on its class in the composition's
+    copy of the owner's document, and `Store.view` does the same on the view,
+    so forms, tables, the compiler, the examples and the map all read it. A
+    composition that does not reach the facet's module never sees it.
+  - One rule, at the step and at the seal: `facet_on_role`, `facet_obliges`
+    (required, identifier, type) and `facet_elsewhere` (on a class of the
+    module's own as well, or on a second thing); a `domain` naming nothing
+    in sight is `not_in_draft`. Narrowing the owner's slots and making the
+    entity a new class have no step, so need no refusal.
+  - Studio: no `nothing_declared` for a module of facets, no `slot_is_loose`
+    for a facet; each slot says `adds_to`, and the thing it adds to is drawn
+    on the map with the field marked "added here". The class graph gives each
+    class its `facets`. The application form groups facet fields under the
+    adding module's title (`section`). Revision diffs include `domain`.
+  - The guide teaches it in two lines; the instructions are now 22,498 of
+    their 22,500-character budget (parking list).
 
 ### Step 3 — A module writes only under its own predicates
 
@@ -777,3 +800,13 @@ Ideas found during the work that are not in a step. Empty on 10 October 2026.
   `@uniti/transaction@v2` with `Transaction` as a kind of `Thing` and the
   `Flow` sentence removed, before the ecosystem test. **Decided 10 October
   2026: left as it is until core v3.**
+- **The library's `Item` still says facets are not the way** (found at step
+  2). `@uniti/item@v1` describes itself: "What one kind of business says about
+  an item, such as a rental rate or a reorder level, is a record of that
+  business's own module pointing at the item, not part of the item." Step 2
+  made exactly that a facet. The sentence is sealed and read by agents in the
+  catalogue. Options: reword it in `@uniti/item@v2` before the ecosystem
+  test, or with core v3.
+- **The agent's instructions are at their budget** (found at step 2): 22,498
+  of the 22,500 characters `test_agent` allows. Step 4's three rules will
+  not fit without cutting something or raising the budget.

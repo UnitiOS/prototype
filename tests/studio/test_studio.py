@@ -491,9 +491,11 @@ def test_a_step_that_is_not_one_is_refused_with_the_ones_that_are(world):
     assert raised.value.code == "not_a_binding"
     assert raised.value.repairs[0].options == ("affects", "amount", "moment")
 
+    # A class nothing in sight declares: a pinned module's class would take
+    # the slot as a facet (tests/modules/test_facets.py).
     with pytest.raises(StudioError) as raised:
         step(world, name, "attach", **{"class": "Ingredient", "slot": "movement_code"})
-    assert raised.value.code == "not_yours"
+    assert raised.value.code == "not_in_draft"
 
     with pytest.raises(StudioError) as raised:
         step(world, name, "add_class", **{"class": "Movement"})

@@ -466,7 +466,10 @@ class Store:
             known |= self._names(dep)
         own = [n for names in compose.declared(document).values() for n in names]
         root = compose.rewrite(document, lambda n: str(n), compose.resolver(own, known))
-        return [(dep, self.composed(*dep)) for dep in order] + [(None, root)]
+        # Facets last: each slot a module adds to another's class is carried
+        # by that class, here and only in compositions that reach the module.
+        return compose.attach([(dep, self.composed(*dep)) for dep in order]
+                              + [(None, root)])
 
     def version_composition(self, name, version):
         """`composition` of a sealed version, its own entry carrying its pin."""
@@ -512,11 +515,23 @@ class Store:
         # The schema's own imports are held to the exact form; only the ones
         # SchemaView rewrites on its way down the closure are read by their tail.
         self.imports(document)
-        resolved = self.composition(document)[-1][1]
+        composition = self.composition(document)
+        resolved = composition[-1][1]
         if resolved != document:
             text = yaml.safe_dump(resolved, sort_keys=False, allow_unicode=True)
         view = ModuleView(text, store=self)
         view.imports_closure()
+        # A pinned module arrives through `load_import` as it reads alone; the
+        # facets this closure adds to its classes are hung on them here, the
+        # same ones the composition carries. A facet is always on a class of
+        # something pinned: nothing pinned can see the schema's own.
+        facets = compose.facets(composition)
+        for class_name, slot, _pin in facets:
+            held = view.get_class(class_name)
+            if slot not in held.slots:
+                held.slots.append(slot)
+        if facets:
+            view.set_modified()
         return view
 
 

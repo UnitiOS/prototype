@@ -257,7 +257,7 @@ def test_a_batch_stops_at_the_first_refusal_and_says_how_to_fix_it(bench, world)
     ])
     assert "1. done: add_slot slot=level_note" in said
     assert "2. refused: attach class=Nothing slot=level_note" in said
-    assert "[not_yours]" in said and "one of: Level" in said
+    assert "[not_in_draft]" in said and "Level" in said
     assert "Step 3 was not taken." in said
     assert "level_note" not in studio.open_draft(world, name)["classes"]["Level"]["slots"]
     # What the draft is standing in comes back after a refusal too.

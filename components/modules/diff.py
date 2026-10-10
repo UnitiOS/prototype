@@ -10,7 +10,7 @@ A slot that disappears under one name and appears under another with the same
 predicate: every fact recorded under the old name still belongs to the new one.
 """
 
-SLOT_FIELDS = ("slot_uri", "range", "identifier", "required", "multivalued",
+SLOT_FIELDS = ("slot_uri", "range", "domain", "identifier", "required", "multivalued",
                "designates_type", "equals_expression", "title", "description")
 CLASS_FIELDS = ("is_a", "description")
 

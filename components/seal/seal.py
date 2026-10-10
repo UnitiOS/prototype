@@ -717,6 +717,106 @@ def kind_refusals(store, draft, name):
             )
 
 
+def facet_refusals(store, draft, name, *, slots=None):
+    """Every facet this draft declares that cannot be one.
+
+    A facet is a slot of this draft's own with a `domain` naming a class
+    another module owns: Rudi's `rental_rate` on the library's `Item`. It adds
+    a fact to the thing and changes nothing else about it, so:
+
+      facet_on_role     the class is a thing some module records, not a role:
+                        a role has no records of its own to carry a fact.
+      facet_obliges     it is never required, never the thing's identifier,
+                        never what says its class: every item recorded before
+                        the facet existed has no value for it, and the owner
+                        decides what an item must have.
+      facet_elsewhere   the slot is on that one class alone, not on a class
+                        of this draft's own as well.
+
+    A facet cannot narrow the owner's own slots either, and does not make the
+    entity a new class: there is no step for either, and a draft's
+    `slot_usage` and `is_a` are on its own classes only.
+
+    `slots` limits the reading to those slots, for a studio step asking the
+    same thing of the one slot it changes. A generator, for the reason
+    `name_refusals` is one.
+    """
+    composition = store.composition(draft, tags=False)
+    root = composition[-1][1]
+    own = root.get("classes") or {}
+    theirs = {}
+    for dep, document in composition[:-1]:
+        for term, body in (document.get("classes") or {}).items():
+            theirs.setdefault(str(term), (dep, body or {}))
+    carried = {}
+    for class_name, body in own.items():
+        body = body or {}
+        for slot_name in [*(body.get("slots") or []), *(body.get("slot_usage") or {})]:
+            carried.setdefault(str(slot_name), []).append(class_name)
+
+    for slot_name, body in (root.get("slots") or {}).items():
+        body = body or {}
+        domain = str(body.get("domain") or "")
+        if not domain or domain in own or (slots is not None and slot_name not in slots):
+            continue
+        where = f"{name}: slot {slot_name}"
+        if domain not in theirs:
+            yield DraftError(
+                "not_in_draft",
+                where=where,
+                expected="a class this draft can see, for the facet to add to",
+                got=f"{domain!r}",
+                repairs=[Repair("add it to a class in sight",
+                                options=sorted(c for c, (_, b) in theirs.items()
+                                               if not b.get("abstract"))),
+                         Repair("or pin the module that declares it", options=["pin"])],
+            )
+            continue
+        (module, version), held = theirs[domain]
+        if held.get("abstract"):
+            yield DraftError(
+                "facet_on_role",
+                where=where,
+                expected="a facet on a thing some module records",
+                got=f"{domain}, a role, which has no records of its own",
+                repairs=[Repair("add it to a class that fills the role",
+                                options=sorted(c for c, (_, b) in theirs.items()
+                                               if domain in (b.get("mixins") or [])
+                                               and not b.get("abstract")))],
+            )
+        obliging = [f for f in ("required", "identifier", "designates_type")
+                    if body.get(f)]
+        if obliging:
+            yield DraftError(
+                "facet_obliges",
+                where=where,
+                expected=f"a facet that obliges nothing of {domain}, which "
+                         f"{module}@{version} owns",
+                got=f"{slot_name} {', '.join(obliging)}",
+                repairs=[Repair("leave it optional, an ordinary value", where=name,
+                                options=["set_slot"]),
+                         Repair(f"or keep it on a record of your own that points "
+                                f"at {domain}", options=["detach", "add_class"])],
+            )
+        if slot_name in carried:
+            yield DraftError(
+                "facet_elsewhere",
+                where=where,
+                expected=f"a slot on {domain} alone, once it is a facet",
+                got=f"{slot_name} on {', '.join(carried[slot_name])} as well",
+                repairs=[Repair(f"take it off {domain}, or off your own class",
+                                options=["detach"]),
+                         Repair("or give your own class a slot of its own",
+                                options=["add_slot"])],
+            )
+
+
+def _facets_hold(store, draft, name):
+    """Raise the first. The rule itself is in `facet_refusals`."""
+    for refusal in facet_refusals(store, draft, name):
+        raise refusal
+
+
 def _own_business(conn, store, directory):
     """An application is sealed only into the kernel of the business it is for.
 
@@ -1045,7 +1145,8 @@ def seal(conn, draft_path, *, actor_id, into=None, sealed_at=None, store=None,
         _one_version_per_module(store, draft, draft_path.name)
         _names_hold(store, draft, draft_path.name, module)
         _no_foreign_kind(store, draft, draft_path.name)
-    ranges = _slot_ranges(view, draft_path.name)
+        _facets_hold(store, draft, draft_path.name)
+    ranges =_slot_ranges(view, draft_path.name)
     for refusal in range_refusals(view, draft, draft_path.name):
         raise refusal
     _roles(view, draft, draft_path.name)

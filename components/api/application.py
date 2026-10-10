@@ -29,7 +29,7 @@ from components import business  # noqa: E402
 from compile import MapError, plan_for, preview, sql_text, tables  # noqa: E402
 from compile import _REF as EXPRESSION_REFS  # noqa: E402
 from components.modules import read as modules_read  # noqa: E402
-from components.modules.compose import matches  # noqa: E402
+from components.modules.compose import facets, matches  # noqa: E402
 from components.refusal import Repair  # noqa: E402
 from generate import IDENTITY_COLUMN, form, named, read_map, submit, table_name  # noqa: E402
 from generate import _registry, _row_subjects, _type_slot  # noqa: E402
@@ -56,6 +56,11 @@ def _origins(store, name, version):
         for slot_name in (document.get("slots") or {}):
             slots[slot_name] = origin
     return classes, slots
+
+
+def _title(store, module):
+    """What a module is called for a reader: its manifest's title."""
+    return store.manifest(module).get("title") or module
 
 
 def application(store, name, version):
@@ -310,6 +315,12 @@ def form_of(conn, store, name, version, class_name, *, valid_at, as_of):
     built = form(conn, map_, class_name, valid_at=valid_at, as_of=as_of)
     slot_origin = _origins(store, name, version)[1]
     type_slot = _type_slot(map_, class_name)
+    # A field another module adds to this class is grouped under that
+    # module's title: the item form in Sari's application has a section
+    # for Rudi's rates, apart from what the item itself is.
+    added = {slot: dep for owner, slot, dep in
+             facets(store.version_composition(name, version))
+             if owner == class_name}
     stated_by_the_form = str(type_slot.name) if type_slot else None
     return {
         "name": name,
@@ -324,6 +335,8 @@ def form_of(conn, store, name, version, class_name, *, valid_at, as_of):
             "required": f["required"], "ref": f["ref"],
             "description": f["description"],
             "module": slot_origin.get(f["name"]),
+            "section": (_title(store, added[f["name"]][0])
+                        if f["name"] in added else None),
             "options": [{"uri": uri, "label": label} for uri, label in f["options"]],
             "options_from": f["options_from"],
         } for f in built["fields"] if f["name"] != stated_by_the_form],

@@ -182,6 +182,17 @@ describe("the map of a draft", () => {
     expect(node("IngredientStock").fields[0]).toMatchObject({ points: "Ingredient", holds: "Ingredient" });
   });
 
+  it("draws a field this module adds to another module's kind on that kind, as its own", () => {
+    const d = draft();
+    d.slots.push({ ...d.slots[0], name: "ingredient_shelf_life", title: "Shelf life",
+                   range: "integer", unit: "day", on: [], adds_to: "Ingredient" });
+    d.borrowed[0].slots.push({ name: "ingredient_shelf_life", range: "integer", identifier: false });
+    const shelf = mapOf(d).nodes.find((n) => n.name === "Ingredient")!.fields.slice(-1)[0];
+    expect(shelf).toMatchObject({
+      label: "Shelf life", holds: "whole number, in day", mark: { kind: "adds", text: "added here" },
+    });
+  });
+
   it("knows what a box is joined to", () => {
     expect([...neighbours(drawn.edges, "Ingredient")].sort())
       .toEqual(["Category", "Ingredient", "IngredientStock", "Movement", "Supplier"]);

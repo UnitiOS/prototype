@@ -1093,6 +1093,12 @@ details.fact:not([open]) > summary { border-bottom: 0; }
 }
 .kind-mark-key { color: var(--ink); }
 .kind-mark-role { color: var(--stands); border-color: var(--stands); }
+.form-section {
+  border: 1px dashed var(--rule); border-radius: 8px; padding: 8px 12px; margin: 4px 0;
+  display: grid; gap: 10px; min-width: 0;
+}
+.form-section > legend { font-size: 0.8rem; color: var(--ink-soft); padding: 0 4px; }
+.kind-mark-adds { color: var(--ink); border-color: var(--ink); border-style: dashed; }
 .kind-mark-sum, .kind-mark-formula, .kind-mark-lookup, .kind-mark-worked {
   color: var(--known); border-color: var(--known);
 }

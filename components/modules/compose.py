@@ -34,6 +34,12 @@ is its own; a name in sight as it is written is that one; otherwise a plain
 name stands for the one qualified name whose plain part it is, when there is
 exactly one. With none or several it is left as written, for a reader to ask
 "which one?".
+
+A module may add facts to a thing another module owns — a facet: Rudi's
+`rental_rate` on the library's `Item`. It declares the slot as its own, with
+`domain: Item`, and the composition hangs the slot on `Item` (`attach`). Only
+a composition that pins Rudi's module does: the library's version is never
+touched, no second record exists, and the slot keeps Rudi's predicate.
 """
 
 import copy
@@ -184,6 +190,52 @@ def _slot_refs(body, refer, path):
     return body
 
 
+def facets(entries):
+    """Every facet in a composition: a slot one document declares with a
+    `domain` that another document of the composition declares as a class.
+
+    `entries` are a composition's `(pin, document)` pairs. Returned as
+    `(class, slot, pin)`, in the composition's order: the class it adds to,
+    the slot as the composition calls it, and the pin of the module that
+    declares the slot (`None` for the document being read itself). A
+    `domain` naming a class of the slot's own document is LinkML's own
+    business and no facet.
+    """
+    owner = {}
+    for index, (_pin, document) in enumerate(entries):
+        for name in (document.get("classes") or {}):
+            owner.setdefault(str(name), index)
+    out = []
+    for index, (pin, document) in enumerate(entries):
+        for name, body in (document.get("slots") or {}).items():
+            domain = str((body or {}).get("domain") or "")
+            if domain and owner.get(domain, index) != index:
+                out.append((domain, str(name), pin))
+    return out
+
+
+def attach(entries):
+    """A composition with every facet carried by the class it adds to.
+
+    The slot is appended to that class's own list, in the copy of its
+    owner's document this composition holds: the owner's sealed version is
+    never touched, and a composition that does not pin the facet's module
+    never sees it.
+    """
+    owner = {}
+    for _pin, document in entries:
+        for name, body in (document.get("classes") or {}).items():
+            owner.setdefault(str(name), document)
+    for class_name, slot, _pin in facets(entries):
+        classes = owner[class_name]["classes"]
+        body = classes[class_name] or {}
+        slots = [str(s) for s in (body.get("slots") or [])]
+        if slot not in slots:
+            body["slots"] = slots + [slot]
+        classes[class_name] = body
+    return entries
+
+
 def resolver(own, known, rename=lambda n: n):
     """The one rule, for a document declaring `own` among `known` names.
 
@@ -223,4 +275,5 @@ def ambiguous(document, known):
 
 
 __all__ = ["SEP", "tag_of", "qualified", "plain", "tag_in", "matches",
-           "declared", "rewrite", "resolver", "ambiguous", "expand"]
+           "declared", "rewrite", "resolver", "ambiguous", "expand",
+           "facets", "attach"]

@@ -15,7 +15,7 @@ import { useEffect, useState } from "react";
 import { ApiError, appApi, modulesApi } from "./api";
 import type {
   Application, Business, CellSource, CheckReport, ClassGraph as Graph, Clocks, Column,
-  FitReport, FormSpec, InUse, ModuleGraph, Pin, Projection, Refusal as RefusalSpec, Roles,
+  FitReport, FormField, FormSpec, InUse, ModuleGraph, Pin, Projection, Refusal as RefusalSpec, Roles,
   Written,
 } from "./api";
 import { ClassGraph } from "./ClassGraph";
@@ -73,6 +73,16 @@ export function applications(graph: ModuleGraph, business: Business | null): Pin
     }
   }
   return out.length > 0 ? out : roots(graph);
+}
+
+/** The fields other modules add to a kind (facets), one section per module,
+ *  in the order the form lists them. The kind's own fields have none. */
+export function formSections(fields: FormField[]): [string, FormField[]][] {
+  const out = new Map<string, FormField[]>();
+  for (const f of fields) {
+    if (f.section) out.set(f.section, [...(out.get(f.section) ?? []), f]);
+  }
+  return [...out.entries()];
 }
 
 export function ApplicationPage(
@@ -657,6 +667,34 @@ function FormPanel(
     }
   };
 
+  // One field of the form. A field another module adds to this kind (a
+  // facet) is the same field, shown under that module's title.
+  const field = (f: FormField) => (
+    <label key={f.name} className="field">
+      <span>
+        {f.title}
+        {f.ref && <span className="badge badge-stated">names an entity</span>}
+      </span>
+      {f.ref ? (
+        <select value={values[f.name] ?? ""}
+          onChange={(e) => setValues({ ...values, [f.name]: e.target.value })}>
+          <option value="">—</option>
+          {f.options.map((o) => (
+            <option key={o.uri} value={o.uri}>{o.label ? `${o.label} — ${o.uri}` : o.uri}</option>
+          ))}
+        </select>
+      ) : (
+        <input value={values[f.name] ?? ""}
+          onChange={(e) => setValues({ ...values, [f.name]: e.target.value })} />
+      )}
+      <small>
+        {f.description
+          || (f.ref ? `One ${f.range}, chosen from ${f.options_from ?? "the log"}.` : f.range ?? "text")}
+        {f.module && <> · <span className="id">{f.module.name}</span></>}
+      </small>
+    </label>
+  );
+
   const ready = subject.trim() !== "" && actor.trim() !== ""
     && Object.values(values).some((v) => v !== "");
 
@@ -688,30 +726,12 @@ function FormPanel(
           <small>From when this is true of the world, not when it is written down.</small>
         </label>
 
-        {data.fields.map((f) => (
-          <label key={f.name} className="field">
-            <span>
-              {f.title}
-              {f.ref && <span className="badge badge-stated">names an entity</span>}
-            </span>
-            {f.ref ? (
-              <select value={values[f.name] ?? ""}
-                onChange={(e) => setValues({ ...values, [f.name]: e.target.value })}>
-                <option value="">—</option>
-                {f.options.map((o) => (
-                  <option key={o.uri} value={o.uri}>{o.label ? `${o.label} — ${o.uri}` : o.uri}</option>
-                ))}
-              </select>
-            ) : (
-              <input value={values[f.name] ?? ""}
-                onChange={(e) => setValues({ ...values, [f.name]: e.target.value })} />
-            )}
-            <small>
-              {f.description
-                || (f.ref ? `One ${f.range}, chosen from ${f.options_from ?? "the log"}.` : f.range ?? "text")}
-              {f.module && <> · <span className="id">{f.module.name}</span></>}
-            </small>
-          </label>
+        {data.fields.filter((f) => !f.section).map(field)}
+        {formSections(data.fields).map(([title, fields]) => (
+          <fieldset key={title} className="form-section">
+            <legend>{title}</legend>
+            {fields.map(field)}
+          </fieldset>
         ))}
       </div>
       {data.type_slot && (

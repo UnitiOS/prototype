@@ -48,6 +48,7 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "components" / "compiler"))
 sys.path.insert(0, str(ROOT / "components" / "generator"))
+sys.path.insert(0, str(ROOT / "components" / "seal"))
 
 from components.examples import examples as business  # noqa: E402
 from components.modules.roles import _above, taught  # noqa: E402
@@ -56,6 +57,7 @@ from components.modules.store import SHARED, kind_of  # noqa: E402
 from components.refusal import Refusal, Repair  # noqa: E402
 from components import standard  # noqa: E402
 from compile import SQL_TYPE, SYNTAX  # noqa: E402
+from seal import facet_refusals  # noqa: E402
 
 DRAFT = "draft.yaml"
 TRANSCRIPT = "draft.txt"
@@ -252,13 +254,13 @@ OPERATIONS = {
         "may": {},
     },
     "attach": {
-        "does": "put a slot on a class",
-        "takes": {"class": "own_class", "slot": "slot"},
+        "does": "put a slot on a class, its own or another module's (a facet)",
+        "takes": {"class": "class", "slot": "slot"},
         "may": {},
     },
     "detach": {
         "does": "take a slot off a class",
-        "takes": {"class": "own_class", "slot": "slot"},
+        "takes": {"class": "class", "slot": "slot"},
         "may": {},
     },
     "bind": {
@@ -1247,6 +1249,8 @@ def _set_slot(store, name, document, args):
     if field in BOOLEAN_FIELDS and not value:
         body.pop(field, None)
     _slots(document)[slot_name] = body
+    if body.get("domain"):
+        _facet_holds(store, document, slot_name)
     return _save(store, name, document, "set_slot", args)
 
 
@@ -1277,7 +1281,9 @@ def _meaning(body, field, value, what):
 
 
 def _attach(store, name, document, args):
-    class_name = _own(document, "class", str(args["class"]), "attach")
+    class_name = _visible(store, document, "class", str(args["class"]), "attach")
+    if class_name not in (document.get("classes") or {}):
+        return _add_facet(store, name, document, args, class_name)
     slot_name = _visible(store, document, "slot", str(args["slot"]), "attach")
     body = _classes(document)[class_name] or {}
     slots = list(body.get("slots") or [])
@@ -1285,12 +1291,74 @@ def _attach(store, name, document, args):
         slots.append(slot_name)
     body["slots"] = slots
     _classes(document)[class_name] = body
+    if slot_name in (document.get("slots") or {}):
+        _facet_holds(store, document, slot_name)
     return _save(store, name, document, "attach", args)
 
 
+def _add_facet(store, name, document, args, class_name):
+    """A slot of this draft's own, on a class another module owns.
+
+    Written as LinkML's `domain` on the slot; the store hangs it on the class
+    wherever this module is pinned (components/modules/compose.py). The
+    class's own module is never touched.
+    """
+    slot_name = _own(document, "slot", str(args["slot"]), "attach")
+    body = dict(_slots(document)[slot_name] or {})
+    held = str(body.get("domain") or "")
+    if held and held != class_name:
+        raise StudioError(
+            "facet_elsewhere",
+            where=f"attach {slot_name}",
+            expected=f"a slot on one thing, once it is a facet",
+            got=f"{slot_name}, already added to {held}",
+            repairs=[Repair(f"take it off {held} first", options=["detach"]),
+                     Repair(f"or add a slot of its own to {class_name}",
+                            options=["add_slot"])],
+        )
+    body["domain"] = class_name
+    _slots(document)[slot_name] = body
+    _facet_holds(store, document, slot_name)
+    return _save(store, name, document, "attach", args)
+
+
+def facets_of(document):
+    """Every facet a draft declares: its own slot, and the class another
+    module owns that the slot adds to."""
+    own = document.get("classes") or {}
+    return {str(slot): str(body["domain"])
+            for slot, body in (document.get("slots") or {}).items()
+            if (body or {}).get("domain") and str(body["domain"]) not in own}
+
+
+def _facet_holds(store, document, slot_name):
+    """The seal's facet rule (`facet_refusals`), said at the step: the same
+    refusal, from the studio, which is who refuses a step."""
+    for refusal in facet_refusals(store, document, "attach", slots=[slot_name]):
+        said = StudioError(refusal.code, where=refusal.where, expected=refusal.expected,
+                           got=refusal.got, repairs=refusal.repairs)
+        raise said
+
+
 def _detach(store, name, document, args):
-    class_name = _own(document, "class", str(args["class"]), "detach")
+    class_name = _visible(store, document, "class", str(args["class"]), "detach")
     slot_name = str(args["slot"])
+    if class_name not in (document.get("classes") or {}):
+        slot_name = _own(document, "slot", slot_name, "detach")
+        body = dict(_slots(document)[slot_name] or {})
+        if str(body.get("domain") or "") != class_name:
+            raise StudioError(
+                "not_attached",
+                where=f"{class_name}.{slot_name}",
+                expected=f"a slot this draft adds to {class_name}",
+                got=f"{slot_name!r}",
+                repairs=[Repair("take one off that is on it",
+                                options=sorted(s for s, b in (document.get("slots") or {}).items()
+                                               if str((b or {}).get("domain") or "") == class_name))],
+            )
+        body.pop("domain")
+        _slots(document)[slot_name] = body
+        return _save(store, name, document, "detach", args)
     body = _classes(document)[class_name] or {}
     if slot_name not in (body.get("slots") or []):
         raise StudioError(

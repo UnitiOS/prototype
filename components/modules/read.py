@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT / "components" / "provenance"))
 sys.path.insert(0, str(ROOT / "components" / "seal"))
 
+from components.modules import compose  # noqa: E402
 from components.modules import diff as _diff  # noqa: E402
 from components.modules.store import ModuleError  # noqa: E402
 from seal import written_uri  # noqa: E402
@@ -188,6 +189,10 @@ def class_graph(store, name, version):
                     collapsing it: the hop is the seam.
         parameter   a derived column reads one fact off the entity a key names.
 
+    And beside the joins, on each class: `facets`, the slots another module
+    adds to it (components/modules/compose.py) — a fact about the same thing,
+    under that module's predicate, which only this closure sees.
+
     Nothing here is computed from the log. It is what the sealed versions say,
     read in the same closure order the compiler reads them in.
     """
@@ -195,12 +200,17 @@ def class_graph(store, name, version):
     closure = store.closure(name, version)
 
     classes, slots = {}, {}
-    for dep, document in store.version_composition(name, version):
+    composition = store.version_composition(name, version)
+    for dep, document in composition:
         origin = _pin(*dep)
         for class_name, c in (document.get("classes") or {}).items():
             classes[class_name] = {**(c or {}), "module": origin}
         for slot_name, s in (document.get("slots") or {}).items():
             slots[slot_name] = {**(s or {}), "module": origin}
+    # The slots other modules add to a class, and which module adds each.
+    added = {}
+    for class_name, slot_name, dep in compose.facets(composition):
+        added.setdefault(class_name, []).append({"slot": slot_name, "module": _pin(*dep)})
 
     def parents(class_name):
         """Everything above this class: its `is_a` chain and its mixins' too.
@@ -248,6 +258,7 @@ def class_graph(store, name, version):
         "description": classes[class_name].get("description"),
         "shape": shape(class_name),
         "slots": inherited(class_name),
+        "facets": added.get(class_name, []),
     } for class_name in sorted(classes)]
 
     edges = []

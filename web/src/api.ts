@@ -206,6 +206,8 @@ export interface ClassNode {
   fills: string[]; abstract: boolean;
   description: string | null;
   shape: "derived" | "stated" | "unstatable" | "role"; slots: string[];
+  /** The slots other modules add to it (facets), and which module adds each. */
+  facets: { slot: string; module: Pin }[];
 }
 
 export interface ClassEdge {
@@ -285,6 +287,9 @@ export interface FormField {
   name: string; title: string; range: string | null;
   required: boolean; ref: boolean; description: string;
   module: Pin | null;
+  /** The title of the module that adds this field to the class (a facet);
+   *  null for the class's own fields. */
+  section: string | null;
   options: { uri: string; label: string }[];
   options_from: string | null;
 }
@@ -491,6 +496,8 @@ export interface DraftSlot {
   range: string | null; identifier: boolean; designates_type: boolean;
   binds: string | null; rule: { kind: string; spec: unknown } | null;
   on: string[]; labels?: Labels;
+  /** The class another module owns that this slot adds to: a facet. */
+  adds_to?: string | null;
   /** What its value means, as the recording standard asks: a number's unit
    *  and which way it runs, a date's moment. */
   unit?: string | null; direction?: string | null; time_meaning?: string | null;

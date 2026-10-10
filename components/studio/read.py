@@ -49,13 +49,13 @@ from components.examples import examples as business  # noqa: E402
 from components.studio import changes as changed  # noqa: E402
 from components.studio.draft import (  # noqa: E402
     CLASS_FIELDS, DRAFT, ENUM_FIELDS, EXAMPLE_FIELDS, FIELDS, OPERATIONS,
-    SLOT_FIELDS, USAGE_FIELDS, enums_seen, examples_of, open_draft, path,
+    SLOT_FIELDS, USAGE_FIELDS, enums_seen, examples_of, facets_of, open_draft, path,
     ranges, seen, terms, text_of, transcript,
 )
 from seal import (  # noqa: E402
     _facts, _one_version_per_module, _pins_already_sealed, _slot_ranges,
-    _transcript, _valid_from, _validate, composed, kind_refusals, name_refusals,
-    range_refusals,
+    _transcript, _valid_from, _validate, composed, facet_refusals, kind_refusals,
+    name_refusals, range_refusals,
     role_refusals, uri_refusals,
 )
 
@@ -151,7 +151,8 @@ def inspect(store, name, document, conn=None):
     collect(_pins_already_sealed, store, document,
             datetime.now(timezone.utc), DRAFT)
     collect(_one_version_per_module, store, document, DRAFT)
-    for reader, args in ((name_refusals, (name,)), (kind_refusals, ())):
+    for reader, args in ((name_refusals, (name,)), (kind_refusals, ()),
+                         (facet_refusals, ())):
         try:
             out["refusals"] += [r.as_dict() for r in reader(store, document, DRAFT, *args)]
         except Refusal as exc:
@@ -402,6 +403,14 @@ def _carriers(store, document):
     return taught(sorted(out))
 
 
+def _things_in_sight(store, document):
+    """Every class of a pinned module a facet could add to: the things some
+    module records, not the roles."""
+    classes, _ = seen(store, document)
+    return sorted(c for c, body in classes.items()
+                  if body["module"] is not None and not body.get("abstract"))
+
+
 def with_rows_of(map_):
     """Every class this draft would build a table for, by the compiler's rule.
 
@@ -459,7 +468,10 @@ def holes(store, name, document, found):
 
     own_classes = document.get("classes") or {}
     own_slots = document.get("slots") or {}
-    if not own_classes and not composes(store, name, document):
+    # A facet is a slot on a class another module owns: a module of facets
+    # alone has declared something, and its slots are not loose.
+    adds_to = facets_of(document)
+    if not own_classes and not adds_to and not composes(store, name, document):
         out.append(_hole("nothing_declared", name, blocking=False,
                          because=OPEN["nothing_declared"],
                          step={"op": "add_class", "args": {}, "choose": "class",
@@ -486,7 +498,7 @@ def holes(store, name, document, found):
                                    "options": sorted(with_rows)}))
     carried = _carriers(store, document)
     attached = {s for body in own_classes.values()
-                for s in ((body or {}).get("slots") or [])}
+                for s in ((body or {}).get("slots") or [])} | set(adds_to)
     for class_name, body in sorted(own_classes.items()):
         body = body or {}
         if body.get("abstract"):
@@ -509,7 +521,8 @@ def holes(store, name, document, found):
                              because=OPEN["slot_is_loose"],
                              step={"op": "attach", "args": {"slot": slot_name},
                                    "choose": "class",
-                                   "options": sorted(own_classes)}))
+                                   "options": sorted(own_classes)
+                                   + _things_in_sight(store, document)}))
     # What the standard cannot tell is English: asked, never refused.
     for where, _said in found.get("doubts") or []:
         kind, _, term = where.partition(" ")
@@ -641,6 +654,8 @@ def _borrowed(store, document):
 
     wanted = [str((b or {}).get("range")) for b in (document.get("slots") or {}).values()
               if (b or {}).get("range")]
+    # What a facet adds to is drawn, with the facet on it.
+    wanted += list(facets_of(document).values())
     for body in own.values():
         wanted += points_at(body)
 
@@ -903,6 +918,8 @@ def state(store, name, conn=None):
             "binds": (body or {}).get("is_a"),
             "rule": _rule_of(body),
             "on": attached.get(slot_name, []),
+            # The class another module owns that this slot adds to: a facet.
+            "adds_to": facets_of(document).get(slot_name),
         } for slot_name, body in sorted(own_slots.items())],
         "enums": [{
             "name": enum_name,

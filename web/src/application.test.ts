@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ModuleGraph } from "./api";
-import { applications } from "./application";
+import { applications, formSections } from "./application";
 
 const node = (name: string, version: string, kind: "module" | "application",
               business: string | null, latest = true) =>
@@ -38,5 +38,22 @@ describe("the applications a business is offered", () => {
   it("falls back on the roots of the graph when it has no application of its own", () => {
     const offered = applications(graph, { business: null, installed: [] });
     expect(offered.map((p) => p.name)).toEqual(["@kemahceria/rental", "@another/shop"]);
+  });
+});
+
+describe("formSections", () => {
+  const field = (name: string, section: string | null) => ({
+    name, title: name, range: "string", required: false, ref: false, description: "",
+    module: null, section, options: [], options_from: null,
+  });
+
+  it("groups the fields other modules add under each module's title", () => {
+    const fields = [field("item_name", null), field("tarif__rental_rate", "Rental rates"),
+                    field("stok__reorder_level", "Stock"), field("tarif__deposit", "Rental rates")];
+    expect(formSections(fields).map(([title, f]) => [title, f.map((x) => x.name)])).toEqual([
+      ["Rental rates", ["tarif__rental_rate", "tarif__deposit"]],
+      ["Stock", ["stok__reorder_level"]],
+    ]);
+    expect(formSections([field("item_name", null)])).toEqual([]);
   });
 });

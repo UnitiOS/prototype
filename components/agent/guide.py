@@ -142,6 +142,9 @@ A pinned module's names carry its tag, `penyewaan__Rental`; core's and the
 library's stay plain. Write the plain name: where two pinned modules declare
 it, the step asks which (`name_ambiguous`) — answer with the full name.
 
+Attached to another module's class, a slot of yours is a facet: more said
+about their thing (a rate on `Item`), never required.
+
 What the system cannot do yet: total only the rows whose value meets a
 condition (`where` narrows by the class a slot points at, never by a value),
 and group by a fact more than one record away. When a request needs one,

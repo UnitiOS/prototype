@@ -569,6 +569,7 @@ function ThingsLegend({ changes }: { changes: boolean }) {
       <p className="legend-row"><span className="legend-arrow">↑</span><span>Points at: each one refers to one of those</span></p>
       <p className="legend-row"><span className="legend-arrow legend-reads">↑</span><span>Adds up: numbers here are worked out from records of that kind</span></p>
       <p className="legend-row"><span><span className="kind-mark kind-mark-key">key</span></span><span>What tells one apart from another</span></p>
+      <p className="legend-row"><span><span className="kind-mark kind-mark-adds">added here</span></span><span>Something this module says about another module's kind, which stays theirs</span></p>
       <p className="legend-row"><span><span className="kind-mark kind-mark-sum">sum</span></span><span>Worked out by a rule, never typed in: a sum, a formula, or a value looked up elsewhere</span></p>
       <ChecksRow />
       {changes && <ChangesRow />}
