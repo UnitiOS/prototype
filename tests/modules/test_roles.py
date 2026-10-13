@@ -61,7 +61,7 @@ def _draft(tmp_path, classes, slots, imports=None, name="probe"):
         "title": "Probe",
         "description": "A draft written for one test.",
         "prefixes": {"linkml": "https://w3id.org/linkml/",
-                     "pb": "https://probe.example/"},
+                     "pb": f"https://probe.example/{name}/"},
         "default_prefix": "pb",
         "default_range": "string",
         "imports": imports or ["linkml:types", f"{CORE}@v2"],

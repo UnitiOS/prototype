@@ -78,7 +78,7 @@ def _draft(tmp_path):
         "name": "budi_notes",
         "title": "Notes",
         "description": "A module written for one test.",
-        "prefixes": {"linkml": "https://w3id.org/linkml/", "nt": "https://notes.example/"},
+        "prefixes": {"linkml": "https://w3id.org/linkml/", "nt": "https://notes.example/notes/"},
         "default_prefix": "nt",
         "default_range": "string",
         "imports": ["linkml:types", "@uniti/core@v2"],

@@ -57,7 +57,7 @@ from components.modules.store import SHARED, kind_of  # noqa: E402
 from components.refusal import Refusal, Repair  # noqa: E402
 from components import standard  # noqa: E402
 from compile import SQL_TYPE, SYNTAX  # noqa: E402
-from seal import facet_refusals  # noqa: E402
+from seal import facet_refusals, namespace_refusals, predicate_refusals  # noqa: E402
 
 DRAFT = "draft.yaml"
 TRANSCRIPT = "draft.txt"
@@ -890,6 +890,7 @@ def _start(store, name, _document, args):
             repairs=[Repair("start one of the kinds the studio builds",
                             options=["module", "library", "application"])],
         )
+    _says(namespace_refusals(store, document, name, name))
     where.mkdir(parents=True, exist_ok=True)
     (where / MANIFEST).write_text(
         yaml.safe_dump(manifest, sort_keys=False, allow_unicode=True),
@@ -1147,6 +1148,7 @@ def _add_slot(store, name, document, args):
         if args.get(field):
             body = _meaning(body, field, args[field], f"add_slot {slot_name}")
     _slots(document)[slot_name] = body
+    _says(predicate_refusals(store, document, name, slots=[slot_name]))
     return _save(store, name, document, "add_slot", {**args, "slot_uri": uri})
 
 
@@ -1251,6 +1253,8 @@ def _set_slot(store, name, document, args):
     _slots(document)[slot_name] = body
     if body.get("domain"):
         _facet_holds(store, document, slot_name)
+    if field == "slot_uri":
+        _says(predicate_refusals(store, document, name, slots=[slot_name]))
     return _save(store, name, document, "set_slot", args)
 
 
@@ -1332,9 +1336,14 @@ def facets_of(document):
 
 
 def _facet_holds(store, document, slot_name):
-    """The seal's facet rule (`facet_refusals`), said at the step: the same
-    refusal, from the studio, which is who refuses a step."""
-    for refusal in facet_refusals(store, document, "attach", slots=[slot_name]):
+    """The seal's facet rule (`facet_refusals`), said at the step."""
+    _says(facet_refusals(store, document, "attach", slots=[slot_name]))
+
+
+def _says(refusals):
+    """The first of a seal rule's refusals, said at the step: the same refusal,
+    from the studio, which is who refuses a step."""
+    for refusal in refusals:
         said = StudioError(refusal.code, where=refusal.where, expected=refusal.expected,
                            got=refusal.got, repairs=refusal.repairs)
         raise said

@@ -89,7 +89,7 @@ def world(conn, tmp_path_factory):
         "name": "probe_health",
         "title": "Probe",
         "description": "A module written for one test.",
-        "prefixes": {"linkml": "https://w3id.org/linkml/", "pb": "https://probe.example/"},
+        "prefixes": {"linkml": "https://w3id.org/linkml/", "pb": "https://probe.example/health/"},
         "default_prefix": "pb",
         "default_range": "string",
         "imports": ["linkml:types", f"{CORE}@v2"],

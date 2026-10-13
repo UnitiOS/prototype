@@ -55,7 +55,7 @@ from components.studio.draft import (  # noqa: E402
 from seal import (  # noqa: E402
     _facts, _one_version_per_module, _pins_already_sealed, _slot_ranges,
     _transcript, _valid_from, _validate, composed, facet_refusals, kind_refusals,
-    name_refusals, range_refusals,
+    name_refusals, namespace_refusals, predicate_refusals, range_refusals,
     role_refusals, uri_refusals,
 )
 
@@ -152,7 +152,8 @@ def inspect(store, name, document, conn=None):
             datetime.now(timezone.utc), DRAFT)
     collect(_one_version_per_module, store, document, DRAFT)
     for reader, args in ((name_refusals, (name,)), (kind_refusals, ()),
-                         (facet_refusals, ())):
+                         (facet_refusals, ()), (namespace_refusals, (name,)),
+                         (predicate_refusals, ())):
         try:
             out["refusals"] += [r.as_dict() for r in reader(store, document, DRAFT, *args)]
         except Refusal as exc:

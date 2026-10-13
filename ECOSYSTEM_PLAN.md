@@ -381,7 +381,7 @@ evidence, not implementation: none of them is to be copied into `components/`.
 | Composition owned by Uniti | The `Store` qualifies names and locks URIs; LinkML never merges names | Step 1 (confirmed 10 Oct) |
 | Reserved names | Core and library names (`Thing`, `Party`, `Item`, `Transaction`, …) stay unqualified and no other module may declare them | Step 1 (confirmed 10 Oct) |
 | Facets | Official way to add facts to another module's thing | Step 2 (confirmed 10 Oct) |
-| Own predicates | A `slot_uri` must be in the module's own namespace | Step 3 |
+| Own predicates | A `slot_uri` must be in the module's own namespace | Step 3 (confirmed 12 Oct) |
 | Role references | Taught with three rules; narrower roles extracted into community interface modules | Step 4 |
 | Several sources | One rule, explicit sources, guarded by unit and direction | Step 5 |
 | Seal vs compiler | A sound graph seals even where the compiler cannot compute yet; vocabulary stays closed | Step 6 |
@@ -522,6 +522,28 @@ before any commit. Step 8 may be done at any time.
   code, with the repair "use a facet, or point at the record".
 - **Done when:** a module reusing another module's predicate is refused, with the
   repair offered as options.
+- **Decided 12 October 2026 (owner):** a module's namespace is its `id`; a
+  predicate is its own when it is under the `id` followed by `/` or `#`. Because
+  `start` lets a module choose its `id` (`base`), the namespace itself is
+  guarded too: no two modules of the store may hold namespaces that are equal,
+  or one inside the other. `class_uri` has the same gap and is parked (§11.4).
+- **Built (`seal.predicate_refusals`, `seal.namespace_refusals`,
+  `tests/modules/test_predicates.py`):**
+  - `foreign_predicate`: a non-abstract slot whose predicate, expanded the way
+    the seal records it (the draft's own prefixes, then those of the modules it
+    reaches, as LinkML would), is outside the draft's namespace. It names the
+    module whose namespace it is in, and offers a facet on the class that
+    carries that predicate (`attach`), a record of one's own pointing at it
+    (`add_slot`), or the module's own word (`add_slot`/`set_slot`). Said at
+    `add_slot` and `set_slot slot_uri`, at the seal, and as a blocking hole.
+  - `namespace_taken`: an `id` equal to, inside or around a namespace another
+    sealed module of the store holds; a module's own earlier versions are not
+    another module. Said at `start` (with or without `base`) and at a seal into
+    a module of the store; a draft sealed outside the store takes nobody's.
+  - Every sealed module in `packages` and the development store already held
+    both rules. Five hand-written test schemas put their prefix one level above
+    their `id` (`pb: https://probe.example/` under `id: …/health`); they now put
+    it under the `id`, as the studio always has.
 
 ### Step 4 — Pointing at roles, as the normal way to connect
 
@@ -810,3 +832,8 @@ Ideas found during the work that are not in a step. Empty on 10 October 2026.
 - **The agent's instructions are at their budget** (found at step 2): 22,498
   of the 22,500 characters `test_agent` allows. Step 4's three rules will
   not fit without cutting something or raising the budget.
+- **`class_uri` can still name another module's class** (found at step 3). A
+  module that writes `class_uri: item:Item` on a class of its own records its
+  entities as the library's `Item`, the way a foreign `slot_uri` did before
+  step 3. The same two rules would close it (`foreign_predicate` read over
+  explicit `class_uri`s). **Decided 12 October 2026: parked.**

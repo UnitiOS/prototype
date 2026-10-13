@@ -817,6 +817,134 @@ def _facets_hold(store, draft, name):
         raise refusal
 
 
+def namespace(document):
+    """The namespace a module's `id` names: every predicate it declares is in it."""
+    return str(document.get("id") or "").rstrip("/#")
+
+
+def _inside(uri, space):
+    return bool(space) and (uri.startswith(space + "/") or uri.startswith(space + "#"))
+
+
+def _namespaces(store, besides=None):
+    """Every namespace a sealed module of the store holds, with the module."""
+    held = {}
+    for module in store.names():
+        if module == besides:
+            continue
+        for version in store.versions(module):
+            space = namespace(store.document(module, version["version"]))
+            if space:
+                held.setdefault(space, module)
+    return held
+
+
+def namespace_refusals(store, document, name, module=None):
+    """A module whose namespace is another module's, inside it, or around it.
+
+    A predicate is a module's own word because it is inside the module's
+    namespace; that means something only while no two modules' namespaces
+    overlap. The first module sealed under one holds it, and its own later
+    versions are not another module. A generator, for the reason
+    `name_refusals` is one.
+    """
+    space = namespace(document)
+    for held, owner in sorted(_namespaces(store, besides=module).items()):
+        if held == space or _inside(space, held) or _inside(held, space):
+            yield DraftError(
+                "namespace_taken",
+                where=f"{name}: id",
+                expected="a namespace no other module's overlaps",
+                got=f"{space}, where {owner} holds {held}",
+                repairs=[Repair("a module's namespace is chosen when it starts: "
+                                "start it under a base of its own, or leave `base` "
+                                "to the studio (a draft already open is thrown "
+                                "away first)",
+                                options=["start"])],
+            )
+
+
+def predicate_refusals(store, draft, name, *, slots=None):
+    """Every slot this draft declares under a predicate that is not its own.
+
+    A fact recorded under another module's predicate is that module's saying,
+    and nothing in the log tells the two writers apart afterwards. The
+    predicate is read as the seal records it: the draft's own prefixes first,
+    then the prefixes of the modules it reaches, which is how LinkML would
+    expand a prefix the draft never declared. Its own namespace is the one its
+    `id` names; a facet's predicate is in it like any other slot's.
+
+    `slots` limits the reading to those slots, for a studio step asking the
+    same thing of the one slot it changes. A generator, for the reason
+    `name_refusals` is one.
+    """
+    space = namespace(draft)
+    reached = [document for _, document in store.composition(draft, tags=False)[:-1]]
+    held = None
+    for slot_name, body in (draft.get("slots") or {}).items():
+        body = body or {}
+        if body.get("abstract") or not body.get("slot_uri"):
+            continue
+        if slots is not None and slot_name not in slots:
+            continue
+        written = str(body["slot_uri"])
+        uri = written_uri(draft, written)
+        for document in reached:
+            if "://" in uri:
+                break
+            uri = written_uri(document, written)
+        if _inside(uri, space):
+            continue
+        if held is None:
+            held = _namespaces(store)
+        owner = next((m for s, m in held.items() if uri == s or _inside(uri, s)), None)
+        things = _carrying(reached, uri) or ["the thing it is about"]
+        yield DraftError(
+            "foreign_predicate",
+            where=f"{name}: slot {slot_name}",
+            expected=f"a predicate inside this module's own namespace, {space}",
+            got=f"{written}, which is {uri}" + (f", {owner}'s" if owner else ""),
+            repairs=[Repair(f"say it as a fact of your own about {things[0]}: a slot "
+                            f"of your own, attached to it (a facet)",
+                            where=name, options=["attach"]),
+                     Repair(f"or keep your own record, with a slot pointing at "
+                            f"{things[0]}", where=name, options=["add_slot"]),
+                     Repair(f"or say it in this module's own words, "
+                            f"{draft.get('default_prefix')}:{slot_name}: the studio "
+                            f"offers them when `slot_uri` is left out",
+                            where=name, options=["add_slot", "set_slot"])],
+            )
+
+
+def _carrying(documents, uri):
+    """The classes, in the modules a draft reaches, that carry a slot recorded
+    under `uri`: what a fact said under it is about."""
+    out = []
+    for document in documents:
+        slots = document.get("slots") or {}
+        under = {s for s, body in slots.items()
+                 if (body or {}).get("slot_uri")
+                 and written_uri(document, body["slot_uri"]) == uri}
+        for term, cls in (document.get("classes") or {}).items():
+            cls = cls or {}
+            if under & {*(cls.get("slots") or []), *(cls.get("slot_usage") or {})}:
+                out.append(str(term))
+    return sorted(set(out))
+
+
+def _own_words(store, draft, name, module):
+    """Raise the first. The rules are `namespace_refusals` and `predicate_refusals`.
+
+    A namespace is held among the store's modules: a draft sealed outside one
+    is read by nobody else, and takes nobody's namespace.
+    """
+    if module is not None:
+        for refusal in namespace_refusals(store, draft, name, module):
+            raise refusal
+    for refusal in predicate_refusals(store, draft, name):
+        raise refusal
+
+
 def _own_business(conn, store, directory):
     """An application is sealed only into the kernel of the business it is for.
 
@@ -1146,6 +1274,7 @@ def seal(conn, draft_path, *, actor_id, into=None, sealed_at=None, store=None,
         _names_hold(store, draft, draft_path.name, module)
         _no_foreign_kind(store, draft, draft_path.name)
         _facets_hold(store, draft, draft_path.name)
+        _own_words(store, draft, draft_path.name, module)
     ranges =_slot_ranges(view, draft_path.name)
     for refusal in range_refusals(view, draft, draft_path.name):
         raise refusal

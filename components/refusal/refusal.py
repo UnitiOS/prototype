@@ -94,6 +94,8 @@ CODES = {
     "facet_on_role": "a facet added to a role, which has no records of its own to carry it",
     "facet_obliges": "a facet that is required, an identifier or a type, which only the thing's owner may oblige",
     "facet_elsewhere": "a facet that is also on a class of the module's own, or on a second thing",
+    "foreign_predicate": "a slot recorded under a predicate outside the module's own namespace",
+    "namespace_taken": "a module namespace equal to, inside or around another module's",
     "pin_sealed_later": "a pin to a version sealed after the draft itself",
     "facts_not_a_list": "`annotations.facts` that is not a list",
     "fact_not_a_mapping": "a stated fact that is not a mapping",
