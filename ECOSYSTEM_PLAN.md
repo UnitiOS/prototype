@@ -382,7 +382,7 @@ evidence, not implementation: none of them is to be copied into `components/`.
 | Reserved names | Core and library names (`Thing`, `Party`, `Item`, `Transaction`, …) stay unqualified and no other module may declare them | Step 1 (confirmed 10 Oct) |
 | Facets | Official way to add facts to another module's thing | Step 2 (confirmed 10 Oct) |
 | Own predicates | A `slot_uri` must be in the module's own namespace | Step 3 (confirmed 12 Oct) |
-| Role references | Taught with three rules; narrower roles extracted into community interface modules | Step 4 |
+| Role references | Taught with three rules; narrower roles extracted into community interface modules | Step 4 (confirmed 13 Oct) |
 | Several sources | One rule, explicit sources, guarded by unit and direction | Step 5 |
 | Seal vs compiler | A sound graph seals even where the compiler cannot compute yet; vocabulary stays closed | Step 6 |
 | Alignment | Not P2 | — |
@@ -576,6 +576,32 @@ before any commit. Step 8 may be done at any time.
 - **Done when:** the P1 scenario is a real test (no hack for the module's own
   example), labels are readable, and the "stands alone" hole appears on a module
   built like the first empty-store test's guarantee module (P2.md §4.8).
+- **Decided 13 October 2026 (owner):** a stand-in states its identity only;
+  "stands alone" is asked on both conditions; the agent's instructions budget
+  is raised rather than trimmed (§11.4).
+- **Built (`tests/modules/test_role_references.py`):**
+  - **Stand-in:** in an example, a record whose class is a role some slot in
+    sight points at is a stand-in. It is stated with the role's URI as its
+    class, in the scratch log only, and states nothing else
+    (`stand_in_states_facts`). Enough for a rule keyed by the reference itself
+    (guarantee money per transaction). Dewi's module seals on its own example
+    with no class of hers filling `Transaction`; the application pinning
+    Rudi's rentals, SewaPro's bookings and Dewi's guarantees holds per rental,
+    per booking and per customer.
+  - **Choice labels** (`generate._label`): a choice of a class below the
+    field's range says its kind first, then its identifier, or else the values
+    of the slots filling the role's bindings, a reference shown by its
+    identifier: "Rental — Budi, 2026-10-06". A choice of the field's own class
+    keeps the bare identifier ("Budi"). The form shows the label and keeps the
+    address as a tooltip.
+  - **`stands_alone`** (an opening): in a module whose composition holds a
+    library thing, a class that reaches no other module's class, directly or
+    through its own classes, or that has a `name`/`*_name` text slot and fills
+    no role outside core. The step offered is `add_slot` ranging over the
+    library's things and the roles in sight.
+  - **The guide** teaches the three rules in their order, the stand-in, and
+    proposing a `@community/...` interface module for a narrower role. The
+    instructions are 23,252 characters; `test_agent` allows 24,000.
 
 ### Step 5 — One rule, several sources
 
@@ -831,9 +857,20 @@ Ideas found during the work that are not in a step. Empty on 10 October 2026.
   test, or with core v3.
 - **The agent's instructions are at their budget** (found at step 2): 22,498
   of the 22,500 characters `test_agent` allows. Step 4's three rules will
-  not fit without cutting something or raising the budget.
+  not fit without cutting something or raising the budget. **Decided 13
+  October 2026: raised to 24,000 for now; trimming and making them more
+  efficient is for later.**
 - **`class_uri` can still name another module's class** (found at step 3). A
   module that writes `class_uri: item:Item` on a class of its own records its
   entities as the library's `Item`, the way a foreign `slot_uri` did before
   step 3. The same two rules would close it (`foreign_predicate` read over
   explicit `class_uri`s). **Decided 12 October 2026: parked.**
+- **A rule cannot reach through a stand-in's binding** (found at step 4). A
+  stand-in states only that it is one, so `by:
+  customer_party=guarantee_for.transaction_counterparty` has nothing to read
+  in a module's own example, and the compiler still asks for a class filling
+  the role (`binding_unfilled`). A stand-in carrying the role's bindings would
+  need the compiler to read them. **Decided 13 October 2026: parked.**
+- **`stands_alone` reads a name by its spelling** (found at step 4): a text
+  slot called `name` or `*_name` on a class filling no role. A module's own
+  lookup (`category_name`) is asked about too; the question blocks nothing.

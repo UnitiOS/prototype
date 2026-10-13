@@ -135,6 +135,18 @@ modules record the same event, totalling the role counts it twice; name the
 class instead. An application says explicitly what it counts from which
 module.
 
+What a slot points at, in this order:
+
+    a library thing   always, for parties and items (rental line → Item)
+    a role            when the other side may be another module's record
+                      (guarantee → Transaction): whatever fills it fits
+    your own class    for the structure inside your module (line → rental)
+
+An example of a module pointing at a role records a stand-in: the role as
+its class, and no facts. When a second module of one kind needs a role
+narrower than the library's (a return of a rental, never of a purchase),
+propose an interface module, `@community/...`, holding it for both to fill.
+
 Core's {" and ".join(f"`{role}`" for role in NOT_TAUGHT)} stay only for modules sealed under them:
 fill neither directly. A date says its moment by its `time_meaning`.
 

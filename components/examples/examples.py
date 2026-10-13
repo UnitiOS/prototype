@@ -49,6 +49,14 @@ on, to its last. Without them everything is stated at the beginning and read
 at the end. (`when` rather than `on`: YAML 1.1 reads a bare `on:` key as
 `true`.)
 
+**A stand-in for a role.** A module whose slot points at a role — a guarantee
+securing "a transaction" — has no class of its own filling that role, so its
+examples would have nothing to point at. Such a record is written with the
+role itself as its class, and states nothing but that it is one: its facts
+belong to whichever module fills the role. It exists in the example's scratch
+log only, where its class fact is the role's URI; nothing outside an example
+ever says an entity is a role.
+
 `row` names one row: by the value of its first column, or by `column: value`
 pairs. An expected value that is empty (`~`) says the cell must be empty, which
 is not the same as nought — an absent rule is not a rule that says zero.
@@ -499,10 +507,22 @@ def _gone(conn):
 
 
 def _stateable(map_):
-    """Every class a record can be: concrete, and something the log can say."""
+    """Every class a record can be: concrete, and something the log can say,
+    or a role a slot in sight points at, as a stand-in."""
     view = map_["view"]
+    return sorted([str(n) for n in view.all_classes()
+                   if not view.get_class(n).abstract
+                   and _type_slot(map_, n) is not None] + _stand_ins(map_))
+
+
+def _stand_ins(map_):
+    """The roles an example may record a stand-in of: those some slot in
+    sight points at, and that the log can say an entity is."""
+    view = map_["view"]
+    pointed = {str(slot.range) for slot in view.all_slots().values()
+               if not slot.abstract and slot.range}
     return sorted(str(n) for n in view.all_classes()
-                  if not view.get_class(n).abstract
+                  if view.get_class(n).abstract and str(n) in pointed
                   and _type_slot(map_, n) is not None)
 
 
@@ -553,7 +573,8 @@ def _state(conn, map_, name, records):
                 repairs=[Repair("name a class a record can be",
                                 options=_stateable(map_))])
         slot = _type_slot(map_, class_name)
-        if slot is None or view.get_class(class_name).abstract:
+        stand_in = class_name in _stand_ins(map_)
+        if slot is None or (view.get_class(class_name).abstract and not stand_in):
             raise ExampleError(
                 "no_type_slot", where=where,
                 expected="a class the log can say an entity is",
@@ -562,6 +583,17 @@ def _state(conn, map_, name, records):
                        else "carries no slot saying which class an entity is"),
                 repairs=[Repair("name a class a record can be",
                                 options=_stateable(map_))])
+        if stand_in and record.get("facts"):
+            raise ExampleError(
+                "stand_in_states_facts", where=where,
+                expected=f"a stand-in for {class_name} stating only that it is one",
+                got=f"{class_name} with facts: {', '.join(map(str, record['facts']))}",
+                repairs=[Repair("leave the facts out; they belong to whichever "
+                                "module fills the role"),
+                         Repair("or record a class that fills it",
+                                options=[c for c in _stateable(map_)
+                                         if c != class_name
+                                         and c in view.class_descendants(class_name)])])
         carried = {str(s.name) for s in view.class_induced_slots(class_name)}
         values = {_named(k, carried, where, "slot"): _text(v)
                   for k, v in (record.get("facts") or {}).items() if v is not None}

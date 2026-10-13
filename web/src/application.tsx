@@ -680,7 +680,7 @@ function FormPanel(
           onChange={(e) => setValues({ ...values, [f.name]: e.target.value })}>
           <option value="">—</option>
           {f.options.map((o) => (
-            <option key={o.uri} value={o.uri}>{o.label ? `${o.label} — ${o.uri}` : o.uri}</option>
+            <option key={o.uri} value={o.uri} title={o.uri}>{o.label || o.uri}</option>
           ))}
         </select>
       ) : (

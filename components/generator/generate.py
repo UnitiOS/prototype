@@ -520,20 +520,71 @@ def _options(conn, map_, class_name, *, valid_at, as_of):
     choices beside it now are too.
     """
     by_uri, by_id = _registry(conn)
-    identifier = _identifier(map_, class_name)
-    label_id = by_uri.get(predicate(map_["view"], identifier)) if identifier else None
-
     out = []
     for subject_id in _row_subjects(conn, map_, class_name, by_uri,
                                     valid_at=valid_at, as_of=as_of):
-        label = ""
-        if label_id is not None:
-            row = resolve_single(conn, subject_id=subject_id, predicate_id=label_id,
-                                 valid_at=valid_at, as_of=as_of)
-            label = (row or {}).get("value_literal") or ""
+        label = _label(conn, map_, class_name, subject_id, by_uri,
+                       valid_at=valid_at, as_of=as_of)
         out.append((by_id.get(subject_id, f"<{subject_id}>"), label))
     out.sort()
     return out, LOG
+
+
+def _label(conn, map_, class_name, subject_id, by_uri, *, valid_at, as_of):
+    """What a choice is called: which one it is, and what kind where that is
+    not the field's own.
+
+    A field over a role offers every module's records that fill it, so a
+    choice says its kind first: "Rental — Budi, 2026-10-06". Which one it is,
+    is its identifier where its class has one; otherwise the slots filling the
+    role's bindings, which are what every filler promised to say — whom a
+    transaction was with, and when. A value naming another entity is shown by
+    that entity's identifier, one record further and no more.
+    """
+    view = map_["view"]
+
+    def read(slot, subject):
+        predicate_id = by_uri.get(predicate(view, slot))
+        if predicate_id is None:
+            return None
+        return resolve_single(conn, subject_id=subject, predicate_id=predicate_id,
+                              valid_at=valid_at, as_of=as_of)
+
+    def shown(slot, row):
+        if row is None:
+            return ""
+        if row.get("value_ref") is not None:
+            named = _identifier(map_, str(slot.range))
+            far = read(named, row["value_ref"]) if named else None
+            return (far or {}).get("value_literal") or ""
+        return row.get("value_literal") or ""
+
+    kind = _kind_of(map_, class_name, read, subject_id)
+    identifier = _identifier(map_, kind)
+    if identifier is not None:
+        said = [shown(identifier, read(identifier, subject_id))]
+    else:
+        said = [shown(slot, read(slot, subject_id))
+                for slot in view.class_induced_slots(kind)
+                if not slot.abstract and slot.is_a
+                and view.get_slot(slot.is_a).abstract]
+    said = ", ".join(value for value in said if value)
+    if kind == class_name:
+        return said
+    called = str(view.get_class(kind).title or kind.split("__")[-1])
+    return f"{called} — {said}" if said else called
+
+
+def _kind_of(map_, class_name, read, subject_id):
+    """The class an entity is, of those a field over `class_name` offers."""
+    view = map_["view"]
+    slot = _type_slot(map_, class_name)
+    row = read(slot, subject_id) if slot else None
+    said = (row or {}).get("value_literal")
+    for name in view.class_descendants(class_name):
+        if class_uri(view, name) == said:
+            return str(name)
+    return class_name
 
 
 def _NOW():

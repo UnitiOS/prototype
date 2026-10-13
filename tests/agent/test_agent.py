@@ -454,10 +454,13 @@ def test_the_instructions_are_what_every_build_needs_and_a_list_of_the_rest():
     for topic in guide_read.TOPICS:
         if topic not in guide_read.GIVEN:
             assert f"    {topic}: " in text
-    # Short enough to sit at the top of every call: about five and a half
-    # thousand tokens, the recording standard and the kinds of module
-    # included, which every build follows.
-    assert len(text) < 22500
+    # Short enough to sit at the top of every call: about six thousand
+    # tokens, the recording standard and the kinds of module included, which
+    # every build follows. Raised from 22,500 for step 4's rules on what a
+    # slot points at (ECOSYSTEM_PLAN.md §11.4); trimming is for later.
+    assert len(text) < 24000
+    # What a slot points at is taught in every build, in the order to prefer.
+    assert text.index("a library thing") < text.index("a role   ")         < text.index("your own class")
 
 
 # ---- a proposal is checked -------------------------------------------------

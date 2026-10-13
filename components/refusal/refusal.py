@@ -160,6 +160,7 @@ CODES = {
     # ---- the business examples: the contract a map is held to -------------
     "examples_not_understood": "an examples file whose shape is not the one examples have",
     "record_without_class": "a record stated for the first time without saying what it is",
+    "stand_in_states_facts": "a stand-in for a role stating facts, which belong to whoever fills the role",
     "example_failed": "a business example whose numbers the map does not produce",
     "example_not_agreed": "a business example an agent proposed and no person has agreed to",
     "column_unchecked": "a column the draft computes that no business example gives a number for",

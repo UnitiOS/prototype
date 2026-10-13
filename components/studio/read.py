@@ -74,6 +74,8 @@ OPEN = {
                    "says what its numbers must be",
     "example_expects_nothing": "an example that records things and expects no "
                                "number of them, so it can never fail",
+    "stands_alone": "a class of a module pinning the library that points at "
+                    "nothing shared, or names itself as Party and Item do",
 }
 
 # Which step answers which refusal. Small and closed on purpose: a refusal the
@@ -376,6 +378,12 @@ def _question(kind, where, detail):
                 "example, with its numbers")
     if kind == "example_expects_nothing":
         return f"what numbers should the example {where} come to?"
+    if kind == "stands_alone":
+        if detail.get("names"):
+            return (f"is a {where} a Party or an Item? It keeps a name of its "
+                    f"own, as the library's do — point at the library's instead")
+        return (f"what does a {where} belong to? Nothing it points at is shared "
+                f"with another module: point at a Party, an Item or a role")
     return f"what about {where}?"
 
 
@@ -524,6 +532,7 @@ def holes(store, name, document, found):
                                    "choose": "class",
                                    "options": sorted(own_classes)
                                    + _things_in_sight(store, document)}))
+    out += _standing_alone(store, document)
     # What the standard cannot tell is English: asked, never refused.
     for where, _said in found.get("doubts") or []:
         kind, _, term = where.partition(" ")
@@ -536,6 +545,77 @@ def holes(store, name, document, found):
         out.append(_hole("maybe_not_english", where, blocking=False,
                          because=OPEN["maybe_not_english"], step=step))
     return sorted(out, key=lambda h: (not h["blocking"], h["where"]))
+
+
+def _standing_alone(store, document):
+    """The classes of a module pinning the library that do not connect.
+
+    Two ways not to: pointing at nothing another module declares, directly or
+    through the module's own classes — a receipt pointing only at a customer
+    of its own; and keeping a name of its own (`customer_name`) while filling
+    no role, which is what `Party` and `Item` are for. Neither is refused: a
+    module may have a thing of its own. Both are asked, so that connecting is
+    offered by the system rather than hoped for from whoever writes it.
+    """
+    classes, slots = seen(store, document)
+    library = sorted(c for c, body in classes.items()
+                     if _of_library(body) and not body.get("abstract"))
+    if not library:
+        return []
+    roles = taught(sorted(c for c, body in classes.items()
+                          if body.get("abstract") and body["module"] is not None
+                          and body["module"]["name"] != CORE))
+    own = {c: body or {} for c, body in (document.get("classes") or {}).items()}
+
+    def carried(class_name):
+        reach = [class_name] + sorted(a for a in _above(classes, class_name) if a in own)
+        return [s for c in reach for s in (own[c].get("slots") or [])]
+
+    def points_at(class_name):
+        return {str((slots.get(s) or {}).get("range")) for s in carried(class_name)
+                if not (slots.get(s) or {}).get("abstract")} & set(classes)
+
+    def connects(class_name):
+        seen_, todo = set(), [class_name]
+        while todo:
+            here = todo.pop()
+            if here in seen_:
+                continue
+            seen_.add(here)
+            for target in points_at(here):
+                if target not in own:
+                    return True
+                todo.append(target)
+        return False
+
+    out = []
+    for class_name, body in sorted(own.items()):
+        if body.get("abstract"):
+            continue
+        fills = [r for r in (body.get("mixins") or []) + [body.get("is_a")]
+                 if r and r in classes and classes[r]["module"] is not None
+                 and classes[r]["module"]["name"] != CORE]
+        names = not fills and any(
+            (s == "name" or s.endswith("_name"))
+            and str((slots.get(s) or {}).get("range") or "string") == "string"
+            for s in body.get("slots") or [])
+        if names or not connects(class_name):
+            out.append(_hole("stands_alone", class_name, blocking=False,
+                             because=OPEN["stands_alone"], detail={"names": names},
+                             step={"op": "add_slot", "args": {}, "choose": "range",
+                                   "options": library + roles}))
+    return out
+
+
+def _of_library(body):
+    """Whether a class in sight is the standard library's."""
+    module = body.get("module")
+    return (module is not None and module["name"].startswith(LIBRARY)
+            and module["name"] != CORE)
+
+
+# The standard library's scope, beside core's (DESIGN_NOTES.md §15).
+LIBRARY = "@uniti/"
 
 
 _FIELDS_OF = {"set": FIELDS, "set_class": CLASS_FIELDS, "set_slot": SLOT_FIELDS,

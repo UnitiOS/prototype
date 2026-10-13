@@ -235,6 +235,13 @@ function wording(
       why: "A field on no kind of thing is never recorded, so nothing reads it.",
     };
   }
+  if (hole.kind === "stands_alone") {
+    return {
+      ask: `Is ${an(kind.toLowerCase())} something the library already knows — a party, an item — or does it point at one?`,
+      why: "Nothing it points at is shared with another module, so no other "
+        + "module can find it, and it cannot find theirs.",
+    };
+  }
   if (hole.kind === "nothing_said_about_it") {
     return {
       ask: `What is ${kind}?`,
