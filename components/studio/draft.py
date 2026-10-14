@@ -119,7 +119,7 @@ _ACTOR = ContextVar("actor", default="person")
 # rule computing a number (`RULED`) only once they have also agreed to an
 # example giving the numbers of the table the rule is on. A person building
 # by hand is not held to either.
-RULED = ("aggregate", "parameter", "expression")
+RULED = ("aggregate", "add_source", "parameter", "expression")
 
 # The operations, what each one does, and what it takes. The kinds are what
 # `steps()` turns into option lists, so they are the vocabulary a form renders
@@ -282,6 +282,14 @@ OPERATIONS = {
         # the three `convert_` answers are one conversion — the class holding
         # the factor, how its slots match the source's, and which slot the
         # factor is — written as the compiler's `convert: {using, on, factor}`.
+        "may": {"where": "mapping", "convert_using": "class",
+                "convert_on": "mapping", "convert_factor": "slot"},
+    },
+    "add_source": {
+        "does": "total one more source into a column's aggregate, written as "
+                "`aggregate` writes one: the column adds up every source",
+        "takes": {"class": "own_class", "column": "column", "over": "class",
+                  "sum": "slot", "by": "mapping"},
         "may": {"where": "mapping", "convert_using": "class",
                 "convert_on": "mapping", "convert_factor": "slot"},
     },
@@ -1044,9 +1052,9 @@ def _rename_class(store, name, document, args):
         body = body or {}
         if str(body.get("range") or "") == old:
             body["range"] = new
-        spec = _rule_spec(body, "aggregate")
-        if spec and str(spec.get("over") or "") == old:
-            spec["over"] = new
+        for spec in _sources(_rule_spec(body, "aggregate")):
+            if str(spec.get("over") or "") == old:
+                spec["over"] = new
     _examples_renamed(store, name, "class", old, new)
     return _save(store, name, document, "rename_class", args)
 
@@ -1200,8 +1208,7 @@ def _rename_slot(store, name, document, args):
         body = body or {}
         if str(body.get("is_a") or "") == old:
             body["is_a"] = new
-        aggregate = _rule_spec(body, "aggregate")
-        if aggregate:
+        for aggregate in _sources(_rule_spec(body, "aggregate")):
             if str(aggregate.get("sum") or "") == old:
                 aggregate["sum"] = new
             if aggregate.get("by"):
@@ -1651,9 +1658,45 @@ def _mapping(value, what):
     )
 
 
+def _sources(spec):
+    """Each source of one aggregate: the rule itself, or every one it lists."""
+    if not spec:
+        return []
+    return list(spec["sources"]) if isinstance(spec.get("sources"), list) else [spec]
+
+
 def _aggregate(store, name, document, args):
     class_name = _own(document, "class", str(args["class"]), "aggregate")
     column = _column(store, document, class_name, str(args["column"]), "aggregate")
+    spec, said = _source(args)
+    return _save(store, name, _rule(document, column, "aggregate", spec),
+                 "aggregate", said)
+
+
+def _add_source(store, name, document, args):
+    """One more source totalled into a column that has an aggregate: what was
+    one source becomes the first of `sources`, and this is the next."""
+    class_name = _own(document, "class", str(args["class"]), "add_source")
+    column = _column(store, document, class_name, str(args["column"]), "add_source")
+    held = _sources(_rule_spec(_slots(document)[column], "aggregate"))
+    if not held:
+        raise StudioError(
+            "no_aggregate",
+            where=f"{class_name}.{column}",
+            expected="an aggregate on this column, its first source, for this "
+                     "one to be added to",
+            got="no aggregate",
+            repairs=[Repair("write the first source with `aggregate`, then add "
+                            "this one", options=["aggregate"])],
+        )
+    spec, said = _source(args)
+    return _save(store, name, _rule(document, column, "aggregate",
+                                    {"sources": held + [spec]}),
+                 "add_source", said)
+
+
+def _source(args):
+    """One source as the compiler reads it, and the step as the transcript says it."""
     # `over`, `sum` and `by` are read by the compiler, which is the judge of
     # whether they resolve. Writing them here and letting the check answer is
     # what keeps one judge — and the check runs on the next read.
@@ -1678,8 +1721,7 @@ def _aggregate(store, name, document, args):
     for key in ("where", "convert_on"):
         if key in args:
             said[key] = _pairs(_mapping(args[key], "aggregate"))
-    return _save(store, name, _rule(document, column, "aggregate", spec),
-                 "aggregate", said)
+    return spec, said
 
 
 # Two things a total cannot do yet — compare values, and reach further than
@@ -2118,7 +2160,7 @@ _PERFORM = {
     "set_usage": _set_usage,
     "attach": _attach, "detach": _detach,
     "bind": _bind, "unbind": _unbind,
-    "aggregate": _aggregate, "parameter": _parameter,
+    "aggregate": _aggregate, "add_source": _add_source, "parameter": _parameter,
     "expression": _expression, "unrule": _unrule,
     "add_example": _add_example, "set_example": _set_example,
     "remove_example": _remove_example,

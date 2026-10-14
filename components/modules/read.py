@@ -282,7 +282,10 @@ def class_graph(store, name, version):
             rule = rule_of(slot)
             kind = rule["kind"] if rule else None
             if kind == "aggregate":
-                edge(class_name, str(rule["spec"].get("over") or ""), "aggregate", slot_name)
+                spec = rule["spec"]
+                for source in (spec["sources"] if isinstance(spec.get("sources"), list)
+                               else [spec]):
+                    edge(class_name, str(source.get("over") or ""), "aggregate", slot_name)
             elif kind == "parameter":
                 key = slots.get(str(rule["spec"].get("of") or ""))
                 edge(class_name, str((key or {}).get("range") or ""), "parameter", slot_name)

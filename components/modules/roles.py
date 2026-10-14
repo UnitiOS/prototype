@@ -233,13 +233,15 @@ def _rules(store, name, version, map_=None):
         for column in plan_["columns"]:
             key = (class_name, column["name"])
             if column["kind"] == "aggregate":
-                spec = plan_["aggregates"][column["name"]]
+                sources = plan_["aggregates"][column["name"]]["sources"]
                 out[key] = {"class": class_name, "column": column["name"],
-                            "kind": "aggregate", "over": spec["over"],
-                            "covers": spec["covers"],
-                            "reads": sorted(set(spec["measure_uris"])
-                                            | {u for uris in [*spec["by"].values(),
-                                                              *(spec.get("through") or {}).values()]
+                            "kind": "aggregate",
+                            "over": " + ".join(s["over"] for s in sources),
+                            "covers": [c for s in sources for c in s["covers"]],
+                            "reads": sorted({u for s in sources for u in s["measure_uris"]}
+                                            | {u for s in sources
+                                               for uris in [*s["by"].values(),
+                                                            *(s.get("through") or {}).values()]
                                                for u in uris})}
             elif column["kind"] == "parameter":
                 spec = plan_["parameters"][column["name"]]

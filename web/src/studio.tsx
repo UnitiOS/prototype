@@ -945,9 +945,14 @@ function ruleSaid(
     return `Added up: ${what.join(", and ")}.`;
   }
   if (kind === "aggregate") {
-    const over = held.over ? spoken(String(held.over)).toLowerCase() : "record";
-    const sum = held.sum ? spoken(String(held.sum)).toLowerCase() : "value";
-    return `Added up: the ${sum} of every ${over} that concerns this row.`;
+    // A column totalling several sources lists them; a lone one is the rule.
+    const sources = Array.isArray(held.sources) ? held.sources as Record<string, unknown>[] : [held];
+    const what = sources.map((source) => {
+      const over = source.over ? spoken(String(source.over)).toLowerCase() : "record";
+      const sum = source.sum ? spoken(String(source.sum)).toLowerCase() : "value";
+      return `the ${sum} of every ${over}`;
+    });
+    return `Added up: ${what.join(", and ")} that concerns this row.`;
   }
   if (kind === "parameter") {
     const of = held.of ? String(held.of) : "";

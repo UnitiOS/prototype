@@ -383,6 +383,10 @@ function ruleText(col: Column): string {
     if (col.kind === "stated") return "Whatever stands under this slot at the two clocks.";
     return "No rule reaches this column, so it is a column of nulls.";
   }
+  if (rule.kind === "aggregate" && (rule.sources ?? []).length > 1) {
+    return (rule.sources ?? []).map((source) => ruleText({ ...col, rule: { ...source, kind: "aggregate", operator: rule.operator } }))
+      .join(" Added to it: ");
+  }
   if (rule.kind === "aggregate") {
     const by = Object.entries(rule.by ?? {}).map(([k, v]) => `${k} = ${v}`).join(", ");
     const written = `Every ${rule.over} the log holds, ${rule.operator} of ${rule.measure}, grouped by ${by}.`;
@@ -583,7 +587,7 @@ function CellPanel(
         {data.statements.length === 0
           ? "Nothing stands here. Nobody has stated it at these two clocks, which is why the cell is empty rather than nought."
           : data.kind === "aggregate"
-            ? `${data.statements.length} statements, ${data.operator} ${total}. Each one is a ${data.over} the log holds.`
+            ? `${data.statements.length} statements, ${data.operator} ${total}. Each one is a ${(data.sources ?? [data.over]).join(" or a ")} the log holds.`
             : "One statement stands here."}
         {data.cut_off && " Only the first of them are shown."}
       </p>

@@ -889,6 +889,49 @@ before any commit. Step 8 may be done at any time.
   showed it double-counts and mixes units (P2.md §4.3).
 - **Done when:** the Kemah Ceria v4 stock table is expressible with one column per
   number instead of three, and its numbers are unchanged.
+- **Decided 14 October 2026 (owner): an `add_source` step.** `aggregate`
+  stays as it is and writes the first source; `add_source` (the same
+  arguments) adds each next one. Flat arguments like every other step, so the
+  agent writes no nested list, and every sealed rule keeps its shape.
+- **Built (14 October):**
+  - **The rule.** One source stays as it was. Several are
+    `aggregate: {sources: [{over, sum, by, …}, …]}`; `add_source` turns a lone
+    source into the first of the list. `aggregate` again replaces them all;
+    `unrule` takes the rule off. Renaming a class or a slot renames it in
+    every source, and composition resolves names in every source.
+  - **The compiler.** Each source is read and planned as a lone aggregate is.
+    The column is their `UNION ALL`, grouped again. A lone source emits the
+    same SQL as before, so the replay is unchanged. Guards:
+    `groupings_disagree` (now also for sources of one column) and
+    **`sources_disagree`**, the one new code: measures that differ in unit or
+    direction. Story 6 can hit it, for example a rental quantity (decrease)
+    added to a returned quantity (increase). The plan's spec of every
+    aggregate carries `sources` (a list of one for a lone source).
+  - **Readers.** These see every source:
+    - the cell ("what it stands on");
+    - the projection's rule text;
+    - the Studio's "Added up: …";
+    - the catalogue's reads, which feed the health report;
+    - the swap report's reads;
+    - the class graph's edges;
+    - the agent's view of a rule.
+  - **The agent** is taught in one sentence beside `aggregate`, plus the
+    step's own line. Instructions are 23,683 characters, within 24,000.
+  - **Tests:** `tests/modules/test_sources.py`, a small Kemah Ceria:
+    - two modules sealed apart, with an application holding the three-column
+      form and the one-column form side by side;
+    - the example gives the same numbers for both (tents 2 + 1 = 3; stoves
+      0 + 2 = 2), and the application seals;
+    - unit and direction are refused, and so are different keys;
+    - a rename reaches every source;
+    - a combined cell stands on both modules' lines.
+  - **Evidence on the real v4** (`build/dua/step5_v4_once.py`, read-only, no
+    model call): the two-round test's v4 maps were rewritten with one column
+    per number and read from Kemah Ceria's own log as of 16 October.
+    - `EquipmentStock` goes from 18 columns to 12 and `ClientDeposit` from 8
+      to 4.
+    - Every number of every row equals v4's.
+    - The real modules' sources pass the unit and direction guard.
 
 ### Step 6 — The seal stops depending on what the compiler can do
 

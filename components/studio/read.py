@@ -787,23 +787,25 @@ def _workings(map_, own, shapes):
         for col in planned["columns"]:
             name, kind = col["name"], col["kind"]
             if kind == "aggregate":
-                spec = planned["aggregates"][name]
                 reads = []
-                for source in spec["covers"]:
-                    held = fields_of(source)
-                    reads.append({
-                        "class": source,
-                        "fields": [s for s in spec["measure_slots"] if s in held],
-                        # The field of the source each key is read off: for a
-                        # key one record away, the field naming that record,
-                        # and under `via` the fields of that record it is.
-                        "by": {key: next((s for s, _ in pairs if s in held), None)
-                               for key, pairs in {**spec["by_slots"],
-                                                  **spec.get("through_slots", {})}.items()},
-                        **({"via": {key: [s for s, _ in spec["by_slots"][key]]
-                                    for key in spec["through_slots"]}}
-                           if spec.get("through_slots") else {}),
-                    })
+                # Every source's classes: a column totalling several reads
+                # each of them, the same way a lone source is read.
+                for spec in planned["aggregates"][name]["sources"]:
+                    for source in spec["covers"]:
+                        held = fields_of(source)
+                        reads.append({
+                            "class": source,
+                            "fields": [s for s in spec["measure_slots"] if s in held],
+                            # The field of the source each key is read off: for
+                            # a key one record away, the field naming that
+                            # record, and under `via` the fields of that record.
+                            "by": {key: next((s for s, _ in pairs if s in held), None)
+                                   for key, pairs in {**spec["by_slots"],
+                                                      **spec.get("through_slots", {})}.items()},
+                            **({"via": {key: [s for s, _ in spec["by_slots"][key]]
+                                        for key in spec["through_slots"]}}
+                               if spec.get("through_slots") else {}),
+                        })
                 columns.append({"name": name, "kind": kind,
                                 "operator": spec["operator"], "reads": reads})
             elif kind == "parameter":

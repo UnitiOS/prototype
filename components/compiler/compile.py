@@ -16,9 +16,9 @@ The map declares rules. This turns one kind of rule into SQL and runs it.
 Two connections and no join between them: nothing that reads the operational
 store can reach an `assertion` row, because it is not in the same database.
 
-**Nothing here knows what the map is about.** It reads eight words — `over`,
+**Nothing here knows what the map is about.** It reads nine words — `over`,
 the operator, `by` (a slot, or `slot.slot` one record away), `where` and its
-`is_a`, `convert`, `equals_expression`,
+`is_a`, `convert`, `sources` (several of those, one total), `equals_expression`,
 `parameter` and its `of` and `slot` — and emits SQL. A column whose name it
 recognised would be a defect: point it at another map and another table comes out.
 
@@ -395,8 +395,83 @@ def _reach(map_, where, over, value):
     return through, _bound(map_, where, target, second, "by")
 
 
+def _said(slot, what):
+    """A measure's unit or direction, as the recording standard wrote it."""
+    if what == "unit":
+        unit = slot.unit
+        return next((str(getattr(unit, key)) for key in
+                     ("symbol", "ucum_code", "abbreviation", "descriptive_name")
+                     if unit is not None and getattr(unit, key, None)), None)
+    for key, annotation in items(slot.annotations or {}):
+        if str(key) == what:
+            return str(annotation.value)
+    return None
+
+
 def _read_aggregate(map_, where, spec):
-    """One `aggregate` annotation, checked against the map it names."""
+    """One `aggregate` annotation: one source, or several under `sources`.
+
+    Several sources are one total: each source is read as a lone aggregate
+    is, and the column is the total of them all — units out are the rental
+    lines of one module plus the booking lines of another, written once.
+    They are added only where adding means something: every measure in one
+    unit and running one way, and every source grouped by the same keys.
+    Every spec carries `sources`, a list of one for a lone source, so a
+    reader walks every rule alike; the rest of it is the first source's.
+    """
+    if "sources" not in spec:
+        one, _ = _read_source(map_, where, spec)
+        return {**one, "sources": [one]}
+    listed = spec.get("sources")
+    if set(spec) != {"sources"} or not isinstance(listed, list) or not listed:
+        raise CompileError(
+            "aggregate_keys",
+            where=where,
+            expected="`sources` alone: a list, each source written as a lone "
+                     "aggregate is",
+            got=", ".join(sorted(str(k) for k in spec)),
+            repairs=[Repair("write each source with these keys, and nothing "
+                            "beside `sources`",
+                            options=["over", "by", "where", "convert"] + sorted(EMPTY))],
+        )
+    read = [_read_source(map_, f"{where}: source {i + 1}", as_dict(source))
+            for i, source in enumerate(listed)]
+    sources = [source for source, _ in read]
+
+    groupings = {tuple(sorted(source["by"])) for source in sources}
+    if len(groupings) > 1:
+        raise CompileError(
+            "groupings_disagree",
+            where=where,
+            expected="every source grouped by the same keys, because their "
+                     "totals land in the same rows",
+            got=" and ".join("(" + ", ".join(g) + ")" for g in sorted(groupings)),
+            repairs=[Repair("match the same keys in every source",
+                            options=sorted({k for g in groupings for k in g}))],
+        )
+
+    measures = [slot for _, slots in read for slot in slots]
+    differ = [what for what in ("unit", "direction")
+              if len({_said(slot, what) for slot in measures}) > 1]
+    if differ:
+        raise CompileError(
+            "sources_disagree",
+            where=where,
+            expected=f"every source's measure in the same {' and '.join(differ)}, "
+                     f"because one column adds them up",
+            got="; ".join(f"{slot.name} is "
+                          + ", ".join(str(_said(slot, what)) for what in differ)
+                          for slot in measures),
+            repairs=[Repair("add up only what counts the same thing the same "
+                            "way, and give the rest a column of its own",
+                            options=[str(slot.name) for slot in measures])],
+        )
+    return {**sources[0], "sources": sources}
+
+
+def _read_source(map_, where, spec):
+    """One source of an aggregate, checked against the map it names: what it
+    says, and the slots its measure resolved to."""
     view = map_["view"]
     named = [key for key in spec if key in EMPTY]
     unknown = set(spec) - set(named) - {"over", "by", "where", "convert"}
@@ -663,7 +738,7 @@ def _read_aggregate(map_, where, spec):
         "source_slots": _pairs(view, view.class_induced_slots(over)),
         "where": parsed_where,
         "convert": parsed_convert,
-    }
+    }, measures
 
 
 def _read_parameter(map_, where, spec, keys, cols):
@@ -862,10 +937,11 @@ def plan(map_, class_name):
     # that names an entity makes rows of its own that nothing else joins.
     ranges = {col["name"]: str(col["range"]) for col in cols}
     for column, spec in aggregates.items():
-        for key in keys:
-            _kinds_differ(view, f"{class_name}.{column}: by.{key}",
-                          f"`{spec['by_names'][key]}`", ranges[key],
-                          spec["by_slots"][key], spec["source_slots"])
+        for source in spec["sources"]:
+            for key in keys:
+                _kinds_differ(view, f"{class_name}.{column}: by.{key}",
+                              f"`{source['by_names'][key]}`", ranges[key],
+                              source["by_slots"][key], source["source_slots"])
 
     parameters = {
         name: _read_parameter(map_, f"{class_name}.{name}", spec, keys, cols)
@@ -1206,6 +1282,29 @@ def _aggregate_cte(spec, column, alias, source_alias, keys, prefix):
     return f"{alias} AS (\n{body}\n    GROUP BY {group}\n)"
 
 
+def _sources_cte(spec, column, alias, keys):
+    """Several sources of one column: each grouped as a lone aggregate is,
+    the groups put one under the other, and grouped again. A total of totals
+    is the total, which is why `sum` is the operator this can combine."""
+    flagged = any(source.get("convert") for source in spec["sources"])
+    names = [_ident(k) for k in keys]
+    flag = _ident(_UNCONVERTED + column)
+    branches = []
+    for j, source in enumerate(spec["sources"]):
+        picked = names + [_ident(column)]
+        if flagged:
+            picked.append(flag if source.get("convert") else f"false AS {flag}")
+        branches.append(f"    SELECT {', '.join(picked)} FROM {alias}_{j}")
+    totals = [f"{spec['operator']}({_ident(column)}) AS {_ident(column)}"]
+    if flagged:
+        totals.append(f"bool_or({flag}) AS {flag}")
+    group = ", ".join(str(i + 1) for i in range(len(keys)))
+    return (f"{alias} AS (\n"
+            f"    SELECT {', '.join(names + totals)}\n"
+            f"    FROM (\n" + "\n    UNION ALL\n".join(branches) + "\n    ) u\n"
+            f"    GROUP BY {group}\n)")
+
+
 def _parameter_cte(spec, alias):
     """One parameter: what the log says under one slot, per entity, by URI.
 
@@ -1231,9 +1330,10 @@ def _column_sql(plan_, name, aliases, stack=()):
     if col["kind"] == "key":
         return f"g.{_ident(name)}"
     if col["kind"] == "aggregate":
-        empty = EMPTY[plan_["aggregates"][name]["operator"]]
+        spec = plan_["aggregates"][name]
+        empty = EMPTY[spec["operator"]]
         total = f"coalesce({aliases[name]}.{_ident(name)}, {empty})"
-        if plan_["aggregates"][name].get("convert"):
+        if any(source.get("convert") for source in spec["sources"]):
             return (f"CASE WHEN {aliases[name]}.{_ident(_UNCONVERTED + name)} "
                     f"THEN NULL ELSE {total} END")
         return total
@@ -1462,18 +1562,26 @@ def emit(map_, plan_):
 
     sources, source_ctes = {}, []
     for spec in plan_["aggregates"].values():
-        if spec["over"] not in sources:
-            alias = f"source_{len(sources)}"
-            sources[spec["over"]] = alias
-            source_ctes.append(_source_cte(map_, spec["over"], alias))
+        for source in spec["sources"]:
+            if source["over"] not in sources:
+                alias = f"source_{len(sources)}"
+                sources[source["over"]] = alias
+                source_ctes.append(_source_cte(map_, source["over"], alias))
 
     aliases, aggregate_ctes, parameter_ctes = {}, [], []
     for i, (column, spec) in enumerate(plan_["aggregates"].items()):
         alias = f"total_{i}"
         aliases[column] = alias
-        aggregate_ctes.append(
-            _aggregate_cte(spec, column, alias, sources[spec["over"]], keys, f"t{i}_")
-        )
+        if len(spec["sources"]) == 1:
+            aggregate_ctes.append(
+                _aggregate_cte(spec, column, alias, sources[spec["over"]], keys, f"t{i}_")
+            )
+            continue
+        for j, source in enumerate(spec["sources"]):
+            aggregate_ctes.append(_aggregate_cte(
+                source, column, f"{alias}_{j}", sources[source["over"]], keys,
+                f"t{i}_{j}_"))
+        aggregate_ctes.append(_sources_cte(spec, column, alias, keys))
 
     for i, (column, spec) in enumerate(plan_["parameters"].items()):
         alias = f"param_{i}"

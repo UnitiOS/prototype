@@ -297,6 +297,9 @@ def _rule(rule):
         return f"expression {spec}"
     if rule["kind"] == "parameter":
         return f"parameter of {spec.get('of')}, slot {spec.get('slot')}"
+    if isinstance(spec.get("sources"), list):
+        return " + ".join(_rule({"kind": "aggregate", "spec": source})
+                          for source in spec["sources"])
     by = ", ".join(f"{k}={v}" for k, v in (spec.get("by") or {}).items())
     out = f"aggregate over {spec.get('over')}, sum {spec.get('sum')}, by {by}"
     if spec.get("where"):

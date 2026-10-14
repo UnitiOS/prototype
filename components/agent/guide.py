@@ -119,7 +119,8 @@ kinds {", ".join(f"`{kind}`" for kind in COMPUTED)}:
                  to rows whose slot is one class (slot=Class).
                  `convert_using`, `convert_on` and `convert_factor` multiply
                  each row by a factor read off another class, matched on
-                 slots, before totalling.
+                 slots, before totalling. `add_source` totals one more class
+                 into the same column: units out = rental lines + bookings.
     parameter    read one fact off the thing a key names: `of` the key
                  column, `slot` the slot of the thing it names. Where nobody
                  stated the fact, the cell is empty — not nought.

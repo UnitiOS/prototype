@@ -85,23 +85,29 @@ def readers(map_):
             refused.append({**exc.as_dict(), "class": class_name})
             continue
 
-        for column, spec in plan_["aggregates"].items():
-            reads = list(spec["measure_uris"])
-            for uris in [*spec["by"].values(), *(spec.get("through") or {}).values()]:
-                reads += uris
-            for narrowing in spec.get("where") or []:
-                reads += _uris(narrowing["slot_uris"]) + _uris([narrowing["type_slot_uri"]])
-            convert = spec.get("convert")
-            if convert:
-                reads += _uris([convert["type_slot_uri"], convert["factor_slot_uri"]])
-                for pair in convert.get("on") or []:
-                    reads += _uris([pair.get("conv_slot_uri")]) + _uris(pair.get("source_slot_uris"))
-            source = type_slot(map_, spec["over"])
-            if source is not None and source.slot_uri:
-                reads.append(predicate(view, source))
+        for column, whole in plan_["aggregates"].items():
+            reads, covers = [], []
+            # A column totalling several sources reads what each of them reads.
+            for spec in whole["sources"]:
+                reads += spec["measure_uris"]
+                for uris in [*spec["by"].values(), *(spec.get("through") or {}).values()]:
+                    reads += uris
+                for narrowing in spec.get("where") or []:
+                    reads += _uris(narrowing["slot_uris"]) + _uris([narrowing["type_slot_uri"]])
+                convert = spec.get("convert")
+                if convert:
+                    reads += _uris([convert["type_slot_uri"], convert["factor_slot_uri"]])
+                    for pair in convert.get("on") or []:
+                        reads += _uris([pair.get("conv_slot_uri")]) + _uris(pair.get("source_slot_uris"))
+                source = type_slot(map_, spec["over"])
+                if source is not None and source.slot_uri:
+                    reads.append(predicate(view, source))
+                covers += spec["covers"]
             out.append({"rule": f"{class_name}.{column}", "kind": "aggregate",
-                        "reader": "the compiler", "over": spec["over"],
-                        "covers": list(spec["covers"]), "reads": sorted(set(reads))})
+                        "reader": "the compiler",
+                        "over": " + ".join(s["over"] for s in whole["sources"]),
+                        "overs": [s["over"] for s in whole["sources"]],
+                        "covers": covers, "reads": sorted(set(reads))})
 
         for column, spec in plan_["parameters"].items():
             key = next((c for c in plan_["columns"] if c["name"] == spec["of"]), None)
@@ -285,7 +291,8 @@ def _read_by_class(rules, class_name, module_name):
     where its rows actually come from.
     """
     return [_rule_ref(r) for r in rules
-            if (class_name, module_name) in r["covers"] or r["over"] == class_name]
+            if (class_name, module_name) in r["covers"]
+            or class_name in r.get("overs", [r["over"]])]
 
 
 def find(entries, *, text=None, kind=None, fills=None, module=None, pins=None):

@@ -112,10 +112,12 @@ def projection(conn, store, name, version, class_name, *, valid_at, as_of):
         rule = None
         if col["kind"] == "aggregate":
             spec = plan_["aggregates"][col["name"]]
+            sources = [{"over": s["over"], "covers": s["covers"],
+                        "measure": s["measure"], "measure_uris": s["measure_uris"],
+                        "by": s["by_names"], "by_uris": s["by"]}
+                       for s in spec["sources"]]
             rule = {"kind": "aggregate", "operator": spec["operator"],
-                    "over": spec["over"], "covers": spec["covers"],
-                    "measure": spec["measure"], "measure_uris": spec["measure_uris"],
-                    "by": spec["by_names"], "by_uris": spec["by"]}
+                    **sources[0], "sources": sources}
         elif col["kind"] == "parameter":
             rule = {"kind": "parameter", **plan_["parameters"][col["name"]]}
         elif col["kind"] == "expression":
@@ -246,23 +248,26 @@ def cell(conn, store, name, version, class_name, column, keys, *, valid_at, as_o
         out["over"] = spec["over"]
         out["covers"] = spec["covers"]
         out["operator"] = spec["operator"]
-        for subject_id in _row_subjects(conn, map_, spec["over"], by_uri,
-                                        valid_at=valid_at, as_of=as_of):
-            grouped = all(
-                _key_value(conn, subject_id, spec, key_column, by_uri, by_id,
-                           valid_at=valid_at, as_of=as_of)
-                == keys.get(key_column)
-                for key_column in spec["by"]
-            )
-            if not grouped:
-                continue
-            measure = _standing(conn, subject_id, spec["measure_uris"], by_uri, by_id,
-                                valid_at=valid_at, as_of=as_of)
-            if measure is not None:
-                out["statements"].append(measure)
-            if len(out["statements"]) >= MOST:
-                out["cut_off"] = True
-                break
+        # A column totalling several sources stands on the rows of each.
+        out["sources"] = [source["over"] for source in spec["sources"]]
+        for source in spec["sources"]:
+            for subject_id in _row_subjects(conn, map_, source["over"], by_uri,
+                                            valid_at=valid_at, as_of=as_of):
+                grouped = all(
+                    _key_value(conn, subject_id, source, key_column, by_uri, by_id,
+                               valid_at=valid_at, as_of=as_of)
+                    == keys.get(key_column)
+                    for key_column in source["by"]
+                )
+                if not grouped:
+                    continue
+                measure = _standing(conn, subject_id, source["measure_uris"], by_uri,
+                                    by_id, valid_at=valid_at, as_of=as_of)
+                if measure is not None:
+                    out["statements"].append(measure)
+                if len(out["statements"]) >= MOST:
+                    out["cut_off"] = True
+                    return out
         return out
 
     if col["kind"] == "parameter":

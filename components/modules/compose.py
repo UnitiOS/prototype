@@ -175,28 +175,37 @@ def _slot_refs(body, refer, path):
             continue
         wrapped = set(held) == {"value"}
         spec = dict(held["value"] if wrapped else held)
-        for key in ("over", "sum", "of", "slot"):
-            if spec.get(key):
-                spec[key] = refer(spec[key])
-        if isinstance(spec.get("by"), dict):
-            spec["by"] = {refer(k): path(v) for k, v in spec["by"].items()}
-        if isinstance(spec.get("where"), dict):
-            spec["where"] = {refer(k): ({**w, "is_a": refer(w["is_a"])}
-                                        if isinstance(w, dict) and w.get("is_a") else w)
-                             for k, w in spec["where"].items()}
-        if isinstance(spec.get("convert"), dict):
-            convert = dict(spec["convert"])
-            for key in ("using", "factor"):
-                if convert.get(key):
-                    convert[key] = refer(convert[key])
-            for key in ("on", True):
-                if isinstance(convert.get(key), dict):
-                    convert[key] = {refer(k): path(v) for k, v in convert[key].items()}
-                elif convert.get(key):
-                    convert[key] = path(convert[key])
-            spec["convert"] = convert
+        if isinstance(spec.get("sources"), list):
+            spec["sources"] = [_rule_refs(dict(source), refer, path)
+                               for source in spec["sources"]]
+        spec = _rule_refs(spec, refer, path)
         annotations[kind] = {"value": spec} if wrapped else spec
     return body
+
+
+def _rule_refs(spec, refer, path):
+    """One rule, or one source of an aggregate, with every name in it resolved."""
+    for key in ("over", "sum", "of", "slot"):
+        if spec.get(key):
+            spec[key] = refer(spec[key])
+    if isinstance(spec.get("by"), dict):
+        spec["by"] = {refer(k): path(v) for k, v in spec["by"].items()}
+    if isinstance(spec.get("where"), dict):
+        spec["where"] = {refer(k): ({**w, "is_a": refer(w["is_a"])}
+                                    if isinstance(w, dict) and w.get("is_a") else w)
+                         for k, w in spec["where"].items()}
+    if isinstance(spec.get("convert"), dict):
+        convert = dict(spec["convert"])
+        for key in ("using", "factor"):
+            if convert.get(key):
+                convert[key] = refer(convert[key])
+        for key in ("on", True):
+            if isinstance(convert.get(key), dict):
+                convert[key] = {refer(k): path(v) for k, v in convert[key].items()}
+            elif convert.get(key):
+                convert[key] = path(convert[key])
+        spec["convert"] = convert
+    return spec
 
 
 def facets(entries):

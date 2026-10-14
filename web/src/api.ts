@@ -251,6 +251,8 @@ export interface ColumnRule {
   // whenever the rule names a role, and that difference is the swappable seam.
   covers?: string[]; measure_uris?: string[]; by_uris?: Record<string, string[]>;
   of?: string; slot?: string; slot_uris?: string[]; expression?: string;
+  // An aggregate totalling several sources: each one, as a lone one is said.
+  sources?: ColumnRule[];
 }
 
 export interface Column {
@@ -280,6 +282,7 @@ export interface CellSource {
   statements: Statement[]; reads: string[]; cut_off: boolean;
   entity: { uri: string; id: string } | null;
   over?: string; covers?: string[]; operator?: string; of?: string; expression?: string;
+  sources?: string[];
   valid_at: string; as_of: string;
 }
 
