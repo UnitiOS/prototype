@@ -80,6 +80,9 @@ MAP = "the map"
 # compiler's, not the map's, and it is here because both sides need the name.
 IDENTITY_COLUMN = "entity_uri"
 
+# The longest name PostgreSQL keeps (NAMEDATALEN - 1); a longer one is cut.
+TABLE_NAME_LIMIT = 63
+
 # A range becomes a column type. A range that is a class or an enum holds a
 # name, so it is text: the operational store keeps the URI the log resolved to.
 # Held here rather than in the compiler because two gates read it: the
@@ -274,9 +277,9 @@ def named(map_, class_name, values=None):
     """A class, and the slots `values` names, as the map calls them.
 
     A person writes `Rental`; a composition calls a pinned module's class
-    `penyewaan__Rental`. Where only one module in sight declares the plain
-    name, it means that one (components/modules/compose.py). Where several
-    do, nothing is guessed. `values` comes back keyed by the map's names.
+    `komunitas_penyewaan__Rental`. Where only one module in sight declares the
+    plain name, it means that one (components/modules/compose.py). Where
+    several do, nothing is guessed. `values` comes back keyed by the map's names.
     """
     view = map_["view"]
 
@@ -307,11 +310,26 @@ def table_name(class_name):
     compiler names the table it fills, and a form asks the store for the
     choices a field offers. It is a transliteration of the class's own name and
     knows nothing else. A pinned module's class keeps its tag ahead of the
-    same transliteration: `penyewaan__CustomerDeposit` is
-    `p_penyewaan__customer_deposit`.
+    same transliteration: `komunitas_penyewaan__CustomerDeposit` is
+    `p_komunitas_penyewaan__customer_deposit`.
+
+    A name longer than PostgreSQL keeps is refused, not shortened: the store
+    would cut it at 63 bytes without a word, and two classes whose names
+    differ only past that point would fill one table.
     """
-    return "p_" + "__".join(re.sub(r"(?<!^)(?=[A-Z])", "_", part).lower()
-                            for part in str(class_name).split("__"))
+    out = "p_" + "__".join(re.sub(r"(?<!^)(?=[A-Z])", "_", part).lower()
+                           for part in str(class_name).split("__"))
+    if len(out.encode("utf-8")) > TABLE_NAME_LIMIT:
+        raise MapError(
+            "table_name_too_long",
+            where=str(class_name),
+            expected=f"a table name of at most {TABLE_NAME_LIMIT} characters",
+            got=f"{out} ({len(out)})",
+            repairs=[Repair("give the class a shorter name"),
+                     Repair("give the module a shorter scope or name, which every "
+                            "class it declares carries when it is pinned")],
+        )
+    return out
 
 
 def _identifier(map_, class_name):

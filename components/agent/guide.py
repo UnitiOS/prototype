@@ -150,9 +150,9 @@ propose an interface module, `@community/...`, holding it for both to fill.
 Core's {" and ".join(f"`{role}`" for role in NOT_TAUGHT)} stay only for modules sealed under them:
 fill neither directly. A date says its moment by its `time_meaning`.
 
-A pinned module's names carry its tag, `penyewaan__Rental`; core's and the
-library's stay plain. Write the plain name: where two pinned modules declare
-it, the step asks which (`name_ambiguous`) — answer with the full name.
+A pinned module's names carry its tag, `komunitas_penyewaan__Rental`; core's
+and the library's stay plain. Write the plain name: where two pinned modules
+declare it, the step asks which (`name_ambiguous`) — answer with the full name.
 
 Attached to another module's class, a slot of yours is a facet: more said
 about their thing (a rate on `Item`), never required.

@@ -45,7 +45,7 @@ from seal import predicate, register, seal  # noqa: E402
 
 BUSINESS = "demo"
 REGISTERED = [("@uniti/core", "v1"), ("@uniti/core", "v2"),
-              ("@uniti/party", "v1"), ("@uniti/item", "v1")]
+              ("@uniti/party", "v1"), ("@uniti/item", "v1"), ("@uniti/item", "v2")]
 TARIF, APP = "@rudi/tarif", "@demo/income"
 RATE = "https://uniti.example/rudi/tarif/rental_rate"
 
@@ -86,7 +86,7 @@ def tarif(store):
     """Rudi's rates, as a draft: one slot, on the library's `Item`."""
     step(store, TARIF, "start", title="Rental rates",
          description="What one day of renting an item costs.")
-    step(store, TARIF, "pin", module="@uniti/item@v1")
+    step(store, TARIF, "pin", module="@uniti/item@v2")
     step(store, TARIF, "add_slot", slot="rental_rate", range="decimal",
          description="What one day of renting this item costs.",
          unit="IDR", direction="level")
@@ -107,7 +107,7 @@ def application(store, conn, sealed):
     Rudi's rate, read off the item."""
     step(store, APP, "start", title="Income", kind="application", business=BUSINESS,
          description="Rental income per item, at Rudi's rates.")
-    step(store, APP, "pin", module="@uniti/item@v1")
+    step(store, APP, "pin", module="@uniti/item@v2")
     step(store, APP, "pin", module=f"{TARIF}@v1")
     step(store, APP, "add_class", **{"class": "Hire", "description": "One item out for days."})
     step(store, APP, "fill_role", **{"class": "Hire", "role": "Thing"})
@@ -169,7 +169,7 @@ def test_attaching_a_slot_to_another_modules_class_makes_a_facet(store, tarif):
     # own reading never does.
     classes, _ = studio.seen(store, document)
     assert classes["Item"]["slots"] == ["item_name", "rental_rate"]
-    assert store.document("@uniti/item", "v1")["classes"]["Item"]["slots"] == ["item_name"]
+    assert store.document("@uniti/item", "v2")["classes"]["Item"]["slots"] == ["item_name"]
 
     # Taken back off, it is loose again.
     step(store, TARIF, "detach", **{"class": "Item", "slot": "rental_rate"})
@@ -230,7 +230,7 @@ def test_a_facet_is_on_a_thing_and_in_one_place(store, tarif):
 def test_the_seal_holds_a_written_facet_to_the_same_rules(store, conn, tarif):
     probe = "@rudi/handwritten"
     step(store, probe, "start", title="Hand", description="Written by hand.")
-    step(store, probe, "pin", module="@uniti/item@v1")
+    step(store, probe, "pin", module="@uniti/item@v2")
     step(store, probe, "add_slot", slot="hand_rate", range="decimal",
          description="A rate.", unit="IDR", direction="level")
     where = studio.path(store, probe)
@@ -248,12 +248,12 @@ def test_the_seal_holds_a_written_facet_to_the_same_rules(store, conn, tarif):
 def test_the_facet_module_seals_and_the_library_is_untouched(store, sealed):
     version = store.document(TARIF, "v1")
     assert version["slots"]["rental_rate"]["domain"] == "Item"
-    assert store.document("@uniti/item", "v1")["classes"]["Item"]["slots"] == ["item_name"]
+    assert store.document("@uniti/item", "v2")["classes"]["Item"]["slots"] == ["item_name"]
     # Only a composition pinning the facet's module carries it.
-    alone = dict(store.version_composition("@uniti/item", "v1"))
-    assert alone[("@uniti/item", "v1")]["classes"]["Item"]["slots"] == ["item_name"]
+    alone = dict(store.version_composition("@uniti/item", "v2"))
+    assert alone[("@uniti/item", "v2")]["classes"]["Item"]["slots"] == ["item_name"]
     composed = dict(store.version_composition(TARIF, "v1"))
-    assert composed[("@uniti/item", "v1")]["classes"]["Item"]["slots"] == \
+    assert composed[("@uniti/item", "v2")]["classes"]["Item"]["slots"] == \
         ["item_name", "rental_rate"]
 
 
@@ -267,7 +267,7 @@ def test_a_rule_reads_the_facet_and_the_application_seals(store, conn, applicati
     assert example["passed"] is True, example
     spec = studio.open_draft(store, APP)["slots"]["income_rate"]["annotations"][
         "parameter"]["value"]
-    assert spec["slot"] == "tarif__rental_rate"
+    assert spec["slot"] == "rudi_tarif__rental_rate"
 
     out = seal(conn, studio.path(store, APP), actor_id="dev",
                into=store.directory(APP), store=store)
@@ -280,20 +280,20 @@ def test_one_item_carries_the_facet_under_rudis_predicate(store, conn, applicati
              into=store.directory(APP), store=store)
     map_ = read_map(store.path(APP, "v1"), store)
     view = map_["view"]
-    assert predicate(view, view.induced_slot("tarif__rental_rate", "Item")) == RATE
+    assert predicate(view, view.induced_slot("rudi_tarif__rental_rate", "Item")) == RATE
 
     built = form(conn, map_, "Item")
-    assert [f["name"] for f in built["fields"]] == ["item_name", "tarif__rental_rate", "entity_class"]
+    assert [f["name"] for f in built["fields"]] == ["item_name", "rudi_tarif__rental_rate", "entity_class"]
     now = datetime.now(timezone.utc)
     shown = app_api.form_of(conn, store, APP, "v1", "Item", valid_at=now, as_of=now)
     by_name = {f["name"]: f for f in shown["fields"]}
     assert by_name["item_name"]["section"] is None
-    assert by_name["tarif__rental_rate"]["section"] == "Rental rates"
+    assert by_name["rudi_tarif__rental_rate"]["section"] == "Rental rates"
 
     subject = "https://uniti.example/demo/rec/tent"
     submit(conn, map_, "Item", subject=subject,
            values={"entity_class": "Item", "item_name": "Tent",
-                   "tarif__rental_rate": 25000},
+                   "rudi_tarif__rental_rate": 25000},
            actor_id="staff", valid_from="2026-10-07T09:00:00Z")
     later = datetime(2030, 1, 1, tzinfo=timezone.utc)
     built = table(conn, map_, "Item", valid_at=later, as_of=later)

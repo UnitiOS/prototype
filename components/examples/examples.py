@@ -538,8 +538,8 @@ def _named(name, known, where, what):
     """The name an example means, by the composition's one rule.
 
     An example is written in the names a person uses: `Rental`, not
-    `penyewaan__Rental`. Where only one module in sight declares it, that is
-    the one; where several do, the example has to say which.
+    `komunitas_penyewaan__Rental`. Where only one module in sight declares
+    it, that is the one; where several do, the example has to say which.
     """
     found = matches(name, known)
     if len(found) > 1:

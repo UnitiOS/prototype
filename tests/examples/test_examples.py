@@ -135,7 +135,7 @@ def test_an_example_sees_its_own_records_and_leaves_nothing(world, conn):
     map_, held = _demo(world)
     [flour] = business.run(conn, map_, {"flour": held["flour_in_and_out"]})
     assert flour["passed"] is True
-    ingredients = next(t for t in flour["tables"] if t["table"] == "catalog__Ingredient")
+    ingredients = next(t for t in flour["tables"] if t["table"] == "demo_catalog__Ingredient")
     assert [row[0] for row in ingredients["rows"]] == ["flour"]
 
     assert _log_size(conn) == before
@@ -180,7 +180,7 @@ def test_a_record_the_form_refuses_is_refused_in_the_forms_words(world, conn):
     [refusal] = result["refusals"]
     assert (refusal.code, refusal.gate) == ("value_not_of_type", "the generator")
     assert refusal.where == ("example bad: record flour_in_1, "
-                             "inventory__StockMovement.inventory__movement_quantity")
+                             "demo_inventory__StockMovement.demo_inventory__movement_quantity")
 
     body = yaml.safe_load(yaml.safe_dump(held["flour_in_and_out"]))
     body["records"][1]["facts"]["movement_ingredient"] = "sugar"
@@ -198,7 +198,7 @@ def test_a_record_first_stated_must_say_what_it_is(world, conn):
     [result] = business.run(conn, map_, {"nameless": body})
     [refusal] = result["refusals"]
     assert refusal.code == "record_without_class"
-    assert "catalog__Ingredient" in refusal.repairs[0].options
+    assert "demo_catalog__Ingredient" in refusal.repairs[0].options
 
 
 def test_an_examples_file_is_held_to_its_shape(tmp_path):
@@ -406,7 +406,7 @@ def test_a_record_is_refused_without_what_its_class_requires_and_corrected_on_th
              **{"class": "StockMovement"},
              facts="movement_code=S1, movement_ingredient=sugar, movement_quantity=4")
     assert raised.value.code == "required_missing"
-    assert raised.value.repairs[0].options == ("inventory__movement_happened_on",)
+    assert raised.value.repairs[0].options == ("demo_inventory__movement_happened_on",)
     assert [r["record"] for r in studio.examples_of(world, name)["late"]["records"]] == ["sugar"]
 
     # Stated again on the same day, a record is that statement corrected: one
@@ -415,9 +415,9 @@ def test_a_record_is_refused_without_what_its_class_requires_and_corrected_on_th
          facts="ingredient_code=SUG, ingredient_name=Sugar, ingredient_unit=kg")
     records = studio.examples_of(world, name)["late"]["records"]
     # Kept under the catalog's full names, as the draft keeps them.
-    assert records == [{"record": "sugar", "class": "catalog__Ingredient", "facts": {
-        "catalog__ingredient_code": "SUG", "catalog__ingredient_name": "Sugar",
-        "catalog__ingredient_unit": "kg"}}]
+    assert records == [{"record": "sugar", "class": "demo_catalog__Ingredient", "facts": {
+        "demo_catalog__ingredient_code": "SUG", "demo_catalog__ingredient_name": "Sugar",
+        "demo_catalog__ingredient_unit": "kg"}}]
 
     # A later day is that record changing, and need not say everything again.
     step(world, name, "record", example="late", record="in", when="2026-06-02",

@@ -64,7 +64,7 @@ CODES = {
     "business_on_a_module": "a manifest naming a business on something that is not an application",
     "pins_an_application": "an import of an application, which is one business's own",
     "name_not_the_business": "an application named under a name other than its business's",
-    "tag_taken": "two modules in one closure whose names end alike, so their names cannot be told apart",
+    "tag_taken": "two modules in one closure whose tags are alike, so their names cannot be told apart",
     "name_reserved": "a module declaring a name core or the library declares, or one with `__` in it",
     "name_ambiguous": "a plain name that more than one module in sight declares",
 
@@ -128,6 +128,7 @@ CODES = {
     "revokes_another_statement": "a withdrawal naming a statement not made under this field on this subject",
     "no_type_slot": "a class with no slot carrying `designates_type`",
     "identity_column_taken": "a class whose own slot is named like the identity column",
+    "table_name_too_long": "a class whose table name is longer than PostgreSQL keeps",
     "multivalued_not_read": "a slot holding several values, which no table reads yet",
     "nothing_to_compile": "a map declaring neither an aggregate nor a class with entities",
 

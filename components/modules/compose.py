@@ -6,12 +6,19 @@ of a name silently replaces the first: two authors who both called a class
 other's rules (ECOSYSTEM_PLAN.md §4.3). So Uniti composes modules itself, and
 LinkML is never asked to merge a name.
 
-A pinned module is read with its own names qualified by its tag, the last part
-of its name:
+A pinned module is read with its own names qualified by its tag, its scope and
+name together:
 
     @komunitas/penyewaan   Rental, rental_customer
         read by whoever pins it as
-                           penyewaan__Rental, penyewaan__rental_customer
+                           komunitas_penyewaan__Rental,
+                           komunitas_penyewaan__rental_customer
+
+The scope is part of the tag because a name alone is not unique: `kasir` and
+`penyewaan` will be chosen by more than one author, and two modules with one
+tag can never meet (ECOSYSTEM_PLAN.md §0.3, G1). `@scope/name` is unique in a
+store, so the tag is too, but for a `-` read like the `_` that joins scope and
+name: `@a-b/c` and `@a/b-c`.
 
 The `__` is not `.`, which a rule already uses for one hop
 (`by: key=slot.slot`). The names a module wrote for itself never change: its
@@ -26,7 +33,8 @@ Three things hold the composition steady:
   - Core's and the library's names are reserved: they stay plain everywhere,
     because they are what modules share, and no other module may declare one.
   - Two modules with the same tag cannot be read together (`tag_taken`): the
-    tag is the whole of what tells their names apart.
+    tag is the whole of what tells their names apart. Only the
+    transliteration lets it happen: `@a-b/c` and `@a/b-c`.
 
 A reference is resolved by one rule, wherever it is written — a pinned
 module, the draft being built, an example: a name the module declares itself
@@ -54,8 +62,9 @@ _REF = re.compile(r"\{([A-Za-z_][A-Za-z0-9_]*)\}")
 
 
 def tag_of(module):
-    """The tag a module's names are qualified with: `@scope/name` -> `name`."""
-    return str(module).rsplit("/", 1)[-1].replace("-", "_")
+    """The tag a module's names are qualified with: `@scope/name` -> `scope_name`."""
+    scope, name = str(module).lstrip("@").split("/", 1)
+    return f"{scope}_{name}".replace("-", "_")
 
 
 def qualified(tag, name):

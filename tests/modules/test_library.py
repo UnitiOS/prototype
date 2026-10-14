@@ -81,8 +81,9 @@ def step(store, name, op, **args):
 
 
 def test_the_library_is_sealed_in_the_store_and_found_in_the_catalogue(store):
+    held = {"@uniti/item": ["v1", "v2"]}
     for name in LIBRARY:
-        assert [v["version"] for v in store.versions(name)] == ["v1"], name
+        assert [v["version"] for v in store.versions(name)] ==             held.get(name, ["v1"]), name
         document = store.document(name, "v1")
         assert document["imports"][:2] == ["linkml:types", "@uniti/core@v2"]
         assert store.kind(name) == "library"
@@ -101,6 +102,25 @@ def test_the_library_is_sealed_in_the_store_and_found_in_the_catalogue(store):
     # Found in the person's words too.
     assert any(e["name"] == "Party"
                for e in catalogue_read.find(found, text="Pihak")["entries"])
+
+
+def test_the_library_item_says_a_business_adds_its_own_facts_to_it(store):
+    """Gate G2 (ECOSYSTEM_PLAN.md §0.3): v1 told every agent reading the
+    catalogue that a rental rate is a record of the business's own module,
+    not part of the item, which is the opposite of what the guide teaches. v2
+    says it the guide's way, and changes nothing else."""
+    v1, v2 = (store.document("@uniti/item", v) for v in ("v1", "v2"))
+    [entry] = [e for e in catalogue_read.catalogue(store)
+               if e["kind"] == "module" and e["name"] == "@uniti/item"]
+    assert entry["module"] == {"name": "@uniti/item", "version": "v2"}
+    for said in (entry["description"], v2["description"],
+                 store.manifest("@uniti/item")["description"]):
+        assert "not part of the item" not in said
+        assert "adds" in said and "rental rate" in said
+    rest = lambda d: {k: v for k, v in d.items()
+                      if k not in ("description", "version", "annotations")}
+    assert rest(v1) == rest(v2)
+    assert v2["annotations"]["supersedes"] == "v1"
 
 
 def test_the_library_holds_no_class_that_is_a_kind_of_another_modules(store):

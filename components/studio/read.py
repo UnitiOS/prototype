@@ -861,7 +861,7 @@ def _recorded(store, name, examples, view=None):
     the page shows them in place of the English it is recorded in.
 
     Names as the map names them, by the composition's one rule, so a record
-    of `Movement` is drawn on the map's `stock_moves__Movement`.
+    of `Movement` is drawn on the map's `rival_stock_moves__Movement`.
     """
     known = set(view.all_classes()) if view is not None else set()
 

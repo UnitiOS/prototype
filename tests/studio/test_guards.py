@@ -12,10 +12,12 @@ worked alone and could not see each other's modules:
     classes                   made one module's items rows of the other's table.
 
 The first is no longer refused: the store reads each module under its own
-tag, `penyewaan__Rental` beside `kasir__Rental` (tests/modules/test_compose.py).
-What is refused is two modules with one tag, which the store could not tell
-apart. The other two are not refused, because nothing is wrong with them: they
-are recorded under full URIs, so they never meet in the log.
+tag, `alpha_stock__Warehouse` beside `beta_stock__Warehouse`
+(tests/modules/test_compose.py). What is refused is two modules with one tag,
+which the store could not tell apart; only a `-` read like the `_` between
+scope and name still makes one, `@a-b/c` beside `@a/b-c`. The other two are
+not refused, because nothing is wrong with them: they are recorded under full
+URIs, so they never meet in the log.
 """
 
 import os
@@ -90,23 +92,37 @@ def two(world, conn):
 
 # ---- one tag, two modules: refused ---------------------------------------
 
-def test_two_pins_sharing_a_tag_are_refused_where_both_are_in_sight(world, two):
-    """Two modules that declare one class name are read side by side, each
-    under its tag (tests/modules/test_compose.py). Two whose tags are the same
-    cannot be: `stock__Warehouse` would be either."""
+def test_two_modules_of_one_name_are_pinned_together(world, two):
+    """The tag is the scope and the name: both authors' `stock` are in sight,
+    each under its own."""
     name = "@probe/both"
     step(world, name, "start", title="Both", description="Pins two stock modules.")
     step(world, name, "pin", module="@alpha/stock@v1")
+    step(world, name, "pin", module="@beta/stock@v1")
+    classes = set(world.view(studio.path(world, name)).all_classes())
+    assert {"alpha_stock__Warehouse", "beta_stock__Warehouse"} <= classes
+
+
+def test_two_pins_sharing_a_tag_are_refused_where_both_are_in_sight(world, conn, two):
+    """`@gamma/stock-x` and `@gamma-stock/x` read as one tag:
+    `gamma_stock_x__Warehouse` would be either."""
+    for module, slot in (("@gamma/stock-x", "gamma_code"), ("@gamma-stock/x", "gamma_id")):
+        warehouses(world, module, slot)
+        seal(conn, studio.path(world, module), actor_id="probe",
+             into=studio.directory(world, module), store=world, sealed_at=NOW)
+    name = "@probe/clash"
+    step(world, name, "start", title="Clash", description="Pins two stock modules.")
+    step(world, name, "pin", module="@gamma/stock-x@v1")
     with pytest.raises(ModuleError) as refused:
-        step(world, name, "pin", module="@beta/stock@v1")
+        step(world, name, "pin", module="@gamma-stock/x@v1")
     assert refused.value.code == "tag_taken"
-    assert list(refused.value.repairs[0].options) == ["@alpha/stock", "@beta/stock"]
-    assert studio.open_draft(world, name)["imports"][-1] == "@alpha/stock@v1"
+    assert list(refused.value.repairs[0].options) == ["@gamma/stock-x", "@gamma-stock/x"]
+    assert studio.open_draft(world, name)["imports"][-1] == "@gamma/stock-x@v1"
 
     # Written in by hand, it is a hole, and the seal says the same.
     where = studio.path(world, name)
     document = yaml.safe_load(where.read_text(encoding="utf-8"))
-    document["imports"].append("@beta/stock@v1")
+    document["imports"].append("@gamma-stock/x@v1")
     where.write_text(yaml.safe_dump(document, sort_keys=False), encoding="utf-8")
     report = reading.state(world, name)
     [hole] = [h for h in report["holes"] if h["kind"] == "tag_taken"]

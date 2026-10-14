@@ -159,7 +159,7 @@ def test_a_term_stated_and_never_read_is_found_without_anyone_naming_it(conn, wo
     assert "https://uniti.example/inventory/movement_happened_on" in uris
     finding = dead[uris.index("https://uniti.example/inventory/movement_happened_on")]
     assert finding["fills"] == "moment"
-    assert finding["on"] == ["inventory__StockMovement"]
+    assert finding["on"] == ["demo_inventory__StockMovement"]
     assert finding["module"] == {"name": INVENTORY, "version": "v3"}
     # Stated for the movements, like the quantity beside it — which is read.
     quantity = _term(report, "https://uniti.example/inventory/movement_quantity")

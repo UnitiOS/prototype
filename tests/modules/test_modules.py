@@ -125,7 +125,7 @@ def test_a_pinned_import_keeps_its_meaning_when_the_module_moves_on(conn, tmp_pa
     assert pin["version"] == "v1" and pin["latest"] == "v2"
     # Under the catalog's tag, as a version reads what it pins.
     seen = {s["name"] for s in after["slots"]}
-    assert "catalog__ingredient_label" in seen and "catalog__ingredient_name" not in seen
+    assert "demo_catalog__ingredient_label" in seen and "demo_catalog__ingredient_name" not in seen
 
 
 def test_a_version_sees_what_it_imports_and_says_where_it_came_from(built):
@@ -136,7 +136,7 @@ def test_a_version_sees_what_it_imports_and_says_where_it_came_from(built):
     by_name = {c["name"]: c for c in detail["classes"]}
     assert by_name["StockMovement"]["from"] == {"name": INVENTORY, "version": "v2"}
     # Its own names plain; what it pins under that module's tag.
-    assert by_name["catalog__Ingredient"]["from"] == {"name": CATALOG, "version": "v2"}
+    assert by_name["demo_catalog__Ingredient"]["from"] == {"name": CATALOG, "version": "v2"}
     assert detail["classes"][0]["from"]["name"] == INVENTORY
 
     # The one thing core holds is the predicate a class fact is stated under,
@@ -257,7 +257,9 @@ def test_the_graph_draws_pins_and_supersessions(built):
     # And the same modules brought to the recording standard, by new versions.
     assert (STOCK, "v4", RIVAL, "v2", "imports") in edges
     assert (RIVAL, "v2", RIVAL, "v1", "supersedes") in edges
-    assert len(graph["nodes"]) == 19
+    # The library's Item was reworded in a v2 (ECOSYSTEM_PLAN.md §0.3, G2).
+    assert ("@uniti/item", "v2", "@uniti/item", "v1", "supersedes") in edges
+    assert len(graph["nodes"]) == 20
 
 
 def test_a_module_name_is_checked(built):
@@ -276,7 +278,7 @@ def test_the_api_reads_the_store_in_the_environment(conn, built, monkeypatch):
 
     names = [m["name"] for m in client.get("/api/modules").json()]
     assert names == [CATALOG, INVENTORY, STOCK, RIVAL, CORE, *LIBRARY]
-    assert len(client.get("/api/modules/graph").json()["nodes"]) == 19
+    assert len(client.get("/api/modules/graph").json()["nodes"]) == 20
 
     detail = client.get("/api/modules/version",
                         params={"name": CATALOG, "version": "v2"}).json()

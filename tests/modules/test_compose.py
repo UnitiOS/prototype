@@ -5,9 +5,11 @@ class `Rental`, and both slots `rental_deposit`. Before, an application pinning
 both had one `Rental` — whichever LinkML read last — and the other author's
 own rules broke inside it. What has to hold now, and is asserted here:
 
-    side by side    the application sees `penyewaan__Rental` and
-                    `kasir__Rental`; each module's own table is still computed
-                    by its own rule, inside the application
+    side by side    the application sees `komunitas_penyewaan__Rental` and
+                    `lain_kasir__Rental`; each module's own table is still
+                    computed by its own rule, inside the application
+    one name        the tag is the scope and the name: `@sewapro/kasir`
+                    beside `@lain/kasir` is two tags (§0.3, G1)
     one rule        a name a person writes plain means the one module that
                     declares it; where two do, "which one?" with both offered
     same URIs       a qualified name records under exactly the predicate the
@@ -15,7 +17,8 @@ own rules broke inside it. What has to hold now, and is asserted here:
     what stays      core's and the library's names are plain for everybody
     refused         and are nobody else's to declare; a name with `__`; two
                     modules with the same tag in one closure; a draft
-                    declaring what a module it pins declares
+                    declaring what a module it pins declares; a table name
+                    longer than PostgreSQL keeps
 """
 
 import os
@@ -38,7 +41,7 @@ from components.refusal import Refusal  # noqa: E402
 from components.studio import draft as studio  # noqa: E402
 from components.studio import read as reading  # noqa: E402
 from compile import plan_for, tables  # noqa: E402
-from generate import table_name  # noqa: E402
+from generate import MapError, table_name  # noqa: E402
 from perform import connect  # noqa: E402
 from seal import class_uri, predicate, register, seal  # noqa: E402
 
@@ -151,7 +154,8 @@ def application(store, conn, both):
 def _finish(store, conn):
     """The rules and the example, with every name said in full where two
     modules declare it."""
-    for column, tag in (("deposit_taken_rudi", "penyewaan"), ("deposit_taken_till", "kasir")):
+    for column, tag in (("deposit_taken_rudi", "komunitas_penyewaan"),
+                        ("deposit_taken_till", "lain_kasir")):
         step(store, APP, "aggregate", **{
             "class": "DepositTaken", "column": column, "over": f"{tag}__Rental",
             "sum": f"{tag}__rental_deposit",
@@ -160,7 +164,8 @@ def _finish(store, conn):
          says="Budi leaves 100000 with Rudi and 50000 at the other till.")
     step(store, APP, "record", example="budi", record="budi", **{"class": "Party"},
          facts="party_name=Budi")
-    for record, tag, deposit in (("r1", "penyewaan", 100000), ("t1", "kasir", 50000)):
+    for record, tag, deposit in (("r1", "komunitas_penyewaan", 100000),
+                                 ("t1", "lain_kasir", 50000)):
         step(store, APP, "record", example="budi", record=record,
              **{"class": f"{tag}__Rental"}, when="2026-10-06",
              facts=f"rental_number={record.upper()}, rental_customer=budi, "
@@ -169,9 +174,9 @@ def _finish(store, conn):
          values="deposit_taken_rudi=100000, deposit_taken_till=50000")
     # Rudi's own rule, read inside the application, still answers for his
     # rentals alone: the till's `Rental` is not his.
-    step(store, APP, "expect", example="budi", table="penyewaan__CustomerDeposit",
+    step(store, APP, "expect", example="budi", table="komunitas_penyewaan__CustomerDeposit",
          row="budi", values="customer_deposit_total=100000")
-    step(store, APP, "expect", example="budi", table="kasir__CustomerDeposit",
+    step(store, APP, "expect", example="budi", table="lain_kasir__CustomerDeposit",
          row="budi", values="customer_deposit_total=50000")
     step(store, APP, "agree_example", example="budi")
 
@@ -181,9 +186,9 @@ def _finish(store, conn):
 def test_two_modules_declaring_rental_are_read_side_by_side(store, application):
     view = store.view(studio.path(store, APP))
     classes = set(view.all_classes())
-    assert {"penyewaan__Rental", "kasir__Rental"} <= classes
+    assert {"komunitas_penyewaan__Rental", "lain_kasir__Rental"} <= classes
     assert "Rental" not in classes
-    assert {"penyewaan__rental_deposit", "kasir__rental_deposit"} <= set(view.all_slots())
+    assert {"komunitas_penyewaan__rental_deposit", "lain_kasir__rental_deposit"} <= set(view.all_slots())
     # What everybody shares stays plain.
     assert {"Party", "Transaction", "Thing"} <= classes
     assert {"party_name", "transaction_counterparty", "entity_class"} <= set(view.all_slots())
@@ -194,7 +199,8 @@ def test_a_plain_name_two_modules_declare_is_asked_about(store, conn, applicatio
     caught = refused(store, APP, "record", example="probe", record="r",
                      **{"class": "Rental"})
     assert caught.code == "name_ambiguous"
-    assert list(caught.repairs[0].options) == ["kasir__Rental", "penyewaan__Rental"]
+    assert list(caught.repairs[0].options) == ["komunitas_penyewaan__Rental",
+                                               "lain_kasir__Rental"]
     step(store, APP, "remove_example", example="probe")
 
     # A rule written with the plain name is a hole naming both.
@@ -207,8 +213,8 @@ def test_a_plain_name_two_modules_declare_is_asked_about(store, conn, applicatio
                           "draft.yaml: rental_deposit"}
     assert all(h["blocking"] for h in asked.values())
     rental = asked["draft.yaml: Rental"]
-    assert rental["refusal"]["repairs"][0]["options"] == ["kasir__Rental",
-                                                          "penyewaan__Rental"]
+    assert rental["refusal"]["repairs"][0]["options"] == ["komunitas_penyewaan__Rental",
+                                                          "lain_kasir__Rental"]
     assert "which Rental is meant" in rental["question"]
 
 
@@ -226,7 +232,7 @@ def test_a_plain_name_one_module_declares_is_kept_in_full(store, application):
     step(held, probe, "add_slot", slot="rental_note_rental", range="Rental",
          description="The rental it is about.")
     document = studio.open_draft(held, probe)
-    assert document["slots"]["rental_note_rental"]["range"] == "penyewaan__Rental"
+    assert document["slots"]["rental_note_rental"]["range"] == "komunitas_penyewaan__Rental"
 
 
 def test_each_modules_own_rules_hold_inside_the_application_and_it_seals(
@@ -239,34 +245,34 @@ def test_each_modules_own_rules_hold_inside_the_application_and_it_seals(
     assert example["passed"] is True, example
 
     map_ = reading._map(store, APP, studio.open_draft(store, APP))
-    assert {"DepositTaken", "penyewaan__CustomerDeposit",
-            "kasir__CustomerDeposit"} <= set(tables(map_))
-    assert plan_for(map_, "penyewaan__CustomerDeposit")["aggregates"][
-        "penyewaan__customer_deposit_total"]["over"] == "penyewaan__Rental"
-    assert table_name("penyewaan__CustomerDeposit") == "p_penyewaan__customer_deposit"
+    assert {"DepositTaken", "komunitas_penyewaan__CustomerDeposit",
+            "lain_kasir__CustomerDeposit"} <= set(tables(map_))
+    assert plan_for(map_, "komunitas_penyewaan__CustomerDeposit")["aggregates"][
+        "komunitas_penyewaan__customer_deposit_total"]["over"] == "komunitas_penyewaan__Rental"
+    assert table_name("komunitas_penyewaan__CustomerDeposit") ==         "p_komunitas_penyewaan__customer_deposit"
 
     out = seal(conn, studio.path(store, APP), actor_id="dev",
                into=store.directory(APP), store=store)
     assert out["version"] == "v1"
     sealed = store.document(APP, "v1")
     spec = sealed["slots"]["deposit_taken_till"]["annotations"]["aggregate"]["value"]
-    assert spec["over"] == "kasir__Rental"
+    assert spec["over"] == "lain_kasir__Rental"
 
 
 def test_a_qualified_name_records_under_the_predicate_the_plain_one_did(
         store, conn, both):
     app = store.view(store.path(APP, "v1")) if store.versions(APP) else \
         store.view(studio.path(store, APP))
-    for module, tag in ((RUDI, "penyewaan"), (TILL, "kasir")):
+    for module, tag in ((RUDI, "komunitas_penyewaan"), (TILL, "lain_kasir")):
         own = store.view(store.path(module, "v1"))
         assert class_uri(own, "Rental") == class_uri(app, f"{tag}__Rental")
         for slot in ("rental_deposit", "rental_customer", "rental_number"):
             assert predicate(own, own.induced_slot(slot)) == \
                 predicate(app, app.induced_slot(f"{tag}__{slot}"))
     # Two authors, two predicates: the names were the same, the words never.
-    assert predicate(app, app.induced_slot("penyewaan__rental_deposit")) != \
-        predicate(app, app.induced_slot("kasir__rental_deposit"))
-    assert class_uri(app, "penyewaan__Rental") != class_uri(app, "kasir__Rental")
+    assert predicate(app, app.induced_slot("komunitas_penyewaan__rental_deposit")) != \
+        predicate(app, app.induced_slot("lain_kasir__rental_deposit"))
+    assert class_uri(app, "komunitas_penyewaan__Rental") != class_uri(app, "lain_kasir__Rental")
 
 
 def test_the_store_page_shows_each_name_with_where_it_came_from(store, both):
@@ -279,24 +285,54 @@ def test_the_store_page_shows_each_name_with_where_it_came_from(store, both):
 
     graph = modules_read.class_graph(store, APP, "v1")
     nodes = {n["name"]: n for n in graph["nodes"]}
-    assert nodes["kasir__Rental"]["module"] == {"name": TILL, "version": "v1"}
-    assert nodes["penyewaan__Rental"]["fills"] == ["Transaction"]
-    assert {"from": "DepositTaken", "to": "kasir__Rental", "kind": "aggregate",
+    assert nodes["lain_kasir__Rental"]["module"] == {"name": TILL, "version": "v1"}
+    assert nodes["komunitas_penyewaan__Rental"]["fills"] == ["Transaction"]
+    assert {"from": "DepositTaken", "to": "lain_kasir__Rental", "kind": "aggregate",
             "label": "deposit_taken_till"} in graph["edges"]
 
 
 # ---- what is still refused ------------------------------------------------
 
-def test_two_modules_with_one_tag_cannot_be_pinned_together(store, conn, both):
-    other = "@rudi/penyewaan"
+def test_two_modules_of_one_name_are_pinned_together(store, conn, both):
+    """`kasir` is a name more than one author chooses: the scope tells them
+    apart, and each module's own rule holds beside the other's."""
+    other = "@sewapro/kasir"
     _rental(store, conn, other, 70000)
-    probe = "@demo/twotags"
-    step(store, probe, "start", title="Two tags", description="Pins both rentals.")
-    step(store, probe, "pin", module=f"{RUDI}@v1")
-    caught = refused(store, probe, "pin", module=f"{other}@v1")
-    assert caught.code == "tag_taken"
-    assert list(caught.repairs[0].options) == [RUDI, other]
-    assert studio.open_draft(store, probe)["imports"][-1] == f"{RUDI}@v1"
+    app = "@demo/twokasir"
+    step(store, app, "start", title="Two tills", kind="application", business=BUSINESS,
+         description="SewaPro's till and the other till.")
+    step(store, app, "pin", module=f"{TILL}@v1")
+    step(store, app, "pin", module=f"{other}@v1")
+    classes = set(store.view(studio.path(store, app)).all_classes())
+    assert {"lain_kasir__Rental", "sewapro_kasir__Rental"} <= classes
+
+    step(store, app, "add_example", example="budi",
+         says="Budi leaves 50000 at the other till and 70000 at SewaPro's.")
+    step(store, app, "record", example="budi", record="budi", **{"class": "Party"},
+         facts="party_name=Budi")
+    for record, tag, deposit in (("t1", "lain_kasir", 50000), ("s1", "sewapro_kasir", 70000)):
+        step(store, app, "record", example="budi", record=record,
+             **{"class": f"{tag}__Rental"}, when="2026-10-06",
+             facts=f"rental_number={record.upper()}, rental_customer=budi, "
+                   f"rental_date=2026-10-06, rental_deposit={deposit}")
+        step(store, app, "expect", example="budi", table=f"{tag}__CustomerDeposit",
+             row="budi", values=f"customer_deposit_total={deposit}")
+    step(store, app, "agree_example", example="budi")
+    report = reading.state(store, app, conn)
+    assert [h["kind"] for h in report["holes"] if h["blocking"]] == []
+    [example] = report["examples"]
+    assert example["passed"] is True, example
+    out = seal(conn, studio.path(store, app), actor_id="dev",
+               into=store.directory(app), store=store)
+    assert out["version"] == "v1"
+
+
+def test_a_table_name_longer_than_postgresql_keeps_is_refused():
+    assert table_name("komunitas_penyewaan__CustomerDeposit") ==         "p_komunitas_penyewaan__customer_deposit"
+    with pytest.raises(MapError) as caught:
+        table_name("koperasi_peralatan_kemah__CustomerDepositReturnedAfterInspection")
+    assert caught.value.code == "table_name_too_long"
+    assert table_name("x" * 61) == "p_" + "x" * 61
 
 
 def test_core_and_library_names_are_nobody_elses(store, both):
@@ -315,12 +351,15 @@ def test_core_and_library_names_are_nobody_elses(store, both):
 
 
 def test_tags_and_plain_names():
-    assert compose.tag_of("@komunitas/penyewaan") == "penyewaan"
-    assert compose.tag_of("@rival/stock-moves") == "stock_moves"
-    assert compose.plain("penyewaan__Rental") == "Rental"
+    assert compose.tag_of("@komunitas/penyewaan") == "komunitas_penyewaan"
+    assert compose.tag_of("@rival/stock-moves") == "rival_stock_moves"
+    # The one clash left: a `-` reads like the `_` between scope and name.
+    assert compose.tag_of("@a-b/c") == compose.tag_of("@a/b-c") == "a_b_c"
+    assert compose.plain("komunitas_penyewaan__Rental") == "Rental"
     assert compose.plain("Rental") == "Rental"
-    known = {"penyewaan__Rental", "kasir__Rental", "Party", "kasir__Till"}
+    known = {"komunitas_penyewaan__Rental", "lain_kasir__Rental", "Party",
+             "lain_kasir__Till"}
     assert compose.matches("Party", known) == ["Party"]
-    assert compose.matches("Till", known) == ["kasir__Till"]
-    assert compose.matches("Rental", known) == ["kasir__Rental", "penyewaan__Rental"]
+    assert compose.matches("Till", known) == ["lain_kasir__Till"]
+    assert compose.matches("Rental", known) == ["komunitas_penyewaan__Rental", "lain_kasir__Rental"]
     assert compose.matches("Nothing", known) == []

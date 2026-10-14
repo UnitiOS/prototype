@@ -40,8 +40,8 @@ only into that business's kernel (components/business).
 
 Modules are read together by the store, never by LinkML merging their names
 (components/modules/compose.py): a pinned module's names are qualified by its
-tag, `penyewaan__Rental`, with the URIs its plain names meant, and core's and
-the library's names stay plain for everybody. `composition` is the one reader
+tag, `komunitas_penyewaan__Rental`, with the URIs its plain names meant, and
+core's and the library's names stay plain for everybody. `composition` is the one reader
 of a closure as composed, and `view` reads through it.
 
 The roots come from `UNITI_PACKAGES`, a path list in the platform's separator,

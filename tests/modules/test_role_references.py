@@ -259,20 +259,20 @@ def test_the_choices_for_a_role_say_what_each_one_is(store, conn, application):
     for subject, who in (("budi", "Budi"), ("ani", "Ani")):
         submit(conn, map_, "Party", subject=rec + subject,
                values={"entity_class": "Party", "party_name": who}, **written)
-    submit(conn, map_, "sewa__Rental", subject=rec + "r1",
-           values={"entity_class": "sewa__Rental", "sewa__rental_date": "2026-10-06",
-                   "sewa__rental_customer": rec + "budi"}, **written)
-    submit(conn, map_, "kasir__Booking", subject=rec + "b1",
-           values={"entity_class": "kasir__Booking", "kasir__booking_date": "2026-10-07",
-                   "kasir__booking_customer": rec + "ani"}, **written)
+    submit(conn, map_, "rudi_sewa__Rental", subject=rec + "r1",
+           values={"entity_class": "rudi_sewa__Rental", "rudi_sewa__rental_date": "2026-10-06",
+                   "rudi_sewa__rental_customer": rec + "budi"}, **written)
+    submit(conn, map_, "sewapro_kasir__Booking", subject=rec + "b1",
+           values={"entity_class": "sewapro_kasir__Booking", "sewapro_kasir__booking_date": "2026-10-07",
+                   "sewapro_kasir__booking_customer": rec + "ani"}, **written)
 
-    fields = {f["name"]: f for f in form(conn, map_, "jaminan__Guarantee",
+    fields = {f["name"]: f for f in form(conn, map_, "dewi_jaminan__Guarantee",
                                          valid_at="2026-10-08T00:00:00Z")["fields"]}
-    secured = dict(fields["jaminan__guarantee_for"]["options"])
+    secured = dict(fields["dewi_jaminan__guarantee_for"]["options"])
     assert secured[rec + "r1"] == "Rental — Budi, 2026-10-06"
     assert secured[rec + "b1"] == "Booking — Ani, 2026-10-07"
     # A choice of the very class the field names needs no kind before it.
-    customers = dict(fields["jaminan__guarantee_customer"]["options"])
+    customers = dict(fields["dewi_jaminan__guarantee_customer"]["options"])
     assert customers[rec + "budi"] == "Budi"
 
 

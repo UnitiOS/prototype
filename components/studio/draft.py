@@ -541,7 +541,8 @@ def seen(store, document):
     own — which is the whole of the difference between what can be changed
     here and what has to be changed by sealing a new version of somebody
     else's module. What it pins is seen as the store composes it: under each
-    module's qualified names, `penyewaan__Rental`, its own under its plain ones.
+    module's qualified names, `komunitas_penyewaan__Rental`, its own under its
+    plain ones.
     """
     classes, slots = {}, {}
     for dep, held in _composition(store, document):
@@ -707,8 +708,8 @@ def _free(store, document, kind, proposed, what, module=None):
 
     A class and an enum are both things a slot ranges over, so they share one
     space of names; a slot has its own. A pinned module's name counts by its
-    plain part: `Rental` beside a pinned `penyewaan__Rental` would read as
-    either. Core's and the library's names are theirs alone, and `__` marks
+    plain part: `Rental` beside a pinned `komunitas_penyewaan__Rental` would
+    read as either. Core's and the library's names are theirs alone, and `__` marks
     the module a name comes from, so neither is a name of one's own.
     """
     shared = module is not None and _kind(store, module) in SHARED
@@ -1911,8 +1912,8 @@ def _record_step(store, name, document, args):
         record = {**records[same], **record}
     if record.get("facts"):
         # Each fact under the full name of the slot it states, as the class
-        # names it: `rental_deposit` of a pinned `penyewaan__Rental` is kept
-        # as `penyewaan__rental_deposit`.
+        # names it: `rental_deposit` of a pinned `komunitas_penyewaan__Rental`
+        # is kept as `komunitas_penyewaan__rental_deposit`.
         class_name = record.get("class") or next(
             (r.get("class") for r in records
              if str(r.get("record")) == record["record"] and r.get("class")), None)

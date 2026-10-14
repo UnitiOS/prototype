@@ -213,7 +213,7 @@ def test_a_rule_naming_a_class_that_is_not_there_hands_back_the_ones_that_are(bu
     # Two answers, and they are different answers. The classes an entity can
     # be, and — separately — the roles a rule could be written against instead.
     classes, roles = caught.value.repairs
-    assert "inventory__StockMovement" in classes.options and "Flow" not in classes.options
+    assert "demo_inventory__StockMovement" in classes.options and "Flow" not in classes.options
     assert roles.options == ("Event", "Flow", "Resource", "Thing")
 
 

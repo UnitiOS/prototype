@@ -32,7 +32,7 @@ export const holds = (range: string | null) => (range ? HOLDS[range] ?? range : 
 export const pinText = (p: Pin) => `${p.name}@${p.version}`;
 
 /** A name as its module wrote it. Read beside other modules, a pinned
- *  module's names carry its tag, `penyewaan__Rental`; a person is shown
+ *  module's names carry its tag, `komunitas_penyewaan__Rental`; a person is shown
  *  `Rental`, and the module it came from as a mark of its own. */
 export const plainName = (name: string) =>
   name.includes("__") ? name.slice(name.lastIndexOf("__") + 2) : name;

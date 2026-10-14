@@ -1,0 +1,11 @@
+# @uniti/item — how this version was built
+#
+# One line per step the studio performed, in order. Nobody wrote
+# this file and nobody edits it; `seal` copies it out beside the
+# version it becomes.
+
+2026-10-14T01:16:56+00:00  person  revise  module=@uniti/item from=v1
+
+2026-10-14T01:16:56+00:00  person  set  field=description
+  value:
+    A kind of thing a business holds, counts, moves, buys, sells or rents out, recorded once and pointed at by every module that deals with it. What one kind of business adds about an item, such as a rental rate or a reorder level, is a slot of that business's own module attached to the item, so the item stays one record and each business's facts stay its own.

@@ -2,7 +2,8 @@
 
 > Written 10 October 2026, after three rounds of discussion with the owner and a
 > day of verification against the running system. It is the working plan for the
-> rest of P2, meant to be executed in new sessions.
+> rest of P2, meant to be executed in new sessions. **Recalibrated 14 October
+> 2026** after steps 0–4: a session starting work reads §0 first.
 >
 > - `README.md` describes the system as it is in the code. `P2.md` (Indonesian)
 >   tells P2's story up to 9 October. `DESIGN_NOTES.md` explains why the system is
@@ -20,6 +21,7 @@
 
 ## Contents
 
+0. Where P2 stands, and the rule that keeps it on the goal (14 October)
 1. Where P2 is going
 2. Who the Studio is for
 3. How one module connects to another
@@ -31,6 +33,160 @@
 9. Not in P2
 10. Risks and how to keep scope
 11. Appendices
+
+---
+
+## 0. Where P2 stands, and the rule that keeps it on the goal (14 October)
+
+### 0.1 Where it stands
+
+Steps 0–4 are built and committed (`3a617ce`…`4fa0a75`). On 14 October they
+were checked against this plan: 373 Python tests and 45 web tests pass, `make
+check` replays identically, the probes of §4 were re-run (P3a, P1 and P4 now
+pass without any patch; P2 still blocks, as expected until step 6), and the
+Studio and Application screens were looked at in a browser. Every step met its
+"done when". The owner's decisions at each step are recorded under the step.
+
+The goal has not moved (§1.2): **the ecosystem test passes on its seven
+stories, then core v3, then the re-run.** What remains, in order:
+
+| # | Work | Serves |
+|---|---|---|
+| 1 | Gates G1 and G2 (§0.3) | Stories 1, 3, 6 |
+| 2 | Dry run of stories 1–3 through the agent (§0.4) | Stories 1–4 |
+| 3 | Step 5 — one rule, several sources | Story 6 |
+| 4 | Step 6 — the seal stops depending on the compiler | Story 7 |
+| 5 | Step 7 — narrowed to stories 4 and 5 (G3 is part of it) | Stories 4, 5 |
+| 6 | Step 8 — only the defects that break a criterion of §7.3 | §7.3 |
+| 7 | The ecosystem test (§7) | Finish line 2 |
+| 8 | Core v3 and the re-run (§8) | Finish lines 3, 4 |
+
+### 0.2 The story filter
+
+P2 drifted before by finishing each stage and then deepening it (P2.md §6.3).
+Steps 0–4 kept to their steps, but each was built to completeness: about 3,000
+lines and 10 new refusal codes, one rule (the namespace guard) beyond the
+plan, and the agent's instructions raised from 22,000 to 24,000 characters.
+From here on:
+
+- **Every piece of work names the story of §7.2, or the line of §1.2, it
+  unblocks.** Work that names none goes to the parking list (§11.4), whoever
+  found it. This holds for review findings too, including Claude's own.
+- **The smallest form that lets the story pass.** A step's "done when" is the
+  story it serves. A rule or refusal closing a gap no story reaches is parked,
+  not built. A new refusal code needs a story that can hit it.
+- **The agent's instructions stay within 24,000 characters.** Every mechanism
+  taught to the agent is weight on story 4. A step that needs more asks the
+  owner first; raising the budget is not a step's own decision.
+- **The ecosystem test finds the rest.** What it shows to be missing is fixed
+  then, with evidence, instead of guessed now.
+
+### 0.3 Gates before the ecosystem test
+
+Found on 14 October; each blocks a story. They are the only additions to the
+work before step 5.
+
+- **G1 — the tag rule.** The tag is the module's name alone, so two modules of
+  that name can never meet: `@sewapro/kasir` and `@lain/kasir` pinned together
+  are refused with `tag_taken` (verified 14 October,
+  `build/probes/p5_after_step4.py`). Common names (`kasir`, `stok`,
+  `penyewaan`) will be chosen by different authors, the agent chooses the
+  third author's name in story 3, and when the clash comes through a module
+  another module pins, the business owner has no repair.
+  - **Decided 14 October 2026 (owner): the tag is `scope_name`, for every
+    module.** `@komunitas/penyewaan` → `komunitas_penyewaan__Rental`, table
+    `p_komunitas_penyewaan__rental`; `@sewapro/kasir` → `sewapro_kasir__…`.
+    It replaces step 1's "the module's name alone".
+  - **Why not the others:** the name alone clashes as soon as the ecosystem
+    grows. `scope_name` only for the second module in a clash makes a
+    module's names depend on what else is pinned, and Studio and the seal
+    write the full names, so adding a pin would rename what a sealed
+    application already holds. `scope_name` always is stable and unique by
+    construction, because `@scope/name` is unique in a store. The longer
+    names cost nothing to the business owner after G3, who sees the plain
+    name and a small mark.
+  - **Cheap now:** on 14 October no sealed version in `packages/` or the
+    development store held a composed name; only tests do.
+  - **`tag_taken` stays** as the guard for the rare clash the transliteration
+    still allows: `-` and `_` both read as `_`, so `@a_b/c` and `@a/b_c` give
+    one tag.
+  - **Table names over 63 characters are refused.** PostgreSQL silently
+    truncates longer identifiers, so two tables could become one; nothing
+    guards it today, and longer tags make it likelier. One refusal where the
+    table name is made (`generate.table_name` or the compiler's use of it).
+  - **Done when:** `@sewapro/kasir` and `@lain/kasir` are pinned together in a
+    test, each with its own rules holding; the P3a test passes under the new
+    tags with URIs unchanged; a table name over 63 characters is refused.
+  - **Built (14 October):** `compose.tag_of` gives `scope_name`
+    (`@komunitas/penyewaan` → `komunitas_penyewaan`). `generate.table_name`
+    refuses a name over 63 bytes (`table_name_too_long`, the one new code), so
+    the compiler, the forms and the seal all meet it. Tests:
+    `test_two_modules_of_one_name_are_pinned_together` (`@sewapro/kasir`
+    beside `@lain/kasir`, each one's own `CustomerDeposit` rule holding in the
+    application's example, and it seals) and
+    `test_a_table_name_longer_than_postgresql_keeps_is_refused` in
+    `tests/modules/test_compose.py`; the P3a test there passes with URIs
+    unchanged. `tag_taken` is now tested with the clash a `-` still makes,
+    `@gamma/stock-x` beside `@gamma-stock/x` (`tests/studio/test_guards.py`).
+    The Studio refuses `_` in a module name, so that is the only way left.
+    One development draft (`build/dev/packages/@demo/inventory/draft.yaml`,
+    from a revise on 12 October) held `catalog__Ingredient`; its one line was
+    rewritten to `demo_catalog__Ingredient`. The map now shows the longer tag
+    (`Rental · komunitas_penyewaan`) until G3.
+- **G2 — the library's `Item` says facets are not the way.** Its sealed
+  description, which agents read in the catalogue, says a rental rate is a
+  record of the business's own module, not part of the item: the opposite of
+  story 1. Moved here from the parking list. Reword it in `@uniti/item@v2`
+  (nothing else in it changes) and pin it where the library is pinned. **Done
+  when:** the catalogue no longer contradicts the guide.
+  - **Built (14 October):** `@uniti/item@v2`, made by Studio steps
+    (`revise`, `set description`) and sealed in a rolled-back transaction, so
+    it reaches a log by `register` like every `@uniti` version; it differs
+    from v1 only in its description, and the manifest says the same. It now
+    says a business's rental rate or reorder level is "a slot of that
+    business's own module attached to the item". Registered in the dev log
+    (nothing minted: the URIs are v1's). The facet tests pin v2; the other
+    tests keep v1, which still resolves. Test:
+    `test_the_library_item_says_a_business_adds_its_own_facts_to_it`
+    (`tests/modules/test_library.py`).
+- **G3 — composed names reach the business owner.** The map shows
+  `Guarantee · jaminan`, but the Application screen still shows
+  `jaminan__Guarantee`, `penyewaan__stock_item`, "State a
+  jaminan__Guarantee", `jaminan__guarantee_for` as a field title, and
+  composed names in "What it stands on" (seen 14 October). §7.3 forbids
+  technical terms before the business owner. **Part of step 7**, not a step of
+  its own: the same `plainName`/`tagOf` the map uses.
+
+### 0.4 A dry run of stories 1–3 before steps 5–7
+
+The mechanisms for stories 1–3 exist, but nothing yet shows the agent uses
+them: facets, pointing at roles, stand-ins, plain names. One short run of those
+three stories through the agent shows it before three more steps are built on
+that assumption, and shows whether 24,000 characters of instructions are still
+followed. It is part of the ecosystem test run early, not new scope.
+
+**Decided 14 October 2026 (owner): it is run**, on these terms:
+
+- **When:** after G1 and G2, which both change what the agent reads.
+- **What:** stories 1–3 only. Claude plays Rudi, Dewi and the third author
+  through the agent in the Studio. The application that checks their numbers
+  is composed with ordinary Studio steps, not through the agent: Sari through
+  the agent is story 4.
+- **Before the first call:** truth numbers and pass criteria written down; the
+  cap of **about $1** announced with the calls and time limits, as the working
+  rules require.
+- **What is watched:**
+  - the rental rate is made a facet on `Item`, not a record of Rudi's own;
+  - the guarantee points at the `Transaction` role, with a stand-in in its
+    own example;
+  - the third author declares a `Rental` of its own, and it can be pinned
+    beside Rudi's;
+  - the numbers match the truth, with no developer intervention (§7.3).
+- **After:** only what made a story fail is fixed, before step 5. Everything
+  else is written down for the real ecosystem test, not built: the story
+  filter (§0.2) holds.
+- **Done when:** the three stories have been run and their results are
+  recorded here, under this section.
 
 ---
 
@@ -448,7 +604,8 @@ before any commit. Step 8 may be done at any time.
   Rudi's own rules intact, example passes, seal succeeds, and URIs are identical
   before and after.
 - **Decided 10 October 2026 (owner):**
-  - **Tag form:** the module's name alone, `-` read as `_`
+  - **Tag form** (superseded 14 October by gate G1, §0.3: `scope_name`):
+    the module's name alone, `-` read as `_`
     (`@komunitas/penyewaan` → `penyewaan__Rental`, table
     `p_penyewaan__rental`). Two modules with one tag in a closure are refused
     (`tag_taken`), at the `pin` step and at the seal.
@@ -605,6 +762,7 @@ before any commit. Step 8 may be done at any time.
 
 ### Step 5 — One rule, several sources
 
+- **Serves:** story 6 ("combined numbers are one rule each").
 - **User sees:** "units out = rental lines (Rudi) + booking lines (till)" is one
   column, written once.
 - **Design (proposal):** an aggregate may list `sources`, each with its own
@@ -622,6 +780,8 @@ before any commit. Step 8 may be done at any time.
 
 ### Step 6 — The seal stops depending on what the compiler can do
 
+- **Serves:** story 7, and the owner's principle that the compiler follows the
+  graph (§1.1). Only the refusals of §11.1 are reclassified; no compiler growth.
 - **User sees:** a need the system cannot compute yet is still written and sealed;
   on the map it shows "not computed yet", and its example waits instead of
   failing.
@@ -645,37 +805,55 @@ before any commit. Step 8 may be done at any time.
 
 ### Step 7 — Two lenses, and what a revision means for each user
 
-- **Business lens** (opens for an application): things, events and numbers in the
-  owner's words; small "from *module*" marks; facets shown inside their thing.
-- **Connection lens** (opens for a module): what it points at, what it adds to
-  whose things, which roles it fills, and which shared modules build on it.
-  Start from the existing `ClassGraph` (Modules area) and the Studio map.
-- **For Sari: "a new version is available"** card. The application's examples run
-  against the candidate version **before** she re-pins (the health report already
-  finds lagging pins); what changes is said in business words.
-- **For Rudi: who builds on my module.** Only **shared** modules are listed:
-  applications are private to their business, so Rudi does not see Sari's.
-- **Unpinning a module that is still used** is refused at the step.
-- **Stale tables after a swap** (P2.md §6.1): shown as a hole from the health
-  report, not left to the agent to notice.
-- **Done when:** both lenses are checked in a browser at 4K, 1280, 820 and 390
-  pixels, as earlier slices were.
+- **Serves:** story 4 (Sari composes through the agent and sees her business,
+  not modules) and story 5 (Rudi releases v2; Sari is told what changes; Rudi
+  sees who builds on him). **Narrowed 14 October:** this step had the widest
+  list of the remaining ones, so it builds only what those two stories need.
+- **Built:**
+  - **Business lens** (opens for an application): things, events and numbers
+    in the owner's words; small "from *module*" marks; facets shown inside
+    their thing. It includes **G3** (§0.3): no composed name (`tag__Name`)
+    anywhere on the Application screen — table list, columns, buttons, form
+    field titles, "What it stands on".
+  - **Connection lens** (opens for a module): what it points at, what it adds
+    to whose things, which roles it fills, and which shared modules build on
+    it. Start from the existing `ClassGraph` (Modules area) and the Studio map;
+    much of it exists since steps 1–4.
+  - **For Sari: "a new version is available"** card. The application's
+    examples run against the candidate version **before** she re-pins (the
+    health report already finds lagging pins); what changes is said in
+    business words.
+  - **For Rudi: who builds on my module.** Only **shared** modules are listed:
+    applications are private to their business, so Rudi does not see Sari's.
+- **Only if story 6 needs it** (decided when story 6's truth numbers are
+  written): refusing to unpin a module still used, and the stale-tables hole
+  after a swap (P2.md §6.1). Otherwise both go to the parking list.
+- **Done when:** stories 4 and 5 can be run as §7.2 describes them, and the
+  Application screen shows no composed name; both lenses checked in a browser
+  at 1280 and 390 pixels.
 
 ### Step 8 — Known Studio and agent defects (any time)
 
-From P2.md §6.1, kept to what affects function:
+From P2.md §6.1. **Narrowed 14 October** to the defects that break a criterion
+of §7.3; each names the one it breaks.
 
-- The seal button appears only after a reload.
+- The seal button appears only after a reload. *(No page reload to continue.)*
 - The module name field already holds `@`, so a typed name becomes `@@…` and the
-  server answers 500.
+  server answers 500. *(No developer intervention.)*
 - The agent's timeout is not enforced: enforce a wall-clock limit on our side
-  around each call, retries included.
+  around each call, retries included. *(No conversation cut short.)*
 - The per-request budget reserves a full-price call and stops long conversations
   after two or three calls: reserve from the measured cost of the last call.
-- An example sentence that is not English is caught only after the person agrees;
-  catch it before the proposal.
+  *(No conversation cut short.)*
 - Technical names (module names, "module", "sealed") still leak to the business
-  owner: check against a word list in the realistic sessions.
+  owner: check against a word list in the realistic sessions. *(No technical
+  term reaches the business owner; with G3.)*
+
+Parked on 14 October (§11.4): an example sentence that is not English caught
+only after the person agrees.
+
+- **Done when:** each listed defect has a test or a browser check, and none of
+  them appears in the ecosystem test.
 
 ---
 
@@ -760,6 +938,16 @@ with the strongest proof it can give: **even the foundation can be upgraded.**
 - **Scope creep** is the documented failure of P2 (P2.md §6.3). Rule: a new idea
   found during a step goes into a parking list at the end of this document; it is
   not built in P2 unless the owner moves it into a step.
+- **Depth creep** is the same failure inside a step: building a mechanism to
+  completeness when a story needs less. Rule: the story filter of §0.2. Before
+  starting a step, write which story it serves and the smallest form that lets
+  that story pass; a rule, refusal or view beyond that is parked.
+- **Reviews widen the work too.** A review lists everything it finds; only
+  findings that block a story or break a criterion of §7.3 enter a step. The
+  rest go to the parking list in one line each.
+- **The agent carries every mechanism.** Each step that teaches the agent
+  something makes story 4 harder. The instructions' budget (§0.2) is the check,
+  and the dry run (§0.4) is the earliest evidence.
 - **Step 1 has the widest blast radius** (the `Store`, 22 raw readers, Studio
   steps, the map, table names, examples files). Do it first, with the P3a
   scenario as its acceptance test, and keep URIs identical as a hard check.
@@ -799,6 +987,8 @@ in the compiler rather than refuse the graph?), `nothing_to_compile` and
 
 ### 11.2 Raw module-document readers to move onto the `Store`'s composed reader
 
+Done at step 1 (§6, step 1, "Built"); kept as the record of what was decided.
+
 ```
 components/api/application.py:51
 components/modules/catalogue.py:159, 192
@@ -815,6 +1005,9 @@ Some of these legitimately read the module's own document (a draft's own names,
 a version's own contents for its page); each needs a decision, not a blind swap.
 
 ### 11.3 Key places in the code
+
+Line numbers as of 10 October 2026; steps 1–4 moved many of them. Search by
+the function name.
 
 | What | Where |
 |---|---|
@@ -836,6 +1029,7 @@ a version's own contents for its page); each needs a decision, not a blind swap.
 ### 11.4 Parking list
 
 Ideas found during the work that are not in a step. Empty on 10 October 2026.
+An item leaves this list only when the owner moves it into a step or a gate.
 
 - **The library still asks for `moment` and mentions `Flow`** (found at step 0).
   `@uniti/transaction@v1` declares `Transaction` with `is_a: Event`, so every class
@@ -854,7 +1048,7 @@ Ideas found during the work that are not in a step. Empty on 10 October 2026.
   business's own module pointing at the item, not part of the item." Step 2
   made exactly that a facet. The sentence is sealed and read by agents in the
   catalogue. Options: reword it in `@uniti/item@v2` before the ecosystem
-  test, or with core v3.
+  test, or with core v3. **Moved to gate G2 (§0.3) on 14 October 2026.**
 - **The agent's instructions are at their budget** (found at step 2): 22,498
   of the 22,500 characters `test_agent` allows. Step 4's three rules will
   not fit without cutting something or raising the budget. **Decided 13
@@ -874,3 +1068,27 @@ Ideas found during the work that are not in a step. Empty on 10 October 2026.
 - **`stands_alone` reads a name by its spelling** (found at step 4): a text
   slot called `name` or `*_name` on a class filling no role. A module's own
   lookup (`category_name`) is asked about too; the question blocks nothing.
+
+Found in the 14 October check of steps 0–4. None blocks a story; each is
+parked under the story filter (§0.2) unless the ecosystem test shows otherwise.
+
+- **`stands_alone` is asked only in a module that pins the library.** A module
+  pinning no library at all, the way the first empty-store test's guarantee
+  module was built (P2.md §4.8), is never asked. The guide tells agents to use
+  the library; the ecosystem test will show whether that is enough.
+- **Choice labels** read "Rental — 2026-10-06, Budi": the binding slots in
+  their order, the date as ISO. The plan's example was "Rental — Budi, 6 Oct".
+  Polish, P3.
+- **`any_of` is not rewritten when composing** (`compose.rewrite`). No Studio
+  step writes it, so nothing reaches it today.
+- **A facet refused at `set_slot` says `attach:`** as where it was refused.
+- **The library is recognised by the `@uniti/` prefix** in the Studio's
+  `stands_alone` check (`studio/read.py`, `_of_library`), not by `kind:
+  library`.
+- **`README.md` does not yet describe** composition under tags, facets, or a
+  module's own predicates. Update it with `P2.md` at the end of P2.
+- **An example sentence that is not English is caught only after the person
+  agrees** (moved from step 8): it costs a second approval, not a wrong
+  number.
+- **Refusing to unpin a module still used, and the stale-tables hole after a
+  swap** (from step 7): built only if story 6 needs them (§6, step 7).

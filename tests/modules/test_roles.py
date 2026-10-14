@@ -202,16 +202,16 @@ def test_a_binding_never_becomes_a_column_or_a_field(conn, built):
     stated under one.
     """
     map_ = read_map(built.path(APP_NAME, APP_VERSION), built)
-    names = [c["name"] for c in columns(map_, "inventory__StockMovement")]
-    assert "inventory__movement_quantity" in names
+    names = [c["name"] for c in columns(map_, "demo_inventory__StockMovement")]
+    assert "demo_inventory__movement_quantity" in names
     assert not ({"amount", "affects", "moment"} & set(names))
 
-    plan_ = plan_for(map_, "inventory__StockMovement")
+    plan_ = plan_for(map_, "demo_inventory__StockMovement")
     assert not ({"amount", "affects", "moment"}
                 & {c["name"] for c in plan_["columns"]})
 
-    fields = {f["name"] for f in form(conn, map_, "inventory__StockMovement")["fields"]}
-    assert "inventory__movement_happened_on" in fields
+    fields = {f["name"] for f in form(conn, map_, "demo_inventory__StockMovement")["fields"]}
+    assert "demo_inventory__movement_happened_on" in fields
     assert not ({"amount", "affects", "moment"} & fields)
 
 
@@ -227,8 +227,8 @@ def test_a_role_gets_no_table_of_its_own(built):
 def test_a_rule_reaches_a_class_the_application_never_named(built):
     """Written against core, resolved to somebody else's private predicate."""
     for version, klass, measure, group in (
-        (APP_VERSION, "inventory__StockMovement", "https://uniti.example/inventory/movement_quantity", "https://uniti.example/inventory/movement_ingredient"),
-        (SWAP_VERSION, "stock_moves__Movement", "https://rival.example/stock-moves/qty_delta", "https://rival.example/stock-moves/item"),
+        (APP_VERSION, "demo_inventory__StockMovement", "https://uniti.example/inventory/movement_quantity", "https://uniti.example/inventory/movement_ingredient"),
+        (SWAP_VERSION, "rival_stock_moves__Movement", "https://rival.example/stock-moves/qty_delta", "https://rival.example/stock-moves/item"),
     ):
         map_ = read_map(built.path(APP_NAME, version), built)
         spec = plan_for(map_, "IngredientStock")["aggregates"]["quantity_on_hand"]
@@ -272,12 +272,12 @@ def test_a_generic_module_leaves_its_range_at_the_role(built):
     """
     # Sealed with the catalog's class named in full (ECOSYSTEM_PLAN.md, step 1).
     assert built.document(INVENTORY, "v3")["slots"]["movement_ingredient"]["range"] \
-        == "catalog__Ingredient"
+        == "demo_catalog__Ingredient"
     assert "range" not in built.document(RIVAL, "v1")["slots"]["item"]
 
     swapped = read_map(built.path(APP_NAME, SWAP_VERSION), built)
-    item = next(c for c in columns(swapped, "stock_moves__Movement")
-                if c["name"] == "stock_moves__item")
+    item = next(c for c in columns(swapped, "rival_stock_moves__Movement")
+                if c["name"] == "rival_stock_moves__item")
     assert item["range"] == "Resource" and item["ref"] is True
 
 
@@ -311,7 +311,7 @@ def test_the_fit_report_names_what_moved_and_what_was_rebound(conn, built):
 
     flow = next(r for r in report["roles"] if r["name"] == "Flow")
     assert (flow["status"], flow["before"], flow["after"]) == (
-        "replaced", ["inventory__StockMovement"], ["stock_moves__Movement"])
+        "replaced", ["demo_inventory__StockMovement"], ["rival_stock_moves__Movement"])
 
     by_column = {r["column"]: r for r in report["rules"]}
     assert by_column["quantity_on_hand"]["status"] == "rebound"
@@ -349,8 +349,8 @@ def test_filling_a_role_fills_the_roles_above_it(built):
     from components.modules import roles as roles_read
 
     catalogue = {r["name"]: r for r in roles_read.roles(built, STOCK, APP_VERSION)["roles"]}
-    assert [f["class"] for f in catalogue["Flow"]["filled_by"]] == ["inventory__StockMovement"]
-    assert [f["class"] for f in catalogue["Event"]["filled_by"]] == ["inventory__StockMovement"]
+    assert [f["class"] for f in catalogue["Flow"]["filled_by"]] == ["demo_inventory__StockMovement"]
+    assert [f["class"] for f in catalogue["Event"]["filled_by"]] == ["demo_inventory__StockMovement"]
     assert catalogue["Event"]["filled_by"][0]["bindings"] == {
-        "moment": "inventory__movement_happened_on"}
-    assert "catalog__Ingredient" in [f["class"] for f in catalogue["Thing"]["filled_by"]]
+        "moment": "demo_inventory__movement_happened_on"}
+    assert "demo_catalog__Ingredient" in [f["class"] for f in catalogue["Thing"]["filled_by"]]

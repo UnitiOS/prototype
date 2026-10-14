@@ -162,7 +162,7 @@ def test_every_rule_names_the_module_it_reads(conn, world):
     rule = by_name["quantity_on_hand"]["rule"]
     assert by_name["quantity_on_hand"]["kind"] == "aggregate"
     assert (rule["over"], rule["measure"]) == ("Flow", "amount")
-    assert rule["covers"] == ["inventory__StockMovement"]
+    assert rule["covers"] == ["demo_inventory__StockMovement"]
     assert rule["measure_uris"] == ["https://uniti.example/inventory/movement_quantity"]
     assert rule["by_uris"] == {"stock_ingredient": ["https://uniti.example/inventory/movement_ingredient"]}
 
@@ -175,8 +175,8 @@ def test_every_rule_names_the_module_it_reads(conn, world):
     classes = read.class_graph(world, APP_NAME, APP_VERSION)
     owner = {n["name"]: n["module"]["name"] for n in classes["nodes"]}
     assert owner["IngredientStock"] == STOCK
-    assert owner["inventory__StockMovement"] == INVENTORY
-    assert owner["catalog__Ingredient"] == CATALOG
+    assert owner["demo_inventory__StockMovement"] == INVENTORY
+    assert owner["demo_catalog__Ingredient"] == CATALOG
 
 
 def test_an_application_written_against_roles_survives_replacing_a_module(conn, world):
@@ -200,7 +200,7 @@ def test_an_application_written_against_roles_survives_replacing_a_module(conn, 
                                      valid_at="2026-06-30", as_of="2026-09-18")
     rule = {c["name"]: c["rule"] for c in swapped["columns"]}["quantity_on_hand"]
     assert (rule["over"], rule["measure"]) == ("Flow", "amount")
-    assert rule["covers"] == ["stock_moves__Movement"]
+    assert rule["covers"] == ["rival_stock_moves__Movement"]
     assert rule["measure_uris"] == ["https://rival.example/stock-moves/qty_delta"]
     assert "https://uniti.example/inventory/movement_quantity" not in swapped["sql"]
     assert "https://rival.example/stock-moves/qty_delta" in swapped["sql"]
@@ -266,14 +266,14 @@ def test_the_class_graph_says_what_is_joined_to_what(world):
     # class is one more hop, and the picture should show that hop rather than
     # collapse it: that hop is the seam a module can be swapped at.
     assert ("IngredientStock", "Flow", "aggregate") in edges
-    assert ("inventory__StockMovement", "Flow", "fills") in edges
-    assert ("IngredientStock", "catalog__Ingredient", "parameter") in edges
-    assert ("inventory__StockMovement", "catalog__Ingredient", "reference") in edges
-    assert ("catalog__Ingredient", "catalog__Category", "reference") in edges
+    assert ("demo_inventory__StockMovement", "Flow", "fills") in edges
+    assert ("IngredientStock", "demo_catalog__Ingredient", "parameter") in edges
+    assert ("demo_inventory__StockMovement", "demo_catalog__Ingredient", "reference") in edges
+    assert ("demo_catalog__Ingredient", "demo_catalog__Category", "reference") in edges
 
     shapes = {n["name"]: n["shape"] for n in graph["nodes"]}
     assert shapes["IngredientStock"] == "derived"
-    assert shapes["inventory__StockMovement"] == "stated"
+    assert shapes["demo_inventory__StockMovement"] == "stated"
 
 
 def test_the_application_lists_every_table_it_can_fill(world):
@@ -283,10 +283,10 @@ def test_the_application_lists_every_table_it_can_fill(world):
     assert by_class["IngredientStock"]["shape"] == "grouped"
     assert by_class["IngredientStock"]["table"] == "p_ingredient_stock"
     # The application fills tables for classes it never declared.
-    assert by_class["inventory__StockMovement"]["shape"] == "entities"
-    assert by_class["inventory__StockMovement"]["table"] == "p_inventory__stock_movement"
-    assert by_class["inventory__StockMovement"]["module"]["name"] == INVENTORY
-    assert by_class["catalog__Ingredient"]["module"]["name"] == CATALOG
+    assert by_class["demo_inventory__StockMovement"]["shape"] == "entities"
+    assert by_class["demo_inventory__StockMovement"]["table"] == "p_demo_inventory__stock_movement"
+    assert by_class["demo_inventory__StockMovement"]["module"]["name"] == INVENTORY
+    assert by_class["demo_catalog__Ingredient"]["module"]["name"] == CATALOG
 
 
 def test_the_operational_store_holds_what_the_log_derived(conn, world, app_map):
@@ -304,10 +304,10 @@ def test_the_operational_store_holds_what_the_log_derived(conn, world, app_map):
         assert stored["cat:ing_flour"] == ("86", "40", "46")
 
         # And the entity-shaped tables the same application fills.
-        ingredients = compile_class(conn, ops, app_map, "catalog__Ingredient",
+        ingredients = compile_class(conn, ops, app_map, "demo_catalog__Ingredient",
                                     valid_at="2026-06-30", as_of="2026-09-18")
         names = [c["name"] for c in ingredients["plan"]["columns"]]
-        assert names[0] == "entity_uri" and "catalog__ingredient_name" in names
+        assert names[0] == "entity_uri" and "demo_catalog__ingredient_name" in names
         assert len(ingredients["rows"]) == 8
 
         with ops.cursor() as cur:
@@ -394,7 +394,7 @@ def test_a_cell_can_be_taken_apart(conn, world):
                              valid_at="2026-06-30", as_of="2026-09-18")
     assert total["kind"] == "aggregate"
     assert total["operator"] == "sum" and total["over"] == "Flow"
-    assert total["covers"] == ["inventory__StockMovement"]
+    assert total["covers"] == ["demo_inventory__StockMovement"]
     assert not total["cut_off"]
 
     # The parts add up to the whole, which is the only thing worth checking.
@@ -486,11 +486,11 @@ def test_a_form_is_the_map_asked_for_rather_than_reported(conn, world):
     # A field over a class range offers entities, so choosing one writes an
     # edge rather than a string, and the slot belongs to the module that
     # declared it.
-    assert fields["inventory__movement_ingredient"]["ref"] is True
-    assert len(fields["inventory__movement_ingredient"]["options"]) == 8
-    assert fields["inventory__movement_quantity"]["ref"] is False
-    assert fields["inventory__movement_quantity"]["options"] == []
-    assert fields["inventory__movement_ingredient"]["module"]["name"] == INVENTORY
+    assert fields["demo_inventory__movement_ingredient"]["ref"] is True
+    assert len(fields["demo_inventory__movement_ingredient"]["options"]) == 8
+    assert fields["demo_inventory__movement_quantity"]["ref"] is False
+    assert fields["demo_inventory__movement_quantity"]["options"] == []
+    assert fields["demo_inventory__movement_ingredient"]["module"]["name"] == INVENTORY
 
 
 def test_a_form_submission_is_one_intent_and_comes_straight_back(conn, world):
@@ -514,7 +514,7 @@ def test_a_form_submission_is_one_intent_and_comes_straight_back(conn, world):
     with conn.cursor() as cur:
         cur.execute("SELECT reason_code, action_name FROM intent WHERE id = %s",
                     (written["intent_id"],))
-        assert cur.fetchone() == ("demonstration", "submit_inventory__StockMovement")
+        assert cur.fetchone() == ("demonstration", "submit_demo_inventory__StockMovement")
 
     # Nothing was compiled in between: the aggregate reads the log. The record
     # clock has to be after now, because a submission is recorded when it
@@ -647,7 +647,7 @@ def test_a_form_offers_what_the_log_holds_at_its_clocks(conn, world, app_map):
     answers at the pair asked, which is how every projection is already read.
     """
     with psycopg.connect(os.environ["UNITI_OPS_DSN"]) as ops:
-        compile_class(conn, ops, app_map, "catalog__Ingredient",
+        compile_class(conn, ops, app_map, "demo_catalog__Ingredient",
                       valid_at="2026-06-30", as_of="2026-09-18")
 
     application.state(conn, world, APP_NAME, APP_VERSION, "Ingredient",
@@ -659,7 +659,7 @@ def test_a_form_offers_what_the_log_holds_at_its_clocks(conn, world, app_map):
         built = application.form_of(conn, world, APP_NAME, APP_VERSION, "StockMovement",
                                     valid_at=valid_at, as_of=AFTER_THIS_RUN)
         field = next(f for f in built["fields"]
-                     if f["name"] == "inventory__movement_ingredient")
+                     if f["name"] == "demo_inventory__movement_ingredient")
         return field, {o["uri"]: o["label"] for o in field["options"]}
 
     field, august = offered("2026-08-31")
@@ -693,7 +693,7 @@ def test_a_value_its_field_cannot_hold_is_refused_at_the_door(conn, world):
         conn, world, "value_not_of_type", subject="inv:mv_0110",
         values={"movement_code": "MV-0110", "movement_quantity": "twenty"},
         valid_from="2026-08-10T00:00:00+00:00")
-    assert refused.where == "inventory__StockMovement.inventory__movement_quantity"
+    assert refused.where == "demo_inventory__StockMovement.demo_inventory__movement_quantity"
     _refused_at_the_door(
         conn, world, "value_not_of_type", subject="inv:mv_0110",
         values={"movement_code": "MV-0110", "movement_happened_on": "10/08/2026x"},
