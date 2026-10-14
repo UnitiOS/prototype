@@ -188,6 +188,118 @@ followed. It is part of the ecosystem test run early, not new scope.
 - **Done when:** the three stories have been run and their results are
   recorded here, under this section.
 
+#### 0.4.1 Fixed before the first call (14 October 2026)
+
+**Environment.** Two new kernels, as in the two-round test: the community's
+(`uniti_kering_komunitas`, no business, server on port 8310, store root
+`build/kering/komunitas`) and one business's (`uniti_kering_toko`, business
+`kemahceria` declared by `sari`, port 8311, roots `build/kering/toko`, then
+the community's). Both above `packages/`; `@uniti` owned by `penjaga`. The
+agent runs on `config/agent.yaml`'s models with the two-round test's limits
+(`build/kering/agent.yaml`: 90 s a call, $0.30 a request). **Cap: $1.00 for
+the three stories together**; the run stops when it is reached.
+
+**What each person asks, in their words** (Indonesian, as a person would):
+
+1. **Rudi**, `@rudi/penyewaan`: a rental module for camping gear shops. A
+   rental is one customer on one day with lines, each line an item and a
+   number of units; each item has a rate per day; he wants the total units
+   rented per item.
+2. **Dewi**, `@dewi/jaminan`, not knowing Rudi's module: a guarantee left
+   against any rental or booking, from any shop's system, money or an ID
+   card; she wants the money held per customer.
+3. **The third author**, `@sewapro/kasir`, not knowing Rudi's module: a
+   till whose transaction they call `Rental` (they say so), with lines of
+   item and units; they want the units rented per item through the till.
+
+**Truth.** Entered through the application's forms in the business's
+kernel, in an application `@kemahceria/toko` that pins the three modules
+and is composed by Studio steps, not through the agent:
+
+| Recorded | Valid from |
+|---|---|
+| Items `Tenda 2 orang` (rate 50,000 a day), `Kompor portabel` (20,000) | 5 Oct |
+| Parties Budi, Ani, Citra | 5 Oct |
+| Rudi's rental R1, Budi: 2 × Tenda, 1 × Kompor | 6 Oct |
+| Rudi's rental R2, Ani: 1 × Tenda | 7 Oct |
+| The till's rental T1, Citra: 1 × Tenda, 2 × Kompor | 8 Oct |
+| Guarantees: 100,000 on R1 (Budi), 50,000 on R2 (Ani), 70,000 on T1 (Citra) | the rental's day |
+
+| Number, as of 8 October | Truth |
+|---|---|
+| Rudi's units rented per item | Tenda 3, Kompor 1 |
+| The till's units rented per item | Tenda 1, Kompor 2 |
+| Dewi's money held per customer | Budi 100,000; Ani 50,000; Citra 70,000 |
+| The item screen | 2 items, each with its rate: Tenda 50,000; Kompor 20,000 |
+
+**Pass criteria**, per story:
+
+1. Sealed. The rate is a slot of Rudi's module on the library's `Item`
+   (a facet), with no class of Rudi's holding it; the rental fills
+   `Transaction`; a line points at `Item`.
+2. Sealed. The guarantee's reference ranges over `Transaction` (the role),
+   and Dewi's own example states the transaction as a stand-in of class
+   `Transaction`. In the application, a guarantee can be stated against
+   Rudi's R1 and the till's T1 alike.
+3. Sealed, declaring a class `Rental` of its own. Pinned beside Rudi's in
+   the application with no refusal, and both modules' units-per-item rules
+   give their truth there.
+4. Across all three (§7.3): every number above matches; no developer
+   intervention (every change goes through the Studio's own steps and API,
+   as the page sends them); the approval points hold (plan, examples,
+   rules, seal, each agreed by the person); no conversation is cut short.
+
+#### 0.4.2 Results (14 October 2026)
+
+**All three stories pass; $0.97 of the $1.00 cap** (from the watch files
+under `build/calls/20261014-09*`/`-10*`, failed turns included). Scripts and
+servers: `build/kering/` (`setup.py`, `talk.py`, `fill.py`, `cost.py`).
+
+| Story | Turns | Spent | Result |
+|---|---|---|---|
+| 1 Rudi, `@rudi/penyewaan` | 4 (question, plan, examples, rules) | $0.27 | Sealed v1. `item_daily_rate` has `domain: Item` on `@uniti/item@v2`: a facet, no class of Rudi's holds it. `Rental` fills `Transaction`; `RentalLine` points at `Item`. |
+| 2 Dewi, `@dewi/jaminan` | 7, of which 3 were "go on" after the provider failed | $0.41 | Sealed v1. `collateral_transaction` ranges over `Transaction`; her example states `tx1`–`tx3` as stand-ins of class `Transaction`, with no facts. |
+| 3 SewaPro, `@sewapro/kasir` | 3 (plan, examples, rules) | $0.29 | Sealed v1, declaring `Rental`, `RentalLine` and `RentalSummary` of its own. |
+
+The application `@kemahceria/toko` (business kernel, Studio steps only)
+pinned all three with no refusal, sealed, installed, and took the truth
+through its forms. A guarantee's form offered Rudi's R1 and R2 and the
+till's T1 together. As of 8 October every number matched:
+
+| Number | Truth | Read |
+|---|---|---|
+| Rudi's units per item (`rudi_penyewaan__RentalSummary`) | Tenda 3, Kompor 1 | Tenda 3, Kompor 1 |
+| The till's units per item (`sewapro_kasir__RentalSummary`) | Tenda 1, Kompor 2 | Tenda 1, Kompor 2 |
+| Dewi's money per customer (`dewi_jaminan__CollateralSummary`) | Budi 100,000; Ani 50,000; Citra 70,000 | the same |
+| `Item`: one record per item, with the rate | 2 rows; 50,000 and 20,000 | the same |
+
+The approval points held in every story (plan, then examples, then rules,
+then the person's seal), and no file was written by hand. The 24,000-character
+instructions were followed on every point §0.4 watched.
+
+**Nothing made a story fail, so nothing is fixed before step 5.** Written
+down for the ecosystem test (§0.2), not built:
+
+- **The provider was slow and failed** (Gemini 3.8 Flash, 14 October
+  morning): calls of 80–90 s for under 100 tokens out, three 504
+  `DEADLINE_EXCEEDED` after 279–397 s. The 90 s limit was not enforced
+  (step 8's defect, seen again). Dewi's build needed three "go on"s.
+- **A turn was lost.** An accountant `ReadTimeout`, after its two retries,
+  escaped the session as an error instead of ending the turn as `Stopped`
+  with `cause: provider`; the conversation kept no record of that turn
+  (its $0.07 is in the watch file only). Belongs with step 8's timeout
+  defect: no conversation cut short.
+- **`watch` crashes on that error line** (`KeyError: 'step'`, a session
+  error has no step).
+- **Two kinds of rental read alike in a choice**: the guarantee's choices
+  were "Rental — Budi, 2026-10-06" for Rudi's and "Rental — Citra,
+  2026-10-08" for the till's. With G3 (step 7): the module's mark.
+- **The till's agent did not mention Rudi's module**, which does the same
+  thing. The story wanted the till's own `Rental`, so nothing failed; story 4
+  will show whether reuse is offered when it should be.
+- To the module authors, the agent says "modul `@rudi/penyewaan`" and
+  "seal": they are authors, not business owners, so §7.3 is not broken.
+
 ---
 
 ## 1. Where P2 is going
