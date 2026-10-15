@@ -47,8 +47,8 @@ pass without any patch; P2 still blocked then, and seals since step 6), and the
 Studio and Application screens were looked at in a browser. Every step met its
 "done when". The owner's decisions at each step are recorded under the step.
 Since then: G1, G2 and the dry run (`ba762f4`, `7ba2b95`), step 5 (`ba20f4e`),
-step 6 (`369c32b`), step 7 (`405ac2f`), and step 8, built on 15 October
-(below, under the step).
+step 6 (`369c32b`), step 7 (`405ac2f`), step 8 (`c7fbc5e`), and the
+ecosystem test, run on 15 October: the seven stories pass (§7.5).
 
 The goal has not moved (§1.2): **the ecosystem test passes on its seven
 stories, then core v3, then the re-run.** What remains, in order:
@@ -1264,6 +1264,253 @@ first call (the two-round test spent $2.63).
 - No technical term reaches the business owner (checked against a word list).
 - No conversation is cut short by the budget.
 - Every number matches the truth fixed before the test.
+
+### 7.4 Fixed before the first call (15 October 2026)
+
+**Decided 15 October 2026 (owner):** a new world from empty, not the dry
+run's (the tag rule, the instructions, the timeout and the word list have all
+changed since); a cap of **$8.00** for the whole test; story 7's module is
+built on Rudi's, so that story 5 has a shared module building on his.
+
+**Environment.** Two new kernels: the community's (`uniti_eko_komunitas`, no
+business, port 8330, store root `build/ekosistem/komunitas`) and Kemah
+Ceria's (`uniti_eko_toko`, business `kemahceria` declared by `sari`, port
+8331, roots `build/ekosistem/toko`, then the community's). Both above
+`packages/`; `@uniti` owned by `penjaga`. Gemini 3.8 Flash for both parts,
+**120 s a call** (raised from 90 by the owner), two retries, **$0.30 a
+request** (`build/ekosistem/agent.yaml`). The cost is read from the watch
+files after every story (`build/ekosistem/cost.py`); the test stops at the
+cap, repeats of a failed story included. Conversations go through the API the
+Studio page uses (`talk.py`: agreeing is the page's own step, then the
+person's sentence); records go through the application's forms; Sari's
+screens are looked at in the browser after stories 4, 5 and 6.
+
+**Order:** 1, 2, 3 and 7 in the community; 4 in the business; 5 (Rudi in the
+community, then Sari); 6 in the business. Story 7 comes before 5 because its
+module is the shared one built on Rudi's.
+
+**What each person asks first, in their words.** Stories 1 and 2 say what the
+dry run's did.
+
+1. **Rudi**, `@rudi/penyewaan`: *"Saya Rudi. Saya mau membuat modul untuk
+   toko penyewaan alat kemah, supaya bisa dipakai toko sewa mana saja. Satu
+   penyewaan adalah satu pelanggan pada satu hari, dengan beberapa baris:
+   tiap baris satu barang dan jumlah unitnya. Setiap barang punya tarif sewa
+   per hari. Saya ingin tahu total unit yang disewa per barang."*
+2. **Dewi**, `@dewi/jaminan`: *"Saya Dewi. Saya mau membuat modul jaminan
+   untuk usaha sewa atau pemesanan apa saja. Saat orang menyewa atau memesan
+   sesuatu, mereka meninggalkan jaminan untuk transaksi itu: uang atau KTP.
+   Modul ini harus bisa dipakai dengan transaksi dari sistem toko mana saja,
+   bukan satu toko saja. Saya ingin tahu total uang jaminan yang sedang
+   dipegang per pelanggan."*
+3. **SewaPro**, `@sewapro/kasir`: *"Kami SewaPro, pembuat aplikasi kasir
+   untuk toko sewa. Di kasir kami, satu transaksi sewa kami sebut 'Rental':
+   satu pelanggan pada satu hari, dengan baris-baris berisi barang dan jumlah
+   unitnya. Saat barang kembali, kasir mencatat pengembalian untuk satu
+   penyewaan: barang apa dan berapa unit yang kembali. Toko yang pindah ke
+   kasir kami harus bisa mengembalikan penyewaan lama yang dicatat di sistem
+   lain, jadi pengembalian harus bisa menunjuk penyewaan dari sistem mana
+   pun. Kami ingin tahu total unit yang disewa per barang lewat kasir, dan
+   total unit yang dikembalikan per barang."*
+7. **Bayu**, `@bayu/kerusakan`: *"Saya Bayu. Saya mau membuat modul untuk
+   mencatat kerusakan alat sewaan, untuk toko yang memakai modul penyewaan
+   Rudi (@rudi/penyewaan). Setiap kerusakan dicatat untuk satu penyewaan Rudi
+   dan satu barang: tanggal, keterangan, dan biaya perbaikan dalam Rupiah.
+   Saya ingin tahu total biaya kerusakan per barang, dan total biaya
+   kerusakan berat per barang, yaitu yang biaya perbaikannya 100.000 atau
+   lebih."*
+4. **Sari**, `@kemahceria/toko`: *"Saya Sari, pemilik Kemah Ceria, toko sewa
+   alat kemah. Saya mau mencatat penyewaan: siapa yang menyewa, kapan, alat
+   apa dan berapa unit. Tiap alat punya tarif sewa per hari. Pelanggan
+   meninggalkan jaminan, uang atau KTP. Saya ingin tahu berapa unit tiap alat
+   yang disewa, dan berapa uang jaminan yang saya pegang per pelanggan."*
+5. **Rudi**, a revision of `@rudi/penyewaan`: *"Saya Rudi lagi. Toko-toko
+   minta dicatat tanggal kembali yang dijanjikan di setiap penyewaan. Tolong
+   tambahkan."* Then Sari, on her application's screen.
+6. **Sari**, a revision of `@kemahceria/toko`: *"Mulai 10 Oktober penyewaan
+   baru saya catat lewat kasir SewaPro. Penyewaan lama yang tercatat
+   sebelumnya tetap harus bisa dikembalikan lewat kasir itu. Saya ingin tahu
+   berapa unit tiap alat yang disewa semuanya, yang lama dan yang lewat
+   kasir, berapa yang sudah kembali, dan berapa yang masih di luar."*
+
+Each person answers the agent's questions as that person would, and decides
+only what is theirs to decide; whatever they say is kept in the conversation.
+
+**Truth.** Entered through the application's forms in the business's kernel:
+
+| Recorded | Valid from |
+|---|---|
+| Items `Tenda 2 orang` (rate 50,000 a day), `Kompor portabel` (20,000); parties Budi, Ani, Citra | 5 Oct |
+| R1 (Rudi's rental), Budi: 2 × Tenda, 1 × Kompor; guarantee 100,000 money | 6 Oct |
+| R2 (Rudi's rental), Ani: 1 × Tenda; guarantee 50,000 money | 7 Oct |
+| Sari moves to Rudi's v2 | 9 Oct |
+| T1 (the till's rental), Citra: 1 × Tenda, 2 × Kompor; guarantee 70,000 money on T1 | 10 Oct |
+| Return of R1 through the till: 2 × Tenda, 1 × Kompor | 11 Oct |
+
+| Number | As of | Truth |
+|---|---|---|
+| Units rented per item | 8 Oct | Tenda 3, Kompor 1 |
+| Money held per customer | 8 Oct | Budi 100,000; Ani 50,000 |
+| The item screen | 8 Oct | 2 items, each with its rate: Tenda 50,000; Kompor 20,000 |
+| Every number above, after the move to v2 | 9 Oct | unchanged |
+| Units rented per item, old and through the till | 11 Oct | Tenda 4, Kompor 3 |
+| Units returned per item | 11 Oct | Tenda 2, Kompor 1 |
+| Units still out per item | 11 Oct | Tenda 2, Kompor 2 |
+| Money held per customer | 11 Oct | Budi 100,000; Ani 50,000; Citra 70,000 |
+| Units rented per item, read again | 8 Oct | Tenda 3, Kompor 1 (old records untouched) |
+
+**Pass criteria**, per story (with §7.3 across all):
+
+1. Sealed. The rate is a slot of Rudi's on the library's `Item` (a facet);
+   the rental fills `Transaction`; a line points at `Item`. In Sari's
+   application the item screen carries the rate, one record per item.
+2. Sealed, its own example stating the transaction as a stand-in of class
+   `Transaction`. In Sari's application, a guarantee is stated against Rudi's
+   R1 and the till's T1 alike.
+3. Sealed, declaring `Rental` of its own; its return points at the
+   `Transaction` role. Pinned beside Rudi's with no refusal; both modules'
+   own units-per-item rules hold.
+4. The agent finds Rudi's and Dewi's modules and pins them, declaring no
+   rental or guarantee of Sari's own. `words` finds nothing in Sari's
+   conversation. Her business lens shows no composed name. The numbers of 8
+   October match.
+5. Rudi's v2 is sealed, and his module's page lists `@bayu/kerusakan` as
+   building on it. Sari's card says what changes in business words, and her
+   application's own examples run on v2 before she moves. She moves by the
+   card's button, seals and installs; the numbers of 9 October match.
+6. The till is pinned beside Rudi's module. R1 is returned through the till.
+   Units rented is one column with two sources. The numbers of 11 October
+   match, and those of 8 October still do. `words` finds nothing.
+7. Sealed. Heavy damage is shown as "not computed yet". The example holding
+   it is pending, not failed, and total damage per item is computed and
+   checked.
+
+### 7.5 Results (15 October 2026)
+
+**The seven stories pass, with one defect found and fixed on the way (story
+4, below). $2.02 of the $8.00 cap**, the first attempt at story 4 included.
+Watch files `build/calls/20261015-104421-*` onwards; conversations, versions
+and scripts under `build/ekosistem/` (`setup.py`, `talk.py`, `fill.py`,
+`cost.py`).
+
+| Story | Turns | Spent | Result |
+|---|---|---|---|
+| 1 Rudi, `@rudi/penyewaan` | 4 (question, plan, examples, rules) | $0.28 | Sealed v1. `item_daily_rate` has `domain: Item` (a facet); `Rental` fills `Transaction`; `RentalLine.line_item` is an `Item`. |
+| 2 Dewi, `@dewi/jaminan` | 4 | $0.27 | Sealed v1. `guarantee_transaction` ranges over `Transaction`; her example states `tx_01`–`tx_03` as stand-ins of class `Transaction`. No provider failure this time. |
+| 3 SewaPro, `@sewapro/kasir` | 4 | $0.27 | Sealed v1, declaring `Rental`, `RentalLine`, `RentalReturn` and a summary of its own; `return_rental` ranges over `Transaction`. |
+| 7 Bayu, `@bayu/kerusakan` | 3 (plan, examples, rules) | $0.24 | Sealed v1, pinning `@rudi/penyewaan@v1` (`damage_rental` is Rudi's `Rental`). The plan said the heavy-damage total "is written and sealed, its column empty". In the example the two heavy-damage numbers are `pending` ("not computed yet"), the two totals are checked and hold, and the draft shows the non-blocking hole `not_computed_yet` naming `at_least: 100000`. |
+| 4 Sari, `@kemahceria/toko` | 3, then 3 again | $0.36 + $0.25 | First attempt stopped on a defect (below); after the fix, sealed v1 pinning Rudi's and Dewi's modules and declaring nothing of its own. |
+| 5 Rudi, then Sari | 2 (plan, examples) | $0.09 | Rudi's v2 sealed, adding `rental_expected_return_date`; his page lists Bayu's module as building on it. Sari moved by the card's button and froze v2 in the browser. |
+| 6 Sari, `@kemahceria/toko` v3 | 3 (plan, examples, rules) | $0.26 | Sealed v3 pinning the till beside Rudi's v2. Units rented is one column with two sources; R1 returned through the till. |
+
+**Story 4, as far as it went.** The first question was in business words
+("khusus untuk toko Kemah Ceria saja, atau … usaha sewa alat kemah
+lainnya?"), and the plan named Rudi's and Dewi's work by title and author
+("karya bersama Penyewaan buatan Rudi"). The agent pinned both, declared no
+rental or guarantee of Sari's own, and wrote one example checked against
+their tables, which holds. `words` finds nothing in the three turns.
+
+- **Defect: the catalogue does not say a facet is on the class it adds to.**
+  Rudi's `item_daily_rate` reads `on no class` in the catalogue
+  (`tools._entry`, from the catalogue's `on`, which lists only the classes
+  that name the slot), and `Item`'s entry does not mention it either. The
+  agent read the rate as a loose slot of Rudi's, tried to `attach` it to
+  `Item` (`not_yours`), then to declare `item_daily_rate` (`name_taken`), and
+  declared **`item_rental_rate` on `Item` of Sari's own**. The rate Rudi's pin
+  already carries was there all along. Sari's item screen would carry two
+  rates, which breaks story 1 ("the item screen carries the rate") and story
+  4 ("uses the existing modules").
+- **The request reached the budget's 30 requests** ($0.28 of $0.30), ten of
+  them spent on the rate above. Its last call was kept: it proposed the
+  example and the seal in Sari's words, so nothing was lost and she can go
+  on, but the turn ended `Stopped` with `cause: budget`.
+- **Fixed (owner's decision, 15 October), the smallest form:** the
+  catalogue reads a facet by the composition's own rule (`compose.facets`).
+  A facet slot says the class it is on and how a pinner calls it (`on Item of
+  @uniti/item, a facet: whatever pins @rudi/penyewaan has it there as
+  rudi_penyewaan__item_daily_rate`), and a class lists what others add to it
+  (`others add: rudi_penyewaan__item_daily_rate (@rudi/penyewaan@v1)`). The
+  instructions are unchanged, and there is no new refusal code. Test:
+  `test_the_catalogue_says_a_facet_is_on_the_thing_it_adds_to`
+  (`tests/modules/test_facets.py`). The 30-request budget is left as it is.
+  Sari's draft was discarded by the Studio's own `discard` (the first attempt
+  is kept in `build/ekosistem/bukti/cerita4-percobaan1`), and story 4 is run
+  again from her first sentence.
+- **Story 4, again (after `make check`: 411 passed, replay identical; `make
+  web-test`: 55 passed).** Three turns (question, plan, examples), $0.25, 15
+  requests in the longest, none stopped. The plan named "Penyewaan karya
+  Rudi … beserta tarif harian". The draft pins Rudi's and Dewi's modules and
+  declares **nothing of its own**; its example gives Rudi's
+  `rudi_penyewaan__item_daily_rate`. `words`: 0 of 3 turns. Sealed v1 and
+  installed from 5 October (the install registered both pins); the truth of
+  5–7 October was entered through the forms (`build/ekosistem/fill.py
+  story4`). As of 8 October: units rented Tenda 3, Kompor 1; money held Budi
+  100,000, Ani 50,000; `Item` 2 rows, one rate each (50,000; 20,000). All
+  match. **Browser:** her application opens on its business: Things,
+  Events and Numbers with "from Rental" and "from Guarantee" marks. The page
+  shows no composed name and none of the system's words. The item screen
+  carries one rate: "Daily rental rate, from Rental", 20,000 and 50,000.
+
+**Story 5.**
+- **Rudi's v2.** Rudi asked in one sentence. The plan and an example were
+  agreed, and he sealed v2 with `rental_expected_return_date` on `Rental`.
+  His version page in the community's Modules area reads "Built on by:
+  Equipment Damage · @bayu/kerusakan@v1 pins v1". No application is listed.
+- **Sari's card.** Her application's page said:
+  - "Rental has a new version … Rental gains a field: Expected return date";
+  - "The example holds on v2", her own example run against the candidate
+    (`/api/app/updates`: `passed: true`);
+  - "What has been recorded stays as it was".
+- **The move.** "Prepare the move to v2" opened the Studio on a draft "Ready
+  to freeze as v2", and "Freeze as v2…" was there with no reload. Sari froze
+  it in the browser and installed it from 9 October.
+- **The numbers of 9 October match:** Tenda 3, Kompor 1; Budi 100,000, Ani
+  50,000; two items with one rate each. R1 and R2 read as before, with the
+  new field empty.
+
+**Story 6.**
+- **The plan** (two requests and one "agreed") reused "Kasir Sewa oleh
+  SewaPro" beside "Penyewaan oleh Rudi".
+- **The rules.**
+  - `EquipmentRentalSummary.equipment_total_rented` is one aggregate with
+    two sources: Rudi's `RentalLine` and the till's `RentalLine`.
+  - `equipment_total_returned` sums the till's `RentalReturn`.
+  - `equipment_units_out` is their difference.
+- **Sealed v3**, installed from 10 October.
+- **What the forms offered.** The till's return form offered Rudi's R1 and R2
+  beside the till's T1. A guarantee was offered all three, and the 70,000 was
+  stated on T1, so story 2's "works with another author's" holds too.
+- **The numbers match.**
+  - As of 11 October: rented Tenda 4, Kompor 3; returned Tenda 2, Kompor 1;
+    still out Tenda 2, Kompor 2; money held Budi 100,000, Ani 50,000, Citra
+    70,000.
+  - As of 8 October, read again: Tenda 3, Kompor 1.
+  - Each module's own rule still holds: Rudi's Tenda 3, Kompor 1; the
+    till's Tenda 1, Kompor 2 rented and Tenda 2, Kompor 1 returned.
+- **Browser.** The business lens shows the two rentals as "Rental, from
+  Rental" and "Rental, from Rental Cashier", with no composed name and none
+  of the system's words.
+
+**§7.3, across all stories.**
+
+| Criterion | Held? |
+|---|---|
+| No developer intervention | Yes. Every change went through the Studio's steps, the agent, and the application's forms and install, through the API the page uses or the page itself. No file was written by hand and no page was reloaded to continue. |
+| The approval points | Yes. In every story the plan, then the examples, were agreed by the person before the rules. Each version was frozen by its author or by Sari. |
+| No technical term before the business owner | Yes. `words` finds 0 in all six of Sari's turns (`v1.chat.yaml`, `v3.chat.yaml`), and the business lens shows no composed name. |
+| No conversation cut short by the budget | Yes, after the fix. The first attempt at story 4 reached the 30-request limit; its last call was kept as a full proposal, and the defect behind it is fixed. No later request stopped, and the longest used 15. |
+| Every number matches the truth | Yes. Every number of §7.4, at 8, 9 and 11 October. |
+
+**Written down, not built (§0.2).** No story failed on these:
+
+- The Studio's own frame is English and shows `@kemahceria/toko` beside the
+  title when the card opens it (P3's frame, §9).
+- The card names versions ("This application uses v1; v2 is available").
+- An option's label reads "Rental — Budi, 2026-10-06" in the form's data.
+  The page adds "(from Rental)", but a script reading the API does not get
+  it.
+- The agents chose module titles in English ("Rental", "Rental Cashier"),
+  which are what Sari reads in the marks.
 
 ---
 

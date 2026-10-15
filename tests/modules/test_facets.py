@@ -310,3 +310,25 @@ def test_the_connection_lens_shows_what_the_facet_adds_to(store, sealed):
     assert item["slots"][:2] == ["item_name", "rental_rate"]
     assert {"slot": "rental_rate", "module": {"name": TARIF, "version": "v1"}} in \
         item["facets"]
+
+
+def test_the_catalogue_says_a_facet_is_on_the_thing_it_adds_to(store, sealed):
+    # The ecosystem test (§7.5): Sari's agent read Rudi's rate as "on no
+    # class", and declared a rate of her own beside the one his pin carries.
+    from components.agent import tools
+    from components.modules import catalogue as catalogue_read
+    everything = catalogue_read.catalogue(store, business=BUSINESS)
+    [rate] = [e for e in everything if e["kind"] == "slot" and e["name"] == "rental_rate"]
+    assert rate["facet_on"] == {"class": "Item", "module": "@uniti/item",
+                                "as": "rudi_tarif__rental_rate"}
+    assert "; on Item of @uniti/item, a facet: whatever pins @rudi/tarif has it " \
+           "there as rudi_tarif__rental_rate" in tools._entry(rate)
+    [item] = [e for e in everything if e["kind"] == "class" and e["name"] == "Item"
+              and e["module"]["name"] == "@uniti/item"]
+    assert item["facets"] == [{"slot": "rental_rate", "as": "rudi_tarif__rental_rate",
+                               "module": {"name": TARIF, "version": "v1"}}]
+    assert "; others add: rudi_tarif__rental_rate (@rudi/tarif@v1)" in tools._entry(item)
+    # A slot on a class of its own module's is no facet, and says so as before.
+    [name] = [e for e in everything if e["kind"] == "slot" and e["name"] == "item_name"
+              and e["module"]["name"] == "@uniti/item"]
+    assert name["facet_on"] is None and "; on Item" in tools._entry(name)

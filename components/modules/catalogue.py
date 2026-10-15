@@ -9,9 +9,11 @@ Four kinds of entry, one list:
     module   a module at its latest sealed version: what it is, what it pins
     role     an abstract class: the bindings it obliges, and who has filled it
     class    a class a module declares: which roles it fills, whether the log
-             can say an entity is one, and which rules anywhere read it
+             can say an entity is one, which rules anywhere read it, and
+             the facets other modules add to it
     slot     a slot a module declares: its predicate, which binding it fills,
-             and which rules anywhere read that predicate
+             which rules anywhere read that predicate, and, for a facet, the
+             other module's class it is on
 
 "What the store holds" is the latest sealed version of every module — what
 somebody installing from the store today would get. "Which rules read it" is
@@ -41,6 +43,7 @@ sys.path.insert(0, str(ROOT / "components" / "generator"))
 sys.path.insert(0, str(ROOT / "components" / "seal"))
 
 from compile import plan_for, tables, type_slot  # noqa: E402
+from components.modules import compose  # noqa: E402
 from components.modules.roles import _above, _bindings, _closure_documents  # noqa: E402
 from components.modules.store import APPLICATION  # noqa: E402
 from components.refusal import Refusal  # noqa: E402
@@ -205,6 +208,16 @@ def catalogue(store, business=None):
         pins = [_pin(*p) for p in store.imports(document)]
         own_classes = document.get("classes") or {}
         own_slots = document.get("slots") or {}
+        # A facet is on another module's class, by the composition's own rule:
+        # whatever pins this module has it there, under this module's tag.
+        composition = store.version_composition(name, version)
+        owner = {c: dep[0] for dep, doc in composition for c in (doc.get("classes") or {})}
+        tag = store.tag(name)
+        facet_on = {
+            slot: {"class": compose.plain(domain), "module": owner[domain],
+                   "as": compose.qualified(tag, slot) if tag else slot}
+            for domain, slot, pin in compose.facets(composition) if pin and pin[0] == name
+        }
 
         entries.append({
             "kind": "module", "name": name, "module": _pin(name, version),
@@ -250,6 +263,7 @@ def catalogue(store, business=None):
                 "slots": list(c.get("slots") or []),
                 "required": _required(maps.get((name, version)), class_name),
                 "read_by": _read_by_class(rules, class_name, name),
+                "facets": [],  # completed below, once every slot is known
             })
 
         for slot_name in sorted(own_slots):
@@ -270,8 +284,18 @@ def catalogue(store, business=None):
                 "fills": [binding] if binding else [],
                 "on": sorted(k for k, c in own_classes.items()
                              if slot_name in ((c or {}).get("slots") or [])),
+                "facet_on": facet_on.get(slot_name),
                 "read_by": [_rule_ref(r) for r in rules if uri and uri in r["reads"]],
             })
+
+    # What each class is given by others: the facets naming it.
+    for slot in (e for e in entries if e["kind"] == "slot" and e["facet_on"]):
+        on = slot["facet_on"]
+        for held in entries:
+            if (held["kind"] == "class" and held["name"] == on["class"]
+                    and held["module"]["name"] == on["module"]):
+                held["facets"].append({"slot": slot["name"], "as": on["as"],
+                                       "module": slot["module"]})
 
     # Who fills each role, across the whole store: a class names the roles it
     # reaches, and a role lists every class that named it.

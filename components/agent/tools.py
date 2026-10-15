@@ -513,13 +513,20 @@ def _entry(entry):
                 f"{', '.join(entry['slots']) or 'none'}")
         if entry["statable"] and entry.get("required"):
             head += f"; a new one must be given {', '.join(entry['required'])}"
+        if entry.get("facets"):
+            head += "; others add: " + ", ".join(
+                f"{f['as']} ({f['module']['name']}@{f['module']['version']})"
+                for f in entry["facets"])
     else:
         fills = f", fills {', '.join(entry['fills'])}" if entry["fills"] else ""
         meant = "".join(f", {entry[k]}" if k != "unit" else f", unit {entry[k]}"
                         for k in ("unit", "direction", "time_meaning") if entry.get(k))
+        on = entry.get("facet_on")
+        where = (f"on {on['class']} of {on['module']}, a facet: whatever pins "
+                 f"{entry['module']['name']} has it there as {on['as']}" if on
+                 else f"on {', '.join(entry['on']) or 'no class'}")
         head = (f"slot {_labelled(entry['name'], entry.get('labels'))} ({pin}): "
-                f"{entry['range'] or 'string'}{meant}{fills}; on "
-                f"{', '.join(entry['on']) or 'no class'}")
+                f"{entry['range'] or 'string'}{meant}{fills}; {where}")
     return f"  {head}" + (f"\n      {about}" if about else "")
 
 
