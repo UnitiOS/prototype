@@ -14,7 +14,7 @@ sys.path.insert(0, str(ROOT / "components" / "seal"))
 
 from components.modules import compose  # noqa: E402
 from components.modules import diff as _diff  # noqa: E402
-from components.modules.store import ModuleError  # noqa: E402
+from components.modules.store import APPLICATION, ModuleError  # noqa: E402
 from seal import written_uri  # noqa: E402
 
 RULES = ("aggregate", "parameter")
@@ -161,6 +161,60 @@ def version(store, name, version, registered=None):
         "slots": sorted(slots.values(), key=lambda s: (not own(s), s["name"])),
         "transcript": transcript.read_text(encoding="utf-8") if transcript.is_file() else None,
     }
+
+
+def connections(store, name, version):
+    """One version read as its connections, for the person who wrote it.
+
+    What its slots point at in other modules, what it adds to other modules'
+    things (its facets), which roles its classes fill, and which shared
+    modules build on it. Each class is named as its module wrote it, with the
+    version of the module it came from.
+
+    `built_on_by` looks at the newest version of every other shared module,
+    because that is who builds on it now. Applications are left out: one is
+    private to its business, and an author is not shown whose business uses
+    his module.
+    """
+    entries = store.version_composition(name, version)
+    origin = {}
+    for pin, document in entries:
+        for class_name in (document.get("classes") or {}):
+            origin.setdefault(str(class_name), pin)
+    own = entries[-1][1]
+    mine = {str(c) for c in (own.get("classes") or {})}
+    elsewhere = lambda c: c in origin and c not in mine
+
+    def to(key, slot_or_class, target):
+        return {key: compose.plain(slot_or_class), "class": compose.plain(target),
+                "module": _pin(*origin[target])}
+
+    fills, adds_to, points_at = [], [], []
+    for class_name, body in (own.get("classes") or {}).items():
+        for role in [str(m) for m in (body or {}).get("mixins") or []]:
+            if elsewhere(role):
+                fills.append({"class": compose.plain(class_name),
+                              "role": compose.plain(role), "module": _pin(*origin[role])})
+    for slot, body in (own.get("slots") or {}).items():
+        body = body or {}
+        if elsewhere(str(body.get("domain") or "")):
+            adds_to.append(to("slot", slot, str(body["domain"])))
+        if elsewhere(str(body.get("range") or "")):
+            points_at.append(to("slot", slot, str(body["range"])))
+
+    built_on_by = []
+    for other in store.names():
+        held = store.versions(other) if other != name else []
+        if not held or store.kind(other) == APPLICATION:
+            continue
+        latest = held[-1]["version"]
+        for pinned_name, pinned in store.imports(store.document(other, latest)):
+            if pinned_name == name:
+                built_on_by.append({"name": other, "version": latest,
+                                    "title": store.manifest(other).get("title") or other,
+                                    "pins": pinned})
+    return {"name": name, "version": version, "fills": fills, "adds_to": adds_to,
+            "points_at": points_at, "built_on_by": built_on_by}
 
 
 def _awaiting(store, name, version):
@@ -333,4 +387,5 @@ def compare(store, name, older, newer):
             "diff": _diff.compare(store.document(name, older), store.document(name, newer))}
 
 
-__all__ = ["modules", "graph", "version", "class_graph", "compare", "ModuleError"]
+__all__ = ["modules", "graph", "version", "connections", "class_graph", "compare",
+           "ModuleError"]

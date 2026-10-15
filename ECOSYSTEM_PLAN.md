@@ -46,6 +46,8 @@ check` replays identically, the probes of §4 were re-run (P3a, P1 and P4 now
 pass without any patch; P2 still blocked then, and seals since step 6), and the
 Studio and Application screens were looked at in a browser. Every step met its
 "done when". The owner's decisions at each step are recorded under the step.
+Since then: G1, G2 and the dry run (`ba762f4`, `7ba2b95`), step 5 (`ba20f4e`),
+step 6 (`369c32b`), and step 7, built on 15 October (below, under the step).
 
 The goal has not moved (§1.2): **the ecosystem test passes on its seven
 stories, then core v3, then the re-run.** What remains, in order:
@@ -1056,6 +1058,83 @@ before any commit. Step 8 may be done at any time.
 - **Done when:** stories 4 and 5 can be run as §7.2 describes them, and the
   Application screen shows no composed name; both lenses checked in a browser
   at 1280 and 390 pixels.
+- **Decided 15 October 2026 (owner):**
+  - The Application screen **opens on the business lens**; today's technical
+    view stays, one click away under "How it works". Neither shows a
+    composed name.
+  - Moving to a new version is **one button that prepares a draft**: the
+    page sends the Studio's ordinary steps (`revise`, `unpin`, `pin`), and
+    the person seals and installs as always, so the approval points hold.
+- **Built (15 October):**
+  - **Business lens** (`web/src/BusinessView.tsx`, `web/src/lens.ts`): the
+    tables as Things, Events and Numbers (`lens` from the API: grouped is a
+    number; a class that is or fills core's `Event` happened; the rest is
+    kept). Each is called in words, with "from *module title*" as its mark
+    where it is somebody's module (the application's own, the library's and
+    core's carry none). Columns are called by their field's words, the
+    identity column is "Code", and the column carrying the class is hidden
+    (`carries_class`). A facet column is marked with the module adding it,
+    and the form groups facets under that module's title (as before).
+    A choice of another module's kind says whose it is: "Rental — Budi,
+    2026-10-06 (Equipment Rental)" (the dry run's note). Clicking a number
+    lists the records it is worked out from. "In use since …" and the
+    owner's install step are said in the same words.
+  - **G3:** no `tag__Name` on the Application screen. On the business lens
+    names are words; under "How it works" the table list shows
+    `Rental · rudi_penyewaan` (`nameShown`). Everywhere else there (columns,
+    rules, buttons, form field titles, "What it stands on", the check and the
+    fit report) the tag is taken off by `untagged`. The emitted SQL, folded,
+    keeps the names it ran with.
+  - **For Sari: "a new version is available"** (`application.updates`,
+    `GET /api/app/updates`). For each module the application pins itself and
+    whose author has sealed a newer version: what changes, as things and
+    fields with their authors' descriptions (`_changes`, over
+    `diff.compare`), and the application's own examples run against the
+    candidate (this version's rules with that one pin moved, built in memory
+    as the fit report builds one; each example in a scratch log). A move the
+    store would refuse (two versions of one module) comes back as that
+    refusal. The card says that what was recorded stays as it was, and its
+    button prepares the draft; pressed again, it takes only the steps not yet
+    taken.
+  - **For Rudi: connections** (`modules_read.connections`,
+    `GET /api/modules/connections`), on the Modules area's version page: what
+    it points at, what it adds to whose things, which roles it fills, and
+    which shared modules build on it (each other module's newest version).
+    Applications are never listed. The old "Pinned by" list, which named
+    applications, is gone from that page.
+  - **Not built** (§0.2): no new refusal code, no change to the agent's
+    instructions (still 23,864 characters). Refusing to unpin a module
+    still used, and the stale-tables hole, stay parked until story 6 needs
+    them.
+  - **Tests:** `tests/application/test_lenses.py` (stories 4 and 5, 9
+    tests): Rudi's rentals with a rate facet on `Item`, Dewi's guarantees
+    against any `Transaction`, a shared module built on Rudi's, and an
+    application pinning both, installed, with records stated through it.
+    Then: things/events/numbers and marks; the facet's mark; a role choice
+    naming its module; nothing offered while every pin is the latest; Rudi's
+    v2 offered with its change and the application's example holding on it,
+    with nothing written to the log; the move by three Studio steps, sealed,
+    the old records reading the same; the connections, with the application
+    left out of "built on by". `web/src/lens.test.ts` (7 tests), including a
+    word list (`MACHINERY`) that no sentence of the lens may use.
+  - **Browser check (15 October)** on a copy of the dry run's world
+    (`build/lensa/setup.py`: both kernels cloned, both stores copied, Rudi's
+    v2 sealed adding a rental note; servers on 8320 and 8321). At 1280:
+    Kemah Ceria opens on its business; the two `Rental`s read "Rental, from
+    Equipment Rental" and "Rental, from Rental Point of Sale"; the item shows
+    "Daily rate, from Equipment Rental"; the guarantee's choices name their
+    module; the word list found nothing on the business lens, and no
+    composed name was found under "How it works" outside the SQL. The card
+    said "Equipment Rental has a new version … Rental gains a field: Note";
+    its button opened the Studio on a draft "Ready to freeze as v2", and
+    pressing it again opened the same draft. Rudi's page in the community
+    showed his connections and "No shared module builds on it yet". At 390
+    (in a 390-pixel frame: Chrome's window will not go that narrow) neither
+    lens scrolls sideways; a wide table scrolls inside its own box.
+  - **Seen, for the ecosystem test:** the dry run's application has **no
+    examples of its own**, so the card had none to run and said so. Story 5
+    needs Sari's application to have examples; story 4 will show whether the
+    agent writes them for an application.
 
 ### Step 8 — Known Studio and agent defects (any time)
 
@@ -1331,3 +1410,12 @@ parked under the story filter (§0.2) unless the ecosystem test shows otherwise.
 - **The value filter's executor** (found at step 6): one join on `stated`
   and `AND value <op> literal` per filter, the sketch it was admitted on.
   Small, but after P2 by §9 ("compiler growth"), driven by the awaiting list.
+- **The business lens shows the system's own sentence when something fails**
+  (found at step 7): a refused form submission reads as the refusal says it,
+  which can carry the machinery's words. Rare on the paths the stories take;
+  step 8's word list will show whether it is met.
+- **The emitted SQL under "How it works" keeps composed names** (step 7): it
+  is the evidence, as it ran.
+- **A thing's lens is read from core's `Event` alone** (step 7): a rental
+  line fills `TransactionLine`, which is a `Thing`, so it is listed with the
+  things rather than beside its rental. Polish, P3.

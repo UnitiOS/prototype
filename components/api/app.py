@@ -199,6 +199,13 @@ async def module_classes(request: Request):
                     _required(request, "version"))
 
 
+async def module_connections(request: Request):
+    """What a version points at, adds to, fills, and which shared modules
+    build on it: the module read by the person who wrote it."""
+    return _modules(modules_read.connections, _required(request, "name"),
+                    _required(request, "version"))
+
+
 async def app_roles(request: Request):
     """Every role this application can see, and which class has filled it."""
     return _application(roles_read.roles, _required(request, "name"),
@@ -285,6 +292,22 @@ def _application(fn, *args, **kwargs):
 async def app_read(request: Request):
     return _application(application.application, _required(request, "name"),
                         _required(request, "version"))
+
+
+async def app_updates(request: Request):
+    """Newer versions of what this application pins, and what moving means.
+
+    Its own examples run against each candidate, each in a scratch log that
+    is rolled back, so asking writes nothing.
+    """
+    name = _required(request, "name")
+    version = _required(request, "version")
+    with connect(os.environ.get("UNITI_DSN"), connect_timeout=3) as conn:
+        try:
+            return _application(lambda store: application.updates(
+                conn, store, name, version))
+        finally:
+            conn.rollback()
 
 
 async def app_projection(request: Request):
@@ -552,12 +575,14 @@ routes = [
     Route("/api/modules/version", module_version),
     Route("/api/modules/diff", module_diff),
     Route("/api/modules/classes", module_classes),
+    Route("/api/modules/connections", module_connections),
     Route("/api/app", app_read),
     Route("/api/catalogue", catalogue),
     Route("/api/app/roles", app_roles),
     Route("/api/app/health", app_health),
     Route("/api/app/check", app_check),
     Route("/api/app/fit", app_fit),
+    Route("/api/app/updates", app_updates),
     Route("/api/app/projection", app_projection),
     Route("/api/app/cell", app_cell),
     Route("/api/app/form", app_form),

@@ -3,7 +3,7 @@ import type { DraftState, ExampleResult } from "./api";
 import {
   BOX, CELL, GROUP, arrange, arrangeWorkings, cellHeight, changedOf, checksOf, fieldLabel, heightOf,
   askedOnce, blocksOf, exampleOf, lineage, mapOf, marksOf, momentsOf, neighbours, piecesOf, roomFor,
-  nameShown, plainName, spoken, tagOf, turnsAbout, walkThrough,
+  nameShown, plainName, spoken, tagOf, turnsAbout, untagged, walkThrough,
   workingsOf, NOT_YET,
 } from "./studioMap";
 
@@ -136,6 +136,8 @@ describe("names said as words", () => {
     expect(tagOf("Rental")).toBeNull();
     expect(nameShown("kasir__Rental")).toBe("Rental · kasir");
     expect(nameShown("Party")).toBe("Party");
+    expect(untagged("{rudi_sewa__rental_rate} * {days}")).toBe("{rental_rate} * {days}");
+    expect(untagged("rudi_sewa__Rental.rudi_sewa__rental_deposit")).toBe("Rental.rental_deposit");
     expect(spoken("penyewaan__RentalLine")).toBe("Rental line");
     expect(fieldLabel("penyewaan__rental_deposit", "penyewaan__Rental")).toBe("Deposit");
   });

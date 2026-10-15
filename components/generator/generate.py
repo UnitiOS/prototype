@@ -508,8 +508,9 @@ def form(conn, map_, class_name, *, valid_at=None, as_of=None):
     fields = []
     for col in cols:
         field = dict(col)
+        field["kinds"] = {}
         if col["ref"]:
-            field["options"], field["options_from"] = _options(
+            field["options"], field["options_from"], field["kinds"] = _options(
                 conn, map_, col["range"], valid_at=valid_at, as_of=as_of)
         elif col["values"] is not None:
             field["options"], field["options_from"] = (
@@ -524,9 +525,11 @@ def form(conn, map_, class_name, *, valid_at=None, as_of=None):
 def _options(conn, map_, class_name, *, valid_at, as_of):
     """The choices a field over a class range offers, and where they came from.
 
-    Returned as (pairs, source), and the source is always `LOG`: the entities
-    the log says are of that class, or of one below it, at the clocks the form
-    was asked at, each labelled by whatever the map says identifies it.
+    Returned as (pairs, source, kinds), and the source is always `LOG`: the
+    entities the log says are of that class, or of one below it, at the clocks
+    the form was asked at, each labelled by whatever the map says identifies
+    it. `kinds` is which class each one is, so a field over a role can say
+    which module each choice came from.
 
     These were once read out of the operational store whenever it held a table
     for the class, and that was wrong twice over. Nothing but a compile fills
@@ -538,19 +541,21 @@ def _options(conn, map_, class_name, *, valid_at, as_of):
     choices beside it now are too.
     """
     by_uri, by_id = _registry(conn)
-    out = []
+    out, kinds = [], {}
     for subject_id in _row_subjects(conn, map_, class_name, by_uri,
                                     valid_at=valid_at, as_of=as_of):
-        label = _label(conn, map_, class_name, subject_id, by_uri,
-                       valid_at=valid_at, as_of=as_of)
-        out.append((by_id.get(subject_id, f"<{subject_id}>"), label))
+        label, kind = _label(conn, map_, class_name, subject_id, by_uri,
+                             valid_at=valid_at, as_of=as_of)
+        uri = by_id.get(subject_id, f"<{subject_id}>")
+        out.append((uri, label))
+        kinds[uri] = kind
     out.sort()
-    return out, LOG
+    return out, LOG, kinds
 
 
 def _label(conn, map_, class_name, subject_id, by_uri, *, valid_at, as_of):
     """What a choice is called: which one it is, and what kind where that is
-    not the field's own.
+    not the field's own. Returned with that kind, the class it is.
 
     A field over a role offers every module's records that fill it, so a
     choice says its kind first: "Rental — Budi, 2026-10-06". Which one it is,
@@ -588,9 +593,9 @@ def _label(conn, map_, class_name, subject_id, by_uri, *, valid_at, as_of):
                 and view.get_slot(slot.is_a).abstract]
     said = ", ".join(value for value in said if value)
     if kind == class_name:
-        return said
+        return said, kind
     called = str(view.get_class(kind).title or kind.split("__")[-1])
-    return f"{called} — {said}" if said else called
+    return (f"{called} — {said}" if said else called), kind
 
 
 def _kind_of(map_, class_name, read, subject_id):

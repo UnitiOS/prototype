@@ -24,16 +24,22 @@ sys.path.insert(0, str(ROOT / "components" / "compiler"))
 sys.path.insert(0, str(ROOT / "components" / "generator"))
 
 sys.path.insert(0, str(ROOT / "components" / "kernel"))
+sys.path.insert(0, str(ROOT / "components" / "seal"))
+
+import yaml  # noqa: E402
 
 from components import business  # noqa: E402
 from compile import MapError, plan_for, preview, sql_text, tables  # noqa: E402
 from compile import _REF as EXPRESSION_REFS  # noqa: E402
+from components.examples import examples as worked  # noqa: E402
+from components.modules import diff as module_diff  # noqa: E402
 from components.modules import read as modules_read  # noqa: E402
-from components.modules.compose import facets, matches  # noqa: E402
-from components.refusal import Repair  # noqa: E402
+from components.modules.compose import facets, matches, plain  # noqa: E402
+from components.refusal import Refusal, Repair  # noqa: E402
 from generate import IDENTITY_COLUMN, form, named, read_map, submit, table_name  # noqa: E402
 from generate import _registry, _row_subjects, _type_slot  # noqa: E402
 from resolve import resolve_single  # noqa: E402
+from seal import _one_version_per_module  # noqa: E402
 
 # A cell of a grouping can stand on a great many statements. A page showing
 # them is a page somebody reads, so the list is cut off and says that it was.
@@ -63,8 +69,31 @@ def _title(store, module):
     return store.manifest(module).get("title") or module
 
 
+def _title_of(store, origin):
+    """The title of the module an origin names, or None for no origin."""
+    return _title(store, origin["name"]) if origin else None
+
+
+def _lens(map_, class_name, shape):
+    """Which of the owner's three words a table is: a number the application
+    works out, an event that happened, or a thing it keeps.
+
+    Read from the map alone: a grouped table is worked out, and a class that
+    is, or fills, core's `Event` (a transaction does) happened.
+    """
+    if shape == "grouped":
+        return "number"
+    above = {plain(str(c)) for c in map_["view"].class_ancestors(class_name)}
+    return "event" if "Event" in above else "thing"
+
+
 def application(store, name, version):
-    """What this application is: the versions it pins and the tables it can fill."""
+    """What this application is: the versions it pins and the tables it can fill.
+
+    Each table says which of things, events and numbers it is (`lens`), and
+    the title of the module it came from, which is the mark a business owner
+    is shown instead of a composed name.
+    """
     map_ = _map(store, name, version)
     classes, _ = _origins(store, name, version)
     detail = modules_read.version(store, name, version)
@@ -76,7 +105,9 @@ def application(store, name, version):
             "class": class_name,
             "table": table_name(class_name),
             "shape": plan_["shape"],
+            "lens": _lens(map_, class_name, plan_["shape"]),
             "module": classes.get(class_name),
+            "module_title": _title_of(store, classes.get(class_name)),
             "columns": len(plan_["columns"]),
         })
     return {
@@ -87,10 +118,116 @@ def application(store, name, version):
         "business": store.business(name),
         "purpose": detail["purpose"],
         "description": detail["description"],
-        "modules": [{**pin, "purpose": store.manifest(pin["name"]).get("purpose")}
+        "modules": [{**pin, "purpose": store.manifest(pin["name"]).get("purpose"),
+                     "title": _title(store, pin["name"]), "kind": store.kind(pin["name"])}
                     for pin in detail["closure"]],
         "tables": out,
     }
+
+
+def _on(document, slot):
+    """The class a slot is a field of, in its own module's words: the class
+    listing it, or the class it is added to."""
+    for class_name, body in (document.get("classes") or {}).items():
+        if slot in [str(s) for s in (body or {}).get("slots") or []]:
+            return str(class_name)
+    return str(((document.get("slots") or {}).get(slot) or {}).get("domain") or "") or None
+
+
+def _changes(old, new):
+    """What changed between two versions of a module, as things and fields.
+
+    Each change names the thing or field as its module wrote it, the thing a
+    field is on, and the description its author gave, which is what a
+    business owner reads; what a change means for her numbers is what her
+    examples say, next to it.
+    """
+    d = module_diff.compare(old, new)
+    slot = lambda doc, s: ((doc.get("slots") or {}).get(s) or {})
+    thing = lambda doc, c: ((doc.get("classes") or {}).get(c) or {})
+    out = []
+    for c in d["classes"]["added"]:
+        out.append({"change": "added", "what": "thing", "name": c, "on": None,
+                    "description": thing(new, c).get("description") or ""})
+    for c in d["classes"]["removed"]:
+        out.append({"change": "removed", "what": "thing", "name": c, "on": None,
+                    "description": thing(old, c).get("description") or ""})
+    for s in d["slots"]["added"]:
+        out.append({"change": "added", "what": "field", "name": s, "on": _on(new, s),
+                    "description": slot(new, s).get("description") or ""})
+    for s in d["slots"]["removed"]:
+        out.append({"change": "removed", "what": "field", "name": s, "on": _on(old, s),
+                    "description": slot(old, s).get("description") or ""})
+    for r in d["slots"]["renamed"]:
+        out.append({"change": "renamed", "what": "field", "name": r["to"], "was": r["from"],
+                    "on": _on(new, r["to"]),
+                    "description": slot(new, r["to"]).get("description") or ""})
+    for s in d["slots"]["changed"]:
+        out.append({"change": "changed", "what": "field", "name": s["name"],
+                    "on": _on(new, s["name"]), "fields": sorted(s["changes"]),
+                    "description": slot(new, s["name"]).get("description") or ""})
+    for c in d["classes"]["changed"]:
+        # A field newly declared is said above, on its thing; a field the
+        # thing only now carries, or no longer does, is said here.
+        for s in c["slots_added"]:
+            if s not in d["slots"]["added"]:
+                out.append({"change": "added", "what": "field", "name": s, "on": c["name"],
+                            "description": slot(new, s).get("description") or ""})
+        for s in c["slots_removed"]:
+            if s not in d["slots"]["removed"]:
+                out.append({"change": "removed", "what": "field", "name": s, "on": c["name"],
+                            "description": slot(old, s).get("description") or ""})
+        if c["changes"]:
+            out.append({"change": "changed", "what": "thing", "name": c["name"], "on": None,
+                        "fields": sorted(c["changes"]),
+                        "description": thing(new, c["name"]).get("description") or ""})
+    return out
+
+
+def updates(conn, store, name, version):
+    """Every module this version pins whose author has sealed a newer version
+    since, and what moving to it would mean, told before anybody moves.
+
+    For each: what changes, as things and fields (`_changes`), and this
+    application's own examples run against the candidate: this version's
+    rules with that one pin moved, built in memory as a fit report builds
+    one, never sealed and never written. The examples run each in a scratch
+    log, as the Studio's do, so nothing reaches the log. A move the store
+    would refuse, because another module pinned here still needs the old
+    version, comes back as that refusal and no examples.
+
+    Only what this version pins itself: a module further down is moved by
+    whoever pins it.
+    """
+    document = store.document(name, version)
+    held = worked.load(worked.path_for(store.path(name, version)))
+    out = []
+    for module, pinned in store.imports(document):
+        latest = store.versions(module)[-1]["version"]
+        if latest == pinned:
+            continue
+        update = {"module": module, "title": _title(store, module),
+                  "pinned": pinned, "latest": latest,
+                  "changes": _changes(store.document(module, pinned),
+                                      store.document(module, latest)),
+                  "examples": [], "refusal": None}
+        candidate = dict(document)
+        candidate["imports"] = [
+            f"{module}@{latest}" if store.pinned(str(i)) == (module, pinned) else i
+            for i in document.get("imports") or []]
+        try:
+            _one_version_per_module(store, candidate, f"{name}@{version}")
+            view = store.view(yaml.safe_dump(candidate, sort_keys=False, allow_unicode=True))
+            map_ = {"path": store.path(name, version), "view": view, "version": version,
+                    "label": f"{name}@{version}"}
+            update["examples"] = [
+                {"name": r["name"], "says": r["says"], "passed": r["passed"],
+                 "pending": r["pending"], "refusals": r["refusals"]}
+                for r in worked.report(worked.run(conn, map_, held))]
+        except Refusal as exc:
+            update["refusal"] = exc.as_dict()
+        out.append(update)
+    return out
 
 
 def projection(conn, store, name, version, class_name, *, valid_at, as_of):
@@ -106,6 +243,7 @@ def projection(conn, store, name, version, class_name, *, valid_at, as_of):
     _, slot_origin = _origins(store, name, version)
     built = preview(conn, map_, class_name, valid_at=valid_at, as_of=as_of)
     plan_ = built["plan"]
+    carrier = _type_slot(map_, class_name)
 
     columns = []
     for col in plan_["columns"]:
@@ -130,6 +268,10 @@ def projection(conn, store, name, version, class_name, *, valid_at, as_of):
             "kind": col["kind"],
             "description": col.get("description") or "",
             "module": slot_origin.get(col["name"]),
+            "module_title": _title_of(store, slot_origin.get(col["name"])),
+            # The slot saying which class each row is: bookkeeping the form
+            # states by itself, and nothing a business owner reads.
+            "carries_class": carrier is not None and col["name"] == str(carrier.name),
             "rule": rule,
             # Sound and sealed, and not computed yet: the column is empty, and
             # this says why, so the screen labels it rather than showing blanks.
@@ -326,7 +468,7 @@ def form_of(conn, store, name, version, class_name, *, valid_at, as_of):
     map_ = _map(store, name, version)
     class_name = named(map_, class_name)
     built = form(conn, map_, class_name, valid_at=valid_at, as_of=as_of)
-    slot_origin = _origins(store, name, version)[1]
+    class_origin, slot_origin = _origins(store, name, version)
     type_slot = _type_slot(map_, class_name)
     # A field another module adds to this class is grouped under that
     # module's title: the item form in Sari's application has a section
@@ -348,9 +490,17 @@ def form_of(conn, store, name, version, class_name, *, valid_at, as_of):
             "required": f["required"], "ref": f["ref"],
             "description": f["description"],
             "module": slot_origin.get(f["name"]),
+            "module_title": _title_of(store, slot_origin.get(f["name"])),
             "section": (_title(store, added[f["name"]][0])
                         if f["name"] in added else None),
-            "options": [{"uri": uri, "label": label} for uri, label in f["options"]],
+            # A field over a role offers several modules' records, and two
+            # of them may be called alike ("Rental"): each choice carries the
+            # title of the module its kind came from.
+            "options": [{"uri": uri, "label": label,
+                         "from": (_title_of(store, class_origin.get(f["kinds"][uri]))
+                                  if f["kinds"].get(uri, f["range"]) != f["range"]
+                                  else None)}
+                        for uri, label in f["options"]],
             "options_from": f["options_from"],
         } for f in built["fields"] if f["name"] != stated_by_the_form],
     }
@@ -405,4 +555,5 @@ def state(conn, store, name, version, class_name, *, subject, values, actor_id,
             "ontology_version": map_["label"]}
 
 
-__all__ = ["application", "projection", "cell", "form_of", "state", "MapError"]
+__all__ = ["application", "updates", "projection", "cell", "form_of", "state",
+           "MapError"]

@@ -5,6 +5,7 @@
 //   #/modules?name=@x/y&version=v2&compare=v1     the module store
 //   #/app?name=@x/y&version=v1&class=Thing&column=c&keys=a,b   one cell of it
 //   #/app?name=@x/y&version=v1&against=v2                      what a swap costs
+//   #/app?name=@x/y&version=v1&how=1        how it works, past the owner's words
 //   #/catalogue?q=..&kind=slot&fills=moment&name=@x/y&version=v2  what the store
 //                                          holds, and one application's health
 //   #/studio?name=@x/y                            the draft being built
@@ -28,6 +29,9 @@ export interface AppPick {
   // swap is a decision somebody makes with other people, so the report has to
   // be something you can send them.
   against: string | null;
+  // Whether the page shows how it works — rules, statements, the SQL —
+  // rather than the business in its owner's words, which it opens on.
+  how: boolean;
 }
 
 // What the catalogue is narrowed to, and which application its health report
@@ -69,7 +73,7 @@ function parse(hash: string): Route {
       name: params.get("name"), version: params.get("version"),
       klass: params.get("class"), column: params.get("column"),
       keys: params.get("keys"), stating: params.get("new") === "1",
-      against: params.get("against"),
+      against: params.get("against"), how: params.get("how") === "1",
     },
     catalogue: {
       q: params.get("q"), kind: params.get("kind"), fills: params.get("fills"),
@@ -89,7 +93,7 @@ export function href(route: Route): string {
     if (compare) query.set("compare", compare);
   }
   if (route.tab === "app") {
-    const { name, version, klass, column, keys, stating, against } = route.app;
+    const { name, version, klass, column, keys, stating, against, how } = route.app;
     if (name) query.set("name", name);
     if (version) query.set("version", version);
     if (klass) query.set("class", klass);
@@ -97,6 +101,7 @@ export function href(route: Route): string {
     if (keys) query.set("keys", keys);
     if (stating) query.set("new", "1");
     if (against) query.set("against", against);
+    if (how) query.set("how", "1");
   }
   if (route.tab === "catalogue") {
     const { q, kind, fills, name, version } = route.catalogue;

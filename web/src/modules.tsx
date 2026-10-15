@@ -1,10 +1,15 @@
 // The module store: the timeline of every sealed version, and one version read
-// in full — what it pins, what pins it, what it declares and what it can see
+// in full — what it pins, its connections, what it declares and what it can see
 // through its imports, and how it differs from another version of itself.
+//
+// The connections are the module read by the person who wrote it: what it
+// points at, what it adds to whose things, which roles it fills, and which
+// shared modules build on it. Applications never appear there: each is private
+// to its business.
 
 import { useEffect, useState } from "react";
 import { ApiError, modulesApi } from "./api";
-import type { ModuleDiff, ModuleGraph, ModuleRow, ModuleVersion, Pin } from "./api";
+import type { Connections, ModuleDiff, ModuleGraph, ModuleRow, ModuleVersion, Pin } from "./api";
 import { ModuleTimeline } from "./ModuleTimeline";
 import { day, instant } from "./format";
 import type { ModulePick } from "./route";
@@ -122,17 +127,9 @@ function VersionView({ pin, compare, onPick }: { pin: Pin; compare: string | nul
               ))}
             </ul>
           )}
-        <div className="fact-head fact-head-sub"><h3>Pinned by</h3></div>
-        {v.imported_by.length === 0
-          ? <p className="chips quiet">No sealed version pins this one.</p>
-          : (
-            <p className="chips">
-              {v.imported_by.map((p) => (
-                <button key={pinText(p)} className="link id" onClick={() => goTo(p)}>{pinText(p)}</button>
-              ))}
-            </p>
-          )}
       </section>
+
+      <ConnectionsView pin={pin} goTo={goTo} />
 
       <section className="fact">
         <div className="fact-head">
@@ -206,6 +203,57 @@ function VersionView({ pin, compare, onPick }: { pin: Pin; compare: string | nul
         </section>
       )}
     </article>
+  );
+}
+
+function ConnectionsView({ pin, goTo }: { pin: Pin; goTo: (p: Pin) => void }) {
+  const { data, error } = useLoad<Connections>(() => modulesApi.connections(pin.name, pin.version),
+    [pin.name, pin.version]);
+  if (error) return <p className="failure" role="alert">{error}</p>;
+  if (!data) return null;
+  const from = (p: Pin) => (
+    <button className="link id" onClick={() => goTo(p)}>{pinText(p)}</button>
+  );
+  const none = (said: string) => <p className="quiet">{said}</p>;
+
+  return (
+    <section className="fact connections">
+      <div className="fact-head">
+        <h3>Connections</h3>
+        <span className="quiet">what it points at, adds to, fills, and who builds on it</span>
+      </div>
+      <dl className="fit-block">
+        <dt>Points at</dt>
+        <dd>
+          {data.points_at.length === 0 ? none("Nothing outside itself.")
+            : data.points_at.map((c) => (
+              <p key={c.slot}><span className="id">{c.slot}</span> → <strong>{c.class}</strong> · {from(c.module)}</p>))}
+        </dd>
+        <dt>Adds to</dt>
+        <dd>
+          {data.adds_to.length === 0 ? none("No other module's things.")
+            : data.adds_to.map((c) => (
+              <p key={c.slot}><span className="id">{c.slot}</span> on <strong>{c.class}</strong> · {from(c.module)}</p>))}
+        </dd>
+        <dt>Fills</dt>
+        <dd>
+          {data.fills.length === 0 ? none("No role.")
+            : data.fills.map((c) => (
+              <p key={`${c.class}-${c.role}`}><strong>{c.class}</strong> fills {c.role} · {from(c.module)}</p>))}
+        </dd>
+        <dt>Built on by</dt>
+        <dd>
+          {data.built_on_by.length === 0
+            ? none("No shared module builds on it yet.")
+            : data.built_on_by.map((b) => (
+              <p key={b.name}>
+                <strong>{b.title}</strong> · {from({ name: b.name, version: b.version })}
+                <span className="quiet"> pins {b.pins}{b.pins !== pin.version ? "" : ", this version"}</span>
+              </p>))}
+          <p className="quiet">Applications are private to their business and are not listed.</p>
+        </dd>
+      </dl>
+    </section>
   );
 }
 

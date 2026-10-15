@@ -41,6 +41,10 @@ export const plainName = (name: string) =>
 export const tagOf = (name: string): string | null =>
   name.includes("__") ? name.slice(0, name.lastIndexOf("__")) : null;
 
+/** Text that may carry composed names — a rule, a table's name — with each
+ *  name's tag taken off: `{rudi_sewa__rental_rate} * 2` reads `{rental_rate} * 2`. */
+export const untagged = (text: string): string => text.replace(/[A-Za-z0-9_]*__(?=[A-Za-z0-9])/g, "");
+
 /** A name offered in a list: the plain name, and the module's tag as a mark
  *  after it where it carries one — two `Rental`s are told apart, and the
  *  value chosen is still the full name. */

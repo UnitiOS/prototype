@@ -1,5 +1,11 @@
 // An application: one business's composition of pinned modules, read as one map.
 //
+// It opens on the business lens (BusinessView): the owner's things, events and
+// numbers in words. What follows here is "How it works", one click away: the
+// versions, the rules, the statements under every number, and the SQL. Neither
+// shows a composed name (`tag__Name`): a name is shown plain, with its tag as
+// a mark after it where two could be confused.
+//
 // The kernel behind this page belongs to one business, and the applications
 // offered first are that business's own — the version it records through on
 // the page's day ahead of the rest. Any version can be read; only the one
@@ -18,10 +24,12 @@ import type {
   FitReport, FormField, FormSpec, InUse, ModuleGraph, Pin, Projection, Refusal as RefusalSpec, Roles,
   Written,
 } from "./api";
+import { BusinessView } from "./BusinessView";
 import { ClassGraph } from "./ClassGraph";
 import { Failure, RefusalCard } from "./Refusal";
 import { day, fromInput, instant, toInput } from "./format";
 import type { AppPick } from "./route";
+import { nameShown, untagged } from "./studioMap";
 
 export function useLoad<T>(load: (() => Promise<T>) | null, deps: unknown[]) {
   // The refusal travels beside the sentence, because a page that keeps only
@@ -136,7 +144,7 @@ export function ApplicationPage(
               <button key={pinText(c)} className={`version-chip${on ? " version-chip-on" : ""}`}
                 aria-current={on}
                 onClick={() => onPick({ name: c.name, version: c.version, klass: null,
-                  column: null, keys: null, stating: false, against: null })}>
+                  column: null, keys: null, stating: false, against: null, how: pick.how })}>
                 {pinText(c)}{used && <span className="badge badge-in-use">in use</span>}
               </button>
             );
@@ -154,7 +162,7 @@ export function ApplicationPage(
               <button key={v} className={`version-chip${on ? " version-chip-on" : ""}`}
                 aria-current={on}
                 onClick={() => onPick({ name: chosen.name, version: v, klass: null,
-                  column: null, keys: null, stating: false, against: null })}>
+                  column: null, keys: null, stating: false, against: null, how: pick.how })}>
                 {v}{used && <span className="badge badge-in-use">in use</span>}
               </button>
             );
@@ -183,6 +191,10 @@ function ApplicationView(
   if (app.error) return <Failure error={app.error} refusal={app.refusal} />;
   if (!app.data) return <p className="quiet">Reading…</p>;
   const a = app.data;
+  if (!pick.how) {
+    return <BusinessView app={a} pin={pin} pick={pick} clocks={clocks} onPick={onPick}
+      business={business} onInstalled={onInstalled} />;
+  }
   const chosen = klass ?? (a.tables[0]?.class ?? null);
   const table = a.tables.find((t) => t.class === chosen) ?? null;
 
@@ -200,6 +212,11 @@ function ApplicationView(
             {a.tables.length === 1 ? "table" : "tables"}, and declares {a.tables.filter((t) => t.module?.name === a.name).length} of the classes behind them.
           </p>
           {a.description && <p>{a.description}</p>}
+          <p className="chips">
+            <button className="link" onClick={() => onPick({ ...pick, how: false })}>
+              Back to the business
+            </button>
+          </p>
           <InUseStrip app={a} business={business} clocks={clocks} onInstalled={onInstalled} />
           <CheckStrip pin={pin} />
         </header>
@@ -225,11 +242,11 @@ function ApplicationView(
                       setFocus(t.class);
                     }}>
                     <span>
-                      {t.class}
+                      {nameShown(t.class)}
                       <span className={`badge badge-${t.shape}`}>{t.shape === "grouped" ? "derived" : "entities"}</span>
                     </span>
                     <span className="quiet">
-                      {t.table}, {t.columns} columns
+                      {t.columns} columns
                       {t.module && t.module.name !== a.name && <>, from <span className="id">{t.module.name}</span></>}
                     </span>
                   </button>
@@ -289,7 +306,7 @@ function InUseStrip(
 }
 
 // The owner's step: from which day the business records through this version.
-function InstallForm(
+export function InstallForm(
   { app, clocks, onInstalled }: { app: Application; clocks: Clocks; onInstalled: () => void },
 ) {
   const [actor, setActor] = useState("");
@@ -338,7 +355,7 @@ function InstallForm(
           <span>Who decides</span>
           <input value={actor} placeholder="the business's owner"
             onChange={(e) => setActor(e.target.value)} />
-          <small>Installing is the owner's decision, written on the intent.</small>
+          <small>Installing is the owner's decision, and it is recorded.</small>
         </label>
         <p className="chips">
           <button className="button" disabled={busy || actor.trim() === ""} onClick={send}>
@@ -361,7 +378,7 @@ function CheckStrip({ pin }: { pin: Pin }) {
   if (check.error) return <Failure error={check.error} refusal={check.refusal} />;
   if (!check.data) return null;
   const c = check.data;
-  const hollow = c.tables.flatMap((t) => t.unfilled.map((u) => `${t.class}.${u}`));
+  const hollow = c.tables.flatMap((t) => t.unfilled.map((u) => untagged(`${t.class}.${u}`)));
 
   return (
     <div className={`check${c.clean ? " check-clean" : " check-dark"}`}>
@@ -375,12 +392,16 @@ function CheckStrip({ pin }: { pin: Pin }) {
           No rule reaches {hollow.join(", ")}, so {hollow.length === 1 ? "it is a column" : "they are columns"} of nulls.
         </p>
       )}
-      {c.refusals.map((r, i) => <RefusalCard key={i} refusal={r} at={r.class} />)}
+      {c.refusals.map((r, i) => <RefusalCard key={i} refusal={r} at={untagged(r.class)} />)}
     </div>
   );
 }
 
 function ruleText(col: Column): string {
+  return untagged(ruleWords(col));
+}
+
+function ruleWords(col: Column): string {
   const rule = col.rule;
   if (!rule) {
     if (col.kind === "key") return "The grouping. One row per distinct value of this column.";
@@ -389,7 +410,7 @@ function ruleText(col: Column): string {
     return "No rule reaches this column, so it is a column of nulls.";
   }
   if (rule.kind === "aggregate" && (rule.sources ?? []).length > 1) {
-    return (rule.sources ?? []).map((source) => ruleText({ ...col, rule: { ...source, kind: "aggregate", operator: rule.operator } }))
+    return (rule.sources ?? []).map((source) => ruleWords({ ...col, rule: { ...source, kind: "aggregate", operator: rule.operator } }))
       .join(" Added to it: ");
   }
   if (rule.kind === "aggregate") {
@@ -459,9 +480,9 @@ function ProjectionView(
   return (
     <article className="detail">
       <header className="detail-head">
-        <h2>{data.class}</h2>
+        <h2>{nameShown(data.class)}</h2>
         <p className="quiet">
-          <span className="id">{data.table}</span>, derived from the log at{" "}
+          Derived from the log at{" "}
           {instant(data.valid_at)} as the log knew it on {instant(data.as_of)}.
           Nothing is stored: move either clock and it is worked out again.
         </p>
@@ -469,7 +490,7 @@ function ProjectionView(
           <p className="chips">
             <button className="button"
               onClick={() => onPick({ ...pick, stating: !stating, column: null, keys: null })}>
-              {stating ? "Never mind" : `State a ${data.class}`}
+              {stating ? "Never mind" : `State a ${untagged(data.class)}`}
             </button>
           </p>
         )}
@@ -486,7 +507,7 @@ function ProjectionView(
             <tr>
               {data.columns.map((c) => (
                 <th key={c.name}>
-                  <span className="column-head">{c.name}</span>
+                  <span className="column-head">{untagged(c.name)}</span>
                   <span className={`badge badge-${c.kind}`}>{c.kind}</span>
                   {c.awaiting && (
                     <span className="badge badge-awaiting" title={c.awaiting.got}>
@@ -526,10 +547,10 @@ function ProjectionView(
 
       <section className="fact">
         <div className="fact-head">
-          <h3>{shown ? `How ${shown.name} is worked out` : "Where a number comes from"}</h3>
+          <h3>{shown ? `How ${untagged(shown.name)} is worked out` : "Where a number comes from"}</h3>
           {picked && (
             <span className="quiet">
-              {Object.entries(picked.keys).map(([k, v]) => `${k} = ${v}`).join(", ")}
+              {Object.entries(picked.keys).map(([k, v]) => `${untagged(k)} = ${v}`).join(", ")}
             </span>
           )}
         </div>
@@ -589,8 +610,8 @@ function CellPanel(
       <div className="rule">
         <p className="quiet">
           Nothing in the log says this directly. It is{" "}
-          <span className="id">{data.expression}</span>, so click{" "}
-          {data.reads.map((r) => <span key={r} className="id">{r} </span>)}
+          <span className="id">{untagged(data.expression ?? "")}</span>, so click{" "}
+          {data.reads.map((r) => <span key={r} className="id">{untagged(r)} </span>)}
           in this same row to see what those stand on.
         </p>
       </div>
@@ -607,7 +628,7 @@ function CellPanel(
         {data.statements.length === 0
           ? "Nothing stands here. Nobody has stated it at these two clocks, which is why the cell is empty rather than nought."
           : data.kind === "aggregate"
-            ? `${data.statements.length} statements, ${data.operator} ${total}. Each one is a ${(data.sources ?? [data.over]).join(" or a ")} the log holds.`
+            ? `${data.statements.length} statements, ${data.operator} ${total}. Each one is a ${(data.sources ?? [data.over]).map((s) => untagged(s ?? "")).join(" or a ")} the log holds.`
             : "One statement stands here."}
         {data.cut_off && " Only the first of them are shown."}
       </p>
@@ -696,7 +717,7 @@ function FormPanel(
   const field = (f: FormField) => (
     <label key={f.name} className="field">
       <span>
-        {f.title}
+        {untagged(f.title)}
         {f.ref && <span className="badge badge-stated">names an entity</span>}
       </span>
       {f.ref ? (
@@ -704,7 +725,8 @@ function FormPanel(
           onChange={(e) => setValues({ ...values, [f.name]: e.target.value })}>
           <option value="">—</option>
           {f.options.map((o) => (
-            <option key={o.uri} value={o.uri} title={o.uri}>{o.label || o.uri}</option>
+            <option key={o.uri} value={o.uri} title={o.uri}>
+              {(o.label || o.uri) + (o.from ? ` (${o.from})` : "")}</option>
           ))}
         </select>
       ) : (
@@ -713,7 +735,7 @@ function FormPanel(
       )}
       <small>
         {f.description
-          || (f.ref ? `One ${f.range}, chosen from ${f.options_from ?? "the log"}.` : f.range ?? "text")}
+          || (f.ref ? `One ${untagged(f.range ?? "")}, chosen from ${f.options_from ?? "the log"}.` : f.range ?? "text")}
         {f.module && <> · <span className="id">{f.module.name}</span></>}
       </small>
     </label>
@@ -725,7 +747,7 @@ function FormPanel(
   return (
     <section className="fact">
       <div className="fact-head">
-        <h3>State a {data.class}</h3>
+        <h3>State a {untagged(data.class)}</h3>
         <span className="quiet">
           one action, one intent, written under <span className="id">{data.label}</span>
         </span>
@@ -760,7 +782,7 @@ function FormPanel(
       </div>
       {data.type_slot && (
         <p className="quiet rule">
-          <span className="id">{data.type_slot}</span> is not a field: the map says which slot
+          <span className="id">{untagged(data.type_slot)}</span> is not a field: the map says which slot
           carries the class, and submitting states it. Nobody types the class in.
         </p>
       )}
@@ -854,14 +876,15 @@ function RolesPanel(
                     ? <span className="quiet">nobody yet</span>
                     : role.filled_by.map((f) => (
                         <span key={f.class} className="filler">
-                          {f.class}<span className="quiet"> · {f.module.name}</span>
+                          {untagged(f.class)}<span className="quiet"> · {f.module.name}</span>
                         </span>
                       ))}
                 </td>
                 <td>
                   {binding && role.filled_by.map((f) => (
                     <span key={f.class} className="filler">
-                      {f.bindings[binding.name] ?? <span className="quiet">—</span>}
+                      {f.bindings[binding.name] ? untagged(f.bindings[binding.name] ?? "")
+                        : <span className="quiet">—</span>}
                     </span>
                   ))}
                 </td>
@@ -930,8 +953,8 @@ function FitPanel({ pin, against }: { pin: Pin; against: string }) {
           <dd>
             {f.roles.filter((r) => r.status !== "unchanged").map((r) => (
               <p key={r.name}>
-                <strong>{r.name}</strong> {r.status}: {r.before.join(", ") || "nobody"}
-                {" → "}{r.after.join(", ") || "nobody"}
+                <strong>{r.name}</strong> {r.status}: {r.before.map(untagged).join(", ") || "nobody"}
+                {" → "}{r.after.map(untagged).join(", ") || "nobody"}
               </p>
             ))}
           </dd>
@@ -945,9 +968,9 @@ function FitPanel({ pin, against }: { pin: Pin; against: string }) {
             {f.dark.map((d, i) => (
               d.refusal
                 ? <RefusalCard key={i} refusal={d.refusal}
-                    at={`${d.class}${d.column ? `.${d.column}` : ""}`} />
+                    at={untagged(`${d.class}${d.column ? `.${d.column}` : ""}`)} />
                 : <p key={i}>
-                    <strong>{d.class}{d.column ? `.${d.column}` : ""}</strong>
+                    <strong>{untagged(`${d.class}${d.column ? `.${d.column}` : ""}`)}</strong>
                     <span className="quiet block">{d.why}</span>
                   </p>
             ))}
@@ -961,11 +984,11 @@ function FitPanel({ pin, against }: { pin: Pin; against: string }) {
           <dd>
             {f.rules.map((r) => (
               <p key={`${r.class}.${r.column}`}>
-                <strong>{r.column}</strong>{" "}
+                <strong>{untagged(r.column)}</strong>{" "}
                 <span className={`badge badge-${r.status}`}>{r.status}</span>
                 {r.status === "rebound" && (
                   <span className="quiet block">
-                    {r.reads_before.join(", ")} → {r.reads_after.join(", ")}
+                    {r.reads_before.map(untagged).join(", ")} → {r.reads_after.map(untagged).join(", ")}
                   </span>
                 )}
               </p>

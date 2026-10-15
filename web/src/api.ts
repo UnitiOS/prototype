@@ -229,21 +229,52 @@ export const modulesApi = {
   version: (name: string, version: string) => get<ModuleVersion>("/api/modules/version", { name, version }),
   diff: (name: string, from: string, to: string) => get<ModuleDiff>("/api/modules/diff", { name, from, to }),
   classes: (name: string, version: string) => get<ClassGraph>("/api/modules/classes", { name, version }),
+  connections: (name: string, version: string) =>
+    get<Connections>("/api/modules/connections", { name, version }),
 };
+
+/** A module read by its author: what it points at, adds to, fills, and
+ *  which shared modules build on it. Applications are never listed. */
+export interface Connections {
+  name: string; version: string;
+  fills: { class: string; role: string; module: Pin }[];
+  adds_to: { slot: string; class: string; module: Pin }[];
+  points_at: { slot: string; class: string; module: Pin }[];
+  built_on_by: { name: string; version: string; title: string; pins: string }[];
+}
 
 // ------------------------------------------------------------ applications
 
 export interface TableRow {
   class: string; table: string; shape: "grouped" | "entities";
-  module: Pin | null; columns: number;
+  /** Which of the owner's words it is: worked out, happened, or kept. */
+  lens: "number" | "event" | "thing";
+  module: Pin | null; module_title: string | null; columns: number;
 }
 
 export interface Application {
   name: string; version: string; title: string | null;
   kind: ModuleKind; business: string | null;
   purpose: string | null; description: string | null;
-  modules: (Pin & { purpose: string | null })[];
+  modules: (Pin & { purpose: string | null; title: string; kind: ModuleKind })[];
   tables: TableRow[];
+}
+
+/** A newer version of something an application pins, told before moving. */
+export interface Update {
+  module: string; title: string; pinned: string; latest: string;
+  changes: VersionChange[];
+  /** The application's own examples, run against the candidate. */
+  examples: { name: string; says: string; passed: boolean; pending: boolean;
+              refusals: Refusal[] }[];
+  /** Why the move is not possible as it stands, or null. */
+  refusal: Refusal | null;
+}
+
+export interface VersionChange {
+  change: "added" | "removed" | "renamed" | "changed"; what: "thing" | "field";
+  name: string; on: string | null; description: string;
+  was?: string; fields?: string[];
 }
 
 export interface ColumnRule {
@@ -260,7 +291,10 @@ export interface ColumnRule {
 export interface Column {
   name: string; title: string; type: string;
   kind: "identity" | "key" | "stated" | "aggregate" | "parameter" | "expression" | "unfilled";
-  description: string; module: Pin | null; rule: ColumnRule | null;
+  description: string; module: Pin | null; module_title?: string | null;
+  /** The column saying which class each row is: bookkeeping, not business. */
+  carries_class?: boolean;
+  rule: ColumnRule | null;
   /** Sound and sealed, not computed yet: why, and the column is empty. */
   awaiting?: Refusal | null;
 }
@@ -293,11 +327,13 @@ export interface CellSource {
 export interface FormField {
   name: string; title: string; range: string | null;
   required: boolean; ref: boolean; description: string;
-  module: Pin | null;
+  module: Pin | null; module_title?: string | null;
   /** The title of the module that adds this field to the class (a facet);
    *  null for the class's own fields. */
   section: string | null;
-  options: { uri: string; label: string }[];
+  /** `from`: the title of the module a choice's kind came from, where it is
+   *  not the field's own — two kinds can both be called "Rental". */
+  options: { uri: string; label: string; from?: string | null }[];
   options_from: string | null;
 }
 
@@ -368,6 +404,8 @@ export const appApi = {
   check: (name: string, version: string) => get<CheckReport>("/api/app/check", { name, version }),
   fit: (name: string, version: string, against: string) =>
     get<FitReport>("/api/app/fit", { name, version, against }),
+  updates: (name: string, version: string) =>
+    get<Update[]>("/api/app/updates", { name, version }),
   projection: (name: string, version: string, klass: string, c: Clocks) =>
     get<Projection>("/api/app/projection", { name, version, class: klass, ...clockParams(c) }),
   cell: (name: string, version: string, klass: string, column: string,

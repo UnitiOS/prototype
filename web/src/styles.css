@@ -1496,3 +1496,15 @@ button.touched-item:hover:not(:disabled) { border-color: var(--focus); color: va
 @media (prefers-reduced-motion: reduce) {
   .kind-fresh, .cell-fresh, .kind-fields li.field-fresh, .exchange-lit .bubble { animation: none; }
 }
+
+/* The business lens: things, events, numbers, and a mark of whose module. */
+.lens-group + .lens-group { margin-top: 6px; }
+.mark { font-size: var(--step--1); }
+.update { border-left: 3px solid var(--later); }
+.update h3 { margin: 0; }
+.changes { margin: 6px 0 10px; padding-left: 1.2rem; font-size: var(--step--1); }
+.changes li + li { margin-top: 4px; }
+.connections .fit-block { border: 1px solid var(--rule); }
+@media (max-width: 640px) {
+  .fit-block { grid-template-columns: minmax(0, 1fr); }
+}
