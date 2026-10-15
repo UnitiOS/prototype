@@ -43,7 +43,7 @@
 Steps 0–4 are built and committed (`3a617ce`…`4fa0a75`). On 14 October they
 were checked against this plan: 373 Python tests and 45 web tests pass, `make
 check` replays identically, the probes of §4 were re-run (P3a, P1 and P4 now
-pass without any patch; P2 still blocks, as expected until step 6), and the
+pass without any patch; P2 still blocked then, and seals since step 6), and the
 Studio and Application screens were looked at in a browser. Every step met its
 "done when". The owner's decisions at each step are recorded under the step.
 
@@ -652,13 +652,14 @@ evidence, not implementation: none of them is to be copied into `components/`.
 | Own predicates | A `slot_uri` must be in the module's own namespace | Step 3 (confirmed 12 Oct) |
 | Role references | Taught with three rules; narrower roles extracted into community interface modules | Step 4 (confirmed 13 Oct) |
 | Several sources | One rule, explicit sources, guarded by unit and direction | Step 5 |
-| Seal vs compiler | A sound graph seals even where the compiler cannot compute yet; vocabulary stays closed | Step 6 |
+| Seal vs compiler | A sound graph seals even where the compiler cannot compute yet; vocabulary stays closed | Step 6 (confirmed 14 Oct) |
 | Alignment | Not P2 | — |
 
 Changing the seal/compiler relation **changes a principle carried from P1** ("no
-construct without an executor"). The replacement principle is: *a construct
-enters the graph with its written meaning and an example; its executor may come
-later.* The owner confirms the exact wording at step 6.
+construct without an executor"). The replacement principle, in the wording the
+owner confirmed on 14 October 2026: *a construct enters the graph with its
+written meaning, an example, and a sketch showing the compiler can follow it
+boundedly; its executor may come later.* Recorded in DESIGN_NOTES.md §6.
 
 ---
 
@@ -957,6 +958,75 @@ before any commit. Step 8 may be done at any time.
     does not pass this test and stays out.
 - **Done when:** the P2 scenario seals; a module with a value filter seals as
   awaiting; nothing that was a meaning refusal became sealable.
+- **Decided 14 October 2026 (owner):**
+  - The principle's wording: *a construct enters the graph with its written
+    meaning, an example, and a sketch showing the compiler can follow it
+    boundedly; its executor may come later* (§5.2).
+  - §11.1 as proposed; the four open codes stay as they are (§11.1).
+  - A value filter is **six closed words**: `where: {slot: {equals |
+    not_equals | at_least | at_most | above | below: value}}`. In the Studio
+    it is written `slot>5`, `slot>=5`, `slot<5`, `slot<=5`, `slot==5`,
+    `slot!=5`. Its sketch: one more join of the source rows on `stated`,
+    `AND value <op> literal`.
+- **Built (14 October):**
+  - **Awaiting, not refused.** `compile.AWAITING` is
+    `{multivalued_not_read, not_possible_yet}`. The plan keeps every column's
+    kind and rule and marks the ones it cannot compute with `awaiting` (the
+    refusal saying why). They are emitted as `NULL`, so the rest of the table
+    computes. A column waits when:
+    - its aggregate has a value filter or a key more than one record away (a
+      column with several sources waits whole if any source waits);
+    - its slot is multivalued;
+    - it is an expression reading a column that waits.
+
+    If no total can be computed, or a key is multivalued, the whole table
+    waits: it has its columns and no rows.
+  - **Meaning is still checked.** A value filter must name a slot that is
+    there, take one scalar, and compare by order only what has one (a
+    reference is narrowed by `is_a`). A key two records away is walked hop
+    by hop (`no_such_slot`, `not_a_reference`), and the last hop's kind is
+    still matched to the key column. Words outside the vocabulary are
+    `where_not_is_a`.
+  - **The seal** follows on its own: `check` reports no refusal for a
+    waiting column, so `_compiles` passes. An awaiting computed column still
+    owes an example (`column_unchecked`), which is the principle's "an
+    example".
+  - **Examples.** A number a waiting column should hold is `pending`. An
+    example whose numbers are all pending is pending: not passed, not failed,
+    no refusal. Its other numbers are checked as always. A pending example
+    can be agreed to.
+  - **Shown as "not computed yet":**
+    - the Studio, as a non-blocking hole `not_computed_yet` naming why;
+    - the Studio map's working-out ("Not computed yet: …");
+    - the agent's view of the draft and its examples (`[pending: not computed
+      yet]`);
+    - the application's table, as a header badge and empty cells reading
+      "not computed yet";
+    - the cell panel, which stands on nothing;
+    - the catalogue's readers (`awaiting`);
+    - the class graph, as a dashed edge with "(not computed yet)".
+  - **The agent** is taught in one paragraph that these are written and
+    sealed, their columns empty, and that it says so in the plan, building
+    nothing in their place. The Studio no longer refuses them with
+    `not_possible_yet`. Instructions are 23,864 characters, within 24,000.
+  - **Tests:** `tests/modules/test_awaiting.py` (story 7):
+    - a damage module whose "heavy damage" column filters by cost: written in
+      the six words, shown and not refused, its example pending, sealed, and
+      installed with the column empty and labelled;
+    - an expression over it waits too;
+    - a meaning refusal under the same `where` still stops the seal;
+    - a key two records away waits, and a wrong hop is refused;
+    - a multivalued slot seals, and its column waits.
+
+    Four older tests now assert the new behaviour: the agent's limits, the
+    library's two-hop key, the Studio's multivalued guard, and the
+    compiler's unknown `where` word. Two more expect the `awaiting` mark on
+    the class graph's rule edges and on the Studio's workings.
+  - **Checks:** `make check` gives 392 passed, and the replay is identical
+    (5159 bytes). `make web-test` gives 47 passed, and `tsc --noEmit` is
+    clean.
+  - **Evidence:** probe P2 (§4.2, `build/probes/p2_p3a.py`), re-run: the
+    multivalued version now reads `blocking: [] sealable: True`.
 
 ### Step 7 — Two lenses, and what a revision means for each user
 
@@ -1119,7 +1189,15 @@ with the strongest proof it can give: **even the foundation can be upgraded.**
 
 ## 11. Appendices
 
-### 11.1 Proposed split of compiler refusals (confirm at step 6)
+### 11.1 Split of compiler refusals (confirmed 14 October 2026, step 6)
+
+Confirmed as proposed below. The four "to decide" codes stay as they are:
+`identity_column_taken` keeps blocking (`entity_uri` is reserved; no story
+hits it, see §11.4), `nothing_to_compile` is the CLI's alone and the seal
+never meets it, `no_aggregate` is meaning, and `computation_failed` is data,
+not graph. One consequence of the six-word value filter: `where_not_is_a`
+now refuses only words outside the vocabulary, so it **stays blocking**; the
+comparisons it used to refuse are accepted and wait (`not_possible_yet`).
 
 **Meaning — the graph is wrong; stays blocking:**
 `no_such_class`, `no_such_slot`, `no_such_column`, `aggregate_keys`,
@@ -1247,3 +1325,9 @@ parked under the story filter (§0.2) unless the ecosystem test shows otherwise.
   number.
 - **Refusing to unpin a module still used, and the stale-tables hole after a
   swap** (from step 7): built only if story 6 needs them (§6, step 7).
+- **A slot named `entity_uri` is still refused** (`identity_column_taken`,
+  confirmed at step 6). The compiler could rename its identity column
+  instead of refusing the graph; no story hits it.
+- **The value filter's executor** (found at step 6): one join on `stated`
+  and `AND value <op> literal` per filter, the sketch it was admitted on.
+  Small, but after P2 by §9 ("compiler growth"), driven by the awaiting list.

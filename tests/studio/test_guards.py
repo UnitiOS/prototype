@@ -256,7 +256,7 @@ def test_what_one_class_requires_another_may_leave_out(conn, lists):
            actor_id="probe", valid_from=NOW, recorded_at=NOW)
 
 
-def test_a_slot_holding_several_values_is_refused_until_a_table_can_read_it(world):
+def test_a_slot_holding_several_values_waits_until_a_table_can_read_it(world):
     name = "@probe/several"
     step(world, name, "start", title="Several", description="Tags.")
     step(world, name, "add_class", **{"class": "Tagged", "description": "Tagged."})
@@ -267,13 +267,12 @@ def test_a_slot_holding_several_values_is_refused_until_a_table_can_read_it(worl
 
     step(world, name, "set_slot", slot="tagged_label", field="multivalued", value="true")
     report = reading.state(world, name)
-    assert [h["kind"] for h in report["holes"] if h["blocking"]] == [
-        "multivalued_not_read"]
-    # The compiler's refusal, carried through the seal as it is.
-    with pytest.raises(Refusal) as refused:
-        seal(None, studio.path(world, name), actor_id="probe",
-             into=studio.directory(world, name), store=world)
-    assert refused.value.code == "multivalued_not_read"
+    # Sound, so nothing blocks: its column waits, shown as not computed yet.
+    assert [h["kind"] for h in report["holes"] if h["blocking"]] == []
+    hole = next(h for h in report["holes"] if h["kind"] == "not_computed_yet")
+    assert hole["where"] == "Tagged.tagged_label"
+    assert hole["refusal"]["code"] == "multivalued_not_read"
+    assert report["sealable"]
 
 
 def test_a_range_left_naming_nothing_is_a_question_with_its_answers(world):

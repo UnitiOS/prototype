@@ -77,6 +77,11 @@ export function applications(graph: ModuleGraph, business: Business | null): Pin
 
 /** The fields other modules add to a kind (facets), one section per module,
  *  in the order the form lists them. The kind's own fields have none. */
+/** What an empty cell says: not computed yet is not the same as unstated. */
+export function emptyCell(column: Pick<Column, "awaiting">): string {
+  return column.awaiting ? "not computed yet" : "not stated";
+}
+
 export function formSections(fields: FormField[]): [string, FormField[]][] {
   const out = new Map<string, FormField[]>();
   for (const f of fields) {
@@ -483,6 +488,10 @@ function ProjectionView(
                 <th key={c.name}>
                   <span className="column-head">{c.name}</span>
                   <span className={`badge badge-${c.kind}`}>{c.kind}</span>
+                  {c.awaiting && (
+                    <span className="badge badge-awaiting" title={c.awaiting.got}>
+                      not computed yet</span>
+                  )}
                   {c.module && c.module.name !== appName && (
                     <span className="quiet block">{c.module.name}</span>
                   )}
@@ -503,7 +512,7 @@ function ProjectionView(
                       <button className={`cell${on ? " cell-on" : ""}`} aria-current={on}
                         title="Where does this come from?"
                         onClick={() => (on ? open(null, null) : open(c.name, keys))}>
-                        {value === null ? <span className="quiet">not stated</span> : String(value)}
+                        {value === null ? <span className="quiet">{emptyCell(c)}</span> : String(value)}
                       </button>
                     </td>
                   );
@@ -563,6 +572,17 @@ function CellPanel(
       clocks.validAt.getTime(), clocks.asOf.getTime()]);
   if (error) return <Failure error={error} refusal={refusal} />;
   if (!data) return <p className="chips quiet">Reading the log…</p>;
+
+  if (data.awaiting) {
+    return (
+      <div className="rule">
+        <p className="quiet">
+          Not computed yet. The rule is sealed as written, and the compiler does
+          not follow it yet: {data.awaiting.got}. The cell stays empty until it does.
+        </p>
+      </div>
+    );
+  }
 
   if (data.kind === "expression") {
     return (

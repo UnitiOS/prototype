@@ -129,7 +129,7 @@ CODES = {
     "no_type_slot": "a class with no slot carrying `designates_type`",
     "identity_column_taken": "a class whose own slot is named like the identity column",
     "table_name_too_long": "a class whose table name is longer than PostgreSQL keeps",
-    "multivalued_not_read": "a slot holding several values, which no table reads yet",
+    "multivalued_not_read": "a slot holding several values, which no table reads yet: its column waits, and does not stop a seal",
     "nothing_to_compile": "a map declaring neither an aggregate nor a class with entities",
 
     # ---- reading a rule ---------------------------------------------------
@@ -137,7 +137,7 @@ CODES = {
     "parameter_keys": "a parameter whose keys are not `of` and `slot`",
     "convert_keys": "a convert block whose keys are not `using`, `on` and `factor`",
     "convert_on_empty": "a convert block that maps nothing",
-    "where_not_is_a": "a `where` condition that is not `is_a`",
+    "where_not_is_a": "a `where` condition in words outside the vocabulary: neither `is_a` nor one comparison of a value",
     "not_a_class": "a rule naming something that is not a class",
     "not_summable": "a rule totalling something whose range cannot be totalled",
     "no_grouping": "an aggregate with no `by`, which groups nothing",
@@ -171,7 +171,7 @@ CODES = {
     "not_an_operation": "a step the studio does not perform",
     "operation_arguments": "a step given arguments it does not take",
     "not_a_reference": "a key reached through a slot that does not point at a record",
-    "not_possible_yet": "something the system cannot do yet, to be told to the person rather than built around",
+    "not_possible_yet": "something the system cannot do yet, to be told to the person rather than built around; a rule the compiler cannot compute yet seals and waits",
     "module_exists": "a module the store already holds",
     "draft_open": "a module whose draft is already open",
     "nothing_sealed": "a module with no sealed version to revise",

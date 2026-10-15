@@ -64,7 +64,8 @@ def check(store, name, version, *, map_=None):
             out["clean"] = False
             out["refusals"].append({**exc.as_dict(), "class": class_name})
             out["tables"].append({"class": class_name, "holds": False,
-                                  "shape": None, "columns": 0, "unfilled": []})
+                                  "shape": None, "columns": 0, "unfilled": [],
+                                  "awaiting": {}})
             continue
         # A column no rule reaches is not a refusal — it compiles, as nulls.
         # It is said here anyway, because it is the same question asked one
@@ -76,6 +77,10 @@ def check(store, name, version, *, map_=None):
             "columns": len(plan_["columns"]),
             "unfilled": [col["name"] for col in plan_["columns"]
                          if col["kind"] == "unfilled"],
+            # Nor is a column the compiler cannot compute yet: the graph is
+            # sound, the table holds, and this part of it waits — with why.
+            "awaiting": {col["name"]: col["awaiting"] for col in plan_["columns"]
+                         if col.get("awaiting")},
         })
     return out
 

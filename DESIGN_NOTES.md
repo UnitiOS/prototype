@@ -378,6 +378,17 @@ karena graph ini total dan bisa dianalisis, bukan Turing-complete.
 
 Keterbatasan itu bukan harga yang dibayar; itu barang yang dibeli.
 
+**Compiler mengikuti graf, bukan sebaliknya (14 Oktober 2026, langkah 6).**
+Prinsip lama "tidak ada konstruksi tanpa eksekutor" diganti: *sebuah konstruksi
+masuk ke graf dengan makna tertulis, sebuah contoh, dan sketsa yang menunjukkan
+compiler bisa mengikutinya secara terbatas; eksekutornya boleh menyusul.* Graf
+yang benar di-seal walau compiler belum bisa menghitungnya — kolomnya kosong,
+bertanda "not computed yet", dan contohnya *pending*, bukan gagal
+(`compile.AWAITING`). Kosakatanya tetap tertutup: filter nilai hanya enam kata
+(`equals`, `not_equals`, `at_least`, `at_most`, `above`, `below`), dan kata di
+luar itu tetap ditolak. *Posting* (satu record menghasilkan record lain) tidak
+lolos uji ini dan tetap di luar.
+
 ---
 
 ## 7. Dokumentasi yang dihitung, bukan ditulis

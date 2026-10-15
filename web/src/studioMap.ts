@@ -471,6 +471,9 @@ export interface Workings { groups: Group[]; cells: Cell[]; flows: Flow[] }
 
 const cellId = (kind: string, field: string) => `${kind}.${field}`;
 
+/** What a worked-out field says when its rule is sealed and not computed yet. */
+export const NOT_YET = "Not computed yet: the rule is sealed, the compiler does not follow it yet";
+
 /** Every number this draft works out, the fields it is worked out from, and
  *  a line from each one that feeds it. Empty for a draft that works nothing
  *  out — nothing is drawn rather than something empty. */
@@ -522,6 +525,11 @@ export function workingsOf(draft: DraftState): Workings {
     }
     for (const column of table.columns) {
       const at = cellId(kind, column.name);
+      if (column.awaiting) {
+        // Drawn as it reads, and said first: the compiler does not follow it yet.
+        cell(kind, column.name, column.kind === "aggregate" ? "sum"
+          : column.kind === "parameter" ? "lookup" : "formula", NOT_YET);
+      }
       if (column.kind === "aggregate") {
         const what = column.reads.map((r) =>
           `${r.fields.map((f) => called(r.class, f).toLowerCase()).join(" and ")} of every ${spoken(r.class).toLowerCase()}`);

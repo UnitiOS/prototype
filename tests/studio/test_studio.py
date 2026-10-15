@@ -583,12 +583,14 @@ def test_the_draft_says_where_each_number_comes_from(world):
             "reads": [{"class": "rival_stock_moves__Movement",
                        "fields": ["rival_stock_moves__move_change"],
                        "by": {"stock_ingredient": "rival_stock_moves__move_item"}}],
+            "awaiting": False,
         }
         assert columns["stock_reorder_level"]["reads"] == [
             {"class": "demo_catalog__Ingredient",
              "fields": ["demo_catalog__ingredient_reorder_level"], "by": {}}]
         assert columns["stock_headroom"] == {"name": "stock_headroom",
-                                             "kind": "expression", "reads": []}
+                                             "kind": "expression", "reads": [],
+                                             "awaiting": False}
 
         assert [c["name"] for c in report["read_from"]] == ["rival_stock_moves__Movement"]
         assert report["read_from"][0]["module"]["name"] == dev_modules.RIVAL

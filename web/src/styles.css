@@ -414,6 +414,7 @@ details.fact:not([open]) > summary { border-bottom: 0; }
 .badge-expression { color: var(--later); border-color: var(--later); }
 .badge-key, .badge-identity { color: var(--ink); }
 .badge-unfilled { color: var(--withdrawn); }
+.badge-awaiting { color: var(--later); border-style: dashed; }
 
 .block { display: block; font-weight: 400; text-transform: none; }
 .list-head { padding: 10px 12px 4px; border-bottom: 1px solid var(--rule); margin: 0; }
@@ -455,6 +456,7 @@ details.fact:not([open]) > summary { border-bottom: 0; }
   stroke-linejoin: round;
 }
 .cg-edge-aggregate path { stroke: var(--known); stroke-width: 2; opacity: 0.85; }
+.cg-awaiting path { stroke-dasharray: 5 4; }
 .cg-edge-parameter path { stroke: var(--stands); stroke-width: 2; opacity: 0.85; }
 .cg-edge-is_a path { stroke-dasharray: 4 3; }
 .cg-lit path { opacity: 1; stroke-width: 2.4; }

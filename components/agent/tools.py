@@ -303,8 +303,10 @@ def _rule(rule):
     by = ", ".join(f"{k}={v}" for k, v in (spec.get("by") or {}).items())
     out = f"aggregate over {spec.get('over')}, sum {spec.get('sum')}, by {by}"
     if spec.get("where"):
-        out += ", where " + ", ".join(f"{k}={(v or {}).get('is_a')}"
-                                      for k, v in spec["where"].items())
+        out += ", where " + ", ".join(
+            f"{k}={(v or {}).get('is_a')}" if "is_a" in (v or {})
+            else f"{k} " + " ".join(f"{w} {x}" for w, x in (v or {}).items())
+            for k, v in spec["where"].items())
     if spec.get("convert"):
         convert = spec["convert"]
         on = ", ".join(f"{k}={v}" for k, v in (convert.get("on") or {}).items())

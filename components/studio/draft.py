@@ -278,8 +278,8 @@ OPERATIONS = {
                 "a class or of a role",
         "takes": {"class": "own_class", "column": "column", "over": "class",
                   "sum": "slot", "by": "mapping"},
-        # `where` narrows the rows to those whose slot is one class (slot=Class);
-        # the three `convert_` answers are one conversion — the class holding
+        # `where` narrows the rows to those whose slot is one class (slot=Class),
+        # or whose value meets one comparison (slot>5: not computed yet); the three `convert_` answers are one conversion — the class holding
         # the factor, how its slots match the source's, and which slot the
         # factor is — written as the compiler's `convert: {using, on, factor}`.
         "may": {"where": "mapping", "convert_using": "class",
@@ -1700,12 +1700,10 @@ def _source(args):
     # `over`, `sum` and `by` are read by the compiler, which is the judge of
     # whether they resolve. Writing them here and letting the check answer is
     # what keeps one judge — and the check runs on the next read.
-    _possible(args)
     spec = {"over": str(args["over"]), "sum": str(args["sum"]),
             "by": _mapping(args["by"], "aggregate")}
     if "where" in args:
-        spec["where"] = {slot: {"is_a": held} for slot, held in
-                         _mapping(args["where"], "aggregate: where").items()}
+        spec["where"] = _where(args["where"])
     # Whichever of the three were given, as given: half a conversion is the
     # compiler's to refuse, and it names the keys that are missing.
     convert = {}
@@ -1718,47 +1716,57 @@ def _source(args):
     if convert:
         spec["convert"] = convert
     said = {**args, "by": _pairs(spec["by"])}
-    for key in ("where", "convert_on"):
-        if key in args:
-            said[key] = _pairs(_mapping(args[key], "aggregate"))
+    if "where" in args:
+        said["where"] = ", ".join(
+            f"{slot}={held['is_a']}" if set(held) == {"is_a"}
+            else f"{slot} " + " ".join(f"{k} {v}" for k, v in held.items())
+            for slot, held in spec["where"].items())
+    if "convert_on" in args:
+        said["convert_on"] = _pairs(_mapping(args["convert_on"], "aggregate"))
     return spec, said
 
 
-# Two things a total cannot do yet — compare values, and reach further than
-# one record — refused as such: a builder that is only
-# told the pair is malformed tries another spelling, and then another way
-# round, where the answer is to tell the person.
-_COMPARED = re.compile(r"[<>!]|(?<![=])=(?=[=])")
-LATER = ("this is not something the system can do yet: tell the person so, "
-         "plainly, rather than building something else in its place")
+# A `where` as a person writes it: `slot=Class` narrows by what a thing is,
+# and a comparison — `slot>5`, `slot>=5`, `slot<5`, `slot<=5`, `slot==5`,
+# `slot!=5` — is a value filter, written in the vocabulary's fixed words. The
+# compiler reads it and does not compute it yet: the column is sealed and
+# shown as not computed yet, which is what the person is told.
+_WRITTEN = {">=": "at_least", "<=": "at_most", "==": "equals", "!=": "not_equals",
+            ">": "above", "<": "below"}
+_CONDITION = re.compile(r"^\s*([^<>=!\s]+)\s*(>=|<=|==|!=|>|<|=)\s*(.*?)\s*$")
 
 
-def _possible(args):
-    where = str(args.get("where") or "")
-    if _COMPARED.search(where):
-        raise StudioError(
-            "not_possible_yet",
-            where="aggregate: where",
-            expected="pairs slot=Class, narrowing the rows to those whose slot "
-                     "points at that class",
-            got=f"{where!r}, which compares values",
-            repairs=[Repair("totalling only the rows whose value meets a condition: "
-                            + LATER)],
-        )
-    by = args.get("by")
-    reached = [v for v in (by.values() if isinstance(by, dict) else
-                           [p.partition("=")[2] for p in str(by or "").split(",")])
-               if str(v).count(".") > 1]
-    if reached:
-        raise StudioError(
-            "not_possible_yet",
-            where="aggregate: by",
-            expected="pairs key=slot, each a slot of the rows totalled, or "
-                     "slot.slot: a slot of the record one of them points at",
-            got=f"{', '.join(map(str, reached))}, reached further than one record",
-            repairs=[Repair("grouping by a fact more than one record away: "
-                            + LATER)],
-        )
+def _where(value):
+    """`where`, in the words the compiler reads: `{slot: {is_a: Class}}`, or
+    `{slot: {<comparison>: value}}`."""
+    if isinstance(value, dict):
+        return {str(k): (dict(v) if isinstance(v, dict) else {"is_a": str(v)})
+                for k, v in value.items()}
+    out = {}
+    for pair in str(value).split(","):
+        found = _CONDITION.match(pair)
+        if not pair.strip():
+            continue
+        if not found:
+            raise StudioError(
+                "operation_arguments",
+                where="aggregate: where",
+                expected="pairs slot=Class, or a comparison such as slot>5",
+                got=f"{pair.strip()!r}",
+                repairs=[Repair("write the slot first, then = and a class, or one "
+                                "of these and a value",
+                                options=["=", *_WRITTEN])])
+        slot, sign, held = found.groups()
+        if sign == "=":
+            out[slot] = {"is_a": held}
+            continue
+        # A number stays a number, and quotes around a text are taken off.
+        read = yaml.safe_load(held) if held else None
+        out[slot] = {_WRITTEN[sign]: read if isinstance(read, (int, float, str))
+                     and not isinstance(read, bool) else held}
+    if out:
+        return out
+    return _mapping(value, "aggregate: where")
 
 
 def _pairs(mapping):

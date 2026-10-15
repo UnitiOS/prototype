@@ -145,8 +145,9 @@ export function ClassGraph({ graph, selected, onSelect }: Props) {
           // drop its label on top of that band's boxes.
           const labelY = sameBand ? y1 + dip - 3 : y1 + 13 + (rank % 4) * 12;
           return (
-            <g key={i} className={`cg-edge cg-edge-${e.kind}${on ? " cg-lit" : selected ? " cg-dim" : ""}`}>
-              <title>{`${plainName(e.from)} ${KIND_LABEL[e.kind]} ${plainName(e.to)} — ${plainName(e.label)}`}</title>
+            <g key={i} className={`cg-edge cg-edge-${e.kind}${e.awaiting ? " cg-awaiting" : ""}${on ? " cg-lit" : selected ? " cg-dim" : ""}`}>
+              <title>{`${plainName(e.from)} ${KIND_LABEL[e.kind]} ${plainName(e.to)} — ${plainName(e.label)}`
+                + (e.awaiting ? " (not computed yet)" : "")}</title>
               <path d={d} markerEnd={on ? "url(#cg-arrow-lit)" : "url(#cg-arrow)"} />
               <text x={(x1 + x2) / 2} y={labelY} textAnchor="middle">{plainName(e.label)}</text>
             </g>

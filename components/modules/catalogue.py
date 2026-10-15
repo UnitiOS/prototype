@@ -84,6 +84,9 @@ def readers(map_):
         except Refusal as exc:
             refused.append({**exc.as_dict(), "class": class_name})
             continue
+        # A rule the compiler does not compute yet still reads what it reads:
+        # it is sealed, and its readers are said, marked as waiting.
+        waiting = {c["name"] for c in plan_["columns"] if c.get("awaiting")}
 
         for column, whole in plan_["aggregates"].items():
             reads, covers = [], []
@@ -107,14 +110,16 @@ def readers(map_):
                         "reader": "the compiler",
                         "over": " + ".join(s["over"] for s in whole["sources"]),
                         "overs": [s["over"] for s in whole["sources"]],
-                        "covers": covers, "reads": sorted(set(reads))})
+                        "covers": covers, "reads": sorted(set(reads)),
+                        "awaiting": column in waiting})
 
         for column, spec in plan_["parameters"].items():
             key = next((c for c in plan_["columns"] if c["name"] == spec["of"]), None)
             out.append({"rule": f"{class_name}.{column}", "kind": "parameter",
                         "reader": "the compiler",
                         "over": str(key["range"]) if key else None,
-                        "covers": [], "reads": sorted(set(spec["slot_uris"]))})
+                        "covers": [], "reads": sorted(set(spec["slot_uris"])),
+                        "awaiting": column in waiting})
 
         if plan_["shape"] == "entities":
             carrier = type_slot(map_, class_name)
@@ -279,7 +284,8 @@ def catalogue(store, business=None):
 
 
 def _rule_ref(rule):
-    return {"module": rule["module"], "rule": rule["rule"], "kind": rule["kind"]}
+    return {"module": rule["module"], "rule": rule["rule"], "kind": rule["kind"],
+            "awaiting": bool(rule.get("awaiting"))}
 
 
 def _read_by_class(rules, class_name, module_name):

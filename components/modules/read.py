@@ -163,6 +163,23 @@ def version(store, name, version, registered=None):
     }
 
 
+def _awaiting(store, name, version):
+    """Every column of this version the compiler does not compute yet, as
+    `{class: {column: refusal}}`. Sealed and sound, so drawn like the rest and
+    marked; a version that does not read as a map has none to mark."""
+    # Imported here: the compiler reads the seal, which reads this package.
+    from components.modules.check import compiled
+    from generate import read_map
+    from components.refusal import Refusal
+    try:
+        map_ = read_map(store.path(name, version), store)
+    except Refusal:
+        return {}
+    return {class_name: {c["name"]: c["awaiting"] for c in plan_["columns"]
+                         if c.get("awaiting")}
+            for class_name, plan_, _ in compiled(map_) if plan_ is not None}
+
+
 def class_graph(store, name, version):
     """Every class one version can see, and what joins them, across its modules.
 
@@ -262,10 +279,15 @@ def class_graph(store, name, version):
     } for class_name in sorted(classes)]
 
     edges = []
+    awaiting = _awaiting(store, name, version)
 
     def edge(source, target, kind, label):
         if target in classes:
-            edges.append({"from": source, "to": target, "kind": kind, "label": label})
+            joined = {"from": source, "to": target, "kind": kind, "label": label}
+            if kind in RULES:
+                # A rule the compiler does not compute yet: drawn, and marked.
+                joined["awaiting"] = label in awaiting.get(source, {})
+            edges.append(joined)
 
     for class_name in sorted(classes):
         parent = classes[class_name].get("is_a")
@@ -291,6 +313,8 @@ def class_graph(store, name, version):
                 edge(class_name, str((key or {}).get("range") or ""), "parameter", slot_name)
             elif slot.get("range"):
                 edge(class_name, str(slot["range"]), "reference", slot_name)
+    for node in nodes:
+        node["awaiting"] = sorted(awaiting.get(node["name"], {}))
 
     return {
         "name": name,

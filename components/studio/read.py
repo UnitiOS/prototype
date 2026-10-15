@@ -76,6 +76,9 @@ OPEN = {
                                "number of them, so it can never fail",
     "stands_alone": "a class of a module pinning the library that points at "
                     "nothing shared, or names itself as Party and Item do",
+    "not_computed_yet": "a column whose rule is sound and seals, which the "
+                        "compiler does not compute yet: it stays empty until "
+                        "it does, and the person is told so",
 }
 
 # Which step answers which refusal. Small and closed on purpose: a refusal the
@@ -208,7 +211,8 @@ def _unrun(example, body):
             "agreed": business.agreed(body),
             "records": len(body.get("records") or []),
             "expected": len(body.get("expect") or []),
-            "checks": [], "tables": [], "refusals": [], "passed": None, "waits": False}
+            "checks": [], "tables": [], "refusals": [], "passed": None, "waits": False,
+            "pending": False}
 
 
 def _about(refusal):
@@ -474,6 +478,16 @@ def holes(store, name, document, found):
             # refusal already says it, in the words of whichever gate refused.
             hole["question"] = refusal["sentence"]
         out.append(hole)
+
+    # Sound, and sealed as written: only the compiler is not there yet.
+    for table in found["tables"]:
+        for column, refusal in sorted((table.get("awaiting") or {}).items()):
+            hole = _hole("not_computed_yet", f"{table['class']}.{column}",
+                         blocking=False, because=OPEN["not_computed_yet"],
+                         refusal=refusal)
+            hole["question"] = (f"{table['class']}.{column} is not computed yet: "
+                                f"{refusal['got']}")
+            out.append(hole)
 
     own_classes = document.get("classes") or {}
     own_slots = document.get("slots") or {}
@@ -818,6 +832,10 @@ def _workings(map_, own, shapes):
                     for source in below if spec["slot"] in fields_of(source)]})
             elif kind == "expression":
                 columns.append({"name": name, "kind": kind, "reads": []})
+        # Read as the rule says, and marked: the compiler does not follow it yet.
+        waiting = {c["name"] for c in planned["columns"] if c.get("awaiting")}
+        for column in columns:
+            column["awaiting"] = column["name"] in waiting
         out.append({"class": class_name, "keys": planned["keys"], "columns": columns})
     return out
 

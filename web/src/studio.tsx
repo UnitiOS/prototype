@@ -803,7 +803,8 @@ function Whole(
   const blocking = askedOnce(draft.holes.filter((h) => h.blocking), waits);
   const open = draft.holes.filter((h) => !h.blocking);
   const agreed = draft.examples.filter((e) => e.agreed).length;
-  const failing = draft.examples.filter((e) => e.passed === false && !e.waits).length;
+  const failing = draft.examples.filter((e) => e.passed === false && !e.waits
+    && !e.pending).length;
   const waiting = draft.examples.filter((e) => e.waits).length;
   return (
     <>

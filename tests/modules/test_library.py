@@ -408,18 +408,22 @@ def test_a_line_is_grouped_by_the_customer_of_its_rental(store, conn, rental, sh
     assert {s["subject_uri"] for s in taken["statements"]} == {"line:1", "line:2"}
 
 
-def test_a_key_two_records_away_is_refused_as_not_possible_yet(store):
+def test_a_key_two_records_away_is_written_and_each_hop_is_still_read(store):
     name = "@probe/too-far"
     step(store, name, "start", title="Too far", description="Reaches too far.")
     step(store, name, "add_class", **{"class": "Total", "description": "A total."})
     step(store, name, "add_slot", slot="total_x", range="decimal", description="X.",
          unit="piece", direction="level")
     step(store, name, "attach", **{"class": "Total", "slot": "total_x"})
-    with pytest.raises(StudioError) as refused:
-        step(store, name, "aggregate", **{
-            "class": "Total", "column": "total_x", "over": "Total", "sum": "total_x",
-            "by": "total_key=a.b.c"})
-    assert refused.value.code == "not_possible_yet"
+    # Written as said; whether every hop is there is the compiler's to read,
+    # and a hop that names nothing is the graph being wrong.
+    step(store, name, "aggregate", **{
+        "class": "Total", "column": "total_x", "over": "Total", "sum": "total_x",
+        "by": "total_key=a.b.c"})
+    spec = studio.open_draft(store, name)["slots"]["total_x"]["annotations"]["aggregate"]
+    assert spec["value"]["by"] == {"total_key": "a.b.c"}
+    holes = [(h["kind"], h["blocking"]) for h in reading.state(store, name)["holes"]]
+    assert ("no_such_slot", True) in holes
 
 
 def test_a_key_reached_through_a_value_that_names_nothing_is_refused(store, rental):

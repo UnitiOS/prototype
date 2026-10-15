@@ -57,7 +57,7 @@ def test_read_aggregate_refuses_unknown_where_condition(map_):
         "over": "Transfer",
         "sum": "transfer_quantity",
         "by": {"rec_thing": "transfer_thing"},
-        "where": {"transfer_to": {"equals": "some place"}},
+        "where": {"transfer_to": {"like": "some place"}},
     }
     with pytest.raises(MapError) as caught:
         _read_aggregate(map_, "test.slot", spec)

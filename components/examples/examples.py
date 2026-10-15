@@ -83,6 +83,13 @@ computes — is `waiting`, not wrong. It is still not the number, so the example
 does not pass and nothing is sealed; but an example whose only failures wait
 for rules `waits`, and can be put to a person to agree to.
 
+**A number waiting for the compiler.** A rule can be sound and written and
+still not be computed: a total of only the rows whose value meets a
+condition, a key more than one record away (`compile.AWAITING`). Its number
+is `pending` — neither right nor wrong — and is no refusal: the draft seals.
+An example whose every number is pending is pending itself, not passed and
+not failed; its other numbers are checked as always.
+
 **How one example runs.** In a log of its own, which exists for exactly as long
 as the example does. Three temporary tables shadow the kernel's for this one
 connection, inside a transaction that is always rolled back: the records go in
@@ -395,7 +402,8 @@ def run_one(conn, map_, name, body):
            "agreed": agreed(body),
            "records": len(body.get("records") or []),
            "expected": len(body.get("expect") or []),
-           "checks": [], "tables": [], "refusals": [], "passed": False, "waits": False}
+           "checks": [], "tables": [], "refusals": [], "passed": False, "waits": False,
+           "pending": False}
     try:
         with conn.transaction():
             _scratch(conn)
@@ -408,10 +416,14 @@ def run_one(conn, map_, name, body):
     finally:
         _gone(conn)
     if not out["refusals"]:
-        failing = [check for check in out["checks"] if not check["holds"]]
+        failing = [check for check in out["checks"]
+                   if not check["holds"] and not check.get("pending")]
         out["refusals"] = [_failed(map_, name, out["says"], check) for check in failing]
         out["waits"] = bool(failing) and all(c.get("waiting") for c in failing)
-    out["passed"] = not out["refusals"]
+        # Every number it checks waits for the compiler: pending, not failed.
+        out["pending"] = bool(out["checks"]) and all(
+            c.get("pending") for c in out["checks"])
+    out["passed"] = not out["refusals"] and not out["pending"]
     return out
 
 
@@ -432,6 +444,7 @@ def render(reported, *, tables=False):
     lines = []
     for result in reported:
         mark = ("waits for its rules" if result.get("waits")
+                else "pending: not computed yet" if result.get("pending")
                 else {True: "holds", False: "FAILS", None: "not run"}[result["passed"]])
         proposed = "" if result.get("agreed", True) else " (proposed, not agreed yet)"
         lines.append(f"[{mark}] {result['name']}{proposed}: {result['says']}")
@@ -441,6 +454,10 @@ def render(reported, *, tables=False):
             if check.get("waiting"):
                 lines.append(f"    .. {check['table']} {check['row']}{at}, {what}: "
                              f"expected {check['expected']}, no rule computes it yet")
+                continue
+            if check.get("pending"):
+                lines.append(f"    .. {check['table']} {check['row']}{at}, {what}: "
+                             f"expected {check['expected']}, not computed yet")
                 continue
             sign = "ok " if check["holds"] else "!! "
             lines.append(f"    {sign}{check['table']} {check['row']}{at}, {what}: "
@@ -669,8 +686,10 @@ def _checks(conn, map_, name, body):
             built = preview(conn, map_, table, valid_at=at, as_of=END)
             read[(table, at)] = ([c["name"] for c in built["plan"]["columns"]],
                                  built["rows"],
-                                 {c["name"]: c["kind"] for c in built["plan"]["columns"]})
-        names, rows, kinds = read[(table, at)]
+                                 {c["name"]: c["kind"] for c in built["plan"]["columns"]},
+                                 {c["name"] for c in built["plan"]["columns"]
+                                  if c.get("awaiting")})
+        names, rows, kinds, awaiting = read[(table, at)]
         row = {_named(k, names, where, "column"): v
                for k, v in _row(expectation, names).items()}
         values = {_named(k, names, where, "column"): v
@@ -686,12 +705,27 @@ def _checks(conn, map_, name, body):
                 "at": None if expectation.get("at") is None else str(expectation["at"])}
         matches = [r for r in rows
                    if all(_same(map_, v, r[names.index(c)]) for c, v in row.items())]
+        if len(matches) != 1 and set(values) <= awaiting:
+            # Every number asked of a row the compiler cannot compute yet:
+            # the row itself may be one only those columns would make.
+            out += [{**said, "column": column, "expected": _shown(map_, expected),
+                     "got": "not computed yet", "holds": False, "pending": True}
+                    for column, expected in values.items()]
+            continue
         if len(matches) != 1:
             out.append({**said, "column": None, "expected": "one row",
                         "got": f"{len(matches)} rows", "holds": False,
                         "rows": [_shown(map_, r[0]) for r in rows]})
             continue
         for column, expected in values.items():
+            if column in awaiting:
+                # Sound, sealed, and not computed yet: the number waits for
+                # the compiler, and is neither right nor wrong until it comes.
+                out.append({**said, "column": column,
+                            "expected": _shown(map_, expected),
+                            "got": "not computed yet", "holds": False,
+                            "pending": True})
+                continue
             got = matches[0][names.index(column)]
             holds = _same(map_, expected, got)
             check = {**said, "column": column, "expected": _shown(map_, expected),

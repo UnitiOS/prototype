@@ -213,6 +213,8 @@ export interface ClassNode {
 export interface ClassEdge {
   from: string; to: string;
   kind: "is_a" | "fills" | "reference" | "aggregate" | "parameter"; label: string;
+  /** A rule the compiler does not compute yet: sealed, drawn, and marked. */
+  awaiting?: boolean;
 }
 
 export interface ClassGraph {
@@ -259,6 +261,8 @@ export interface Column {
   name: string; title: string; type: string;
   kind: "identity" | "key" | "stated" | "aggregate" | "parameter" | "expression" | "unfilled";
   description: string; module: Pin | null; rule: ColumnRule | null;
+  /** Sound and sealed, not computed yet: why, and the column is empty. */
+  awaiting?: Refusal | null;
 }
 
 export interface Projection {
@@ -282,7 +286,7 @@ export interface CellSource {
   statements: Statement[]; reads: string[]; cut_off: boolean;
   entity: { uri: string; id: string } | null;
   over?: string; covers?: string[]; operator?: string; of?: string; expression?: string;
-  sources?: string[];
+  sources?: string[]; awaiting?: Refusal | null;
   valid_at: string; as_of: string;
 }
 
@@ -345,7 +349,7 @@ export interface FitReport {
 export interface CheckReport {
   name: string; version: string; clean: boolean;
   tables: { class: string; holds: boolean; shape: string | null;
-            columns: number; unfilled: string[] }[];
+            columns: number; unfilled: string[]; awaiting?: Record<string, Refusal> }[];
   refusals: (Refusal & { class: string })[];
 }
 
@@ -529,6 +533,8 @@ export interface WorkingRead {
 export interface WorkingColumn {
   name: string; kind: "aggregate" | "parameter" | "expression";
   operator?: string; of?: string; reads: WorkingRead[];
+  /** Sealed, and not computed yet. */
+  awaiting?: boolean;
 }
 
 /** One table the draft computes: what a row stands for, and where each
@@ -585,6 +591,8 @@ export interface NameOwners { name: string; owned: boolean; owners: NameOwner[] 
 export interface ExampleCheck {
   table: string; row: string; at: string | null; column: string | null;
   expected: string; got: string; holds: boolean; waiting?: boolean;
+  /** Its rule is sealed and the compiler does not compute it yet. */
+  pending?: boolean;
 }
 
 /** A business example, run in a scratch log of its own. `passed` is null when
@@ -597,6 +605,8 @@ export interface ExampleResult {
   checks: ExampleCheck[];
   tables: { table: string; columns: string[]; rows: string[][] }[];
   refusals: Refusal[]; passed: boolean | null; waits?: boolean;
+  /** Every number it checks waits for the compiler: neither holds nor fails. */
+  pending?: boolean;
   /** The records it states, in order; only on a draft's examples. */
   recorded?: Recorded[];
 }

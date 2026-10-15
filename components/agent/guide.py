@@ -116,7 +116,8 @@ kinds {", ".join(f"`{kind}`" for kind in COMPUTED)}:
                  which slot of the source matches each key — or slot.slot,
                  a slot of the record it points at (line_order.order_buyer:
                  a line by its order's buyer). `where` narrows the source
-                 to rows whose slot is one class (slot=Class).
+                 to rows whose slot is one class (slot=Class), or by a
+                 value (slot>5; also >=, <, <=, ==, !=).
                  `convert_using`, `convert_on` and `convert_factor` multiply
                  each row by a factor read off another class, matched on
                  slots, before totalling. `add_source` totals one more class
@@ -158,10 +159,10 @@ declare it, the step asks which (`name_ambiguous`) — answer with the full name
 Attached to another module's class, a slot of yours is a facet: more said
 about their thing (a rate on `Item`), never required.
 
-What the system cannot do yet: total only the rows whose value meets a
-condition (`where` narrows by the class a slot points at, never by a value),
-and group by a fact more than one record away. When a request needs one,
-tell the person plainly in a reply, and build nothing instead.
+Not computed yet, but written and sealed: a `where` by a value, a key more
+than one record away (slot.slot.slot), a multivalued slot. Their columns stay
+empty and their examples pending; say so in the plan, and build nothing in
+their place.
 
 For something to be stated, its class must carry the slot that says which
 class an entity is — usually by filling a role that brings it. One slot per

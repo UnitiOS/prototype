@@ -4,7 +4,7 @@ import {
   BOX, CELL, GROUP, arrange, arrangeWorkings, cellHeight, changedOf, checksOf, fieldLabel, heightOf,
   askedOnce, blocksOf, exampleOf, lineage, mapOf, marksOf, momentsOf, neighbours, piecesOf, roomFor,
   nameShown, plainName, spoken, tagOf, turnsAbout, walkThrough,
-  workingsOf,
+  workingsOf, NOT_YET,
 } from "./studioMap";
 
 /** A draft shaped like the demo stock module: one kind of its own that points
@@ -340,6 +340,17 @@ describe("how the numbers are worked out", () => {
 
   it("draws nothing for a draft that works nothing out", () => {
     expect(workingsOf({ ...draft(), workings: [] })).toEqual({ groups: [], cells: [], flows: [] });
+  });
+
+  it("says first of a field the compiler does not compute yet that it is not, and still draws what it reads", () => {
+    const d = draft();
+    const columns = d.workings![0].columns.map((c) =>
+      c.name === "quantity_on_hand" ? { ...c, awaiting: true } : c);
+    const waiting = workingsOf({ ...d, workings: [{ ...d.workings![0], columns }] });
+    const held = waiting.cells.find((c) => c.id === "IngredientStock.quantity_on_hand")!;
+    expect(held.how).toBe(NOT_YET);
+    expect(held.role).toBe("sum");
+    expect(waiting.flows.map((f) => f.from)).toContain("Movement.qty_delta");
   });
 });
 

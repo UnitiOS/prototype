@@ -131,6 +131,9 @@ def projection(conn, store, name, version, class_name, *, valid_at, as_of):
             "description": col.get("description") or "",
             "module": slot_origin.get(col["name"]),
             "rule": rule,
+            # Sound and sealed, and not computed yet: the column is empty, and
+            # this says why, so the screen labels it rather than showing blanks.
+            "awaiting": col.get("awaiting"),
         })
 
     return {
@@ -241,7 +244,12 @@ def cell(conn, store, name, version, class_name, column, keys, *, valid_at, as_o
     out = {"name": name, "version": version, "class": class_name,
            "column": column, "kind": col["kind"], "keys": keys,
            "statements": [], "reads": [], "cut_off": False,
-           "entity": None, "valid_at": valid_at, "as_of": as_of}
+           "entity": None, "valid_at": valid_at, "as_of": as_of,
+           "awaiting": col.get("awaiting")}
+    if col.get("awaiting"):
+        # Not computed yet, so it stands on nothing: listing the rows its rule
+        # would read would show statements for a number nobody computed.
+        return out
 
     if col["kind"] == "aggregate":
         spec = plan_["aggregates"][column]

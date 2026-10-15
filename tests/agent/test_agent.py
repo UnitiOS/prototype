@@ -339,18 +339,20 @@ def test_a_module_not_started_yet_is_said_so_in_the_agents_terms(bench):
     tools.do(bench, "@probe/unborn", [step("discard")])
 
 
-def test_what_the_system_cannot_do_yet_is_refused_as_such(bench):
-    # Not as a misspelt argument, which only sends a builder to try another.
+def test_what_the_system_cannot_compute_yet_is_written_and_said_as_such(bench):
+    # Written in the vocabulary's words and sealed; the agent is told the
+    # column stays empty, and to tell the person — not to build around it.
     name = "@probe/not-yet"
     _started(bench, name)
-    for extra, where in (({"where": "level_thing>0"}, "aggregate: where"),
-                         ({"by": "level_thing=affects.ingredient_supplier.supplier_name"},
-                          "aggregate: by")):
-        said = tools.do(bench, name, [step("aggregate", **{
-            "class": "Level", "column": "level_on_hand", "over": "Flow", "sum": "amount",
-            "by": "level_thing=affects", **extra})])
-        assert f"[not_possible_yet] {where}" in said
-        assert "tell the person so" in said
+    said = tools.do(bench, name, [step("aggregate", **{
+        "class": "Level", "column": "level_on_hand", "over": "Flow", "sum": "amount",
+        "by": "level_thing=affects", "where": "amount>0"})])
+    assert "Holes: 0 blocking" in said, said
+    assert "? Level.level_on_hand is not computed yet" in said
+    assert "a comparison of a value" in said
+    assert "tell the person so" in said
+    # Its example waits for the compiler, rather than failing.
+    assert "[pending: not computed yet] base" in said
     tools.do(bench, name, [step("discard")])
 
 

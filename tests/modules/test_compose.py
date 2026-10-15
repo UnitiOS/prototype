@@ -288,7 +288,7 @@ def test_the_store_page_shows_each_name_with_where_it_came_from(store, both):
     assert nodes["lain_kasir__Rental"]["module"] == {"name": TILL, "version": "v1"}
     assert nodes["komunitas_penyewaan__Rental"]["fills"] == ["Transaction"]
     assert {"from": "DepositTaken", "to": "lain_kasir__Rental", "kind": "aggregate",
-            "label": "deposit_taken_till"} in graph["edges"]
+            "label": "deposit_taken_till", "awaiting": False} in graph["edges"]
 
 
 # ---- what is still refused ------------------------------------------------

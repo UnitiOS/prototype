@@ -18,9 +18,15 @@ store can reach an `assertion` row, because it is not in the same database.
 
 **Nothing here knows what the map is about.** It reads nine words — `over`,
 the operator, `by` (a slot, or `slot.slot` one record away), `where` and its
-`is_a`, `convert`, `sources` (several of those, one total), `equals_expression`,
-`parameter` and its `of` and `slot` — and emits SQL. A column whose name it
-recognised would be a defect: point it at another map and another table comes out.
+`is_a` or one comparison, `convert`, `sources` (several of those, one total),
+`equals_expression`, `parameter` and its `of` and `slot` — and emits SQL. A
+column whose name it recognised would be a defect: point it at another map and
+another table comes out.
+
+**What it cannot compute yet does not stop the graph.** A value filter, a key
+more than one record away and a slot holding several values are read, held to
+what they mean, and planned with the column marked `awaiting` and left empty
+(`AWAITING`). The seal follows the graph; the compiler follows later.
 
 A `parameter` column is the fourth kind: not computed from the rows at all, but
 one fact the log holds about the entity a key column names — a threshold
@@ -94,6 +100,28 @@ class CompileError(MapError):
     """
 
     gate = "the compiler"
+
+
+# The refusals that say the compiler cannot compute something *yet*, rather
+# than that the graph is wrong. A construct enters the graph with its written
+# meaning, an example, and a sketch showing the compiler can follow it
+# boundedly; its executor may come later. So these do not stop a seal: the
+# column is planned, marked `awaiting` with the refusal, and left empty, and
+# an example checking it is pending rather than failed. Every other refusal
+# is the graph being wrong, and still stops it (ECOSYSTEM_PLAN.md §11.1).
+AWAITING = {"multivalued_not_read", "not_possible_yet"}
+
+# What an awaiting refusal asks of whoever reads it: nothing to repair.
+WAITS = ("nothing to change: the rule is sound and is sealed as written. Its "
+         "column stays empty, shown as not computed yet, until the compiler "
+         "follows it — tell the person so")
+
+# A value filter, in the vocabulary's fixed words: one comparison of the
+# slot's value with one value written beside it. The sketch it was admitted
+# on is one more join of the source rows on `stated`, `AND value <op> literal`.
+COMPARISONS = {"equals": "=", "not_equals": "<>", "at_least": ">=",
+               "at_most": "<=", "above": ">", "below": "<"}
+_ORDERED = {"at_least", "at_most", "above", "below"}
 
 
 # Which operators an aggregate may name, and what each one is over no rows.
@@ -350,7 +378,7 @@ def _pairs(view, slots):
 
 
 def _reach(map_, where, over, value):
-    """The slots one key of `by` is read from: `(through, slots)`.
+    """The slots one key of `by` is read from: `(through, slots, far)`.
 
     A key is a slot of the rows totalled, `through` empty. Or it is one record
     further, written `slot.slot`: the first a slot of the rows that points at
@@ -358,21 +386,14 @@ def _reach(map_, where, over, value):
     customer of the transaction it is part of. The far record's value is read
     from `stated` like every other, so it is the one standing at both clocks.
 
-    One record and no further. Two hops is a path, and a path is a query
-    language; the need for it has not been shown.
+    Further than one record — `slot.slot.slot` — is sound, and is read here
+    hop by hop as one hop is: each a slot there, pointing at a record. `far`
+    says so, and computing it waits (`AWAITING`); `slots` are the last hop's.
     """
     view = map_["view"]
     first, dot, second = str(value).partition(".")
     if not dot:
-        return [], _bound(map_, where, over, first, "by")
-    if "." in second:
-        raise CompileError(
-            "not_possible_yet",
-            where=f"{where}: by",
-            expected="a slot of the rows, or `slot.slot`: one record further",
-            got=f"{value!r}, which reaches further than one record",
-            repairs=[Repair("group by a fact at most one record away")],
-        )
+        return [], _bound(map_, where, over, first, "by"), False
     through = _bound(map_, where, over, first, "by")
     # The range as `over` declares it: for a binding, the role every filler
     # points at, which is what lets one rule read every filler's records.
@@ -392,7 +413,10 @@ def _reach(map_, where, over, value):
                     view, view.class_induced_slots(over)) if range_ in classes),
             )],
         )
-    return through, _bound(map_, where, target, second, "by")
+    if "." in second:
+        _, slots, _ = _reach(map_, where, target, second)
+        return through, slots, True
+    return through, _bound(map_, where, target, second, "by"), False
 
 
 def _said(slot, what):
@@ -418,6 +442,8 @@ def _read_aggregate(map_, where, spec):
     unit and running one way, and every source grouped by the same keys.
     Every spec carries `sources`, a list of one for a lone source, so a
     reader walks every rule alike; the rest of it is the first source's.
+    And `awaits`: what of it the compiler cannot compute yet, as refusals
+    (`AWAITING`), empty when it computes all of it.
     """
     if "sources" not in spec:
         one, _ = _read_source(map_, where, spec)
@@ -466,7 +492,44 @@ def _read_aggregate(map_, where, spec):
                             "way, and give the rest a column of its own",
                             options=[str(slot.name) for slot in measures])],
         )
-    return {**sources[0], "sources": sources}
+    # One source the compiler cannot compute yet and the column waits whole:
+    # a total of some of its sources would be a number that looks right.
+    return {**sources[0], "sources": sources,
+            "awaits": [said for source in sources for said in source["awaits"]]}
+
+
+def _said_compared(cond):
+    (word, value), = cond.items()
+    return f"{word}: {value}"
+
+
+def _compared(map_, where, over, slot_name, cond):
+    """One value filter, held to what it means: a slot of the rows, compared
+    with one value, and compared in order only where order means something.
+    Read and kept as written; computing it waits (`AWAITING`)."""
+    view = map_["view"]
+    (word, value), = cond.items()
+    slots = _bound(map_, where, over, slot_name, "where")
+    references = [str(slot.name) for slot in slots
+                  if _range(view, slot) in {str(n) for n in view.all_classes()}]
+    wrong = ("a list or a mapping" if isinstance(value, (dict, list))
+             else "nothing" if value is None
+             else f"{word} on {', '.join(references)}, which points at a record"
+             if word in _ORDERED and references else None)
+    if wrong:
+        raise CompileError(
+            "where_not_is_a",
+            where=where,
+            expected="one value to compare with, and an order only between "
+                     "values that have one; a record is narrowed by what it is",
+            got=wrong,
+            repairs=[Repair("compare with one value, or narrow a record by its "
+                            "class", options=["is_a", *COMPARISONS])],
+        )
+    return {"slot_name": str(slot_name),
+            "slot_uris": [predicate(view, slot) for slot in slots],
+            "compare": word, "value": value,
+            "type_slot_uri": None, "descendants": []}
 
 
 def _read_source(map_, where, spec):
@@ -526,8 +589,20 @@ def _read_source(map_, where, spec):
             )],
         )
 
+    awaits = []
     by = as_dict(spec.get("by") or {})
-    reached = {str(key): _reach(map_, where, over, value) for key, value in by.items()}
+    walked = {str(key): _reach(map_, where, over, value) for key, value in by.items()}
+    reached = {key: (through, slots) for key, (through, slots, _) in walked.items()}
+    far = [f"{key}={by[key]}" for key, (_, _, further) in walked.items() if further]
+    if far:
+        awaits.append(CompileError(
+            "not_possible_yet",
+            where=f"{where}: by",
+            expected="a key the compiler reads today: a slot of the rows, or "
+                     "`slot.slot`, one record further",
+            got=f"{', '.join(far)}, which reaches further than one record",
+            repairs=[Repair(WAITS)],
+        ).as_dict())
     if not by:
         raise CompileError(
             "no_grouping",
@@ -546,16 +621,31 @@ def _read_source(map_, where, spec):
     parsed_where = []
     for slot_name, cond in where_block.items():
         cond_dict = as_dict(cond) if cond else {}
+        said = f"{where}: where.{slot_name}"
+        if len(cond_dict) == 1 and next(iter(cond_dict)) in COMPARISONS:
+            parsed_where.append(_compared(map_, said, over, slot_name, cond_dict))
+            awaits.append(CompileError(
+                "not_possible_yet",
+                where=said,
+                expected="a `where` the compiler computes today: `is_a`, "
+                         "narrowing by what something is",
+                got=f"`{_said_compared(cond_dict)}`, a comparison of a value, "
+                    f"which it does not compute yet",
+                repairs=[Repair(WAITS)],
+            ).as_dict())
+            continue
         if set(cond_dict) != {"is_a"}:
             raise CompileError(
                 "where_not_is_a",
-                where=f"{where}: where.{slot_name}",
-                expected="`is_a`, naming the class the value must be",
+                where=said,
+                expected="`is_a`, naming the class the value must be, or one "
+                         "comparison of the value with one value beside it",
                 got=", ".join(sorted(str(k) for k in cond_dict)) or "nothing",
                 repairs=[Repair(
-                    "a `where` narrows by what something is, and that is all it "
-                    "does here. Anything else is arithmetic in a column of its own",
-                    options=["is_a"],
+                    "a `where` narrows by what something is, or by one "
+                    "comparison, in these words and no others. Anything else "
+                    "is arithmetic in a column of its own",
+                    options=["is_a", *COMPARISONS],
                 )],
             )
         target_class = str(cond_dict["is_a"])
@@ -738,6 +828,7 @@ def _read_source(map_, where, spec):
         "source_slots": _pairs(view, view.class_induced_slots(over)),
         "where": parsed_where,
         "convert": parsed_convert,
+        "awaits": awaits,
     }, measures
 
 
@@ -948,6 +1039,30 @@ def plan(map_, class_name):
         for name, spec in stated.items()
     }
 
+    # What the compiler cannot compute yet: a column whose rule it cannot
+    # follow, a field holding several values, and an expression reading
+    # either — its arithmetic would be over an empty cell.
+    several = _several(map_, class_name)
+    awaiting = {**{name: spec["awaits"][0] for name, spec in aggregates.items()
+                   if spec["awaits"]},
+                **{name: said for name, said in several.items() if name not in keys}}
+    grown = True
+    while grown:
+        grown = False
+        for name, text in expressions.items():
+            read = [ref.strip() for ref in _REF.findall(text)
+                    if ref.strip() in awaiting]
+            if read and name not in awaiting:
+                awaiting[name], grown = awaiting[read[0]], True
+    # Rows are the keys every computed total lands in. A key holding several
+    # values, or no total computed today, and there are no rows to show yet.
+    whole = next((several[key] for key in keys if key in several), None) or (
+        None if set(aggregates) - set(awaiting)
+        else awaiting[next(iter(aggregates))])
+    if whole:
+        awaiting = {col["name"]: awaiting.get(col["name"], whole)
+                    for col in cols if col["name"] not in keys}
+
     planned = []
     for col in cols:
         kind = (
@@ -957,7 +1072,9 @@ def plan(map_, class_name):
             else "expression" if col["name"] in expressions
             else "unfilled"
         )
-        planned.append({**col, "kind": kind, "type": _sql_type(map_, col["range"])})
+        planned.append({**col, "kind": kind, "type": _sql_type(map_, col["range"]),
+                        **({"awaiting": awaiting[col["name"]]}
+                           if col["name"] in awaiting else {})})
 
     return {
         "shape": "grouped",
@@ -969,6 +1086,7 @@ def plan(map_, class_name):
         "parameters": parameters,
         "expressions": expressions,
         "version": map_["version"],
+        **({"awaits": whole} if whole else {}),
     }
 
 
@@ -1043,8 +1161,10 @@ def plan_entities(map_, class_name):
         "description": "The URI the log registered this entity under.",
         "kind": "identity", "type": "text",
     }]
+    several = _several(map_, class_name)
     planned += [
-        {**col, "kind": "stated", "type": _sql_type(map_, col["range"])}
+        {**col, "kind": "stated", "type": _sql_type(map_, col["range"]),
+         **({"awaiting": several[col["name"]]} if col["name"] in several else {})}
         for col in cols
     ]
 
@@ -1059,6 +1179,35 @@ def plan_entities(map_, class_name):
         "expressions": {},
         "version": map_["version"],
     }
+
+
+def _several(map_, class_name):
+    """The fields of a class that may hold several values, each with why its
+    column waits.
+
+    Every cell is the one statement standing at the two clocks, and a field
+    holding several would show whichever came last as if it were the only
+    one. A field may hold several all the same — the graph says so, and is
+    sound — and its column is left empty until a table can read a set.
+    """
+    return {str(slot.name): _waits_several(class_name, slot).as_dict()
+            for slot in map_["view"].class_induced_slots(class_name)
+            if slot.multivalued and not slot.abstract}
+
+
+def _waits_several(class_name, slot):
+    return CompileError(
+        "multivalued_not_read",
+        where=f"{class_name}.{slot.name}",
+        expected="one value per field, which is what a cell holds today",
+        got=f"{slot.name}, which may hold several",
+        repairs=[
+            Repair(WAITS),
+            Repair("or, to have it computed now, make each value an entity "
+                   "of its own class pointing back at this one — a line on a "
+                   "document is one of these"),
+        ],
+    )
 
 
 def plan_for(map_, class_name):
@@ -1077,26 +1226,7 @@ def plan_for(map_, class_name):
                             options=sorted(str(name) for name
                                            in map_["view"].all_classes()))],
         )
-    induced = map_["view"].class_induced_slots(class_name)
-    several = [str(slot.name) for slot in induced
-               if slot.multivalued and not slot.abstract]
-    if several:
-        # Every cell here is the one statement standing at the two clocks, and
-        # a slot holding several would show whichever came last as if it were
-        # the only one. Refused until a table can read a set.
-        raise CompileError(
-            "multivalued_not_read",
-            where=class_name,
-            expected="one value per field, which is what a cell holds",
-            got=f"{', '.join(several)}, which may hold several",
-            repairs=[
-                Repair("hold one value per field", options=several),
-                Repair("or make each value an entity of its own class, "
-                       "pointing back at this one — a line on a document is "
-                       "one of these"),
-            ],
-        )
-    for slot in induced:
+    for slot in map_["view"].class_induced_slots(class_name):
         if _annotation(slot, "aggregate"):
             return plan(map_, class_name)
     return plan_entities(map_, class_name)
@@ -1327,6 +1457,8 @@ def _parameter_cte(spec, alias):
 def _column_sql(plan_, name, aliases, stack=()):
     """The SQL that produces one column, wherever the map puts its rule."""
     col = next(c for c in plan_["columns"] if c["name"] == name)
+    if col.get("awaiting"):
+        return f"NULL::{col['type']}"
     if col["kind"] == "key":
         return f"g.{_ident(name)}"
     if col["kind"] == "aggregate":
@@ -1526,6 +1658,9 @@ def emit_entities(map_, plan_):
     for i, col in enumerate(plan_["columns"]):
         if col["kind"] != "stated":
             continue
+        if col.get("awaiting"):
+            selects.append(f"NULL::{col['type']} AS {_ident(col['name'])}")
+            continue
         alias = f"c{i}"
         selects.append(f"({alias}.value)::{col['type']} AS {_ident(col['name'])}")
         joins.append(
@@ -1560,8 +1695,22 @@ def emit(map_, plan_):
         ),
     ]
 
+    if plan_.get("awaits"):
+        # No total the compiler computes today, so nothing to group rows by:
+        # the table is made, with its columns, and holds no row yet.
+        return ddl, "SELECT " + ", ".join(
+            f"NULL::{c['type']} AS {_ident(c['name'])}" for c in plan_["columns"]
+        ) + "\nWHERE false"
+
+    # Only what the compiler computes today; a column awaiting it is NULL.
+    waiting = {c["name"] for c in plan_["columns"] if c.get("awaiting")}
+    aggregates = {column: spec for column, spec in plan_["aggregates"].items()
+                  if column not in waiting}
+    parameters = {column: spec for column, spec in plan_["parameters"].items()
+                  if column not in waiting}
+
     sources, source_ctes = {}, []
-    for spec in plan_["aggregates"].values():
+    for spec in aggregates.values():
         for source in spec["sources"]:
             if source["over"] not in sources:
                 alias = f"source_{len(sources)}"
@@ -1569,7 +1718,7 @@ def emit(map_, plan_):
                 source_ctes.append(_source_cte(map_, source["over"], alias))
 
     aliases, aggregate_ctes, parameter_ctes = {}, [], []
-    for i, (column, spec) in enumerate(plan_["aggregates"].items()):
+    for i, (column, spec) in enumerate(aggregates.items()):
         alias = f"total_{i}"
         aliases[column] = alias
         if len(spec["sources"]) == 1:
@@ -1583,24 +1732,24 @@ def emit(map_, plan_):
                 f"t{i}_{j}_"))
         aggregate_ctes.append(_sources_cte(spec, column, alias, keys))
 
-    for i, (column, spec) in enumerate(plan_["parameters"].items()):
+    for i, (column, spec) in enumerate(parameters.items()):
         alias = f"param_{i}"
         aliases[column] = alias
         parameter_ctes.append(_parameter_cte(spec, alias))
 
     key_list = ", ".join(_ident(k) for k in keys)
     grouping = "grouping AS (\n" + "\n    UNION\n".join(
-        f"    SELECT {key_list} FROM {aliases[column]}" for column in plan_["aggregates"]
+        f"    SELECT {key_list} FROM {aliases[column]}" for column in aggregates
     ) + "\n)"
 
     joins = []
-    for column in plan_["aggregates"]:
+    for column in aggregates:
         alias = aliases[column]
         on = "\n                       AND ".join(
             f"{alias}.{_ident(k)} IS NOT DISTINCT FROM g.{_ident(k)}" for k in keys
         )
         joins.append(f"LEFT JOIN {alias} ON {on}")
-    for column, spec in plan_["parameters"].items():
+    for column, spec in parameters.items():
         alias = aliases[column]
         joins.append(
             f"LEFT JOIN {alias} ON {alias}.key_value "

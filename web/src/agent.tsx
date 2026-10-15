@@ -523,7 +523,7 @@ function Proposal(
                   // An example waiting for its rules is agreed to as it is: the
                   // numbers are the person's word, the rules come after.
                   <button className="button button-go"
-                    disabled={busy || !(held.passed === true || held.waits)}
+                    disabled={busy || !(held.passed === true || held.waits || held.pending)}
                     onClick={() => agree(n)}>
                     These numbers are right — agree
                   </button>
@@ -701,11 +701,13 @@ function Checks(
   return (
     <ul className="checks">
       {example.checks.map((c, i) => (
-        <li key={i} className={c.holds ? "holds" : c.waiting ? "waits" : "fails"}>
-          <span className="mark">{c.holds ? "✓" : c.waiting ? "…" : "✗"}</span>
+        <li key={i} className={c.holds ? "holds" : c.waiting || c.pending ? "waits" : "fails"}>
+          <span className="mark">{c.holds ? "✓" : c.waiting || c.pending ? "…" : "✗"}</span>
           {" "}{name(c.table)} <em>{c.row}</em>{c.column ? ` · ${name(c.column)}` : ""}
           {c.at ? ` on ${c.at}` : ""}: expected <strong>{c.expected}</strong>
-          {c.holds ? "" : c.waiting
+          {c.holds ? "" : c.pending
+            ? <span className="quiet">, not computed yet: the compiler does not follow its rule yet</span>
+            : c.waiting
             ? <span className="quiet">, worked out once its rule is written</span>
             : <>, the draft makes <strong>{c.got}</strong></>}
         </li>
@@ -758,8 +760,9 @@ export function ExamplesPanel(
             </span>
             {example.passed !== null && (
               <span className={`chip ${example.passed ? "chip-good"
-                : example.waits ? "chip-asks" : "chip-bad"}`}>
-                {example.passed ? "holds" : example.waits ? "waits for its rules" : "fails"}
+                : example.waits || example.pending ? "chip-asks" : "chip-bad"}`}>
+                {example.passed ? "holds" : example.pending ? "pending: not computed yet"
+                  : example.waits ? "waits for its rules" : "fails"}
               </span>
             )}
           </header>

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ModuleGraph } from "./api";
-import { applications, formSections } from "./application";
+import { applications, emptyCell, formSections } from "./application";
 
 const node = (name: string, version: string, kind: "module" | "application",
               business: string | null, latest = true) =>
@@ -55,5 +55,16 @@ describe("formSections", () => {
       ["Stock", ["stok__reorder_level"]],
     ]);
     expect(formSections([field("item_name", null)])).toEqual([]);
+  });
+});
+
+describe("an empty cell", () => {
+  it("says not computed yet where the compiler does not follow the rule, and not stated elsewhere", () => {
+    const why = { code: "not_possible_yet", means: "", where: "ItemDamage.heavy: where.cost",
+                  expected: "", got: "`above: 0`, a comparison of a value", repairs: [],
+                  sentence: "", gate: "the compiler" };
+    expect(emptyCell({ awaiting: why })).toBe("not computed yet");
+    expect(emptyCell({ awaiting: null })).toBe("not stated");
+    expect(emptyCell({})).toBe("not stated");
   });
 });
