@@ -6,6 +6,7 @@
     python -m components.agent rehearse SCRIPT
     python -m components.agent ask @scope/name "what the person says" [--scratch]
     python -m components.agent watch FILE
+    python -m components.agent words CONVERSATION ...
     python -m components.agent eval TASKS [--part builder|accountant] [--repeat 3]
                                           [--only NAME ...] [--builder M] [--accountant M]
                                           [--workers 1] [--dollars 0.50]
@@ -28,6 +29,11 @@ file under build/calls (`watch`), and `watch FILE` prints one for a person:
 each call's time, tokens, thoughts, what it was sent and what it answered, and
 every HTTP request the connection made.
 
+`words` reads kept conversations (a draft's `chat.yaml`, a version's
+`v1.chat.yaml`) and prints each turn that told the person a word of the
+system's they had not used (`jargon`), the word list the ecosystem test holds
+a business owner's conversations to. It exits 1 when one did.
+
 `eval` runs a part's eval (`evals`) and writes the report under
 build/evals. `--builder` and `--accountant` put another model on a part for
 this run only. Runs go one at a time unless `--workers` says otherwise, a line
@@ -45,11 +51,13 @@ import sys
 import tempfile
 from pathlib import Path
 
+import yaml
+
 ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT))
 
 from components.agent import config as configuration  # noqa: E402
-from components.agent import evals, rehearsal, tools  # noqa: E402
+from components.agent import evals, jargon, rehearsal, tools  # noqa: E402
 from components.agent.session import Session  # noqa: E402
 from components.agent.watch import Watch  # noqa: E402
 from components.agent.watch import render as render_watch  # noqa: E402
@@ -156,6 +164,18 @@ def _eval(args):
     return 0 if all(t["passed"] for t in report["tasks"]) else 1
 
 
+def _words(files):
+    told = 0
+    for file in files:
+        turns = (yaml.safe_load(Path(file).read_text(encoding="utf-8")) or {}).get("turns") or []
+        found = jargon.leaks(turns)
+        told += len(found)
+        print(f"{file}: {len(turns)} turns, {len(found)} in the system's words")
+        for n, words in found:
+            print(f"  turn {n}: {', '.join(words)}")
+    return 1 if told else 0
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(prog="python -m components.agent")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -175,6 +195,8 @@ def main(argv=None):
     one.add_argument("--scratch", action="store_true")
     one = sub.add_parser("watch")
     one.add_argument("file")
+    one = sub.add_parser("words")
+    one.add_argument("files", nargs="+")
     one = sub.add_parser("eval")
     one.add_argument("tasks")
     one.add_argument("--part", choices=configuration.PARTS, default="builder")
@@ -192,6 +214,8 @@ def main(argv=None):
         for line in render_watch(args.file):
             print(line)
         return 0
+    if args.command == "words":
+        return _words(args.files)
     if args.command in ("ask", "eval"):
         _environment()
     if args.command == "eval":

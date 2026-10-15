@@ -672,6 +672,109 @@ def test_the_accountant_reads_the_persons_words_and_nothing_of_the_graph(bench, 
     tools.do(bench, name, [step("discard")])
 
 
+def test_a_call_that_hangs_is_cut_at_the_timeout_and_the_turn_is_kept(
+        bench, world, tmp_path, monkeypatch):
+    import asyncio
+    import dataclasses
+    import time
+
+    import httpx
+    from pydantic_ai import ModelResponse, ToolCallPart
+    from pydantic_ai.models.function import FunctionModel
+
+    from components.agent import jargon, steady
+    from components.agent.watch import Watch, render
+    monkeypatch.setattr(steady, "WAIT", (0.0, 0.0))
+
+    async def hangs(messages, info):
+        await asyncio.sleep(60)
+
+    # The provider's own limit is not what holds: each try is cut on our side,
+    # and after the last one the request stops as the provider's failure.
+    name = "@probe/hangs"
+    watch = Watch(tmp_path / "calls.jsonl")
+    config = dataclasses.replace(
+        configuration.unlimited(builder=FunctionModel(hangs)), timeout=0.2)
+    started = time.monotonic()
+    turn = Session(bench, name, config, watch=watch).ask("Hello.")
+    assert time.monotonic() - started < 5
+    assert isinstance(turn.output, Stopped) and turn.output.cause == "provider"
+    # Said in words the person can read; what failed is in the watch.
+    assert jargon.found(turn.output.message) == []
+    assert "TimeoutError" not in turn.output.message
+    read = "\n".join(render(watch.path))
+    assert read.count("failed (Hung: did not answer within 0.2 s)") == steady.AGAIN + 1
+    assert [t["ended"] for t in kept.load(world, name).turns] == ["Stopped"]
+
+    # The accountant failing for good, inside the builder's turn, ends that
+    # turn the same way: kept, never an error the page alone is told.
+    def reckons(messages, info):
+        if len(messages) == 1:
+            return ModelResponse(parts=[ToolCallPart("reckon", {
+                "example": "e", "happened": ["Two came in."], "wanted": ["on hand"]})])
+        return ModelResponse(parts=[ToolCallPart(_ending(info, "Reply"), {"message": "Done."})])
+
+    def reads_slowly(messages, info):
+        raise httpx.ReadTimeout("The read operation timed out")
+
+    name = "@probe/reckons"
+    config = configuration.unlimited(builder=FunctionModel(reckons),
+                                     accountant=FunctionModel(reads_slowly))
+    turn = Session(bench, name, config).ask("Two came in; how many are there?")
+    assert isinstance(turn.output, Stopped) and turn.output.cause == "provider"
+    assert [t["ended"] for t in kept.load(world, name).turns] == ["Stopped"]
+    for name in ("@probe/hangs", "@probe/reckons"):
+        kept.path(world, name).unlink()
+
+
+def test_a_business_owner_is_told_nothing_in_the_systems_words(bench, world, monkeypatch):
+    from pydantic_ai import ModelResponse, ToolCallPart
+    from pydantic_ai.models.function import FunctionModel
+
+    def saying(*said):
+        heard = []
+        left = list(said)
+
+        def speak(messages, info):
+            heard.extend(str(p.content) for m in messages for p in m.parts
+                         if type(p).__name__ == "RetryPromptPart")
+            return ModelResponse(parts=[ToolCallPart(_ending(info, "Reply"),
+                                                     {"message": left.pop(0)})])
+        return FunctionModel(speak), heard
+
+    # @demo/stock is an application of the business demo: its composer runs
+    # the business, and an ending in the system's words is handed back.
+    model, heard = saying("Modul @demo/stock sudah siap disegel.",
+                          "Tabel stok Anda sudah siap dibekukan.")
+    turn = Session(bench, "@demo/stock", configuration.unlimited(builder=model)).ask("Halo.")
+    assert turn.output.message == "Tabel stok Anda sudah siap dibekukan."
+    (back,) = heard
+    assert "Modul, @demo/stock, disegel are the system's words" in back
+    assert "freeze" in back
+
+    # Before anything is started, a name under the log's own business is
+    # taken as its application.
+    monkeypatch.setattr(bench, "business", lambda: "demo")
+    model, heard = saying("Is @demo/fresh a module for you alone?", "Is it for you alone?")
+    turn = Session(bench, "@demo/fresh", configuration.unlimited(builder=model)).ask("Hi.")
+    assert turn.output.message == "Is it for you alone?" and len(heard) == 1
+
+    # A module's author is spoken to in the words of the job.
+    model, heard = saying("The module is ready to be sealed.")
+    turn = Session(bench, dev_modules.INVENTORY, configuration.unlimited(builder=model)
+                   ).ask("Hello.")
+    assert turn.output.message == "The module is ready to be sealed." and heard == []
+    for name in ("@demo/stock", "@demo/fresh", dev_modules.INVENTORY):
+        kept.path(world, name).unlink()
+
+
+def test_a_session_that_failed_is_written_down_and_read_back(tmp_path):
+    from components.agent.watch import Watch, render
+    watch = Watch(tmp_path / "calls.jsonl")
+    watch.write("error", part="session", error="ReadTimeout: timed out")
+    assert "!! the session failed: ReadTimeout: timed out" in "\n".join(render(watch.path))
+
+
 def test_a_request_stops_at_its_budget_and_the_next_one_goes_on(bench, world):
     import dataclasses
 

@@ -597,6 +597,8 @@ export interface DraftState {
   name: string; title: string | null; description: string | null;
   labels?: Labels;
   purpose: string | null; valid_from: string | null;
+  /** Whom the Studio helps: an application's composer runs the business. */
+  kind?: "core" | "library" | "module" | "application";
   versions: string[]; revises: string | null; becomes: string;
   pins: Pin[]; sees: { classes: number; slots: number };
   classes: DraftClass[]; slots: DraftSlot[]; roles: DraftRole[];

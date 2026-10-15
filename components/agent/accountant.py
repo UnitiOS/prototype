@@ -72,12 +72,13 @@ class Reckoning(BaseModel):
                                                   "empty when nothing is open")
 
 
-def accountant(model=None, *, watch=None):
+def accountant(model=None, *, watch=None, timeout=None):
     """The accountant, on `model`. Nothing about it depends on which.
-    With a `watch`, every call it makes is written down."""
+    With a `watch`, every call it makes is written down; with a `timeout`,
+    a call that takes longer is cut (`steady`)."""
     return Agent(model, name="accountant", output_type=Reckoning,
                  instructions=INSTRUCTIONS, defer_model_check=True,
-                 capabilities=[steady("accountant", watch)]
+                 capabilities=[steady("accountant", watch, timeout)]
                  + ([watch.hooks("accountant")] if watch else []))
 
 

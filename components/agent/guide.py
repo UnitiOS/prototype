@@ -419,6 +419,19 @@ OPENS = "(From the system, not the person: they have "
 LIBRARY_SCOPE = "@uniti"
 
 
+def for_its_owner(store, module, business=None):
+    """Whether the person is a business owner composing their own application:
+    the open module is one once started, and before that a name under the
+    log's own business (`business`) is taken as one. Its author's words —
+    module, version, seal — are not theirs (`jargon`)."""
+    try:
+        if (store.place(module) / MANIFEST).is_file():
+            return store.kind(module) == "application"
+    except Refusal:
+        return False
+    return bool(business) and module.split("/", 1)[0] == f"@{business}"
+
+
 def kind_open(store, module, business=None):
     """Which kind the open module is, and so whom the agent helps: read off
     its manifest once it is started, and before that off its name, or left
@@ -435,7 +448,9 @@ def kind_open(store, module, business=None):
     if kind == "application":
         return (f"It is an application of the business {owner}: you help its composer. "
                 "It may declare nothing of its own: its examples can check the tables "
-                "of the modules it pins.")
+                "of the modules it pins. Its composer runs the business: tell them "
+                "about it, call another's work by its title and who made it, and a "
+                "seal a freeze.")
     if kind == "core":
         return "It is core, which its keepers write by hand."
     if module.split("/", 1)[0] == LIBRARY_SCOPE:
@@ -443,7 +458,8 @@ def kind_open(store, module, business=None):
     if business:
         return ("Before `start`, ask whether it serves this business alone (an "
                 f"application of the business {business}, named @{business}/...) or "
-                "many businesses (a module), unless the person said so.")
+                "many businesses (a module), unless the person said so: in their "
+                "words, for this business alone or for others of its trade too.")
     return "This log belongs to no business yet, so it will be a community module."
 
 

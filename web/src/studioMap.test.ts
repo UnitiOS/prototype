@@ -3,7 +3,7 @@ import type { DraftState, ExampleResult } from "./api";
 import {
   BOX, CELL, GROUP, arrange, arrangeWorkings, cellHeight, changedOf, checksOf, fieldLabel, heightOf,
   askedOnce, blocksOf, exampleOf, lineage, mapOf, marksOf, momentsOf, neighbours, piecesOf, roomFor,
-  nameShown, plainName, spoken, tagOf, turnsAbout, untagged, walkThrough,
+  moduleName, nameShown, plainName, spoken, tagOf, turnsAbout, untagged, walkThrough,
   workingsOf, NOT_YET,
 } from "./studioMap";
 
@@ -140,6 +140,16 @@ describe("names said as words", () => {
     expect(untagged("rudi_sewa__Rental.rudi_sewa__rental_deposit")).toBe("Rental.rental_deposit");
     expect(spoken("penyewaan__RentalLine")).toBe("Rental line");
     expect(fieldLabel("penyewaan__rental_deposit", "penyewaan__Rental")).toBe("Deposit");
+  });
+
+  it("takes a module's name as it is typed, with one @ in front", () => {
+    // The field once held "@" already: "@kemah/sewa" typed after it was sent
+    // as "@@kemah/sewa", and the server answered with an error.
+    expect(moduleName("@@kemah/sewa")).toBe("@kemah/sewa");
+    expect(moduleName("kemah/sewa")).toBe("@kemah/sewa");
+    expect(moduleName("  @kemah/sewa ")).toBe("@kemah/sewa");
+    expect(moduleName("")).toBe("");
+    expect(moduleName("@")).toBe("");
   });
 
   it("prefers the title its author wrote", () => {

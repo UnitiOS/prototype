@@ -304,12 +304,30 @@ def test_the_last_call_is_judged_on_the_size_of_the_last_one():
     used = RunUsage(input_tokens=70_000, output_tokens=10_000)
     assert work.last_call(used, last) == "$0.08 of its $0.10 is spent"
 
-    # The next call is judged at the full price even when the cache served the
-    # last one: the goodbye may not be served from it, and must still fit.
+    # The next call is reckoned at what the last one cost, the cache's share
+    # included; only the goodbye is kept at the full price, since the cache
+    # may not serve it. $0.07 spent, the last call cost $0.0065 served from
+    # the cache, the goodbye $0.02 at most: both fit in the $0.03 left.
     cheap = dataclasses.replace(config, prices={
         "x:model": {"input": 1.0, "cached": 0.1, "output": 1.0}})
     work = building.Work(bench=None, config=cheap)
     used = RunUsage(input_tokens=60_000, output_tokens=10_000)
     served = RequestUsage(input_tokens=15_000, output_tokens=5_000,
                           details={"cached_content_tokens": 15_000})
-    assert work.last_call(used, served) == "$0.07 of its $0.10 is spent"
+    assert work.last_call(used, served) is None
+    # At $0.09, one more call and a goodbye would not fit: this one is it.
+    used = RunUsage(input_tokens=80_000, output_tokens=10_000)
+    assert work.last_call(used, served) == "$0.09 of its $0.10 is spent"
+    # A long conversation, the way the two-round test had them: 110,000 tokens
+    # a call, nearly all from the cache, on a $0.30 budget. The old reckoning
+    # stopped once $0.11 was spent; this one goes on to $0.18.
+    flash = dataclasses.replace(config, budget=configuration.Budget(dollars=0.30),
+                                prices={"x:model": {"input": 0.825, "cached": 0.0825,
+                                                    "output": 4.125}})
+    work = building.Work(bench=None, config=flash)
+    long = RequestUsage(input_tokens=110_000, output_tokens=1_500,
+                        details={"cached_content_tokens": 100_000})
+    spent = lambda dollars: RunUsage(input_tokens=int(dollars / 0.825 * 1e6))  # noqa: E731
+    assert work.last_call(spent(0.15), long) is None
+    assert work.last_call(spent(0.17), long) is None
+    assert work.last_call(spent(0.19), long) == "$0.19 of its $0.30 is spent"

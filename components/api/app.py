@@ -544,6 +544,16 @@ async def studio_chat(request: Request):
     return _modules(agent.chat, _required(request, "name"))
 
 
+async def studio_ask(request: Request):
+    """One request to the agent, streamed as it works (`agent.ask`). A name
+    that is no module's is refused as the store refuses it, before anything
+    runs."""
+    try:
+        return await agent.ask(request)
+    except Refusal as exc:
+        return _refused(exc)
+
+
 async def studio_seal(request: Request):
     """Seal one draft, by the person named in the body. The agent cannot."""
     try:
@@ -597,7 +607,7 @@ routes = [
     Route("/api/studio/draft", studio_state),
     Route("/api/studio/step", studio_step, methods=["POST"]),
     Route("/api/studio/chat", studio_chat),
-    Route("/api/studio/ask", agent.ask, methods=["POST"]),
+    Route("/api/studio/ask", studio_ask, methods=["POST"]),
     Route("/api/studio/seal", studio_seal, methods=["POST"]),
 ]
 if DIST.is_dir():

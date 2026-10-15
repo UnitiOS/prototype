@@ -47,7 +47,8 @@ pass without any patch; P2 still blocked then, and seals since step 6), and the
 Studio and Application screens were looked at in a browser. Every step met its
 "done when". The owner's decisions at each step are recorded under the step.
 Since then: G1, G2 and the dry run (`ba762f4`, `7ba2b95`), step 5 (`ba20f4e`),
-step 6 (`369c32b`), and step 7, built on 15 October (below, under the step).
+step 6 (`369c32b`), step 7 (`405ac2f`), and step 8, built on 15 October
+(below, under the step).
 
 The goal has not moved (§1.2): **the ecosystem test passes on its seven
 stories, then core v3, then the re-run.** What remains, in order:
@@ -1158,6 +1159,77 @@ only after the person agrees.
 
 - **Done when:** each listed defect has a test or a browser check, and none of
   them appears in the ecosystem test.
+- **Built (15 October):**
+  - **The seal button: not reproduced; a browser check instead of a fix.**
+    On `make app` with the rehearsal (no model), at 1280 pixels: a new
+    module (plan, examples, rules, then "Freeze as v1…" in the conversation
+    and the top bar, at once), and the two-round test's own case, a revision
+    whose last step is agreeing to one example: the agent proposes the
+    example and the freeze together (`build/step8/revise.yaml`), the person
+    presses "These numbers are right — agree", and "Freeze as v2…" is there
+    without a reload; pressed, it froze v2 and the page said so. The code
+    that refreshes the draft after an agreement is the same as on 8 October.
+    What was seen then is most likely the browser tool: the two-round record
+    itself says Chrome's element finder sometimes did not see the freeze
+    button although it was there, and on 15 October it said so again of a
+    button that was on the screen. The ecosystem test presses it as before;
+    if it is missing there, it is a defect found, not this one.
+  - **The `@@` name:** the Studio's two name fields start empty (the
+    placeholder shows the form) and take a name as typed, with one `@` in
+    front however many were typed (`moduleName`). The agent's door refuses a
+    name that is not a module's name as the store does (`not_a_module_name`,
+    no new code), where it answered 500. Checked in the browser: typing
+    `@rehearsal/levels` gives `@rehearsal/levels`, and the field recognises
+    it as an existing module.
+  - **The timeout** (`steady`): each try of a call is cut on our side at the
+    configuration's `timeout`, whatever the provider's library retries
+    inside it; a cut try is the provider's failure and is tried again, at
+    most twice. A call that still fails ends the request as `Stopped` with
+    `cause: provider`, kept in the conversation — for the accountant too,
+    whose `ReadTimeout` escaped the session in the dry run. The watch reads
+    a request that failed as a whole (`KeyError: 'step'`, found in the dry
+    run and again here).
+  - **The budget** (`Work.last_call`): the next call is reckoned at what the
+    last one cost, the cache's share included, and the goodbye after it at
+    the full price, so the budget still holds when the cache does not serve
+    it. On a conversation of 110,000 tokens and $0.30, a request now goes on
+    to $0.18 where it stopped at $0.11.
+  - **The system's words** (`components/agent/jargon.py`): a word list
+    (a module's tag, a name with an underscore, anything in backticks, and
+    the system's words in English and Indonesian: module, seal, pin, slot,
+    class, … modul, disegel, …), leaving out what the person said first.
+    Read over Sari's conversations from the two-round test it finds what
+    P2.md reported, in nearly every turn: `@kemahceria/sewa`, "modul",
+    "disegel", "menyegel". Three things now hold it:
+    - while an application is open (or, before it is started, a name under
+      the log's own business), an ending in those words is handed back to
+      the agent to say again in the person's, as a proposal that says too
+      much is (`in_the_systems_words`); a module's author is not held to it;
+    - the note opening each request tells the agent so in one sentence, and
+      asks the kind question in business words; the instructions are
+      unchanged (23,864 characters), and `Plan.reuses` no longer asks it to
+      say "a community module";
+    - the session's own sentences when it stops no longer carry the
+      provider's error, which goes to the watch, and the system's reading
+      put before the person ("What the system reads off the draft") is
+      folded for an application's composer, who reads the same numbers above
+      it in words.
+    `python -m components.agent words FILE…` prints the turns that told the
+    person a word of the system's; the ecosystem test runs it on Sari's
+    conversations.
+  - **Not built** (§0.2): no new refusal code; nothing for the Studio's own
+    frame (its buttons and headings, English and naming the module) or the
+    `@scope/name` field, which a business owner still sees there: P3's
+    frame, unless the ecosystem test shows Sari cannot work through it.
+  - **Tests:** `tests/agent/test_jargon.py` (5); in `test_agent.py`, a call
+    that hangs is cut and the turn kept, the accountant's failure likewise,
+    a business owner is told nothing in the system's words while an author
+    is, and the watch reads a failed request; the budget test in
+    `test_conversation.py` is changed to the new reckoning; the agent's door
+    refuses `@@kemah/sewa` (`test_agent_api.py`); `moduleName`
+    (`studioMap.test.ts`); the draft says its kind (`test_lenses.py`).
+    `make check` passes (410 tests, the replay identical), `make web-test`
+    55, `tsc` clean. No model was called.
 
 ---
 

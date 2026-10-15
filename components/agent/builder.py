@@ -35,7 +35,10 @@ person's agreement to those examples. A
 proposal that says more than the draft bears out is handed back to the agent
 with what is actually the case, and it tries again. What the person then sees
 is `put_before()`: the examples, their numbers and the accountant's working,
-read off the draft by the system — not the agent's summary of them.
+read off the draft by the system — not the agent's summary of them. An
+ending that would tell a business owner composing their own application a
+word of the system's they never used — a module's tag, "module", "seal" —
+is handed back the same way, to be said again in theirs (`jargon`).
 
 Before every call to a model the budget is checked. The last call that fits
 in it is kept for the agent to say goodbye (`Work.last_call`): it is told the
@@ -53,7 +56,6 @@ line, and once a conversation is long its superseded readings are cleared
 (`conversation`).
 """
 
-import math
 import os
 import sys
 from dataclasses import dataclass, field, replace
@@ -76,6 +78,7 @@ sys.path.insert(0, str(ROOT))
 from components.agent import accountant as accounting  # noqa: E402
 from components.agent import conversation as kept  # noqa: E402
 from components.agent import guide as guide_read  # noqa: E402
+from components.agent import jargon  # noqa: E402
 from components.agent import tools  # noqa: E402
 from components.agent.config import unlimited  # noqa: E402
 from components.agent.conversation import Conversation  # noqa: E402
@@ -149,12 +152,16 @@ class Work:
                 and (budget.tokens - tokens) / size < 2:
             return f"{tokens} of its {budget.tokens} tokens are used"
         dollars = self.dollars(usage)
-        # At the full price: the provider's cache may not serve the next call,
-        # and the goodbye, which may call nothing but a reply, it seldom does.
-        each = self.config.cost("builder", RequestUsage(
+        # The next call costs about what the last one did, the cache's share
+        # included; the goodbye after it is kept at the full price, since the
+        # cache may not serve it, so the budget holds either way. (Reckoning
+        # both at the full price stopped a long conversation after two or
+        # three calls: one at 110,000 tokens is $0.09 uncached, $0.02 cached.)
+        each = self.config.cost("builder", last)
+        goodbye = self.config.cost("builder", RequestUsage(
             input_tokens=last.input_tokens, output_tokens=last.output_tokens))
-        if budget.dollars is not None and dollars is not None and each \
-                and math.floor((budget.dollars - dollars) / each) < 2:
+        if budget.dollars is not None and dollars is not None and goodbye \
+                and budget.dollars - dollars < each + goodbye:
             return f"${dollars:.2f} of its ${budget.dollars:.2f} is spent"
         return None
 
@@ -168,7 +175,8 @@ class Work:
     async def reckon(self, example, happened, wanted):
         """Put one situation to the accountant, keep its answer, say it back."""
         part = self.config.part("accountant")
-        result = await accounting.accountant(part.model, watch=self.watch).run(
+        result = await accounting.accountant(part.model, watch=self.watch,
+                                             timeout=self.config.timeout).run(
             accounting.prompt(self.conversation.said(self.now), happened, wanted),
             model_settings=self.config.settings("accountant"))
         usage = result.usage
@@ -262,7 +270,8 @@ class Plan(BaseModel):
         default_factory=list,
         description="what you take from the catalogue, one each, in the "
                     "person's words, saying where it is kept as they would "
-                    "understand it (the standard library, a community module); "
+                    "understand it (the standard library; another's shared work, "
+                    "by its title and who made it); "
                     "empty when nothing there fits")
     elsewhere: list[str] = Field(
         default_factory=list,
@@ -408,6 +417,19 @@ def unsupported(work, proposal):
     return None
 
 
+def in_the_systems_words(work, output):
+    """The system's words an ending would tell a business owner composing their
+    own application, which they never used themselves (`jargon`); nothing for
+    a module's author, and nothing on the call the budget keeps for goodbye,
+    which has no call after it to say it again."""
+    if work.bench is None or work.module is None or work.ending:
+        return []
+    if not guide_read.for_its_owner(work.bench.store, work.module, work.bench.business()):
+        return []
+    said = [turn.get("person") or "" for turn in work.conversation.turns] + [work.now]
+    return jargon.found("\n".join(jargon.spoken(output)), said)
+
+
 def unreckoned(name, example, reckoning):
     """Why an example's numbers are not the accountant's, or None when they are.
 
@@ -503,9 +525,10 @@ def _last_size(messages):
 
 # ---- the agent -------------------------------------------------------------
 
-def builder(model=None, *, retries=3, watch=None):
+def builder(model=None, *, retries=3, watch=None, timeout=None):
     """The agent that builds, on `model`. Nothing about it depends on which.
-    With a `watch`, every call it makes is written down."""
+    With a `watch`, every call it makes is written down; with a `timeout`,
+    a call that takes longer is cut (`steady`)."""
     hooks = Hooks()
 
     @hooks.on.before_model_request
@@ -531,7 +554,7 @@ def builder(model=None, *, retries=3, watch=None):
         instructions=guide_read.instructions(),
         tools=list(TOOLS),
         retries=retries,
-        capabilities=[hooks, steady("builder", watch)]
+        capabilities=[hooks, steady("builder", watch, timeout)]
         + ([watch.hooks("builder")] if watch else []),
         defer_model_check=True,
     )
@@ -546,6 +569,14 @@ def builder(model=None, *, retries=3, watch=None):
             problem = unsupported(ctx.deps, output)
             if problem:
                 raise ModelRetry(f"That proposal cannot go to the person: {problem}")
+        words = in_the_systems_words(ctx.deps, output)
+        if words:
+            raise ModelRetry(
+                f"That cannot go to the person: they run the business, and "
+                f"{', '.join(words)} are the system's words, which they never used. "
+                f"Say it again in theirs: what is kept, what happened, what is worked "
+                f"out; another's work by its title and who made it; freeze, not seal; "
+                f"nothing in backticks.")
         return output
 
     return agent

@@ -102,7 +102,8 @@ class Session:
         self.config = config or configuration.load()
         self.watch = watch
         self.conversation = kept.load(bench.store, module)
-        self.agent = builder(self.config.part("builder").model, watch=watch)
+        self.agent = builder(self.config.part("builder").model, watch=watch,
+                             timeout=self.config.timeout)
 
     def ask(self, text):
         """One request, start to end. What the person is shown comes back."""
@@ -123,7 +124,9 @@ class Session:
                                           self.bench.business())
         said = f"{opening}\n\n{text}"
         # Kept as they happen, so a request that stops part way can still be
-        # read call by call.
+        # read call by call. Why a model or its service failed is the watch's
+        # to keep; the person is told what it means for them.
+        failed = None
         with capture_run_messages() as happened:
             try:
                 result = await self.agent.run(
@@ -138,17 +141,18 @@ class Session:
                                          f"is in the draft; ask me to go on and I start "
                                          f"from there.")
             except UnexpectedModelBehavior as exc:
-                output = Stopped(message=f"I could not finish: {_said(exc)}. What I did "
-                                         f"is in the draft; ask me to go on and I start "
-                                         f"from there.", cause="model")
+                failed = _said(exc)
+                output = Stopped(message="I could not finish this time. What I did is in "
+                                         "the draft; ask me to go on and I start from "
+                                         "there.", cause="model")
             except ModelAPIError as exc:
-                output = Stopped(message=f"The model's service kept failing "
-                                         f"({_said(exc)[:200]}). What I did is in the "
-                                         f"draft; ask me to go on and I start from there.",
-                                 cause="provider")
+                failed = _said(exc)[:400]
+                output = Stopped(message="The service I think with kept failing, so I "
+                                         "stopped. What I did is in the draft; ask me to "
+                                         "go on and I start from there.", cause="provider")
         messages = list(happened[len(earlier):])
         if self.watch and isinstance(output, Stopped):
-            self.watch.note(output.message)
+            self.watch.note(output.message + (f" ({failed})" if failed else ""))
         spent = _spent(work, usage, time.monotonic() - started)
         touched = changes.between(before, changes.look(self.bench.store, self.module),
                                   self.module)

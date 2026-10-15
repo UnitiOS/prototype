@@ -45,6 +45,14 @@ export const tagOf = (name: string): string | null =>
  *  name's tag taken off: `{rudi_sewa__rental_rate} * 2` reads `{rental_rate} * 2`. */
 export const untagged = (text: string): string => text.replace(/[A-Za-z0-9_]*__(?=[A-Za-z0-9])/g, "");
 
+/** A module's name as somebody typed it: one "@" in front, however many
+ *  they typed (the field once held one already), and nothing around it;
+ *  empty when no name was typed at all. */
+export const moduleName = (typed: string): string => {
+  const bare = typed.trim().replace(/^@+/, "");
+  return bare ? `@${bare}` : "";
+};
+
 /** A name offered in a list: the plain name, and the module's tag as a mark
  *  after it where it carries one — two `Rental`s are told apart, and the
  *  value chosen is still the full name. */

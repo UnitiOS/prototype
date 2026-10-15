@@ -158,3 +158,13 @@ def test_one_request_per_module_and_a_seal_needs_a_person(client, monkeypatch):
     assert busy.status_code == 409 and "already working" in busy.json()["error"]
     assert client.post("/api/studio/seal", json={"name": name}).status_code == 400
     assert client.post("/api/studio/ask", json={"name": name}).status_code == 400
+
+
+def test_a_name_that_is_not_a_module_name_is_refused_not_a_server_error(client):
+    client, _ = client
+    # What the Studio's field sent when it already held "@" and "@kemah/sewa"
+    # was typed after it.
+    refused = client.post("/api/studio/ask", json={"name": "@@kemah/sewa", "text": "Halo."})
+    assert refused.status_code < 500
+    assert refused.json()["refusal"]["code"] == "not_a_module_name"
+    assert not door.RUNNING

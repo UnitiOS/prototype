@@ -12,7 +12,8 @@ JSON line per event, into a file, while the request runs:
               (the person's words, tool answers, what was sent back); and all
               it answered — its thoughts where the provider returns them, its
               text, and every tool call with its arguments
-    error     a call that failed, and after how long
+    error     a call that failed, and after how long; or, with no call to
+              name, a request that failed as a whole (the page's door)
     http      what the libraries underneath log as they go — every HTTP
               request with its status, and any retry a provider's library
               makes — so a retry or a slow provider shows as what it is
@@ -157,6 +158,9 @@ def render(path):
             lines.append(f"{clock} -- {e['text']}")
         elif e["event"] == "http":
             lines.append(f"{clock}    http: {e['text']}")
+        elif e["event"] == "error" and "step" not in e:
+            # The request itself failed, not one call: what the page was told.
+            lines.append(f"{clock} !! the {e['part']} failed: {e['error']}")
         elif e["event"] == "error":
             lines.append(f"{clock} !! {e['part']} call {e['step']} failed after "
                          f"{e['seconds']} s: {e['error']}")

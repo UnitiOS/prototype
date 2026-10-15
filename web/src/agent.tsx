@@ -503,7 +503,10 @@ function Proposal(
         <p className="quiet">Waiting for you, as the system reads the draft:</p>
       )}
       {turn.shown && (
-        <details className="shown" open={latest}>
+        // The system's reading, as it was put before the person. A business
+        // owner composing their own application reads the same numbers above
+        // in their words; the reading itself, in the system's, stays folded.
+        <details className="shown" open={latest && draft?.kind !== "application"}>
           <summary>What the system reads off the draft</summary>
           <pre>{turn.shown}</pre>
         </details>

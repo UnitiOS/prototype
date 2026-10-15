@@ -261,7 +261,8 @@ async def reckoning_async(task, config, answer, watch=None):
     wanted = list(truth["figures"])
     part = config.part("accountant")
     try:
-        result = await accounting.accountant(part.model, watch=watch).run(
+        result = await accounting.accountant(part.model, watch=watch,
+                                             timeout=config.timeout).run(
             accounting.prompt(said, truth["happened"], wanted),
             model_settings=config.settings("accountant"))
         given = result.output

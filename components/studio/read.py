@@ -984,6 +984,9 @@ def state(store, name, conn=None):
         "description": document.get("description"),
         "labels": standard.labels(document),
         "purpose": manifest.get("purpose"),
+        # Whom the Studio is helping: an application's composer runs the
+        # business, and is shown it in business words.
+        "kind": manifest.get("kind") or "module",
         "valid_from": annotations.get("valid_from"),
         "versions": held,
         "revises": revises,

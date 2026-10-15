@@ -290,6 +290,8 @@ def test_moving_is_three_studio_steps_and_what_was_recorded_stays(store, conn, r
     step(store, APP, "unpin", module=f"{RUDI}@v1")
     step(store, APP, "pin", module=f"{RUDI}@v2")
     report = reading.state(store, APP, conn)
+    # The Studio is told whom it helps: an application's composer.
+    assert report["kind"] == "application"
     [example] = report["examples"]
     assert example["passed"] is True
     out = _sealed(store, conn, APP, "dev")

@@ -41,7 +41,7 @@ import type { Showing } from "./graph";
 import {
   CHANGE_SAID, HOLDS, askedOnce, changedOf, checksOf, chooseLanguage, exampleOf, fieldLabel,
   firstSentence, holds, holdsSaid, languageSaid, languagesOf, mapOf, marksOf, personLanguage,
-  nameShown, pinText, snake, spoken, turnsAbout, wordsOf,
+  moduleName, nameShown, pinText, snake, spoken, turnsAbout, wordsOf,
 } from "./studioMap";
 import { Language, useSay } from "./words";
 import type { StudioPick } from "./route";
@@ -691,17 +691,18 @@ function StudioHome(
 function AskForm(
   { modules, onAsk }: { modules: string[]; onAsk: (name: string, text: string) => void },
 ) {
-  const [name, setName] = useState("@");
+  const [typed, setName] = useState("");
+  const name = moduleName(typed);
   const [text, setText] = useState("");
-  const known = modules.includes(name.trim());
+  const known = modules.includes(name);
   return (
     <form className="start-form" onSubmit={(e) => {
       e.preventDefault();
-      if (name.trim().length > 1 && text.trim()) onAsk(name.trim(), text.trim());
+      if (name && text.trim()) onAsk(name, text.trim());
     }}>
       <label>
         <span>Which module</span>
-        <input value={name} onChange={(e) => setName(e.target.value)} list="studio-modules"
+        <input value={typed} onChange={(e) => setName(e.target.value)} list="studio-modules"
           placeholder="@your-team/name" required />
         <datalist id="studio-modules">
           {modules.map((m) => <option key={m} value={m} />)}
@@ -724,7 +725,8 @@ function AskForm(
 function StartForm(
   { onStarted, name: given }: { onStarted: (name: string) => void; name?: string },
 ) {
-  const [name, setName] = useState(given ?? "@");
+  const [typed, setName] = useState(given ?? "");
+  const name = moduleName(typed);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [failure, setFailure] = useState<Held["failure"]>(null);
@@ -744,7 +746,7 @@ function StartForm(
       {given === undefined && (
         <label>
           <span>Where it lives</span>
-          <input value={name} onChange={(e) => setName(e.target.value)}
+          <input value={typed} onChange={(e) => setName(e.target.value)}
             placeholder="@your-team/name" required />
         </label>
       )}
