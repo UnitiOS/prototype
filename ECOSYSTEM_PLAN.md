@@ -50,6 +50,31 @@ Since then: G1, G2 and the dry run (`ba762f4`, `7ba2b95`), step 5 (`ba20f4e`),
 step 6 (`369c32b`), step 7 (`405ac2f`), step 8 (`c7fbc5e`), and the
 ecosystem test, run on 15 October: the seven stories pass (§7.5).
 
+**Moved in by the owner, 16 October 2026: a module opened shows how it was
+built.** No story needed it; the owner did, to read the ecosystem test's
+evidence in the page, and because "Change it" on a frozen module ran `revise`
+at once, so looking at a module drafted a new version (12 October's stray
+`@uniti` drafts, and two more on 16 October, both discarded). Built:
+
+- the Studio's frozen modules have **Open**, which only reads. A new version
+  starts with **Start a new version**, or when the person tells the agent what
+  should change;
+- the conversation panel shows, above the draft's own, the conversation that
+  built each sealed version (`vN.chat.yaml`), folded under "How v1 was built ·
+  frozen 15 Oct 2026", with the plan agreed then. These turns are read and
+  never acted on;
+- a version's page in the Modules area shows its conversation beside its
+  transcript;
+- **the agent is not handed them**: what it reads is the draft's own
+  conversation, as before. The instructions are unchanged, and no new refusal
+  code was added.
+
+Tests: `test_agent_api.py` (the kept conversation read back after the seal and
+after `revise`, the agent's own conversation empty, the version page; a module
+never frozen has none) and `builtSaid` (`studioMap.test.ts`). Checked in the
+browser on the ecosystem test's servers: Rudi opens with v1 and v2's
+conversations and no draft is made; Kemah Ceria v3's page shows Sari's.
+
 The goal has not moved (§1.2): **the ecosystem test passes on its seven
 stories, then core v3, then the re-run.** What remains, in order:
 
@@ -1735,6 +1760,9 @@ parked under the story filter (§0.2) unless the ecosystem test shows otherwise.
   step 8's word list will show whether it is met.
 - **The emitted SQL under "How it works" keeps composed names** (step 7): it
   is the evidence, as it ran.
+- **A version's page leaves out its facets** (found 16 October): Rudi's v1
+  page lists his three classes' slots, but not `item_daily_rate`, which his
+  module adds to `Item`.
 - **A thing's lens is read from core's `Event` alone** (step 7): a rental
   line fills `TransactionLine`, which is a `Thing`, so it is listed with the
   things rather than beside its rental. Polish, P3.

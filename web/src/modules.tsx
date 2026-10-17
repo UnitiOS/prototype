@@ -10,6 +10,7 @@
 import { useEffect, useState } from "react";
 import { ApiError, modulesApi } from "./api";
 import type { Connections, ModuleDiff, ModuleGraph, ModuleRow, ModuleVersion, Pin } from "./api";
+import { Kept } from "./agent";
 import { ModuleTimeline } from "./ModuleTimeline";
 import { day, instant } from "./format";
 import type { ModulePick } from "./route";
@@ -195,6 +196,17 @@ function VersionView({ pin, compare, onPick }: { pin: Pin; compare: string | nul
           </details>
         );
       })}
+
+      {v.conversation && (
+        <section className="fact">
+          <div className="fact-head"><h3>Conversation</h3>
+            <span className="quiet">what was asked and answered while it was built</span></div>
+          <div className="agent-feed agent-feed-page">
+            <Kept name={v.name} open
+              built={{ version: v.version, sealed_at: v.sealed_at, ...v.conversation }} />
+          </div>
+        </section>
+      )}
 
       {v.transcript && (
         <section className="fact">

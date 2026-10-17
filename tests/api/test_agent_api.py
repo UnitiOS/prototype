@@ -21,6 +21,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "components" / "kernel"))
 
 import dev_modules  # noqa: E402
+from components.agent import conversation as kept  # noqa: E402
 from components.agent import rehearsal  # noqa: E402
 from components.agent.config import unlimited  # noqa: E402
 from components.api import agent as door  # noqa: E402
@@ -148,6 +149,37 @@ def test_a_request_is_streamed_as_it_works_and_a_person_agrees_and_seals(client,
     assert [v["version"] for v in world.versions(name)] == ["v1"]
     drafts = client.get("/api/studio/drafts").json()
     assert name not in [d["name"] for d in drafts]
+
+    # Opened again, the module reads back with the conversation that built
+    # v1, for the person. The agent's own conversation starts empty: what
+    # built v1 is never sent to a model again.
+    chat = client.get("/api/studio/chat", params={"name": name}).json()
+    assert chat["turns"] == [] and chat["plan"] is None
+    (built,) = chat["earlier"]
+    assert built["version"] == "v1" and built["sealed_at"].startswith("20")
+    assert [t["ended"] for t in built["turns"]] == ["Plan", "Proposal", "Proposal"]
+    assert "messages" not in built["turns"][0]
+    assert built["plan"]["agreed"] is True
+    assert built["reckonings"]["flour"]["figures"][0]["value"] == "20"
+    assert kept.load(world, name).turns == []
+    # The version's own page says the same.
+    page = client.get("/api/modules/version", params={"name": name, "version": "v1"}).json()
+    assert [t["ended"] for t in page["conversation"]["turns"]] == ["Plan", "Proposal", "Proposal"]
+    assert "messages" not in page["conversation"]["turns"][0]
+    assert page["conversation"]["plan"]["agreed"] is True
+
+    # A new version starts its own conversation; the one that built v1 stays
+    # above it.
+    assert client.post("/api/studio/step", json={
+        "name": name, "step": "revise"}).status_code == 200
+    chat = client.get("/api/studio/chat", params={"name": name}).json()
+    assert chat["turns"] == [] and [e["version"] for e in chat["earlier"]] == ["v1"]
+
+
+def test_a_module_never_frozen_has_no_earlier_conversation(client):
+    client, _ = client
+    chat = client.get("/api/studio/chat", params={"name": "@probe/nothing-yet"}).json()
+    assert chat["turns"] == [] and chat["earlier"] == []
 
 
 def test_one_request_per_module_and_a_seal_needs_a_person(client, monkeypatch):

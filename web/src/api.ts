@@ -181,6 +181,10 @@ export interface ModuleVersion {
   valid_from: string; sealed_at: string; supersedes: string | null; latest: string | null;
   imports: (Pin & { latest: string | null })[]; imported_by: Pin[]; closure: Pin[];
   classes: ClassItem[]; slots: SlotItem[]; transcript: string | null;
+  /** The conversation that built it, when an agent did. */
+  conversation: {
+    turns: ChatTurn[]; reckonings: Record<string, Reckoning>; plan: PlanHeld | null;
+  } | null;
 }
 
 interface Change { from: unknown; to: unknown }
@@ -700,6 +704,15 @@ export interface Chat {
   name: string; running: boolean; turns: ChatTurn[];
   reckonings: Record<string, Reckoning>;
   plan: PlanHeld | null;
+  /** The conversations that built each sealed version, oldest first: kept to
+   *  read, never sent to the agent again. */
+  earlier: Built[];
+}
+
+/** The conversation that built one sealed version, and the plan agreed then. */
+export interface Built {
+  version: string; sealed_at: string; turns: ChatTurn[];
+  reckonings: Record<string, Reckoning>; plan: PlanHeld | null;
 }
 
 /** One thing the agent did in one call: a tool it called, words it said, or

@@ -617,6 +617,12 @@ export function daySaid(value: string | null): string {
   });
 }
 
+/** What heads a conversation kept beside a sealed version: which version it
+ *  built, and the day it was frozen. */
+export function builtSaid(built: { version: string; sealed_at: string }): string {
+  return `How ${built.version} was built · frozen ${daySaid(built.sealed_at)}`;
+}
+
 export function momentsOf(draft: DraftState): Moment[] {
   const out: Moment[] = [];
   const tables = new Set((draft.workings ?? []).map((w) => w.class));

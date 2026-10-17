@@ -21,8 +21,10 @@
                                         and what it changed in the draft
     GET  /api/studio/chat   ?name=         the conversation kept beside the
                                            draft, the plan and whether the
-                                           person agreed to it, and whether a
-                                           request on it is running now
+                                           person agreed to it, whether a
+                                           request on it is running now, and
+                                           the conversations that built each
+                                           sealed version, to read
     POST /api/studio/seal   {name, actor}  seal the draft, by a person; then
                                            the draft is closed and its
                                            conversation kept beside the version
@@ -226,13 +228,16 @@ async def ask(request: Request):
 
 
 def chat(store, name):
-    """The conversation as a page reads it: the turns without their calls."""
+    """The conversation as a page reads it: the turns without their calls, and
+    above them the conversations that built each sealed version (`earlier`),
+    so a module opened again shows how it came to be."""
     held = kept.load(store, name)
     return {"name": name, "running": name in RUNNING,
             "turns": [{k: v for k, v in turn.items() if k != "messages"}
                       for turn in held.turns],
             "reckonings": held.reckonings,
-            "plan": studio.plan_of(store, name)}
+            "plan": studio.plan_of(store, name),
+            "earlier": kept.beside(store, name)}
 
 
 def sealed(store, name, actor):

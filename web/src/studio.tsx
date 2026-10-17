@@ -425,6 +425,7 @@ export function StudioPage(
               }} />
           ) : missing ? (
             <Nothing name={pick.name} starting={marking?.live ?? false}
+              frozen={held.failure?.refusal?.code === "no_draft"}
               onStarted={() => held.reload()} />
           ) : held.failure ? (
             <div className="map-empty">
@@ -588,7 +589,6 @@ function StudioHome(
   const [drafts, setDrafts] = useState<DraftRow[]>([]);
   const [modules, setModules] = useState<ModuleRow[]>([]);
   const [failure, setFailure] = useState<Held["failure"]>(null);
-  const [changing, setChanging] = useState<string | null>(null);
 
   const said = (e: unknown) => setFailure({
     error: e instanceof ApiError ? e.message : String(e),
@@ -602,15 +602,6 @@ function StudioHome(
 
   const drafted = new Set(drafts.map((d) => d.name));
   const frozen = modules.filter((m) => m.latest && !drafted.has(m.name));
-
-  // Changing a frozen module is a draft that revises its latest version.
-  const change = (name: string) => {
-    setChanging(name);
-    studioApi.step(name, "revise", {})
-      .then(() => onOpen(name))
-      .catch(said)
-      .finally(() => setChanging(null));
-  };
 
   return (
     <div className="studio-home">
@@ -668,10 +659,9 @@ function StudioHome(
                   {row.description ? ` · ${firstSentence(row.description)}` : ""}
                 </p>
               </div>
-              <button className="button" disabled={changing !== null}
-                onClick={() => change(row.name)}>
-                {changing === row.name ? "Opening…" : "Change it"}
-              </button>
+              {/* Opening only reads: the conversation that built it, and the
+                  way to start a new version. Nothing is drafted by looking. */}
+              <button className="button" onClick={() => onOpen(row.name)}>Open</button>
             </li>
           ))}
         </ul>
@@ -768,7 +758,12 @@ function StartForm(
 
 /** A module with no draft yet: the agent starts one, or a person does. */
 function Nothing(
-  { name, starting, onStarted }: { name: string; starting: boolean; onStarted: () => void },
+  { name, starting, frozen, onStarted }: {
+    name: string; starting: boolean;
+    /** It has sealed versions and no draft open: opened to be read. */
+    frozen: boolean;
+    onStarted: () => void;
+  },
 ) {
   if (starting) {
     return (
@@ -778,6 +773,7 @@ function Nothing(
       </div>
     );
   }
+  if (frozen) return <Frozen name={name} onStarted={onStarted} />;
   return (
     <div className="map-empty">
       <div className="map-empty-card">
@@ -787,6 +783,53 @@ function Nothing(
           starts the draft. Or start it yourself:
         </p>
         <StartForm name={name} onStarted={onStarted} />
+      </div>
+    </div>
+  );
+}
+
+/** A frozen module, opened: what it is, where to read what it holds, and the
+ *  one way to change it, which is a new version. Opening drafted nothing. */
+function Frozen({ name, onStarted }: { name: string; onStarted: () => void }) {
+  const [row, setRow] = useState<ModuleRow | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [failure, setFailure] = useState<Held["failure"]>(null);
+  useEffect(() => {
+    modulesApi.list().then((rows) => setRow(rows.find((r) => r.name === name) ?? null))
+      .catch(() => setRow(null));
+  }, [name]);
+  const start = () => {
+    setBusy(true);
+    studioApi.step(name, "revise", {})
+      .then(() => { setFailure(null); onStarted(); })
+      .catch((e) => setFailure({
+        error: e instanceof ApiError ? e.message : String(e),
+        refusal: e instanceof ApiError ? e.refusal : null,
+      }))
+      .finally(() => setBusy(false));
+  };
+  const version = row?.latest ?? null;
+  return (
+    <div className="map-empty">
+      <div className="map-empty-card">
+        <h3>{row?.title || spoken(name.split("/").pop() ?? name)} is frozen
+          {version ? ` as ${version}` : ""}</h3>
+        <p className="quiet">
+          {row?.description ? `${firstSentence(row.description)} ` : ""}
+          How it was built is in the conversation.
+          {version && (
+            <> What it holds is on <a href={`#/modules?name=${encodeURIComponent(name)}`
+              + `&version=${encodeURIComponent(version)}`}>its page</a>.</>
+          )}
+        </p>
+        <p className="quiet">
+          To change it, tell the agent what should change, in the conversation, or
+          start a new version yourself. {version ? `${version} stays as it is.` : ""}
+        </p>
+        <button className="button button-go" disabled={busy} onClick={start}>
+          {busy ? "Starting…" : "Start a new version"}
+        </button>
+        {failure && <Failure error={failure.error} refusal={failure.refusal} />}
       </div>
     </div>
   );

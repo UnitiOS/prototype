@@ -8,6 +8,8 @@ each item marked with the module version it came from.
 import sys
 from pathlib import Path
 
+import yaml
+
 ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT / "components" / "provenance"))
 sys.path.insert(0, str(ROOT / "components" / "seal"))
@@ -142,6 +144,11 @@ def version(store, name, version, registered=None):
 
     held = next(v for v in store.versions(name) if v["version"] == version)
     transcript = held["path"].with_name(f"{version}.txt")
+    # The conversation that built it, when an agent did: the turns as a page
+    # draws them, without the calls behind them.
+    chat = held["path"].with_name(f"{version}.chat.yaml")
+    said = (yaml.safe_load(chat.read_text(encoding="utf-8")) or {}) if chat.is_file() else None
+    plan = held["path"].with_name(f"{version}.plan.yaml")
     own = lambda item: item["from"] == _pin(name, version)
 
     return {
@@ -160,6 +167,13 @@ def version(store, name, version, registered=None):
         "classes": sorted(classes.values(), key=lambda c: (not own(c), c["name"])),
         "slots": sorted(slots.values(), key=lambda s: (not own(s), s["name"])),
         "transcript": transcript.read_text(encoding="utf-8") if transcript.is_file() else None,
+        "conversation": None if said is None else {
+            "turns": [{k: v for k, v in turn.items() if k != "messages"}
+                      for turn in said.get("turns") or []],
+            "reckonings": dict(said.get("reckonings") or {}),
+            "plan": (yaml.safe_load(plan.read_text(encoding="utf-8")) or None)
+            if plan.is_file() else None,
+        },
     }
 
 

@@ -72,6 +72,7 @@ from pydantic_ai.messages import (
 ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT))
 
+from components.modules.store import ModuleError  # noqa: E402
 from components.studio import draft as studio  # noqa: E402
 
 FILE = studio.CONVERSATION
@@ -259,6 +260,43 @@ def load(store, module):
                         reckonings=dict(raw.get("reckonings") or {}))
 
 
+def beside(store, module):
+    """The conversations that built each sealed version of a module, oldest
+    first, for a person to read: `vN.chat.yaml`, kept beside the version when
+    its draft was sealed, with the plan agreed to then. The turns come without
+    their calls, as a page draws them.
+
+    Only people read these. The agent is handed the draft's own conversation
+    (`load`), which a new version starts empty: what built a version is in the
+    version itself, and sending it to a model again would be paid for on
+    every call."""
+    try:
+        versions = store.versions(module)
+    except ModuleError as exc:
+        # Nothing started under this name yet: a conversation can come first.
+        if exc.code != "no_such_module":
+            raise
+        return []
+    out = []
+    for held in versions:
+        version = held["version"]
+        chat = held["path"].with_name(f"{version}.chat.yaml")
+        if not chat.is_file():
+            continue
+        raw = yaml.safe_load(chat.read_text(encoding="utf-8")) or {}
+        plan = held["path"].with_name(f"{version}.plan.yaml")
+        out.append({
+            "version": version,
+            "sealed_at": held["sealed_at"].isoformat(),
+            "turns": [{k: v for k, v in turn.items() if k != "messages"}
+                      for turn in raw.get("turns") or []],
+            "reckonings": dict(raw.get("reckonings") or {}),
+            "plan": (yaml.safe_load(plan.read_text(encoding="utf-8")) or None)
+            if plan.is_file() else None,
+        })
+    return out
+
+
 def save(store, module, conversation):
     """Write it where the module's draft is or will be. A module nobody has
     started yet is no module (it has no manifest), so the conversation about
@@ -270,5 +308,5 @@ def save(store, module, conversation):
                      encoding="utf-8", newline="\n")
 
 
-__all__ = ["CLEARED", "Conversation", "FILE", "READINGS", "UNCHANGED", "cleared", "closed",
-           "load", "path", "reading", "save", "sent", "spoken", "unchanged"]
+__all__ = ["CLEARED", "Conversation", "FILE", "READINGS", "UNCHANGED", "beside", "cleared",
+           "closed", "load", "path", "reading", "save", "sent", "spoken", "unchanged"]

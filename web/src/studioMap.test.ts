@@ -3,7 +3,7 @@ import type { DraftState, ExampleResult } from "./api";
 import {
   BOX, CELL, GROUP, arrange, arrangeWorkings, cellHeight, changedOf, checksOf, fieldLabel, heightOf,
   askedOnce, blocksOf, exampleOf, lineage, mapOf, marksOf, momentsOf, neighbours, piecesOf, roomFor,
-  moduleName, nameShown, plainName, spoken, tagOf, turnsAbout, untagged, walkThrough,
+  builtSaid, moduleName, nameShown, plainName, spoken, tagOf, turnsAbout, untagged, walkThrough,
   workingsOf, NOT_YET,
 } from "./studioMap";
 
@@ -140,6 +140,11 @@ describe("names said as words", () => {
     expect(untagged("rudi_sewa__Rental.rudi_sewa__rental_deposit")).toBe("Rental.rental_deposit");
     expect(spoken("penyewaan__RentalLine")).toBe("Rental line");
     expect(fieldLabel("penyewaan__rental_deposit", "penyewaan__Rental")).toBe("Deposit");
+  });
+
+  it("says which version a kept conversation built, and when it was frozen", () => {
+    expect(builtSaid({ version: "v1", sealed_at: "2026-10-15T03:49:59.547177+00:00" }))
+      .toBe("How v1 was built · frozen 15 Oct 2026");
   });
 
   it("takes a module's name as it is typed, with one @ in front", () => {

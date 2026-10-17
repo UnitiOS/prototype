@@ -1264,6 +1264,12 @@ details.fact:not([open]) > summary { border-bottom: 0; }
   max-height: 40vh;
 }
 .exchange { display: grid; gap: 6px; }
+/* A conversation kept beside a sealed version: read, folded under its version. */
+.kept { display: grid; gap: 10px; border-left: 2px solid var(--rule); padding-left: 10px; }
+.kept:not([open]) { gap: 0; }
+.kept-head { cursor: pointer; color: var(--ink-soft); font-size: var(--step--1); }
+.kept[open] > .kept-head { margin-bottom: 4px; }
+.agent-feed-page { padding: 0; overflow: visible; }
 .bubble {
   margin: 0; padding: 8px 11px; border-radius: 10px; max-width: 100%;
   font-size: var(--step--1); white-space: pre-wrap;

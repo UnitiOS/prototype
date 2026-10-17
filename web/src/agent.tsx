@@ -28,12 +28,12 @@
 import { useEffect, useRef, useState } from "react";
 import { ApiError, studioApi } from "./api";
 import type {
-  AgentEvent, Chat, ChatTurn, Did, DraftChange, DraftState, ExampleResult, NameOwners,
+  AgentEvent, Built, Chat, ChatTurn, Did, DraftChange, DraftState, ExampleResult, NameOwners,
   PlanHeld, Reckoning, Refusal, Spent,
 } from "./api";
 import { ChangeTag, CheckMark } from "./graph";
 import { Failure } from "./Refusal";
-import { changedOf, firstSentence, spoken } from "./studioMap";
+import { builtSaid, changedOf, firstSentence, spoken } from "./studioMap";
 import type { ChangeHow } from "./studioMap";
 import { Said, useSay } from "./words";
 
@@ -205,6 +205,7 @@ export function AgentPanel(
   }, [name, first]);
 
   const turns = chat?.turns ?? [];
+  const earlier = chat?.earlier ?? [];
   const latest = turns.length - 1;
   // The plan the person is asked about is the last one put forward.
   const lastPlan = turns.map((t) => t.ended).lastIndexOf("Plan");
@@ -219,7 +220,19 @@ export function AgentPanel(
         </p>
       </header>
       <div className="agent-feed" ref={feed}>
-        {turns.length === 0 && !running && (
+        {earlier.map((built, i) => (
+          // The last version's conversation is open while nothing has been
+          // said since; the ones before it stay folded.
+          <Kept key={built.version} built={built} name={name}
+            open={i === earlier.length - 1 && turns.length === 0 && !running} />
+        ))}
+        {turns.length === 0 && !running && earlier.length > 0 && (
+          <p className="quiet">
+            Frozen as {earlier[earlier.length - 1].version}. Say what should change,
+            and the agent starts a new version from it; the one frozen stays as it is.
+          </p>
+        )}
+        {turns.length === 0 && !running && earlier.length === 0 && (
           <p className="quiet">
             Say what the business needs, in its own words. The agent asks what
             it cannot be sure of, works out the numbers with the accountant,
@@ -258,11 +271,34 @@ export function AgentPanel(
   );
 }
 
-/** What changed, as a row of names that each lead to the map. */
+// What a conversation kept beside a sealed version answers to: nothing. Its
+// names belong to that version, not to the draft on the map.
+const STILL: ToMap = { onMarking: () => undefined, onFocus: () => undefined };
+const nothing = () => undefined;
+
+/** The conversation that built a sealed version, to read: nothing in it can
+ *  be answered, agreed to or shown on the map, which holds the draft. */
+export function Kept({ built, name, open }: { built: Built; name: string; open: boolean }) {
+  const lastPlan = built.turns.map((t) => t.ended).lastIndexOf("Plan");
+  return (
+    <details className="kept" open={open}>
+      <summary className="kept-head">{builtSaid(built)}</summary>
+      {built.turns.map((turn, i) => (
+        <Exchange key={i} index={i} past turn={turn} name={name} draft={null}
+          reckonings={built.reckonings} latest={false} lit={false} map={STILL}
+          plan={i === lastPlan ? built.plan : null}
+          onAnswer={nothing} onChanged={nothing} onSealed={nothing} onChangePlan={nothing} />
+      ))}
+    </details>
+  );
+}
+
+/** What changed, as a row of names that each lead to the map — or, for a
+ *  version already sealed (`still`), only say what changed. */
 function Touched(
-  { changes, map, draft, title, onShow }: {
+  { changes, map, draft, title, onShow, still = false }: {
     changes: DraftChange[]; map: ToMap; draft: DraftState | null;
-    title?: string; onShow?: () => void;
+    title?: string; onShow?: () => void; still?: boolean;
   },
 ) {
   const kinds = changes.filter((c) => c.what === "kind");
@@ -271,6 +307,21 @@ function Touched(
   const others = changes.filter((c) => c.what === "example" || c.what === "pin");
   const say = useSay(draft);
   if (changes.length === 0) return null;
+  if (still) {
+    return (
+      <div className="touched">
+        {title && <span className="touched-title">{title}</span>}
+        {[...kinds, ...fields, ...others].map((c) => (
+          <span key={`${c.what}:${c.name}`} className={`touched-item touched-${c.how}`}>
+            <span className="change-sign">{SIGN[c.how]}</span>
+            {c.what === "example" ? `example ${spoken(c.name).toLowerCase()}`
+              : c.what === "field" ? say.name(c.name.split(".")[1] ?? c.name)
+              : c.what === "kind" ? say.name(c.name) : c.name}
+          </span>
+        ))}
+      </div>
+    );
+  }
   return (
     <div className="touched">
       {title && <span className="touched-title">{title}</span>}
@@ -365,9 +416,11 @@ const waitsForThem = (turn: ChatTurn) =>
 function Exchange(
   {
     index, turn, name, draft, reckonings, latest, lit, map, plan,
-    onAnswer, onChanged, onSealed, onChangePlan,
+    onAnswer, onChanged, onSealed, onChangePlan, past = false,
   }: {
     index: number; turn: ChatTurn; name: string; draft: DraftState | null;
+    /** A turn of a version already sealed: read, never acted on. */
+    past?: boolean;
     reckonings: Record<string, Reckoning>; latest: boolean; lit: boolean; map: ToMap;
     /** The plan beside the draft, when this turn is the one that put it forward. */
     plan: PlanHeld | null;
@@ -378,7 +431,8 @@ function Exchange(
   const said = turn.said;
   const touched = turn.touched ?? [];
   return (
-    <div className={`exchange${lit ? " exchange-lit" : ""}`} data-turn={index}>
+    <div className={`exchange${lit ? " exchange-lit" : ""}${past ? " exchange-past" : ""}`}
+      data-turn={past ? undefined : index}>
       <p className="bubble bubble-person">{turn.person}</p>
       <div className={`bubble bubble-agent bubble-${turn.ended.toLowerCase()}`}>
         {turn.ended === "Question" && (
@@ -407,7 +461,7 @@ function Exchange(
         {(turn.ended === "Reply" || (turn.ended === "Stopped" && !waitsForThem(turn))) && (
           <Said text={said.message ?? ""} />
         )}
-        <Touched changes={touched} map={map} draft={draft} title="Changed:"
+        <Touched changes={touched} map={map} draft={draft} title="Changed:" still={past}
           onShow={() => map.onMarking({
             changes: touched, now: [], live: false,
             title: `What the agent changed when you said “${clip(firstSentence(turn.person), 60)}”`,
